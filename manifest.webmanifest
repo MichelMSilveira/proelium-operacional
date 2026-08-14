@@ -1,0 +1,13 @@
+{
+  "name": "Proelium Operacional",
+  "short_name": "Proelium",
+  "description": "CRM, orçamentos e acompanhamento operacional da Proelium.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f0",
+  "theme_color": "#173e30",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

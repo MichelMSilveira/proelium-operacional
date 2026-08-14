@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#12251e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Proelium Operacional</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="crm.css">
+  <link rel="stylesheet" href="bi.css">
+  <link rel="stylesheet" href="quotes.css">
+  <link rel="stylesheet" href="danger.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span class="brand-mark">P</span><div><strong>PROELIUM</strong><small>Operacional</small></div></div>
+      <nav id="navigation" aria-label="Navegação principal"></nav>
+      <div class="sidebar-foot"><span class="status-dot"></span><div><strong>Sistema local</strong><small>Dados salvos neste navegador</small></div></div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menuButton" aria-label="Abrir menu">☰</button>
+        <div><p class="eyebrow">CENTRAL OPERACIONAL</p><h1 id="pageTitle">Visão geral</h1></div>
+        <div class="top-actions">
+          <label class="search"><span>⌕</span><input id="globalSearch" placeholder="Buscar neste módulo"></label>
+          <button class="avatar" title="Conta">MP</button>
+        </div>
+      </header>
+      <section id="content" class="content"></section>
+    </main>
+  </div>
+  <dialog id="recordDialog">
+    <form method="dialog" id="recordForm">
+      <div class="dialog-head"><div><p class="eyebrow">NOVO REGISTRO</p><h2 id="dialogTitle">Adicionar</h2></div><button value="cancel" class="icon-button">×</button></div>
+      <div id="formFields" class="form-grid"></div>
+      <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button value="default" id="saveButton" class="button primary">Salvar registro</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('./sw.js');
+      navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+    }
+  </script>
+</body>
+</html>
