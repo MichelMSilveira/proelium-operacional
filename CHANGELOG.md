@@ -19,6 +19,7 @@
 - ajuste rápido de compromissos próprios da agenda, sem alterar por engano tarefas ou instalações vinculadas.
 - segurar um compromisso na consulta rápida abre seu ajuste; corrigidos os botões Cancelar e X dos formulários.
 - o aplicativo volta ao último módulo aberto após atualizar a página, em cada aparelho.
+- consulta rápida em dois níveis: toque no item para ver detalhes e editar tarefas, compromissos, instalações ou ações comerciais.
 
 ## 0.2.0 — 2026-08-14
 
