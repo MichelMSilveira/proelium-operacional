@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Marca EMS Studio ampliada no cabeçalho de desktop, tablet e celular, com espaço vertical adicional para preservar a leitura de data e hora;
 - Bloco 6 concluído como MVP: ativos instalados vinculados a cliente/projeto, ordens de serviço sincronizadas à agenda, chamados de pós-venda e histórico técnico do cliente;
 - OS integrada como centro de rastreabilidade: vincula cliente, projeto, orçamento aprovado, checklist, ativo técnico, relatório de campo e entrega/aceite;
 - Bloco 7 iniciado: lançamentos financeiros de receita, despesa, pagamento e recebimento; comparação previsto × realizado e BI com filtros por período, cliente, responsável e categoria.
