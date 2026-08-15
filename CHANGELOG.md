@@ -3,6 +3,7 @@
 ## 0.4.1 — 2026-08-15
 
 - Correção de estabilidade do Acompanhamento: a tabela agora aceita tanto linhas individuais quanto listas, eliminando o erro que bloqueava a abertura da tela;
+- Inicialização estabilizada: a interface aguarda a carga dos módulos antes de renderizar a página salva anteriormente;
 - Colaboradores e parceiros agora possuem regra de pagamento: modalidade, valor-base, comissão, vigência e observações, com sugestão de valor na execução;
 - Nova área Execução e mão de obra: registra diárias, horas, materiais, fretes, terceirizados e outros gastos por projeto, com reflexo automático no Financeiro e BI;
 - Acompanhamento passa a listar todos os projetos vinculados por padrão, sem ocultá-los pelo filtro de busca global;
