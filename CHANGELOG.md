@@ -13,6 +13,7 @@
 - primeiro fluxo funcional do Bloco 2: oportunidades comerciais e conversão em cliente.
 - agenda operacional interna integrada a tarefas, instalações e próximas ações comerciais.
 - visualização mensal da agenda, com cartões de compromissos por dia e navegação entre meses.
+- cadastro direto de compromissos pela agenda, com data atual sugerida automaticamente.
 
 ## 0.2.0 — 2026-08-14
 

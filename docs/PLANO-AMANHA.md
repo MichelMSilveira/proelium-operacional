@@ -53,6 +53,7 @@ Definir e testar os fluxos antes de ampliar o código. Cada responsável registr
 - painel de oportunidades concluídas e manutenção da lista de orçamentos por ambiente.
 - agenda operacional interna ligada a tarefas, instalações e próximas ações comerciais.
 - agenda mensal para organizar compromissos diretamente por dia.
+- novo compromisso abre com a data atual como sugestão; a pessoa pode alterá-la antes de salvar.
 
 ## Regra para trabalhar separados
 
