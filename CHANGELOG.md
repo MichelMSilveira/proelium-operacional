@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Botão fixo de Privacidade deslocado para a esquerda, evitando sobreposição com a lupa;
 - Botão fixo de Privacidade adicionado: ativa e fecha a tela de proteção sem depender do painel da lupa;
 - Tela de abertura: dedicatória reformulada como celebração de presença, experiência e inspiração de Ernani Queiroz Andrade;
 - Controle de intensidade da arte movido para o painel da lupa, junto das preferências de leitura, tema e contraste; no celular, ficou menor e mais abaixo no painel;
