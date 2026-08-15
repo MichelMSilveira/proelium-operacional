@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos agora contam com autoconsulta do catálogo ao digitar; itens ausentes podem entrar como “a cotar” e passam para uma fila de aquisição sem criar preço fictício;
 - Agenda integrada ao relatório de serviço: compromissos vinculados a projetos agora permitem registrar a execução, fotos, testes e pendências diretamente pela consulta do dia;
 - Projetos agora podem ser editados e excluídos; a exclusão remove de forma coerente os registros operacionais, agenda, execução, financeiro e avaliações vinculados;
 - Correção de estabilidade do Acompanhamento: a tabela agora aceita tanto linhas individuais quanto listas, eliminando o erro que bloqueava a abertura da tela;
