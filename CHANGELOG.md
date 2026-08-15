@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Corrigida a ordem de inicialização dos módulos para impedir que a tela de carregamento permanecesse aberta ao restaurar a aba Comercial;
 - Colaboradores e parceiros agora possuem perfil interativo: consulta de dados profissionais, indicadores e histórico de avaliações; cadastro e edição atualizam o perfil existente;
 - Bloco 4 concluído: orçamento por cômodo com quantidade, desconto por item, total bruto, desconto total, valor líquido, custo e margem por ambiente;
 - situações de orçamento: Rascunho, Enviado, Aprovado, Recusado e Vencido; revisões criam uma nova versão preservando a anterior;

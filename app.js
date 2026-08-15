@@ -330,7 +330,7 @@ if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate
 const originalMarketDetail=marketDetail;marketDetail=project=>originalMarketDetail(project).replaceAll('Hernani','Ernani');
 setupHeader();
 setupAccessibility();
-render();
+// A primeira renderização ocorre ao final, depois dos módulos complementares.
 
 // Perfis navegáveis de colaboradores e parceiros.
 const collaboratorFindRecord=findRecord;findRecord=(kind,id)=>kind==='collaborator'?state.data.collaborators.find(person=>person.id===id):collaboratorFindRecord(kind,id);
