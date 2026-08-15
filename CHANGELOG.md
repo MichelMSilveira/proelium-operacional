@@ -3,6 +3,7 @@
 ## 0.4.1 — 2026-08-15
 
 - Bloco 5 iniciado: ficha de execução por projeto com avanço de etapas, checklist, tarefas, relatórios de serviço e conexão com a instalação vinculada;
+- Bloco 5 concluído como MVP: checklist padrão aplicável aos projetos, atualização automática para novos projetos e entrega formal com aceite do cliente;
 - Cabeçalho reorganizado: logotipo da EMS Studio centralizado na parte superior, com data e hora posicionadas logo abaixo da marca em desktop e celular;
 - Assinatura da Proelium no rodapé do computador movida para a área clara, após o menu lateral;
 - No modo privacidade do celular, a marca EMS Studio foi deslocada para o centro visual da tela;
