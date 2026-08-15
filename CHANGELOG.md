@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Bloco 3 iniciado: catálogo agora possui fornecedor, edição e status ativo/descontinuado; pacotes reutilizáveis podem reunir produtos, serviços e mão de obra e ser inseridos em orçamentos;
 - logo oficial fornecida da EMS Studio aplicada à abertura, ao cabeçalho e ao modo privacidade;
 - marca EMS Studio ampliada com escala própria para desktop e celular;
 - cabeçalho desktop recebeu mais espaço para a marca EMS Studio, com data deslocada à esquerda;
