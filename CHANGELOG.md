@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Auditoria: exclusões de oportunidades comerciais agora ficam disponíveis para recuperação segura pelo próprio histórico;
 - Comercial: oportunidades em tratamento agora podem ser excluídas com confirmação, limpeza do orçamento ainda não aprovado e opção de desfazer;
 - Menu lateral com rolagem própria: marca Proelium e estado do servidor permanecem fixos;
 - Menu reorganizado pelo fluxo de informação: Comercial, Projeto e orçamento, Operação e pós-venda, Pessoas e padrões e Gestão;
