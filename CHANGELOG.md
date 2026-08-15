@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Correção móvel: isolada a marca do modo privacidade das regras do cabeçalho; menu e controle de privacidade voltam a permanecer acessíveis;
 - Modo privacidade: escala da assinatura EMS Studio unificada à da tela de carregamento em computador e celular;
 - Modo privacidade no celular: posição da logo central equilibrada após a composição com a ilustração;
 - Modo privacidade no celular: ilustração sazonal agora atravessa sutilmente a área clara da marca EMS Studio, preservando sua leitura;
