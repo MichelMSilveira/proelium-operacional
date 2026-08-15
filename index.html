@@ -35,15 +35,17 @@
       <header class="topbar">
         <button class="icon-button menu-button" id="menuButton" aria-label="Abrir menu">☰</button>
         <div><p class="eyebrow">CENTRAL OPERACIONAL</p><h1 id="pageTitle">Visão geral</h1></div>
-        <div class="top-actions">
-          <label class="search"><span>⌕</span><input id="globalSearch" placeholder="Buscar neste módulo"></label>
+        <div class="header-company" aria-label="EMS Studio, data e hora atuais">
+          <div class="top-brand">
+            <img class="ems-logo header-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
+          </div>
           <div class="header-context">
             <time id="headerDate"></time>
             <time id="headerDateMobile"></time>
           </div>
-          <div class="top-brand" aria-label="EMS Studio">
-            <img class="ems-logo header-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
-          </div>
+        </div>
+        <div class="top-actions">
+          <label class="search"><span>⌕</span><input id="globalSearch" placeholder="Buscar neste módulo"></label>
         </div>
       </header>
       <section id="content" class="content"></section>
