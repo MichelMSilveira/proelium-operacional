@@ -85,6 +85,8 @@
   </div>
   <script src="app.js"></script>
   <script>
+    // Proteção: mesmo que um módulo opcional falhe, a dedicatória não bloqueia o acesso ao app.
+    setTimeout(() => document.getElementById('splash')?.classList.add('hide'), 4500);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./sw.js');
       navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
