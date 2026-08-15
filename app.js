@@ -554,6 +554,12 @@ render();
 // O controle reforça a aquarela sem transformar o tema em uma tela branca.
 $('#backgroundPresence')?.addEventListener('input',event=>requestAnimationFrame(()=>{$('#backgroundValue').textContent=`Arte ${event.target.value}%`}));
 
+// A proteção permanece disponível mesmo com a tela de privacidade cobrindo o aplicativo.
+const applyAccessibilityWithQuickPrivacy=applyAccessibility;
+applyAccessibility=()=>{applyAccessibilityWithQuickPrivacy();const button=$('#privacyQuickButton'),active=localStorage.getItem('proelium-privacy-mode')==='true';if(button){button.textContent=active?'◉ Voltar ao app':'◉ Privacidade';button.setAttribute('aria-pressed',active);button.setAttribute('aria-label',active?'Fechar modo privacidade':'Ativar modo privacidade')}};
+$('#privacyQuickButton')?.addEventListener('click',()=>{localStorage.setItem('proelium-privacy-mode',String(localStorage.getItem('proelium-privacy-mode')!=='true'));applyAccessibility()});
+applyAccessibility();
+
 // Cenário rico, exclusivamente demonstrativo: serve para testar os painéis antes dos cadastros reais.
 const demoMomentum={clients:[
   {id:'cli-demo-vista',name:'Casa Vista — DEMO',contact:'Ana Prado (fictícia)',phone:'(11) 90000-1101',email:'ana@demo.local',city:'São Paulo',address:'Rua Vista, 85 — São Paulo/SP',document:'DEMO-101',notes:'Cenário fictício de indicação e cinema residencial.',status:'Ativo'},
