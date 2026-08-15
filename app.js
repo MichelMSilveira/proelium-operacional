@@ -70,7 +70,17 @@ const seed = {
     {id:'kb-eletronica-pc',tag:'Informática',title:'Eletrônica de computadores',summary:'Alimentação, placas, conectores, periféricos e análise inicial de falhas em equipamentos de informática.'},
     {id:'kb-redes',tag:'Redes',title:'Fundamentos de redes',summary:'Endereçamento, topologia, switches, roteadores, Wi‑Fi, acesso e diagnóstico de conectividade.'},
     {id:'kb-cabeamento-estruturado',tag:'Redes',title:'Cabeamento estruturado',summary:'Padrões, organização, identificação, testes e documentação de infraestrutura de rede.'},
-    {id:'kb-redes-cabeadas',tag:'Redes',title:'Montagem de redes cabeadas',summary:'Planejamento de pontos, passagem, conectorização, rack, patch panel, certificação e entrega técnica.'}]
+    {id:'kb-redes-cabeadas',tag:'Redes',title:'Montagem de redes cabeadas',summary:'Planejamento de pontos, passagem, conectorização, rack, patch panel, certificação e entrega técnica.'},
+    {id:'kb-audio-manuseio',tag:'Áudio · Básico',title:'Manuseio seguro de equipamentos de áudio',summary:'Transporte, desembalagem, armazenamento, ventilação, alimentação elétrica e prevenção de danos.'},
+    {id:'kb-audio-montagem',tag:'Áudio · Básico',title:'Montagem e conexão de sistema de som',summary:'Sequência de montagem, polaridade, conexões, organização de cabos e conferência antes de energizar.'},
+    {id:'kb-audio-caixas',tag:'Áudio · Básico',title:'Posicionamento de caixas acústicas',summary:'Distâncias, altura, orientação, simetria e cuidados com mobiliário e superfícies do ambiente.'},
+    {id:'kb-audio-receiver',tag:'Áudio · Intermediário',title:'Configuração de receiver e home theater',summary:'Mapeamento de canais, crossover, zonas, entradas, formatos de áudio e validação do sistema.'},
+    {id:'kb-audio-calibracao',tag:'Áudio · Intermediário',title:'Calibração inicial de áudio',summary:'Nível, atraso, fase, equalização e medições básicas para uma entrega consistente.'},
+    {id:'kb-audio-instalacao',tag:'Áudio · Instalação',title:'Instalação de caixas de embutir e externas',summary:'Planejamento, recortes, fixação, vedação, proteção contra umidade e acabamento.'},
+    {id:'kb-audio-cabeamento',tag:'Áudio · Instalação',title:'Cabeamento de áudio e vídeo',summary:'Bitola, rotas, identificação, separação de energia, HDMI, sinal analógico e prevenção de interferência.'},
+    {id:'kb-audio-high-end',tag:'Áudio · High-end',title:'Boas práticas em áudio high-end',summary:'Preservação de acabamento, ventilação, energia dedicada, montagem criteriosa e proteção do investimento do cliente.'},
+    {id:'kb-audio-comissionamento',tag:'Áudio · High-end',title:'Comissionamento e escuta crítica',summary:'Checklist de teste, ajustes finos, validação por ambiente, registro de configuração e aceite do cliente.'},
+    {id:'kb-audio-entrega',tag:'Áudio · Atendimento',title:'Entrega orientada do sistema de áudio',summary:'Como apresentar comandos, cuidados de uso, rotinas básicas e canais de suporte ao cliente.'}]
 };
 
 const initialCalendarDate=new Date();
