@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Menu reorganizado pelo fluxo de informação: Comercial, Projeto e orçamento, Operação e pós-venda, Pessoas e padrões e Gestão;
 - Clientes: adicionada ação de exclusão diretamente na lista, com confirmação e limpeza dos registros vinculados;
 - Incluído cenário demonstrativo de Lista de obra e compras para as sete obras fictícias, com itens em planejamento, cotação, compra, recebimento e conferência;
 - Corrigida a navegação persistente entre módulos após atualizações automáticas da interface;

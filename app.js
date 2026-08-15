@@ -729,3 +729,10 @@ const commercialOnlyClientSave=saveRecord;saveRecord=(kind,data,editId='')=>{if(
 // A entrada é controlada pelo Comercial, mas a lista de clientes mantém exclusão consciente e acessível.
 const clientListDeleteView=views.clients;views.clients=()=>clientListDeleteView().replace(/(<tr class="clickable-row" data-client="([^"]+)">[\s\S]*?)<td>→<\/td><\/tr>/g,(match,row,id)=>`${row}<td><button class="button danger-outline client-delete" data-delete-client="${id}">Excluir</button></td></tr>`);
 document.addEventListener('click',event=>{const button=event.target.closest('[data-delete-client]');if(!button)return;event.preventDefault();event.stopPropagation();deleteClient(button.dataset.deleteClient)},true);
+
+// Menu orientado pelo caminho da informação. Os grupos serão a base dos futuros acessos por licença e perfil.
+const menuFlowOrder=['dashboard','commercial','clients','products','projects','processes','purchases','diagram','installations','agenda','tasks','operations','equipment','execution','collaborators','quality','knowledge','finance','bi','biMarket','audit'];
+const menuFlowGroup={dashboard:'Central',commercial:'Comercial',clients:'Comercial',products:'Comercial',projects:'Projeto e orçamento',processes:'Projeto e orçamento',purchases:'Projeto e orçamento',diagram:'Projeto e orçamento',installations:'Operação e pós-venda',agenda:'Operação e pós-venda',tasks:'Operação e pós-venda',operations:'Operação e pós-venda',equipment:'Operação e pós-venda',execution:'Operação e pós-venda',collaborators:'Pessoas e padrões',quality:'Pessoas e padrões',knowledge:'Pessoas e padrões',finance:'Gestão',bi:'Gestão',biMarket:'Gestão',audit:'Gestão'};
+navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
+renderNav=()=>{let previousGroup='';$('#navigation').innerHTML=navItems.map(([id,icon,label])=>{const group=menuFlowGroup[id]||'Outros',section=group===previousGroup?'':`<p class="nav-section">${group}</p>`;previousGroup=group;return `${section}<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span>${label}</button>`}).join('')};
+render();

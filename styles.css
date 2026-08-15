@@ -85,3 +85,6 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 
 /* No celular, a data fica logo abaixo da marca e ganha distância do título da tela. */
 @media(max-width:720px){.header-company .header-context{transform:translateY(-30px)}}
+
+/* Blocos do menu refletem o fluxo comercial, operacional e administrativo. */
+.nav-section{margin:18px 9px 5px;color:#9eb5a9;font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-section:first-child{margin-top:2px}
