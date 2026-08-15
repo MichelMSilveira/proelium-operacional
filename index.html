@@ -77,7 +77,10 @@
   <section class="privacy-screen" aria-label="Modo privacidade ativo"><div class="privacy-ems-logo top-brand" aria-label="EMS Studio — Áudio, Vídeo e Automação"><div><span>ems</span><i></i><span>studio</span></div><small>ÁUDIO · VÍDEO · AUTOMAÇÃO</small></div><p>Modo privacidade ativo</p></section>
   <aside class="privacy-proelium brand" aria-label="Proelium Serviços"><span class="brand-mark">P</span><div><strong>PROELIUM</strong><small>Serviços</small></div></aside>
   <div class="art-intensity-dock" role="group" aria-label="Controle da intensidade da arte"><span>Arte</span><input id="backgroundPresence" type="range" min="10" max="150" step="1" value="55" aria-label="Intensidade da ilustração"><button id="privacyModeButton" type="button" aria-pressed="false">Privacidade</button><output id="backgroundValue">55%</output></div>
-  <div id="toast" class="toast" role="status"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <span id="toastText"></span>
+    <button id="undoButton" type="button" hidden>Desfazer</button>
+  </div>
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
