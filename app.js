@@ -96,6 +96,7 @@ async function persist(){
   }catch{toast('Servidor indisponível: a alteração ainda não foi compartilhada.')}finally{state.syncing=false}
 }
 function normalizeSharedData(shared){const saved=shared||structuredClone(seed),resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||[],activities:saved.activities||[],quotes:saved.quotes||[],opportunities:saved.opportunities||[],appointments:saved.appointments||[],products:resetCatalog?structuredClone(seed.products):(saved.products||[]),quoteRooms:resetCatalog?(saved.quoteRooms||[]).map(r=>({...r,items:[]})):(saved.quoteRooms||[])};merged.clients=(merged.clients||[]).map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=(merged.projects||[]).map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return merged}
+function normalizeSharedData(shared){const saved=shared||structuredClone(seed),resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||[],activities:saved.activities||[],quotes:saved.quotes||[],opportunities:saved.opportunities||[],appointments:saved.appointments||[],evaluations:saved.evaluations||[],collaborators:saved.collaborators||structuredClone(state.data.collaborators||[]),products:resetCatalog?structuredClone(seed.products):(saved.products||[]),quoteRooms:resetCatalog?(saved.quoteRooms||[]).map(r=>({...r,items:[]})):(saved.quoteRooms||[])};merged.clients=(merged.clients||[]).map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=(merged.projects||[]).map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return merged}
 async function refreshSharedData(force=false){
   const response=await fetch('./api/data',{cache:'no-store'});
   if(!response.ok)throw new Error('Servidor indisponível');
@@ -120,7 +121,7 @@ async function connectSharedData(){
   if(location.protocol==='file:')return;
   try{
     const payload=await refreshSharedData(true);
-    if(!payload.data)await persist();
+    if(!payload.data||!Array.isArray(payload.data.collaborators)||!Array.isArray(payload.data.evaluations))await persist();
     const events=new EventSource('./api/events');
     events.addEventListener('data-updated',async event=>{
       const update=JSON.parse(event.data);
