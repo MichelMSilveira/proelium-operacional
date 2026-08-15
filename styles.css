@@ -88,3 +88,6 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 
 /* Blocos do menu refletem o fluxo comercial, operacional e administrativo. */
 .nav-section{margin:18px 9px 5px;color:#9eb5a9;font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-section:first-child{margin-top:2px}
+
+/* A marca e o estado do servidor ficam fixos; somente as opções do menu rolam. */
+.sidebar{overflow:hidden}.sidebar>.brand,.sidebar>.sidebar-foot{flex:0 0 auto}.sidebar>#navigation{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 4px 14px 0;margin-right:-4px;scrollbar-width:thin;scrollbar-color:rgba(215,235,119,.58) transparent}.sidebar>#navigation::-webkit-scrollbar{width:6px}.sidebar>#navigation::-webkit-scrollbar-thumb{background:rgba(215,235,119,.58);border-radius:8px}.sidebar>#navigation::-webkit-scrollbar-track{background:transparent}
