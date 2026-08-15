@@ -259,4 +259,7 @@ function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')
 if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack);window.addEventListener('pageshow',()=>addBackGuard())}
 render();
 connectSharedData();
-setTimeout(()=>$('#splash')?.classList.add('hide'),2300);
+const splash=$('#splash');let splashTimer;
+function hideSplash(delay=2300){clearTimeout(splashTimer);splashTimer=setTimeout(()=>splash?.classList.add('hide'),delay)}
+if(splash){splash.addEventListener('pointerdown',()=>{clearTimeout(splashTimer);splash.classList.add('held')});['pointerup','pointercancel','pointerleave'].forEach(event=>splash.addEventListener(event,()=>{splash.classList.remove('held');hideSplash(450)}));splash.addEventListener('contextmenu',event=>event.preventDefault())}
+hideSplash();
