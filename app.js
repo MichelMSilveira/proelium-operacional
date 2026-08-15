@@ -217,7 +217,8 @@ function knowledge(){const cards=state.data.articles.filter(a=>matches(a.title,a
 const views={dashboard,clients,clientDetail,projects,processes,tasks,agenda,commercial,quoteDetail,products,installations,operations,finance,bi,equipment,knowledge};
 
 function render(){renderNav();$('#pageTitle').textContent=state.view==='clientDetail'?'Cliente 360°':state.view==='quoteDetail'?'Análise do orçamento':navItems.find(n=>n[0]===state.view)[2];$('#content').innerHTML=views[state.view]();if(state.view==='clientDetail')addDeleteControl();document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openForm(b.dataset.add));document.querySelectorAll('[data-client]').forEach(b=>b.onclick=()=>openClient(b.dataset.client));document.querySelectorAll('[data-quote]').forEach(b=>b.onclick=()=>openQuote(b.dataset.quote));document.querySelectorAll('[data-edit-client]').forEach(b=>b.onclick=()=>openForm('client',b.dataset.editClient));document.querySelectorAll('[data-delete-product]').forEach(b=>b.onclick=()=>deleteProduct(b.dataset.deleteProduct));document.querySelectorAll('[data-advance-opportunity]').forEach(b=>b.onclick=()=>advanceOpportunity(b.dataset.advanceOpportunity));document.querySelectorAll('[data-convert-opportunity]').forEach(b=>b.onclick=()=>convertOpportunity(b.dataset.convertOpportunity));document.querySelectorAll('[data-agenda-day]').forEach(day=>day.onclick=()=>openAgendaQuick(day.dataset.agendaDay));document.querySelectorAll('[data-add-appointment-date]').forEach(b=>b.onclick=()=>openForm('appointment','',{date:b.dataset.addAppointmentDate}));document.querySelectorAll('[data-agenda-month]').forEach(b=>b.onclick=()=>{state.agendaMonth+=b.dataset.agendaMonth==='next'?1:-1;if(state.agendaMonth>11){state.agendaMonth=0;state.agendaYear++}if(state.agendaMonth<0){state.agendaMonth=11;state.agendaYear--}state.agendaSelectedDate=null;render()});const dim=$('#biDimension');if(dim)dim.onchange=e=>{state.biDimension=e.target.value;render()};rememberUiState()}
-function go(view){state.view=view;state.query='';$('#globalSearch').value='';$('#sidebar').classList.remove('open');render()}
+function setMenu(open){$('#sidebar').classList.toggle('open',open);$('#menuBackdrop').classList.toggle('visible',open)}
+function go(view){state.view=view;state.query='';$('#globalSearch').value='';setMenu(false);render()}
 function openClient(id){state.selectedClient=id;state.view='clientDetail';render()}
 function openQuote(id){state.selectedQuote=id;state.view='quoteDetail';render()}
 function addDeleteControl(){const actions=document.querySelector('.client-hero .hero-actions');if(!actions)return;const button=document.createElement('button');button.className='button danger-outline';button.textContent='Excluir cliente';button.onclick=()=>deleteClient(state.selectedClient);actions.prepend(button)}
@@ -247,7 +248,8 @@ function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('sh
 
 $('#navigation').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)go(b.dataset.view)});
 $('#globalSearch').addEventListener('input',e=>{state.query=e.target.value;render()});
-$('#menuButton').onclick=()=>$('#sidebar').classList.toggle('open');
+$('#menuButton').onclick=()=>setMenu(!$('#sidebar').classList.contains('open'));
+$('#menuBackdrop').onclick=()=>setMenu(false);
 $('#agendaQuickClose').onclick=()=>$('#agendaQuickDialog').close();
 $('#agendaItemClose').onclick=()=>$('#agendaItemDialog').close();
 function closeRecordDialog(){const form=$('#recordForm');$('#recordDialog').close();form.reset();form.dataset.editId='';$('#saveButton').textContent='Salvar registro'}
@@ -255,7 +257,7 @@ $('#recordCloseX').onclick=closeRecordDialog;
 $('#recordCancel').onclick=closeRecordDialog;
 $('#recordForm').addEventListener('submit',e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget)),kind=e.currentTarget.dataset.kind,editId=e.currentTarget.dataset.editId;if(editId&&findRecord(kind,editId))saveEditedRecord(kind,data,editId);else saveRecord(kind,data,editId);closeRecordDialog()});
 function addBackGuard(){history.pushState({proeliumApp:true},'',location.href)}
-function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')){$('#sidebar').classList.remove('open');return}if(state.view!=='dashboard'){go('dashboard');toast('Você voltou para a Visão geral.');return}toast('Você já está na Visão geral.')}
+function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')){setMenu(false);return}if(state.view!=='dashboard'){go('dashboard');toast('Você voltou para a Visão geral.');return}toast('Você já está na Visão geral.')}
 if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack);window.addEventListener('pageshow',()=>addBackGuard())}
 render();
 connectSharedData();

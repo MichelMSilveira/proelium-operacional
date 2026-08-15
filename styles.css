@@ -6,3 +6,5 @@
 .top-brand i{display:block;width:7px;height:7px;background:#bb222c;transform:skew(-10deg)}
 .top-brand small{font-size:7px;letter-spacing:.16em;color:#7b7678;white-space:nowrap}
 @media(max-width:720px){.top-brand{padding-left:9px}.top-brand>div{font-size:18px}.top-brand small{font-size:6px}}
+.menu-backdrop{display:none}
+@media(max-width:720px){.menu-backdrop{display:block;position:fixed;inset:0;z-index:19;border:0;background:rgba(8,20,15,.4);opacity:0;pointer-events:none;transition:opacity .25s}.menu-backdrop.visible{opacity:1;pointer-events:auto}}
