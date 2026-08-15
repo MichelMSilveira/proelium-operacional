@@ -24,6 +24,10 @@ O servidor envia eventos em tempo real por SSE. O navegador também consulta `/a
 
 Todos os dispositivos devem usar `https://homehell.tail99a9b2.ts.net`, encaminhado exclusivamente para `http://127.0.0.1:4173`. `localhost`, `127.0.0.1`, porta 5500 e Live Server não são endereços válidos para colaboradores.
 
+## ADR-009 — Agenda interna antes da integração externa
+
+A primeira versão da agenda é gerada pelos dados internos de tarefas, instalações e próximas ações comerciais. Isso mantém cliente, projeto e responsável como fonte única. Uma integração futura com Google Calendar ou Outlook deverá publicar esses compromissos para os calendários pessoais, sem criar uma segunda base de dados.
+
 ## ADR-005 — Dados fora do Git
 
 O arquivo compartilhado é ignorado pelo Git para evitar versionar informações privadas. O código e a documentação são versionados; os dados recebem backup separado.
