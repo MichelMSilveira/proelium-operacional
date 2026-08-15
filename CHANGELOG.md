@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Modo privacidade no celular: ilustração sazonal agora atravessa sutilmente a área clara da marca EMS Studio, preservando sua leitura;
 - Modo privacidade no celular: marca EMS Studio movida mais abaixo conforme ajuste visual;
 - Modo privacidade no celular: posição vertical da marca EMS Studio refinada novamente;
 - Modo privacidade no celular: logo central da EMS Studio deslocada mais abaixo para melhorar o equilíbrio visual;
