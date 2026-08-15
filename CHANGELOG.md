@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Revisões de orçamento agora exigem solicitação com motivo obrigatório; rascunhos são ajustados diretamente, propostas aprovadas não podem ser revisadas, e o histórico da família registra versão, situação, data e motivo;
 - Situações do orçamento receberam feedback visual por cor; inserção de pacote agora orienta quando ainda faltam pacote ou cômodo, e revisões preservam a numeração correta da família do orçamento;
 - Corrigida a ordem de inicialização dos módulos para impedir que a tela de carregamento permanecesse aberta ao restaurar a aba Comercial;
 - Colaboradores e parceiros agora possuem perfil interativo: consulta de dados profissionais, indicadores e histórico de avaliações; cadastro e edição atualizam o perfil existente;
