@@ -10,6 +10,10 @@ Protótipo experimental de CRM, orçamentos e operação da Proelium, preparado 
 - projetos nas etapas Projeto técnico, Cabeamento e Instalação;
 - tarefas, operação, financeiro, equipamentos e conhecimento;
 - painel de Business Intelligence;
+- terminal de desempenho por projeto, com análise de margem, resultado, execução e custos;
+- avaliações internas e de clientes sobre qualidade, atendimento, compromisso e prazo;
+- quadro de colaboradores e parceiros;
+- controles de acessibilidade visual: ampliação de letras e alto contraste por aparelho;
 - PWA instalável em Windows, Android e iOS;
 - servidor local em `http://localhost:4173`;
 - acesso remoto privado por Tailscale Serve;
@@ -34,6 +38,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Fluxo de desenvolvimento e Git](docs/GIT-WORKFLOW.md)
 - [Contrato futuro da API](docs/API.md)
 - [Decisões técnicas](docs/DECISIONS.md)
+- [BI, qualidade e reconhecimento](docs/BI-E-QUALIDADE.md)
 - [Histórico de versões](CHANGELOG.md)
 
 ## Publicar atualizações

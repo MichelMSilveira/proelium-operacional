@@ -1,5 +1,17 @@
 # Histórico de versões
 
+## 0.4.0 — 2026-08-15
+
+- marca EMS Studio ampliada e adaptada para telas grandes e celulares;
+- data e temas visuais por estação, configuráveis por aparelho;
+- menu móvel fecha ao tocar fora dele;
+- atalho de leitura com ampliação de letras e alto contraste, salvo individualmente;
+- novo terminal de BI de desempenho: projetos tratados como ativos, com filtros, ranking, margem, resultado e score;
+- análise detalhada por projeto com gráficos de linha, indicadores, custos, receita, resultado e movimentações demonstrativas;
+- avaliações relacionais de qualidade e compromisso, pela equipe e pelo cliente;
+- quadro de colaboradores e parceiros com função, especialidade, disponibilidade e forma de atuação;
+- dados e gráficos demonstrativos identificados como demo, preparados para substituição gradual pelos registros reais.
+
 ## 0.3.0 — 2026-08-14
 
 - sincronização automática entre aparelhos por eventos do servidor;
