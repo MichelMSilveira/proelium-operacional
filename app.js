@@ -255,6 +255,8 @@ $('#recordCloseX').onclick=closeRecordDialog;
 $('#recordCancel').onclick=closeRecordDialog;
 $('#recordForm').addEventListener('submit',e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget)),kind=e.currentTarget.dataset.kind,editId=e.currentTarget.dataset.editId;if(editId&&findRecord(kind,editId))saveEditedRecord(kind,data,editId);else saveRecord(kind,data,editId);closeRecordDialog()});
 let exitArmed=false,exitTimer;
-if(location.protocol!=='file:'){history.replaceState({proeliumApp:true},'',location.href);history.pushState({proeliumApp:true},'',location.href);window.addEventListener('popstate',()=>{if(state.view!=='dashboard'){go('dashboard');history.pushState({proeliumApp:true},'',location.href);toast('Você voltou para a Visão geral.')}else if(!exitArmed){exitArmed=true;history.pushState({proeliumApp:true},'',location.href);toast('Pressione voltar novamente para sair do aplicativo.');clearTimeout(exitTimer);exitTimer=setTimeout(()=>exitArmed=false,2500)}else{history.back()}})}
+function addBackGuard(){history.pushState({proeliumApp:true},'',location.href)}
+function handleBack(){if(exitArmed){window.removeEventListener('popstate',handleBack);history.back();return}addBackGuard();if(state.view!=='dashboard'){go('dashboard');toast('Você voltou para a Visão geral.');return}exitArmed=true;toast('Pressione voltar novamente para sair do aplicativo.');clearTimeout(exitTimer);exitTimer=setTimeout(()=>exitArmed=false,2500)}
+if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack)}
 render();
 connectSharedData();
