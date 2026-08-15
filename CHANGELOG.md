@@ -6,6 +6,7 @@
 - exclusão de compromisso disponível diretamente na consulta rápida da agenda, com confirmação e opção protegida de desfazer;
 - ação de exclusão reforçada também na tela de edição do compromisso, para acesso rápido e explícito;
 - ações comerciais exibidas na agenda agora podem ser removidas da agenda sem apagar a oportunidade do CRM;
+- botão Remover incluído diretamente na consulta rápida para ações comerciais agendadas;
 - catálogo comercial ampliado com referências de preço e indicação explícita de que valores, disponibilidade, impostos e margem devem ser validados antes do orçamento;
 - filtros combináveis no catálogo por categoria, marca e modalidade;
 - fluxo comercial conectado: oportunidade pode iniciar um orçamento por ambientes; ao aprovar, o aplicativo cria ou vincula o cliente e gera o projeto com custo e valor calculados pelos itens;
