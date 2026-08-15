@@ -173,7 +173,7 @@ function matches(...values){return values.join(' ').toLowerCase().includes(state
 
 function renderNav(){ $('#navigation').innerHTML=navItems.map(([id,icon,label])=>`<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span>${label}</button>`).join(''); }
 function heading(title,subtitle,action){const label=action==='opportunity'?'Nova oportunidade':action==='appointment'?'Novo compromisso':action==='evaluation'?'Registrar avaliação':action==='collaborator'?'Adicionar colaborador':'Novo registro';return `<div class="section-heading"><div><h2>${title}</h2><p>${subtitle}</p></div>${action?`<button class="button primary" data-add="${action}">+ ${label}</button>`:''}</div>`}
-function table(headers,rows){return `<div class="card table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${headers.length}" class="empty">Nenhum registro encontrado.</td></tr>`}</tbody></table></div>`}
+function table(headers,rows){const list=Array.isArray(rows)?rows:(rows?[rows]:[]);return `<div class="card table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${list.length?list.join(''):`<tr><td colspan="${headers.length}" class="empty">Nenhum registro encontrado.</td></tr>`}</tbody></table></div>`}
 
 function dashboard(){
   const active=state.data.projects.filter(p=>p.status!=='Concluído').length, blocked=state.data.projects.filter(p=>p.status==='Bloqueado').length;
