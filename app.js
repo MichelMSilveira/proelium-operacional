@@ -611,3 +611,8 @@ function reportGallery(projectId,orderId=''){const reports=(state.data.serviceRe
 const projectWithPhotos=views.projectDetail;views.projectDetail=()=>projectWithPhotos()+reportGallery(state.selectedProject);
 const orderWithPhotos=views.serviceOrderDetail;views.serviceOrderDetail=()=>{const order=state.data.serviceOrders.find(item=>item.id===state.selectedServiceOrder);return orderWithPhotos()+reportGallery(order?.projectId||'',order?.id||'')};
 const reportSaveWithPhotos=saveRecord;saveRecord=(kind,data,editId='')=>{if(kind==='serviceReport'||kind==='serviceOrderReport'){if(!Array.isArray(state.data.serviceReports))state.data.serviceReports=[];const order=kind==='serviceOrderReport'?state.data.serviceOrders.find(item=>item.id===data.serviceOrderId):null,report={id:uid('rpt'),projectId:data.projectId,serviceOrderId:data.serviceOrderId||'',date:data.date,technician:data.technician,execution:data.execution,status:data.status,tests:data.tests||'',pending:data.pending||'',nextActionDate:data.nextActionDate||'',media:data.media||'[]'};state.data.serviceReports.unshift(report);if(order&&data.status==='Concluído'&&order.status!=='Cancelada')order.status='Concluída';persist();render();toast('Relatório com fotos salvo no histórico técnico.');return}return reportSaveWithPhotos(kind,data,editId)};
+
+// Acompanhamento é a visão completa da operação; a busca global não deve esconder projetos dela.
+function unifiedFollowUpAllProjects(){const previousQuery=state.query;state.query='';try{return unifiedFollowUpSafe()}finally{state.query=previousQuery}}
+views.installations=unifiedFollowUpAllProjects;
+render();
