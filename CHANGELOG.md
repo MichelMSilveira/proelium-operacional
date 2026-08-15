@@ -10,6 +10,7 @@
 - Novo registro comercial revisado: exige cliente, contato, telefone, e-mail e responsável; os demais campos são opcionais e contam com sugestões de origem, etapa e próxima ação;
 - A análise de orçamento agora deixa explícito o resumo por ambientes dentro do próprio orçamento e permite filtrar a visualização de um cômodo específico;
 - Ajustado o cabeçalho móvel: data e hora sobem para ficar mais próximas da logo EMS Studio e não disputar espaço com o título da Central Operacional;
+- Fluxo de entrada de clientes reforçado: Clientes não permite inclusão direta; oportunidades passam pelo Comercial e só viram cliente quando concluídas como Ganho ou aprovadas no orçamento;
 - Adicionadas as áreas Diagrama técnico e Auditoria: o diagrama organiza os itens do orçamento por ambiente a partir de um ponto técnico central; a auditoria registra data, hora, usuário atual, ação e área alterada;
 - Nova Lista de obra e compras: gera materiais de projetos a partir de orçamentos aprovados, permite inclusão manual e acompanha a sequência Planejado, A cotar, Comprado, Recebido e Conferido;
 - Orçamentos agora contam com autoconsulta do catálogo ao digitar; itens ausentes podem entrar como “a cotar” e passam para uma fila de aquisição sem criar preço fictício;
