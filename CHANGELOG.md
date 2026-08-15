@@ -7,6 +7,7 @@
 - verificação periódica como contingência para conexões móveis;
 - atualização do cache do aplicativo para a versão 2.
 - compatibilidade temporária com o servidor antigo usando a data de atualização e conferência a cada 5 segundos.
+- reiniciador seguro para substituir a instância antiga que estiver ocupando a porta 4173.
 
 ## 0.2.0 — 2026-08-14
 

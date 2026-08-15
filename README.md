@@ -19,7 +19,7 @@ Protótipo experimental de CRM, orçamentos e operação da Proelium, preparado 
 
 ## Executar
 
-No PC servidor, execute `Iniciar-App.ps1` e mantenha a janela aberta. Depois acesse `http://localhost:4173`.
+No PC servidor, execute `Reiniciar-App.ps1` e mantenha a janela aberta. O script encerra com segurança uma versão antiga que esteja usando a porta 4173 e inicia a versão atual. Depois acesse `http://localhost:4173`.
 
 Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos dispositivos.
 

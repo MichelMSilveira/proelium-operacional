@@ -4,7 +4,8 @@
 
 1. Execute `Iniciar-App.ps1` com PowerShell.
 2. Mantenha a janela aberta.
-3. Confirme que `http://localhost:4173` abre no navegador.
+3. Para garantir que a versão atual esteja ativa, execute `Reiniciar-App.ps1` e mantenha a janela aberta.
+4. Confirme que `http://localhost:4173` abre no navegador.
 
 O Live Server do VS Code não deve ser usado nesta fase, pois ele não oferece a API que compartilha os cadastros.
 
@@ -47,4 +48,3 @@ Atualize os arquivos da pasta e reinicie o servidor quando `server.js` for alter
 - o arquivo compartilhado não controla alterações simultâneas;
 - use apenas dados de teste;
 - faça backup antes de mudanças importantes.
-
