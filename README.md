@@ -29,6 +29,8 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Operação do servidor](docs/OPERATIONS.md)
 - [Sincronização entre aparelhos](docs/SYNCHRONIZATION.md)
+- [Encerramento da Etapa 0](docs/STATUS-2026-08-14.md)
+- [Plano de retomada e divisão de trabalho](docs/PLANO-AMANHA.md)
 - [Fluxo de desenvolvimento e Git](docs/GIT-WORKFLOW.md)
 - [Contrato futuro da API](docs/API.md)
 - [Decisões técnicas](docs/DECISIONS.md)

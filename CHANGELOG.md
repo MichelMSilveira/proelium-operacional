@@ -9,6 +9,7 @@
 - compatibilidade temporária com o servidor antigo usando a data de atualização e conferência a cada 5 segundos.
 - reiniciador seguro para substituir a instância antiga que estiver ocupando a porta 4173.
 - publicação automatizada com validação, confirmação, commit e envio ao GitHub.
+- encerramento formal da Etapa 0 e plano da primeira rodada dos Blocos 1 e 2.
 
 ## 0.2.0 — 2026-08-14
 
