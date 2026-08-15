@@ -14,6 +14,7 @@
 - agenda operacional interna integrada a tarefas, instalações e próximas ações comerciais.
 - visualização mensal da agenda, com cartões de compromissos por dia e navegação entre meses.
 - cadastro direto de compromissos pela agenda, com data atual sugerida automaticamente.
+- interação por dia: ao tocar no calendário, abre a lista completa e permite criar um compromisso naquela data.
 
 ## 0.2.0 — 2026-08-14
 
