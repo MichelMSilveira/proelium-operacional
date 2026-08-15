@@ -17,6 +17,7 @@
 - interação por dia: ao tocar no calendário, abre a lista completa e permite criar um compromisso naquela data.
 - consulta rápida em janela compacta ao tocar em um dia da agenda.
 - ajuste rápido de compromissos próprios da agenda, sem alterar por engano tarefas ou instalações vinculadas.
+- segurar um compromisso na consulta rápida abre seu ajuste; corrigidos os botões Cancelar e X dos formulários.
 
 ## 0.2.0 — 2026-08-14
 

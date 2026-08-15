@@ -172,10 +172,11 @@ function openAgendaQuick(date){
   ].filter(e=>e.date&&e.date.getFullYear()===selected.getFullYear()&&e.date.getMonth()===selected.getMonth()&&e.date.getDate()===selected.getDate());
   const label=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(selected);
   $('#agendaQuickTitle').textContent=label;
-  $('#agendaQuickContent').innerHTML=`<p class="quick-count">${entries.length?`${entries.length} compromisso${entries.length===1?'':'s'} neste dia.`:'Nenhum compromisso neste dia.'}</p>${entries.length?`<div class="quick-events">${entries.map(e=>`<article><span class="agenda-type ${e.type==='Compromisso'?'appointment-type':''}">${e.type}</span><div><strong>${e.title}</strong><small>${e.time?`${e.time} · `:''}${e.person||'Sem responsável'}</small></div>${e.type==='Compromisso'?`<button class="link-button" data-edit-appointment="${e.id}">Ajustar</button>`:''}</article>`).join('')}</div>`:'<p class="quick-empty">Use o botão abaixo para agendar o primeiro.</p>'}<div class="quick-actions"><button class="button secondary" data-quick-close>Fechar</button><button class="button primary" data-add-appointment-date="${date}">+ Novo compromisso</button></div>`;
+  $('#agendaQuickContent').innerHTML=`<p class="quick-count">${entries.length?`${entries.length} compromisso${entries.length===1?'':'s'} neste dia.`:'Nenhum compromisso neste dia.'}</p>${entries.length?`<div class="quick-events">${entries.map(e=>`<article ${e.type==='Compromisso'?`data-quick-appointment="${e.id}" title="Segure para ajustar"`:''}><span class="agenda-type ${e.type==='Compromisso'?'appointment-type':''}">${e.type}</span><div><strong>${e.title}</strong><small>${e.time?`${e.time} · `:''}${e.person||'Sem responsável'}${e.type==='Compromisso'?' · Segure para ajustar':''}</small></div>${e.type==='Compromisso'?`<button class="link-button" data-edit-appointment="${e.id}">Ajustar</button>`:''}</article>`).join('')}</div>`:'<p class="quick-empty">Use o botão abaixo para agendar o primeiro.</p>'}<div class="quick-actions"><button class="button secondary" data-quick-close>Fechar</button><button class="button primary" data-add-appointment-date="${date}">+ Novo compromisso</button></div>`;
   $('#agendaQuickContent').querySelector('[data-quick-close]').onclick=()=>$('#agendaQuickDialog').close();
   $('#agendaQuickContent').querySelector('[data-add-appointment-date]').onclick=()=>{ $('#agendaQuickDialog').close();openForm('appointment','',{date}) };
   $('#agendaQuickContent').querySelectorAll('[data-edit-appointment]').forEach(button=>button.onclick=()=>{ $('#agendaQuickDialog').close();openForm('appointment',button.dataset.editAppointment) });
+  $('#agendaQuickContent').querySelectorAll('[data-quick-appointment]').forEach(item=>{let timer;const edit=()=>{clearTimeout(timer);$('#agendaQuickDialog').close();openForm('appointment',item.dataset.quickAppointment)};item.addEventListener('pointerdown',event=>{if(event.target.closest('button'))return;timer=setTimeout(edit,550)});['pointerup','pointerleave','pointercancel'].forEach(name=>item.addEventListener(name,()=>clearTimeout(timer)));item.addEventListener('contextmenu',event=>event.preventDefault())});
   $('#agendaQuickDialog').showModal();
 }
 function commercial(){
@@ -237,6 +238,9 @@ $('#navigation').addEventListener('click',e=>{const b=e.target.closest('[data-vi
 $('#globalSearch').addEventListener('input',e=>{state.query=e.target.value;render()});
 $('#menuButton').onclick=()=>$('#sidebar').classList.toggle('open');
 $('#agendaQuickClose').onclick=()=>$('#agendaQuickDialog').close();
-$('#recordForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget));saveRecord(e.currentTarget.dataset.kind,data,e.currentTarget.dataset.editId);$('#recordDialog').close();e.currentTarget.reset();e.currentTarget.dataset.editId='';$('#saveButton').textContent='Salvar registro'});
+function closeRecordDialog(){const form=$('#recordForm');$('#recordDialog').close();form.reset();form.dataset.editId='';$('#saveButton').textContent='Salvar registro'}
+$('#recordCloseX').onclick=closeRecordDialog;
+$('#recordCancel').onclick=closeRecordDialog;
+$('#recordForm').addEventListener('submit',e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget));saveRecord(e.currentTarget.dataset.kind,data,e.currentTarget.dataset.editId);closeRecordDialog()});
 render();
 connectSharedData();

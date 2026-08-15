@@ -36,10 +36,10 @@
     </main>
   </div>
   <dialog id="recordDialog">
-    <form method="dialog" id="recordForm">
-      <div class="dialog-head"><div><p class="eyebrow">NOVO REGISTRO</p><h2 id="dialogTitle">Adicionar</h2></div><button value="cancel" class="icon-button">×</button></div>
+    <form id="recordForm">
+      <div class="dialog-head"><div><p class="eyebrow">NOVO REGISTRO</p><h2 id="dialogTitle">Adicionar</h2></div><button type="button" id="recordCloseX" class="icon-button" aria-label="Fechar">×</button></div>
       <div id="formFields" class="form-grid"></div>
-      <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button value="default" id="saveButton" class="button primary">Salvar registro</button></div>
+      <div class="dialog-actions"><button type="button" id="recordCancel" class="button secondary">Cancelar</button><button type="submit" id="saveButton" class="button primary">Salvar registro</button></div>
     </form>
   </dialog>
   <dialog id="agendaQuickDialog" class="agenda-quick-dialog">
