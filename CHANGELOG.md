@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Modo privacidade no celular: logo central da EMS Studio deslocada mais abaixo para melhorar o equilíbrio visual;
 - BI de desempenho remodelado: terminal de obras com mini-curvas por projeto, filtros e análise detalhada de execução, custo, prazo, margem e discrepâncias ao selecionar uma obra;
 - Marca EMS Studio ampliada no cabeçalho de desktop, tablet e celular, com espaço vertical adicional para preservar a leitura de data e hora;
 - Bloco 6 concluído como MVP: ativos instalados vinculados a cliente/projeto, ordens de serviço sincronizadas à agenda, chamados de pós-venda e histórico técnico do cliente;
