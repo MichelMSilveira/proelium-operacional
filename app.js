@@ -558,6 +558,7 @@ $('#backgroundPresence')?.addEventListener('input',event=>requestAnimationFrame(
 const applyAccessibilityWithQuickPrivacy=applyAccessibility;
 applyAccessibility=()=>{applyAccessibilityWithQuickPrivacy();const button=$('#privacyQuickButton'),active=localStorage.getItem('proelium-privacy-mode')==='true';if(button){button.textContent=active?'◉ Voltar ao app':'◉ Privacidade';button.setAttribute('aria-pressed',active);button.setAttribute('aria-label',active?'Fechar modo privacidade':'Ativar modo privacidade')}};
 $('#privacyQuickButton')?.addEventListener('click',()=>{localStorage.setItem('proelium-privacy-mode',String(localStorage.getItem('proelium-privacy-mode')!=='true'));applyAccessibility()});
+document.addEventListener('click',event=>{if(!event.target.closest('#privacyQuickButton'))return;event.preventDefault();event.stopImmediatePropagation();const active=localStorage.getItem('proelium-privacy-mode')!=='true';localStorage.setItem('proelium-privacy-mode',String(active));document.body.classList.toggle('privacy-mode',active);applyAccessibility()},true);
 applyAccessibility();
 
 // Cenário rico, exclusivamente demonstrativo: serve para testar os painéis antes dos cadastros reais.
