@@ -37,11 +37,20 @@ Definir e testar os fluxos antes de ampliar o código. Cada responsável registr
 
 ### Entrega da primeira rodada
 
-1. Desenhar o fluxo do primeiro contato até o orçamento.
-2. Definir os campos de uma oportunidade.
+1. Desenhar o fluxo do primeiro contato até o orçamento. ✅
+2. Definir os campos de uma oportunidade. ✅
 3. Criar exemplos de oportunidade ganha, em andamento e perdida.
-4. Definir quais informações passam automaticamente para o CRM.
+4. Definir quais informações passam automaticamente para o CRM. ✅
 5. Não iniciar orçamento por cômodo nesta rodada.
+
+### Mínimo funcional entregue
+
+- cadastro de nova oportunidade;
+- etapas Novo contato, Qualificação, Visita, Orçamento, Ganho e Perdido;
+- origem, responsável, próxima ação, prazo, valor estimado e motivo de perda;
+- avanço manual de etapa;
+- conversão da oportunidade em cliente potencial;
+- painel de oportunidades concluídas e manutenção da lista de orçamentos por ambiente.
 
 ## Regra para trabalhar separados
 
