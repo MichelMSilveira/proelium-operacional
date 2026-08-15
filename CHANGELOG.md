@@ -20,6 +20,7 @@
 - segurar um compromisso na consulta rápida abre seu ajuste; corrigidos os botões Cancelar e X dos formulários.
 - o aplicativo volta ao último módulo aberto após atualizar a página, em cada aparelho.
 - consulta rápida em dois níveis: toque no item para ver detalhes e editar tarefas, compromissos, instalações ou ações comerciais.
+- setas de dia anterior e próximo dia dentro da consulta rápida da agenda.
 
 ## 0.2.0 — 2026-08-14
 

@@ -178,11 +178,14 @@ function openAgendaQuick(date){
   quickAgendaEntries=entries;
   const label=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(selected);
   $('#agendaQuickTitle').textContent=label;
+  const adjacentDate=offset=>{const next=new Date(selected);next.setDate(next.getDate()+offset);return `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-${String(next.getDate()).padStart(2,'0')}`};
+  $('#agendaQuickPrev').onclick=()=>openAgendaQuick(adjacentDate(-1));
+  $('#agendaQuickNext').onclick=()=>openAgendaQuick(adjacentDate(1));
   $('#agendaQuickContent').innerHTML=`<p class="quick-count">${entries.length?`${entries.length} compromisso${entries.length===1?'':'s'} neste dia.`:'Nenhum compromisso neste dia.'}</p>${entries.length?`<div class="quick-events">${entries.map((e,index)=>`<article data-quick-item="${index}" title="Toque para abrir detalhes"><span class="agenda-type ${e.type==='Compromisso'?'appointment-type':''}">${e.type}</span><div><strong>${e.title}</strong><small>${e.time?`${e.time} · `:''}${e.person||'Sem responsável'}</small></div><span class="quick-open">›</span></article>`).join('')}</div>`:'<p class="quick-empty">Use o botão abaixo para agendar o primeiro.</p>'}<div class="quick-actions"><button class="button secondary" data-quick-close>Fechar</button><button class="button primary" data-add-appointment-date="${date}">+ Novo compromisso</button></div>`;
   $('#agendaQuickContent').querySelector('[data-quick-close]').onclick=()=>$('#agendaQuickDialog').close();
   $('#agendaQuickContent').querySelector('[data-add-appointment-date]').onclick=()=>{ $('#agendaQuickDialog').close();openForm('appointment','',{date}) };
   $('#agendaQuickContent').querySelectorAll('[data-quick-item]').forEach(item=>item.onclick=()=>openAgendaItem(Number(item.dataset.quickItem)));
-  $('#agendaQuickDialog').showModal();
+  if(!$('#agendaQuickDialog').open)$('#agendaQuickDialog').showModal();
 }
 function openAgendaItem(index){const item=quickAgendaEntries[index];if(!item)return;$('#agendaQuickDialog').close();$('#agendaItemType').textContent=item.type.toUpperCase();$('#agendaItemTitle').textContent=item.title;$('#agendaItemContent').innerHTML=`<div class="item-detail"><p><strong>Responsável</strong><span>${item.person||'Não informado'}</span></p><p><strong>Data e horário</strong><span>${new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'long',year:'numeric'}).format(item.date)} · ${item.time||'Sem horário'}</span></p><p><strong>Informações</strong><span>${item.detail||'Sem observações.'}</span></p></div><div class="quick-actions"><button class="button secondary" data-item-close>Fechar</button><button class="button primary" data-item-edit>Editar</button></div>`;$('#agendaItemContent').querySelector('[data-item-close]').onclick=()=>$('#agendaItemDialog').close();$('#agendaItemContent').querySelector('[data-item-edit]').onclick=()=>{ $('#agendaItemDialog').close();openForm(item.kind,item.id) };$('#agendaItemDialog').showModal()}
 function commercial(){
