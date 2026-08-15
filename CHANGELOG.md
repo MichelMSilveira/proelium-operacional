@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Modo privacidade: marca central elevada de forma mais acentuada, com deslocamento maior no celular;
 - Modo privacidade: removida a assinatura interna da Proelium com fundo claro; permanece somente a marca discreta no canto;
 - Modo privacidade: assinatura EMS Studio elevada em computador e celular, com deslocamento maior no celular;
 - Modo privacidade no celular: marca EMS Studio elevada para alinhar visualmente à assinatura da abertura;
