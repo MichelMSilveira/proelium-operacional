@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Correção de abertura do Acompanhamento: a tela agora protege contra dados ainda não sincronizados e permanece acessível mesmo durante a atualização compartilhada;
 - Operação detalhada por tipo de atendimento: a OS agora destaca Visita técnica, Instalação, Manutenção, Chamado, Troca ou Retirada, além de escopo, equipamento, projeto e relatórios;
 - Acompanhamento integrado aos projetos: agora reúne automaticamente cliente, etapa, agenda, pendências, OS, relatórios e instalação, mesmo antes de existir um cadastro técnico de instalação;
 - Correção do atalho de Privacidade no computador: o botão agora trata o clique diretamente, inclusive sobre a tela de proteção;
