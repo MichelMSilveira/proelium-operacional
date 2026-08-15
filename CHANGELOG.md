@@ -8,6 +8,7 @@
 - base de conhecimento ampliada para elétrica, segurança, informática, redes, cabeamento, áudio e instalação;
 - política editorial da base de conhecimento: somente procedimentos Proelium, registros futuros do N.E.M.O. ou fontes técnicas, científicas e normativas verificáveis; sem propaganda de marcas;
 - trilha visual de aprendizagem em quatro níveis: Fundamentos, Operacional, Avançado e Específico;
+- Carta de Conduta Proelium posicionada como primeira leitura da base, com princípios de relacionamento, segurança, privacidade, registro, acabamento e cooperação;
 - modo privacidade reorganizado: EMS Studio ao centro e Proelium no canto inferior esquerdo;
 - corrigido o cadastro compartilhado de Waldemir.
 
