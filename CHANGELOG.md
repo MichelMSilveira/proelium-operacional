@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Acompanhamento integrado aos projetos: agora reúne automaticamente cliente, etapa, agenda, pendências, OS, relatórios e instalação, mesmo antes de existir um cadastro técnico de instalação;
 - Correção do atalho de Privacidade no computador: o botão agora trata o clique diretamente, inclusive sobre a tela de proteção;
 - Botão fixo de Privacidade deslocado para a esquerda, evitando sobreposição com a lupa;
 - Botão fixo de Privacidade adicionado: ativa e fecha a tela de proteção sem depender do painel da lupa;
