@@ -1,5 +1,18 @@
 # Histórico de versões
 
+## 0.4.1 — 2026-08-15
+
+- catálogo comercial ampliado com referências de preço e indicação explícita de que valores, disponibilidade, impostos e margem devem ser validados antes do orçamento;
+- filtros combináveis no catálogo por categoria, marca e modalidade;
+- separação esclarecida entre catálogo comercial e equipamentos/ativos físicos com número de série, local e status;
+- base de conhecimento ampliada para elétrica, segurança, informática, redes, cabeamento, áudio e instalação;
+- política editorial da base de conhecimento: somente procedimentos Proelium, registros futuros do N.E.M.O. ou fontes técnicas, científicas e normativas verificáveis; sem propaganda de marcas;
+- trilha visual de aprendizagem em quatro níveis: Fundamentos, Operacional, Avançado e Específico;
+- modo privacidade reorganizado: EMS Studio ao centro e Proelium no canto inferior esquerdo;
+- corrigido o cadastro compartilhado de Waldemir.
+
+> Os dados vivos do catálogo, colaboradores e demais cadastros ficam no servidor compartilhado (`data/shared-data.json`) e não são enviados ao Git por conterem informações operacionais. O Git registra o código, a documentação e a estrutura padrão.
+
 ## 0.4.0 — 2026-08-15
 
 - marca EMS Studio ampliada e adaptada para telas grandes e celulares;
