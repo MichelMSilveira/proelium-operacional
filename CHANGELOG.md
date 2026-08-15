@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Projetos agora podem ser editados e excluídos; a exclusão remove de forma coerente os registros operacionais, agenda, execução, financeiro e avaliações vinculados;
 - Correção de estabilidade do Acompanhamento: a tabela agora aceita tanto linhas individuais quanto listas, eliminando o erro que bloqueava a abertura da tela;
 - Inicialização estabilizada: a interface aguarda a carga dos módulos antes de renderizar a página salva anteriormente;
 - Colaboradores e parceiros agora possuem regra de pagamento: modalidade, valor-base, comissão, vigência e observações, com sugestão de valor na execução;
