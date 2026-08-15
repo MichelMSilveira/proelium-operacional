@@ -1,7 +1,7 @@
 const navItems = [
   ['dashboard','◫','Visão geral'],['clients','♙','Clientes'],['projects','◇','Projetos'],['processes','⇢','Processos'],
   ['tasks','✓','Tarefas'],['agenda','◷','Agenda'],['commercial','◎','Comercial'],['products','▦','Produtos e serviços'],['installations','⌂','Acompanhamento'],['operations','⚒','Operação'],['finance','＄','Financeiro'],
-  ['bi','▥','Business Intelligence'],['biMarket','⌁','BI de desempenho'],['quality','★','Qualidade e compromisso'],['collaborators','♧','Colaboradores e parceiros'],
+  ['bi','▥','BI Intelligence'],['biMarket','⌁','BI Desempenho'],['quality','★','Qualidade e compromisso'],['collaborators','♧','Colaboradores e parceiros'],
   ['equipment','▣','Equipamentos'],['knowledge','▤','Conhecimento']
 ];
 
@@ -536,4 +536,11 @@ function biBlock7DeepDive(){const projects=filteredFinancialProjects(),projectId
 const biBlock7Base=biBlock7Safe;
 function biBlock7Complete(){return biBlock7Base()+biBlock7DeepDive()}
 views.bi=biBlock7Complete;
+render();
+
+// Nomes curtos e consistentes para as duas leituras da mesma base operacional.
+const biIntelligenceView=views.bi;
+const biPerformanceView=views.biMarket;
+views.bi=()=>biIntelligenceView().replace('Business Intelligence','BI Intelligence');
+views.biMarket=()=>biPerformanceView().replace('BI de desempenho','BI Desempenho');
 render();
