@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Modo privacidade: escala da assinatura EMS Studio unificada à da tela de carregamento em computador e celular;
 - Modo privacidade no celular: posição da logo central equilibrada após a composição com a ilustração;
 - Modo privacidade no celular: ilustração sazonal agora atravessa sutilmente a área clara da marca EMS Studio, preservando sua leitura;
 - Modo privacidade no celular: marca EMS Studio movida mais abaixo conforme ajuste visual;
