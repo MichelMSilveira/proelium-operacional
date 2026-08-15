@@ -5,6 +5,7 @@
 - logo oficial fornecida da EMS Studio aplicada à abertura, ao cabeçalho e ao modo privacidade;
 - marca EMS Studio ampliada com escala própria para desktop e celular;
 - cabeçalho desktop recebeu mais espaço para a marca EMS Studio, com data deslocada à esquerda;
+- logo EMS Studio ampliada novamente nas versões desktop e celular;
 - desfazer protegido por 15 segundos após exclusões de cliente/produto e ajustes de agenda ou execução; a restauração exige confirmação para evitar acionamento acidental;
 - exclusão de compromisso disponível diretamente na consulta rápida da agenda, com confirmação e opção protegida de desfazer;
 - ação de exclusão reforçada também na tela de edição do compromisso, para acesso rápido e explícito;
