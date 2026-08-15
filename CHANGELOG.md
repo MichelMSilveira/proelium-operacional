@@ -12,6 +12,7 @@
 - encerramento formal da Etapa 0 e plano da primeira rodada dos Blocos 1 e 2.
 - primeiro fluxo funcional do Bloco 2: oportunidades comerciais e conversão em cliente.
 - agenda operacional interna integrada a tarefas, instalações e próximas ações comerciais.
+- visualização mensal da agenda, com cartões de compromissos por dia e navegação entre meses.
 
 ## 0.2.0 — 2026-08-14
 

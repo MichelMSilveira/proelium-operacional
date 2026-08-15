@@ -52,6 +52,7 @@ Definir e testar os fluxos antes de ampliar o código. Cada responsável registr
 - conversão da oportunidade em cliente potencial;
 - painel de oportunidades concluídas e manutenção da lista de orçamentos por ambiente.
 - agenda operacional interna ligada a tarefas, instalações e próximas ações comerciais.
+- agenda mensal para organizar compromissos diretamente por dia.
 
 ## Regra para trabalhar separados
 
