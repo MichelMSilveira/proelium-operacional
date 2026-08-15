@@ -1,5 +1,18 @@
 # Fluxo de desenvolvimento e Git
 
+## Publicação automatizada
+
+No PC principal, execute `Publicar-GitHub.ps1`. O script:
+
+1. lista todas as alterações não ignoradas;
+2. exige a confirmação literal `SIM`;
+3. valida `app.js` e `server.js`;
+4. solicita uma descrição curta;
+5. cria o commit;
+6. envia a branch atual para `origin`.
+
+Se não houver arquivos pendentes, o script envia os commits locais já existentes. Dados operacionais continuam protegidos pelo `.gitignore`.
+
 ## Conceitos
 
 - A pasta contém a versão de trabalho.
@@ -44,4 +57,3 @@ docs: registrar operação com Tailscale
 ## Divisão futura de trabalho
 
 Cada pessoa deve trabalhar em uma tarefa separada. Alterações devem ser pequenas, testadas e documentadas antes de serem reunidas. A definição de responsáveis e pacotes de serviço será feita na próxima fase.
-

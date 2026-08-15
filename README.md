@@ -34,6 +34,10 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Histórico de versões](CHANGELOG.md)
 
+## Publicar atualizações
+
+Execute `Publicar-GitHub.ps1`. O assistente mostra os arquivos alterados, solicita confirmação, valida o JavaScript, cria o commit e envia a branch atual ao GitHub. O arquivo `data/shared-data.json` permanece fora do Git.
+
 ## Atenção
 
 Esta é uma base experimental. Há proteção básica contra sobrescrita simultânea, mas ainda não existem login, permissões ou banco transacional. Use dados de teste e faça backup do arquivo compartilhado.
