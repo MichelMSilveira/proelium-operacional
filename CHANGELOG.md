@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Nova área Execução e mão de obra: registra diárias, horas, materiais, fretes, terceirizados e outros gastos por projeto, com reflexo automático no Financeiro e BI;
 - Acompanhamento passa a listar todos os projetos vinculados por padrão, sem ocultá-los pelo filtro de busca global;
 - Correção da leitura integrada de Acompanhamento: a tabela agora aceita corretamente as linhas geradas pelo painel e volta a exibir os projetos vinculados;
 - Correção de abertura do Acompanhamento: a tela agora protege contra dados ainda não sincronizados e permanece acessível mesmo durante a atualização compartilhada;
