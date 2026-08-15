@@ -5,6 +5,7 @@
 - catálogo comercial ampliado com referências de preço e indicação explícita de que valores, disponibilidade, impostos e margem devem ser validados antes do orçamento;
 - filtros combináveis no catálogo por categoria, marca e modalidade;
 - fluxo comercial conectado: oportunidade pode iniciar um orçamento por ambientes; ao aprovar, o aplicativo cria ou vincula o cliente e gera o projeto com custo e valor calculados pelos itens;
+- agenda vinculável a cliente e projeto; ao excluir um cliente, compromissos ligados a ele ou aos seus projetos também são removidos;
 - separação esclarecida entre catálogo comercial e equipamentos/ativos físicos com número de série, local e status;
 - base de conhecimento ampliada para elétrica, segurança, informática, redes, cabeamento, áudio e instalação;
 - política editorial da base de conhecimento: somente procedimentos Proelium, registros futuros do N.E.M.O. ou fontes técnicas, científicas e normativas verificáveis; sem propaganda de marcas;
