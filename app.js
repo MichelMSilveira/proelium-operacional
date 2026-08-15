@@ -254,9 +254,8 @@ function closeRecordDialog(){const form=$('#recordForm');$('#recordDialog').clos
 $('#recordCloseX').onclick=closeRecordDialog;
 $('#recordCancel').onclick=closeRecordDialog;
 $('#recordForm').addEventListener('submit',e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget)),kind=e.currentTarget.dataset.kind,editId=e.currentTarget.dataset.editId;if(editId&&findRecord(kind,editId))saveEditedRecord(kind,data,editId);else saveRecord(kind,data,editId);closeRecordDialog()});
-let exitArmed=false,exitTimer;
 function addBackGuard(){history.pushState({proeliumApp:true},'',location.href)}
-function handleBack(){if($('#sidebar').classList.contains('open')){addBackGuard();$('#sidebar').classList.remove('open');return}if(exitArmed){window.removeEventListener('popstate',handleBack);history.back();return}addBackGuard();if(state.view!=='dashboard'){go('dashboard');toast('Você voltou para a Visão geral.');return}exitArmed=true;alert('Para sair do aplicativo, pressione Voltar novamente.');clearTimeout(exitTimer);exitTimer=setTimeout(()=>exitArmed=false,4000)}
-if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack)}
+function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')){$('#sidebar').classList.remove('open');return}if(state.view!=='dashboard'){go('dashboard');toast('Você voltou para a Visão geral.');return}toast('Você já está na Visão geral.')}
+if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack);window.addEventListener('pageshow',()=>addBackGuard())}
 render();
 connectSharedData();

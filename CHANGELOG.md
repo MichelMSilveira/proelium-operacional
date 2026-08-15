@@ -24,6 +24,7 @@
 - botão voltar do navegador retorna primeiro à Visão geral e pede confirmação antes de sair do aplicativo.
 - reforçada a etapa de confirmação após chegar à Visão geral, evitando saída no primeiro toque de voltar.
 - proteção de saída adaptada para navegadores móveis que não disparam o histórico normal ao usar Voltar.
+- Voltar na Visão geral agora mantém o aplicativo aberto; a saída é feita fechando o navegador ou aplicativo.
 
 ## 0.2.0 — 2026-08-14
 
