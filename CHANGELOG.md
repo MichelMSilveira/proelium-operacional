@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Adicionadas as áreas Diagrama técnico e Auditoria: o diagrama organiza os itens do orçamento por ambiente a partir de um ponto técnico central; a auditoria registra data, hora, usuário atual, ação e área alterada;
 - Nova Lista de obra e compras: gera materiais de projetos a partir de orçamentos aprovados, permite inclusão manual e acompanha a sequência Planejado, A cotar, Comprado, Recebido e Conferido;
 - Orçamentos agora contam com autoconsulta do catálogo ao digitar; itens ausentes podem entrar como “a cotar” e passam para uma fila de aquisição sem criar preço fictício;
 - Agenda integrada ao relatório de serviço: compromissos vinculados a projetos agora permitem registrar a execução, fotos, testes e pendências diretamente pela consulta do dia;
