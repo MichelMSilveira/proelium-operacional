@@ -13,7 +13,7 @@ Protótipo experimental de CRM, orçamentos e operação da Proelium, preparado 
 - PWA instalável em Windows, Android e iOS;
 - servidor local em `http://localhost:4173`;
 - acesso remoto privado por Tailscale Serve;
-- dados compartilhados em `data/shared-data.json`.
+- dados compartilhados em `data/shared-data.json`;
 - sincronização automática entre os aparelhos conectados ao mesmo servidor;
 - controle de revisão para impedir que uma tela antiga sobrescreva alterações recentes.
 
@@ -28,6 +28,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [MVP e regras do produto](docs/MVP.md)
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Operação do servidor](docs/OPERATIONS.md)
+- [Sincronização entre aparelhos](docs/SYNCHRONIZATION.md)
 - [Fluxo de desenvolvimento e Git](docs/GIT-WORKFLOW.md)
 - [Contrato futuro da API](docs/API.md)
 - [Decisões técnicas](docs/DECISIONS.md)
@@ -35,4 +36,4 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 
 ## Atenção
 
-Esta é uma base experimental. Ainda não há login, permissões, edição simultânea segura ou banco transacional. Use dados de teste e faça backup do arquivo compartilhado.
+Esta é uma base experimental. Há proteção básica contra sobrescrita simultânea, mas ainda não existem login, permissões ou banco transacional. Use dados de teste e faça backup do arquivo compartilhado.

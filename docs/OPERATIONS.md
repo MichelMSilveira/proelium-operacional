@@ -14,7 +14,7 @@
 ## Inicialização diária
 
 1. Ligar o PC servidor e conectar o Tailscale.
-2. Executar `Iniciar-App.ps1`.
+2. Executar `Reiniciar-App.ps1` e manter a janela aberta.
 3. Verificar `http://localhost:4173`.
 4. Executar `tailscale serve status` e confirmar proxy para a porta 4173.
 5. Testar o endereço HTTPS em um segundo dispositivo.
@@ -36,6 +36,7 @@ Com o servidor parado, substitua `data/shared-data.json` por uma cópia válida.
 - `localhost:4173` não abre: servidor local não está rodando.
 - Android abre e iPhone não: conta, VPN ou rede Tailscale do iPhone.
 - endereço `.ts.net` aponta para 5500: Tailscale ainda está ligado ao Live Server.
-- exclusão não aparece em outro dispositivo: confirme porta 4173 e atualize o segundo aparelho.
-- inclusões, edições e exclusões são enviadas automaticamente aos demais aparelhos. Se a conexão cair, o aplicativo tenta reconectar e também confere o servidor a cada 30 segundos.
+- exclusão não aparece em outro dispositivo: abra `https://homehell.tail99a9b2.ts.net/api/data`. A resposta deve ser JSON; `Cannot GET /api/data` indica que o Tailscale aponta para o servidor errado.
+- inclusões, edições e exclusões são enviadas automaticamente aos demais aparelhos. Se a conexão cair, o aplicativo tenta reconectar e também confere o servidor a cada 5 segundos.
 - se duas pessoas alterarem a partir da mesma versão, a segunda gravação é bloqueada; a tela recebe os dados atuais e pede que a última ação seja repetida.
+- `/api/events` retorna `404`: existe uma instância antiga do servidor na porta 4173; execute `Reiniciar-App.ps1`.

@@ -1,11 +1,11 @@
 # Histórico de versões
 
-## Não publicado
+## 0.3.0 — 2026-08-14
 
 - sincronização automática entre aparelhos por eventos do servidor;
 - revisão central dos dados e proteção contra sobrescrita concorrente;
 - verificação periódica como contingência para conexões móveis;
-- atualização do cache do aplicativo para a versão 2.
+- atualização do cache do aplicativo para a versão 3;
 - compatibilidade temporária com o servidor antigo usando a data de atualização e conferência a cada 5 segundos.
 - reiniciador seguro para substituir a instância antiga que estiver ocupando a porta 4173.
 
@@ -28,6 +28,6 @@
 ### Limitações conhecidas
 
 - sem autenticação dentro do app;
-- sem controle de concorrência;
+- sem mesclagem automática quando duas pessoas alteram a mesma versão;
 - sem banco de dados transacional;
 - sem backup automático.
