@@ -5,6 +5,7 @@
 - Incluído cenário demonstrativo de Lista de obra e compras para as sete obras fictícias, com itens em planejamento, cotação, compra, recebimento e conferência;
 - Corrigida a navegação persistente entre módulos após atualizações automáticas da interface;
 - O Diagrama técnico agora também organiza por ambiente os itens vindos diretamente da Lista de obra, mesmo sem orçamento aprovado vinculado;
+- A Lista de obra e compras agora possui um botão Gerar diagrama para cada projeto, abrindo a leitura técnica já focada na obra escolhida;
 - Adicionadas as áreas Diagrama técnico e Auditoria: o diagrama organiza os itens do orçamento por ambiente a partir de um ponto técnico central; a auditoria registra data, hora, usuário atual, ação e área alterada;
 - Nova Lista de obra e compras: gera materiais de projetos a partir de orçamentos aprovados, permite inclusão manual e acompanha a sequência Planejado, A cotar, Comprado, Recebido e Conferido;
 - Orçamentos agora contam com autoconsulta do catálogo ao digitar; itens ausentes podem entrar como “a cotar” e passam para uma fila de aquisição sem criar preço fictício;
