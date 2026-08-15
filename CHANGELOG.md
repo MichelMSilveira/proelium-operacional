@@ -6,6 +6,7 @@
 - revisão central dos dados e proteção contra sobrescrita concorrente;
 - verificação periódica como contingência para conexões móveis;
 - atualização do cache do aplicativo para a versão 2.
+- compatibilidade temporária com o servidor antigo usando a data de atualização e conferência a cada 5 segundos.
 
 ## 0.2.0 — 2026-08-14
 

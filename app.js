@@ -61,7 +61,7 @@ const seed = {
     {id:'kb-3',tag:'Manual',title:'Padrão de identificação de cabos',summary:'Convenções de etiquetas, racks, pontos e documentação fotográfica.'}]
 };
 
-const state = { view:'dashboard', query:'', selectedClient:null, selectedQuote:null, biDimension:'client', data:loadData(), revision:0, syncing:false };
+const state = { view:'dashboard', query:'', selectedClient:null, selectedQuote:null, biDimension:'client', data:loadData(), revision:0, updatedAt:null, syncing:false };
 const $ = s => document.querySelector(s);
 const money = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
 const clientName = id => state.data.clients.find(c=>c.id===id)?.name || 'Sem cliente';
@@ -80,7 +80,8 @@ async function persist(){
     const payload=await response.json();
     if(response.status===409){await refreshSharedData(true);toast('Outro aparelho alterou os dados. A tela foi atualizada; repita sua última ação.');return}
     if(!response.ok)throw new Error(payload.error||'Falha ao salvar');
-    state.revision=payload.revision;
+    state.revision=Number(payload.revision||state.revision||0);
+    state.updatedAt=payload.updatedAt||state.updatedAt;
     document.body.dataset.shared='true';
   }catch{toast('Servidor indisponível: a alteração ainda não foi compartilhada.')}finally{state.syncing=false}
 }
@@ -89,12 +90,19 @@ async function refreshSharedData(force=false){
   const response=await fetch('./api/data',{cache:'no-store'});
   if(!response.ok)throw new Error('Servidor indisponível');
   const payload=await response.json();
-  if(payload.data&&(force||Number(payload.revision||0)>state.revision)){
+  const remoteRevision=Number(payload.revision||0);
+  const changedByRevision=remoteRevision>state.revision;
+  const changedByDate=Boolean(payload.updatedAt&&payload.updatedAt!==state.updatedAt);
+  if(payload.data&&(force||changedByRevision||changedByDate)){
     state.data=normalizeSharedData(payload.data);
-    state.revision=Number(payload.revision||1);
+    state.revision=remoteRevision;
+    state.updatedAt=payload.updatedAt||null;
     localStorage.setItem('proelium-data',JSON.stringify(state.data));
     render();
-  }else state.revision=Number(payload.revision||0);
+  }else{
+    state.revision=remoteRevision;
+    state.updatedAt=payload.updatedAt||state.updatedAt;
+  }
   document.body.dataset.shared='true';
   return payload;
 }
@@ -112,7 +120,8 @@ async function connectSharedData(){
     });
     events.onerror=()=>{document.body.dataset.shared='reconnecting'};
     events.onopen=()=>{document.body.dataset.shared='true'};
-    setInterval(()=>refreshSharedData().catch(()=>{}),30000);
+    setInterval(()=>refreshSharedData().catch(()=>{}),5000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSharedData().catch(()=>{})});
   }catch{toast('Modo local: dados ainda não estão compartilhados.')}
 }
 function badge(value){const low=value.toLowerCase();const color=low.includes('bloq')||low.includes('atras')||low.includes('urg')?'red':low.includes('exec')||low.includes('andamento')||low.includes('instal')?'blue':low.includes('plane')||low.includes('alta')?'amber':'green';return `<span class="badge ${color}">${value}</span>`}
