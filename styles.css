@@ -92,3 +92,4 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 /* A marca e o estado do servidor ficam fixos; somente as opções do menu rolam. */
 .sidebar{overflow:hidden}.sidebar>.brand,.sidebar>.sidebar-foot{flex:0 0 auto}.sidebar>#navigation{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 4px 14px 0;margin-right:-4px;scrollbar-width:thin;scrollbar-color:rgba(215,235,119,.58) transparent}.sidebar>#navigation::-webkit-scrollbar{width:6px}.sidebar>#navigation::-webkit-scrollbar-thumb{background:rgba(215,235,119,.58);border-radius:8px}.sidebar>#navigation::-webkit-scrollbar-track{background:transparent}
 .opportunity-delete{color:#a8433d!important}
+.kpi-action{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.kpi-action:hover,.kpi-action:focus-visible{transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,62,48,.14);outline:2px solid rgba(23,62,48,.32);outline-offset:2px}
