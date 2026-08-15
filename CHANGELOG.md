@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Correção móvel: botão do menu e barra lateral passam a ficar acima do modo privacidade, mantendo a navegação acessível;
 - Modo privacidade: marca central elevada de forma mais acentuada, com deslocamento maior no celular;
 - Modo privacidade: removida a assinatura interna da Proelium com fundo claro; permanece somente a marca discreta no canto;
 - Modo privacidade: assinatura EMS Studio elevada em computador e celular, com deslocamento maior no celular;
