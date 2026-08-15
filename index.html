@@ -65,6 +65,13 @@
     <div class="agenda-quick-head"><div><p class="eyebrow" id="agendaItemType">ITEM DA AGENDA</p><h2 id="agendaItemTitle">Detalhes</h2></div><button class="icon-button" id="agendaItemClose" aria-label="Fechar">×</button></div>
     <div id="agendaItemContent"></div>
   </dialog>
+  <button id="accessibilityButton" class="accessibility-fab" type="button" aria-label="Abrir opções de leitura">A<span>a</span></button>
+  <dialog id="accessibilityDialog" class="accessibility-dialog" aria-labelledby="accessibilityTitle">
+    <div class="accessibility-head"><div><p class="eyebrow">ACESSIBILIDADE</p><h2 id="accessibilityTitle">Leitura confortável</h2></div><button type="button" id="accessibilityClose" class="icon-button" aria-label="Fechar">×</button></div>
+    <p>Escolha um tamanho de letra e contraste que fique confortável para você. Esta preferência fica salva neste aparelho.</p>
+    <div class="font-controls"><button type="button" id="fontDown" class="button secondary" aria-label="Diminuir letras">A−</button><strong id="fontValue">100%</strong><button type="button" id="fontUp" class="button primary" aria-label="Aumentar letras">A+</button></div>
+    <button type="button" id="contrastButton" class="contrast-button" aria-pressed="false">Ativar alto contraste</button>
+  </dialog>
   <div id="toast" class="toast" role="status"></div>
   <script src="app.js"></script>
   <script>

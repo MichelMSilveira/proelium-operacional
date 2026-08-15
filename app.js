@@ -249,6 +249,9 @@ const seasons=[['summer','☀ Verão'],['autumn','◒ Outono'],['winter','❄ In
 function currentSeason(){const month=new Date().getMonth()+1;return month<=2||month===12?'summer':month<=5?'autumn':month<=8?'winter':'spring'}
 function applySeason(name){const season=seasons.find(([id])=>id===name)||seasons.find(([id])=>id===currentSeason());document.documentElement.dataset.season=season[0];$('#seasonButton').textContent=season[1];localStorage.setItem('proelium-season',season[0])}
 function setupHeader(){const date=new Intl.DateTimeFormat('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(new Date()).replace(/\.$/,'');$('#headerDate').textContent=date;applySeason(localStorage.getItem('proelium-season')||currentSeason());$('#seasonButton').onclick=()=>{const active=seasons.findIndex(([id])=>id===document.documentElement.dataset.season);const next=seasons[(active+1)%seasons.length];applySeason(next[0]);toast(`Tema ${next[1]} aplicado.`)}}
+const readingScales=[100,115,130];
+function applyAccessibility(){const scale=Number(localStorage.getItem('proelium-font-scale')||100),contrast=localStorage.getItem('proelium-high-contrast')==='true';document.body.dataset.fontScale=scale;document.body.classList.toggle('high-contrast',contrast);$('#fontValue').textContent=`${scale}%`;$('#fontDown').disabled=scale===readingScales[0];$('#fontUp').disabled=scale===readingScales[readingScales.length-1];$('#contrastButton').textContent=contrast?'Desativar alto contraste':'Ativar alto contraste';$('#contrastButton').setAttribute('aria-pressed',contrast)}
+function setupAccessibility(){applyAccessibility();$('#accessibilityButton').onclick=()=>$('#accessibilityDialog').showModal();$('#accessibilityClose').onclick=()=>$('#accessibilityDialog').close();$('#fontDown').onclick=()=>{const current=Number(localStorage.getItem('proelium-font-scale')||100),index=readingScales.indexOf(current);localStorage.setItem('proelium-font-scale',readingScales[Math.max(0,index-1)]);applyAccessibility()};$('#fontUp').onclick=()=>{const current=Number(localStorage.getItem('proelium-font-scale')||100),index=readingScales.indexOf(current);localStorage.setItem('proelium-font-scale',readingScales[Math.min(readingScales.length-1,index+1)]);applyAccessibility()};$('#contrastButton').onclick=()=>{localStorage.setItem('proelium-high-contrast',String(!document.body.classList.contains('high-contrast')));applyAccessibility()}}
 
 $('#navigation').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)go(b.dataset.view)});
 $('#globalSearch').addEventListener('input',e=>{state.query=e.target.value;render()});
@@ -264,6 +267,7 @@ function addBackGuard(){history.pushState({proeliumApp:true},'',location.href)}
 function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')){setMenu(false);return}if(state.view!=='dashboard'){go('dashboard');toast('Você voltou para a Visão geral.');return}toast('Você já está na Visão geral.')}
 if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack);window.addEventListener('pageshow',()=>addBackGuard())}
 setupHeader();
+setupAccessibility();
 render();
 connectSharedData();
 const splash=$('#splash');let splashTimer;
