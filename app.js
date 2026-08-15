@@ -550,3 +550,6 @@ function performanceTeamPanel(){const records=state.data.evaluations||[],tasks=s
 const biDesempenhoWithTeam=views.biMarket;
 views.biMarket=()=>biDesempenhoWithTeam()+performanceTeamPanel();
 render();
+
+// O controle reforça a aquarela sem transformar o tema em uma tela branca.
+$('#backgroundPresence')?.addEventListener('input',event=>requestAnimationFrame(()=>{$('#backgroundValue').textContent=`Arte ${event.target.value}%`}));
