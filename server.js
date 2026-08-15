@@ -6,7 +6,7 @@ const port = Number(process.env.PORT || 4173);
 const root = __dirname;
 const dataDirectory = path.join(root, 'data');
 const dataFile = path.join(dataDirectory, 'shared-data.json');
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const eventClients = new Set();
 
 function readSharedData() {

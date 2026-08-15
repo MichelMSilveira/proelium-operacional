@@ -26,3 +26,9 @@
 body[data-font-scale="115"] .content :is(p,td,th,button,input,select,textarea,label,.badge,.subtext,.kpi-note,.deal,.attention-item,.article,.nav-item,.sidebar-foot){font-size:115%!important;line-height:1.45}body[data-font-scale="130"] .content :is(p,td,th,button,input,select,textarea,label,.badge,.subtext,.kpi-note,.deal,.attention-item,.article,.nav-item,.sidebar-foot){font-size:130%!important;line-height:1.5}@media(max-width:720px){.accessibility-fab{right:15px;bottom:15px;width:54px;height:54px}}
 /* Acesso às preferências de leitura */
 .accessibility-fab{display:grid;place-items:center;font:700 33px/1 Arial,sans-serif}
+:root[data-season="summer"]{--season-art:url('assets/season-summer.png')}
+:root[data-season="autumn"]{--season-art:url('assets/season-autumn.png')}
+:root[data-season="winter"]{--season-art:url('assets/season-winter.png')}
+:root[data-season="spring"]{--season-art:url('assets/season-spring.png')}
+body{background-color:var(--paper);background-image:linear-gradient(rgba(244,247,241,.72),rgba(244,247,241,.72)),var(--season-art);background-position:center;background-size:cover;background-attachment:fixed;transition:background-image .5s ease}.high-contrast{background:#fff!important}
+@media(max-width:720px){body{background-attachment:scroll;background-size:auto 100%;background-position:center top}}
