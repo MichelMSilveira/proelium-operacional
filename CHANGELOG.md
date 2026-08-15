@@ -1,5 +1,12 @@
 # Histórico de versões
 
+## Não publicado
+
+- sincronização automática entre aparelhos por eventos do servidor;
+- revisão central dos dados e proteção contra sobrescrita concorrente;
+- verificação periódica como contingência para conexões móveis;
+- atualização do cache do aplicativo para a versão 2.
+
 ## 0.2.0 — 2026-08-14
 
 ### Adicionado
@@ -22,4 +29,3 @@
 - sem controle de concorrência;
 - sem banco de dados transacional;
 - sem backup automático.
-

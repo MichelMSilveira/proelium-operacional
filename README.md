@@ -14,6 +14,8 @@ Protótipo experimental de CRM, orçamentos e operação da Proelium, preparado 
 - servidor local em `http://localhost:4173`;
 - acesso remoto privado por Tailscale Serve;
 - dados compartilhados em `data/shared-data.json`.
+- sincronização automática entre os aparelhos conectados ao mesmo servidor;
+- controle de revisão para impedir que uma tela antiga sobrescreva alterações recentes.
 
 ## Executar
 
@@ -34,4 +36,3 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 ## Atenção
 
 Esta é uma base experimental. Ainda não há login, permissões, edição simultânea segura ou banco transacional. Use dados de teste e faça backup do arquivo compartilhado.
-

@@ -2,6 +2,18 @@
 
 Base: `/api/v1`. Respostas em JSON. Listagens usam `page`, `limit`, `sort` e filtros específicos.
 
+## Sincronização do protótipo
+
+Enquanto a API definitiva ainda não está implementada, o protótipo usa:
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/api/data` | carregar a base central e sua revisão |
+| PUT | `/api/data` | salvar a base informando `baseRevision` |
+| GET | `/api/events` | receber avisos de atualização em tempo real (SSE) |
+
+Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.
+
 ## Recursos
 
 | Método | Rota | Uso |

@@ -61,7 +61,7 @@ const seed = {
     {id:'kb-3',tag:'Manual',title:'Padrão de identificação de cabos',summary:'Convenções de etiquetas, racks, pontos e documentação fotográfica.'}]
 };
 
-const state = { view:'dashboard', query:'', selectedClient:null, selectedQuote:null, biDimension:'client', data:loadData() };
+const state = { view:'dashboard', query:'', selectedClient:null, selectedQuote:null, biDimension:'client', data:loadData(), revision:0, syncing:false };
 const $ = s => document.querySelector(s);
 const money = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
 const clientName = id => state.data.clients.find(c=>c.id===id)?.name || 'Sem cliente';
@@ -70,9 +70,51 @@ const productById = id => state.data.products.find(p=>p.id===id);
 const roomTotals = room => room.items.reduce((t,item)=>{const p=productById(item.productId);if(p){t.cost+=p.cost*item.qty;t.price+=p.price*item.qty}return t},{cost:0,price:0});
 const uid = prefix => `${prefix}-${Date.now().toString(36)}`;
 function loadData(){try{const saved=JSON.parse(localStorage.getItem('proelium-data'));if(!saved)return structuredClone(seed);const resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||structuredClone(seed.installations),activities:saved.activities||structuredClone(seed.activities),quotes:saved.quotes||structuredClone(seed.quotes),products:resetCatalog?structuredClone(seed.products):(saved.products||structuredClone(seed.products)),quoteRooms:resetCatalog?(saved.quoteRooms||structuredClone(seed.quoteRooms)).map(r=>({...r,items:[]})):(saved.quoteRooms||structuredClone(seed.quoteRooms))};merged.clients=merged.clients.map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=merged.projects.map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return merged}catch{return structuredClone(seed)}}
-function persist(){localStorage.setItem('proelium-data',JSON.stringify(state.data));if(location.protocol!=='file:')fetch('./api/data',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:state.data})}).catch(()=>toast('Alteração salva neste aparelho; servidor indisponível.'))}
+async function persist(){
+  localStorage.setItem('proelium-data',JSON.stringify(state.data));
+  if(location.protocol==='file:')return;
+  if(state.syncing){toast('Aguarde a sincronização terminar e tente novamente.');return}
+  state.syncing=true;
+  try{
+    const response=await fetch('./api/data',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:state.data,baseRevision:state.revision})});
+    const payload=await response.json();
+    if(response.status===409){await refreshSharedData(true);toast('Outro aparelho alterou os dados. A tela foi atualizada; repita sua última ação.');return}
+    if(!response.ok)throw new Error(payload.error||'Falha ao salvar');
+    state.revision=payload.revision;
+    document.body.dataset.shared='true';
+  }catch{toast('Servidor indisponível: a alteração ainda não foi compartilhada.')}finally{state.syncing=false}
+}
 function normalizeSharedData(shared){const saved=shared||structuredClone(seed),resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||[],activities:saved.activities||[],quotes:saved.quotes||[],products:resetCatalog?structuredClone(seed.products):(saved.products||[]),quoteRooms:resetCatalog?(saved.quoteRooms||[]).map(r=>({...r,items:[]})):(saved.quoteRooms||[])};merged.clients=(merged.clients||[]).map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=(merged.projects||[]).map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return merged}
-async function connectSharedData(){if(location.protocol==='file:')return;try{const response=await fetch('./api/data',{cache:'no-store'});if(!response.ok)throw new Error('Servidor indisponível');const payload=await response.json();if(payload.data){state.data=normalizeSharedData(payload.data);localStorage.setItem('proelium-data',JSON.stringify(state.data));render()}else{await fetch('./api/data',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:state.data})})}document.body.dataset.shared='true'}catch{toast('Modo local: dados ainda não estão compartilhados.')}}
+async function refreshSharedData(force=false){
+  const response=await fetch('./api/data',{cache:'no-store'});
+  if(!response.ok)throw new Error('Servidor indisponível');
+  const payload=await response.json();
+  if(payload.data&&(force||Number(payload.revision||0)>state.revision)){
+    state.data=normalizeSharedData(payload.data);
+    state.revision=Number(payload.revision||1);
+    localStorage.setItem('proelium-data',JSON.stringify(state.data));
+    render();
+  }else state.revision=Number(payload.revision||0);
+  document.body.dataset.shared='true';
+  return payload;
+}
+async function connectSharedData(){
+  if(location.protocol==='file:')return;
+  try{
+    const payload=await refreshSharedData(true);
+    if(!payload.data)await persist();
+    const events=new EventSource('./api/events');
+    events.addEventListener('data-updated',async event=>{
+      const update=JSON.parse(event.data);
+      if(Number(update.revision)>state.revision&&!state.syncing){
+        try{await refreshSharedData();toast('Dados atualizados por outro aparelho.')}catch{}
+      }
+    });
+    events.onerror=()=>{document.body.dataset.shared='reconnecting'};
+    events.onopen=()=>{document.body.dataset.shared='true'};
+    setInterval(()=>refreshSharedData().catch(()=>{}),30000);
+  }catch{toast('Modo local: dados ainda não estão compartilhados.')}
+}
 function badge(value){const low=value.toLowerCase();const color=low.includes('bloq')||low.includes('atras')||low.includes('urg')?'red':low.includes('exec')||low.includes('andamento')||low.includes('instal')?'blue':low.includes('plane')||low.includes('alta')?'amber':'green';return `<span class="badge ${color}">${value}</span>`}
 function matches(...values){return values.join(' ').toLowerCase().includes(state.query.toLowerCase())}
 

@@ -37,4 +37,5 @@ Com o servidor parado, substitua `data/shared-data.json` por uma cópia válida.
 - Android abre e iPhone não: conta, VPN ou rede Tailscale do iPhone.
 - endereço `.ts.net` aponta para 5500: Tailscale ainda está ligado ao Live Server.
 - exclusão não aparece em outro dispositivo: confirme porta 4173 e atualize o segundo aparelho.
-
+- inclusões, edições e exclusões são enviadas automaticamente aos demais aparelhos. Se a conexão cair, o aplicativo tenta reconectar e também confere o servidor a cada 30 segundos.
+- se duas pessoas alterarem a partir da mesma versão, a segunda gravação é bloqueada; a tela recebe os dados atuais e pede que a última ação seja repetida.
