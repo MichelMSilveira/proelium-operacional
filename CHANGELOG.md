@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Bloco 6 concluído como MVP: ativos instalados vinculados a cliente/projeto, ordens de serviço sincronizadas à agenda, chamados de pós-venda e histórico técnico do cliente;
 - Bloco 5 iniciado: ficha de execução por projeto com avanço de etapas, checklist, tarefas, relatórios de serviço e conexão com a instalação vinculada;
 - Bloco 5 concluído como MVP: checklist padrão aplicável aos projetos, atualização automática para novos projetos e entrega formal com aceite do cliente;
 - Cabeçalho reorganizado: logotipo da EMS Studio centralizado na parte superior, com data e hora posicionadas logo abaixo da marca em desktop e celular;
