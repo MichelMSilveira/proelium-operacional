@@ -2,6 +2,9 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Bloco 4 concluído: orçamento por cômodo com quantidade, desconto por item, total bruto, desconto total, valor líquido, custo e margem por ambiente;
+- situações de orçamento: Rascunho, Enviado, Aprovado, Recusado e Vencido; revisões criam uma nova versão preservando a anterior;
+- aprovação passa a criar/atualizar o projeto com os valores líquidos e custos calculados pelos ambientes;
 - assinatura Proelium Serviços adicionada ao canto inferior esquerdo em desktop e celular;
 - Bloco 3 iniciado: catálogo agora possui fornecedor, edição e status ativo/descontinuado; pacotes reutilizáveis podem reunir produtos, serviços e mão de obra e ser inseridos em orçamentos;
 - edição do catálogo ampliada com campo de modelo; Equipamentos e ativos agora permitem cadastrar e editar cada unidade física com marca, modelo, número de série, local e status;
