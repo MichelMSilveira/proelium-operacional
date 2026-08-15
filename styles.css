@@ -84,4 +84,4 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 .quote-status-toolbar{align-items:center;flex-wrap:wrap}.quote-status{border:1px solid transparent;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}.quote-status:hover{filter:brightness(.97);transform:translateY(-1px)}.quote-status.active{box-shadow:0 0 0 3px rgba(23,62,48,.14);border-color:rgba(23,62,48,.35)}.quote-status-rascunho{background:#eef0eb;color:#536058}.quote-status-enviado{background:#dfeaf2;color:#2f6182}.quote-status-aprovado{background:#dfeede;color:#275c38}.quote-status-recusado{background:#f5deda;color:#943d37}.quote-status-vencido{background:#f8edcf;color:#7d5a16}@media(max-width:720px){.quote-status-toolbar{gap:7px}.quote-status{padding:8px 10px;font-size:11px}}
 
 /* No celular, a data fica logo abaixo da marca e ganha distância do título da tela. */
-@media(max-width:720px){.header-company .header-context{transform:translateY(-22px)}}
+@media(max-width:720px){.header-company .header-context{transform:translateY(-30px)}}
