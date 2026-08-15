@@ -57,7 +57,20 @@ const seed = {
   articles:[
     {id:'kb-1',tag:'Procedimento',title:'Checklist de entrega técnica',summary:'Validações obrigatórias antes do aceite e encerramento de um projeto.'},
     {id:'kb-2',tag:'Solução',title:'Diagnóstico de falha em controladoras',summary:'Passo a passo para isolar alimentação, rede, firmware e comunicação.'},
-    {id:'kb-3',tag:'Manual',title:'Padrão de identificação de cabos',summary:'Convenções de etiquetas, racks, pontos e documentação fotográfica.'}]
+    {id:'kb-3',tag:'Manual',title:'Padrão de identificação de cabos',summary:'Convenções de etiquetas, racks, pontos e documentação fotográfica.'},
+    {id:'kb-eletrica-basica',tag:'Fundamentos elétricos',title:'Elétrica básica',summary:'Grandezas elétricas, circuitos, medições, proteção e boas práticas para apoio ao trabalho técnico.'},
+    {id:'kb-pcbt',tag:'Formação técnica',title:'PCBT',summary:'Base formativa já realizada pela equipe. Registrar posteriormente ementa, materiais e comprovantes relacionados.'},
+    {id:'kb-nr10',tag:'Segurança',title:'NR10 — segurança em instalações elétricas',summary:'Referência para planejamento seguro, identificação de riscos e procedimentos em serviços com eletricidade. Certificação individual deve ser controlada separadamente.'},
+    {id:'kb-nr35',tag:'Segurança',title:'NR35 — trabalho em altura',summary:'Referência para planejamento, prevenção de quedas, uso de proteção e procedimentos de trabalho em altura. Certificação individual deve ser controlada separadamente.'},
+    {id:'kb-eletronica-basica',tag:'Fundamentos eletrônicos',title:'Eletrônica básica',summary:'Componentes, alimentação, sinais, leitura de circuitos e diagnóstico inicial de falhas.'},
+    {id:'kb-eletrica-predial',tag:'Infraestrutura',title:'Eletricidade predial',summary:'Circuitos de baixa tensão, organização de infraestrutura, pontos elétricos e interface com a instalação técnica.'},
+    {id:'kb-telefonia',tag:'Comunicação',title:'Telefonia',summary:'Fundamentos de telefonia, pontos, interligação, organização e diagnóstico básico.'},
+    {id:'kb-informatica',tag:'Informática',title:'Fundamentos de informática',summary:'Sistemas operacionais, arquivos, segurança básica, aplicativos e suporte ao usuário.'},
+    {id:'kb-hardware',tag:'Informática',title:'Hardware de computadores',summary:'Componentes, montagem, manutenção preventiva, testes e diagnóstico de computadores.'},
+    {id:'kb-eletronica-pc',tag:'Informática',title:'Eletrônica de computadores',summary:'Alimentação, placas, conectores, periféricos e análise inicial de falhas em equipamentos de informática.'},
+    {id:'kb-redes',tag:'Redes',title:'Fundamentos de redes',summary:'Endereçamento, topologia, switches, roteadores, Wi‑Fi, acesso e diagnóstico de conectividade.'},
+    {id:'kb-cabeamento-estruturado',tag:'Redes',title:'Cabeamento estruturado',summary:'Padrões, organização, identificação, testes e documentação de infraestrutura de rede.'},
+    {id:'kb-redes-cabeadas',tag:'Redes',title:'Montagem de redes cabeadas',summary:'Planejamento de pontos, passagem, conectorização, rack, patch panel, certificação e entrega técnica.'}]
 };
 
 const initialCalendarDate=new Date();
