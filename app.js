@@ -259,3 +259,4 @@ function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')
 if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack);window.addEventListener('pageshow',()=>addBackGuard())}
 render();
 connectSharedData();
+setTimeout(()=>$('#splash')?.classList.add('hide'),1100);
