@@ -337,3 +337,4 @@ const splash=$('#splash');let splashTimer;
 function hideSplash(delay=2300){clearTimeout(splashTimer);splashTimer=setTimeout(()=>splash?.classList.add('hide'),delay)}
 if(splash)hideSplash();
 hideSplash();
+const originalOpenForm=openForm;openForm=(kind,editId='',prefill={})=>{originalOpenForm(kind,editId,prefill);const button=$('#recordDelete'),record=editId?findRecord(kind,editId):null;button.hidden=!(kind==='appointment'&&record);button.onclick=()=>{if(record)deleteAppointment(record.id)}};
