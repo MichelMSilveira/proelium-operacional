@@ -42,6 +42,10 @@
       <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button value="default" id="saveButton" class="button primary">Salvar registro</button></div>
     </form>
   </dialog>
+  <dialog id="agendaQuickDialog" class="agenda-quick-dialog">
+    <div class="agenda-quick-head"><div><p class="eyebrow">CONSULTA RÁPIDA</p><h2 id="agendaQuickTitle">Compromissos do dia</h2></div><button class="icon-button" id="agendaQuickClose" aria-label="Fechar">×</button></div>
+    <div id="agendaQuickContent"></div>
+  </dialog>
   <div id="toast" class="toast" role="status"></div>
   <script src="app.js"></script>
   <script>

@@ -15,6 +15,7 @@
 - visualização mensal da agenda, com cartões de compromissos por dia e navegação entre meses.
 - cadastro direto de compromissos pela agenda, com data atual sugerida automaticamente.
 - interação por dia: ao tocar no calendário, abre a lista completa e permite criar um compromisso naquela data.
+- consulta rápida em janela compacta ao tocar em um dia da agenda.
 
 ## 0.2.0 — 2026-08-14
 
