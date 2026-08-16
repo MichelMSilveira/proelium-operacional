@@ -15,6 +15,7 @@
 - Corrigida a definição do `EB-PS5`: ele é o hub Embrace-Net que recebe o sinal da NTL e distribui cordões de comunicação para keypads e módulos; a controladora permanece ligada à rede por RJ‑45.
 - Diagrama técnico agora desdobra quantidades inteiras em equipamentos individuais e mostra uma linha rotulada para cada cabo/ligação.
 - Ligações individuais foram formalizadas como registros de cabo: cada uma guarda origem, porta de saída, tipo de cabo, porta de entrada, destino e situação.
+- Registro de ligações do cenário passou a separar cabos por Rede, Automação, Áudio e Vídeo.
 
 ## 0.4.1 — 2026-08-15
 
