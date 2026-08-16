@@ -2114,3 +2114,33 @@ views.diagram=()=>{
 };
 setTimeout(()=>{if(state.data.technicalDefinitionV1)return;ensureTechnicalDefinitions();state.data.technicalDefinitionV1=true;persist();},7000);
 render();
+
+// Mapa de fiação lógico: as linhas só representam conexões cadastradas/derivadas. Pontilhado
+// significa que a origem ainda precisa ser conferida na ficha técnica ou na visita.
+function technicalWireMap(project){
+  if(!project?.quoteId)return '';
+  const rooms=projectQuoteRooms(project),groups=capacityGroups(project.quoteId),points=(state.data.technicalPoints||[]).filter(point=>point.projectId===project.id),roomName=id=>rooms.find(room=>room.id===id)?.name||'Ambiente';
+  const centralNodes=groups.map(group=>{const product=productById(group.productId);return `<article class="wire-node wire-central" data-wire-node="central-${group.groupId}"><small>Central</small><strong>${product?.name||'Equipamento central'}</strong><span>${roomName(group.hostRoomId)} · ${group.capacityUsed??group.capacityTotal}/${group.capacityTotal} ${group.capacityUnit||'un'}</span></article>`}).join('')||'<article class="wire-node wire-central" data-wire-node="central-pendente"><small>Central</small><strong>Rack / central a definir</strong><span>Adicione a central e sua capacidade.</span></article>';
+  const devices=[];
+  rooms.forEach(room=>(room.items||[]).forEach((item,index)=>{if(item.capacityAllocation)return;const product=productById(item.productId);if(!product)return;devices.push({id:`device-${room.id}-${index}`,title:product.name,detail:`${room.name} · ${item.qty} ${product.unit||'un'}`,from:'origin',dashed:true})}));
+  points.forEach(point=>devices.push({id:`point-${point.id}`,title:point.label,detail:`${roomName(point.roomId)} · ${point.type}`,from:point.capacityGroupId?`central-${point.capacityGroupId}`:'origin',dashed:!point.capacityGroupId}));
+  const deviceNodes=devices.map(device=>`<article class="wire-node wire-device" data-wire-node="${device.id}"><small>${device.id.startsWith('point-')?'Ponto técnico':'Equipamento'}</small><strong>${device.title}</strong><span>${device.detail}</span></article>`).join('')||'<div class="empty">Inclua equipamentos ou pontos técnicos para desenhar as conexões.</div>';
+  const connections=[...groups.map(group=>({from:'origin',to:`central-${group.groupId}`,dashed:false})),...devices.map(device=>({from:device.from,to:device.id,dashed:device.dashed}))];
+  return `<section class="card technical-wire-card"><div class="card-head"><div><h3>Conexões do sistema</h3><p class="subtext">Linhas contínuas: origem cadastrada. Linhas pontilhadas: caminho lógico ainda pendente de validação técnica.</p></div></div><div class="technical-wire-map"><svg class="technical-wire-svg" aria-hidden="true"><defs><marker id="wire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"></path></marker></defs></svg><div class="wire-stage wire-origin"><article class="wire-node wire-root" data-wire-node="origin"><small>Origem</small><strong>Internet · energia · rack</strong><span>Entrada e distribuição principal</span></article></div><div class="wire-stage wire-centrals">${centralNodes}</div><div class="wire-stage wire-devices">${deviceNodes}</div>${connections.map(connection=>`<i class="wire-connection" data-wire-from="${connection.from}" data-wire-to="${connection.to}" data-wire-dashed="${connection.dashed}"></i>`).join('')}</div></section>`;
+}
+function drawTechnicalWireMaps(){
+  document.querySelectorAll('.technical-wire-map').forEach(map=>{
+    const bounds=map.getBoundingClientRect(),svg=map.querySelector('.technical-wire-svg');if(!svg||!bounds.width||!bounds.height)return;
+    svg.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);svg.setAttribute('width',bounds.width);svg.setAttribute('height',bounds.height);
+    const lines=[...map.querySelectorAll('.wire-connection')].map(link=>{const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`);if(!from||!to)return '';const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),x1=a.left-bounds.left+a.width/2,y1=a.bottom-bounds.top,x2=b.left-bounds.left+b.width/2,y2=b.top-bounds.top;const middle=(y1+y2)/2;return `<path class="${link.dataset.wireDashed==='true'?'wire-dashed':''}" d="M ${x1} ${y1} V ${middle} H ${x2} V ${y2}" marker-end="url(#wire-arrow)"></path>`}).join('');svg.querySelectorAll('path:not([d="M0,0 L8,4 L0,8 z"])').forEach(path=>path.remove());svg.insertAdjacentHTML('beforeend',lines);
+  });
+}
+const technicalWireDiagramView=views.diagram;
+views.diagram=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));
+  return technicalWireDiagramView().replace('<section class="technical-flowchart"',technicalWireMap(project)+'<section class="technical-flowchart"');
+};
+const technicalWireRender=render;
+render=()=>{technicalWireRender();requestAnimationFrame(drawTechnicalWireMaps)};
+window.addEventListener('resize',()=>requestAnimationFrame(drawTechnicalWireMaps));
+render();
