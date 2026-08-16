@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Catálogo: incluídos cabos de rede Cat6 (genérico homologado, UniFi/Ubiquiti, Sorro e Legrand) e cabos para alto-falante 18, 16, 14 e 12 AWG, todos por metro e inicialmente marcados para cotação.
 - Base integrada: orçamento aprovado agora gera e mantém fichas de itens de execução ligadas ao projeto, cliente, ambiente, rateio, compra, instalação e ativo físico; também garante instalação e checklist padrão do projeto. O ativo instalado pode apontar para seu item de origem, preservando série, garantia e histórico técnico.
 - Análise de orçamento: o toque no interruptor de rateio agora é tratado diretamente pela própria área do controle, evitando falhas de ativação ou desativação em tabelas no celular.
 - Análise de orçamento: Rateio agora é um interruptor real com os estados “Ativar” e “Ativo”; desligá-lo, após confirmação, reúne o item no ambiente físico e libera suas conexões técnicas sem apagá-las.
