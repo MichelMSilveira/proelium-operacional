@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Correção do cadastro comercial: a versão final do formulário preserva cliente e pessoa de contato manuais, e a importação do aparelho preenche telefone/e-mail de forma compatível;
 - Cadastro comercial: importação do aparelho voltou antes da pessoa de contato e agora preenche somente telefone/e-mail; nome do cliente e responsável pelo cliente permanecem manuais;
 - Novo registro comercial reorganizado: Cliente / empresa, dados de contato manual e pessoa responsável pelo cliente ficaram separados do responsável interno pelo atendimento;
 - Comercial: o visor de oportunidades ganhas agora contabiliza todos os negócios concluídos e informa separadamente quantos já viraram clientes;
