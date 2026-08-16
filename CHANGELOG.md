@@ -28,7 +28,6 @@
 - Cadastro de Produtos e Serviços agora inclui mapa técnico obrigatório de conferência: papel no sistema, entradas, saídas, interface, capacidade e observações. O perfil acompanha o item até o orçamento, operação e diagrama.
 - Diagrama técnico passou a abrir com um Guia rápido de ligação: Rede, Automação, Áudio e Vídeo. O cenário aparece antes do registro detalhado de cabos, e cada guia destaca sua camada com um toque.
 - Camada de Rede recebeu símbolos técnicos diretos para roteador, switch, access point e ponto de rede; bolinhas de portas agora usam a nomenclatura explícita IN e OUT para facilitar o apontamento de entradas e saídas.
-- Diagrama técnico foi simplificado: abre em um quadro livre de rascunho para desenho manual, salvo localmente no aparelho. O mapa automático e o registro detalhado ficam recolhidos até serem solicitados.
 
 ## 0.4.1 — 2026-08-15
 
