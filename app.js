@@ -490,6 +490,22 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Consulta técnica do catálogo: a regra exibida aqui é a que será usada para gerar cabos e linhas no cenário.
+state.productTechnicalConsultId=(state.data.products||[]).some(product=>product.id===state.productTechnicalConsultId)?state.productTechnicalConsultId:(state.data.products||[])[0]?.id||'';
+const productTechnicalConsultView=views.products;
+views.products=()=>{
+  const products=(state.data.products||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')),product=products.find(item=>item.id===state.productTechnicalConsultId)||products[0],profile=product?.connectionProfile||standardConnectionProfiles[technicalDeviceRole(product)]||standardConnectionProfiles.other,spec=product?.technicalDefinition||inferTechnicalDefinition(product||{}),targets=(profile.targets||[]).map(role=>standardConnectionProfiles[role]?.label||role).join(', ')||'Sem destino automático';
+  const panel=`<section class="card product-technical-consult"><div class="card-head"><div><h3>Consulta técnica do produto</h3><p class="subtext">Confira a regra que o sistema usará para gerar equipamentos, portas e cabos no diagrama.</p></div></div>${products.length?`<div class="product-technical-picker"><label for="productTechnicalConsult">Produto ou serviço</label><select id="productTechnicalConsult" data-product-technical-consult>${products.map(item=>`<option value="${item.id}" ${item.id===product?.id?'selected':''}>${item.name}${item.model?` · ${item.model}`:''}</option>`).join('')}</select></div><div class="product-technical-grid"><div><small>Papel técnico</small><strong>${profile.label||'A definir'}</strong></div><div><small>Recebe de</small><strong>${profile.input||spec.input||'A definir'}</strong></div><div><small>Entrega para</small><strong>${profile.output||spec.output||'A definir'}</strong></div><div><small>Cabo / interface</small><strong>${profile.media||spec.cable||'A definir'}</strong></div><div><small>Destino padrão</small><strong>${targets}</strong></div><div><small>Capacidade</small><strong>${spec.capacity||'A definir'}</strong></div></div><p class="subtext product-technical-note">Ao inserir este item no orçamento, a regra cria uma ligação individual para cada unidade quando houver origem e destino compatíveis no projeto.</p>`:'<div class="empty">Cadastre produtos para consultar suas regras técnicas.</div>'}</section>`;
+  return productTechnicalConsultView()+panel;
+};
+const productTechnicalConsultRender=render;
+render=()=>{
+  productTechnicalConsultRender();
+  const select=document.querySelector('[data-product-technical-consult]');
+  if(select)select.onchange=()=>{state.productTechnicalConsultId=select.value;render();};
+};
+render();
+
 // Classificação técnica do catálogo: categoria comercial sozinha não basta para o levantamento.
 // Tipo identifica o objeto; função explica o que ele entrega na obra. Ambos podem ser ajustados
 // manualmente mais adiante, pois esta rotina só preenche campos ainda vazios.

@@ -16,6 +16,7 @@
 - Diagrama técnico agora desdobra quantidades inteiras em equipamentos individuais e mostra uma linha rotulada para cada cabo/ligação.
 - Ligações individuais foram formalizadas como registros de cabo: cada uma guarda origem, porta de saída, tipo de cabo, porta de entrada, destino e situação.
 - Registro de ligações do cenário passou a separar cabos por Rede, Automação, Áudio e Vídeo.
+- Produtos e Serviços ganhou Consulta técnica: a ficha mostra papel, entrada, saída, cabo, destinos e capacidade usados pelo diagrama.
 
 ## 0.4.1 — 2026-08-15
 
