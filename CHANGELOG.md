@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Produtos e Serviços recebeu consulta técnica fixa no topo: selecionar um produto mostra identidade, modelo, função, cabo, portas de entrada e saída; há atalho para editar o mapeamento. No celular, a lista passa a exibir todos os campos como cartões verticais, sem esconder colunas.
 - Diagrama técnico ganhou a leitura “Diagrama por portas”: por camada (Rede, Automação, Áudio ou Vídeo), cada cabo mostra os dois equipamentos, respectivos modelos, porta de saída, tipo de cabo e porta de entrada. A tela apenas interpreta conexões existentes; ela não cria cabos sem confirmação.
 - Produtos e serviços agora possuem identidade técnica por modelo: marca, modelo, SKU e listas de portas de entrada e saída. Essas portas aparecem na Bancada de Ligação e passam a alimentar as próximas conexões do diagrama.
 - Diagrama técnico: a primeira leitura da camada de Rede passou a mostrar a cadeia Internet → roteador → switch e, abaixo, uma linha por porta de saída com cabo e destino cadastrados. A mudança é apenas visual e preserva o orçamento, a auditoria e as conexões técnicas existentes.

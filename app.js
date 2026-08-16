@@ -2595,3 +2595,16 @@ views.diagram=()=>{const project=(state.data.projects||[]).find(item=>item.id===
 const productPortDiagramRender=render;
 render=()=>{productPortDiagramRender();document.querySelectorAll('[data-port-diagram-layer]').forEach(button=>button.onclick=()=>{state.portDiagramLayer=button.dataset.portDiagramLayer;render();requestAnimationFrame(()=>document.querySelector('.product-port-diagram')?.scrollIntoView({block:'start',behavior:'smooth'}));});};
 render();
+
+// Consulta visível do catálogo: a ficha técnica fica no topo e dispensa procurar pela página.
+function productQuickConsult(){
+  const products=(state.data.products||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')),product=products.find(item=>item.id===state.productTechnicalConsultId)||products[0];
+  if(!product)return '';
+  const definition=product.technicalDefinition||inferTechnicalDefinition(product),ports=value=>Array.isArray(value)?value:(value?String(value).split(/[,;\n]/).map(item=>item.trim()).filter(Boolean):[]),inputPorts=ports(definition.inputPorts),outputPorts=ports(definition.outputPorts),portList=list=>list.length?list.map(port=>`<span>${port}</span>`).join(''):'<em>Não cadastradas</em>';
+  return `<section class="card product-quick-consult"><div class="card-head"><div><p class="eyebrow">CONSULTA DE PRODUTO</p><h3>Confirme o modelo antes de usar no orçamento</h3><p class="subtext">A ficha abaixo é a fonte de entradas, saídas e cabos do diagrama.</p></div><button type="button" class="button secondary" data-edit-consulted-product="${product.id}">Editar mapeamento</button></div><div class="product-quick-picker"><label for="productQuickConsult">Produto / modelo</label><select id="productQuickConsult" data-product-quick-consult>${products.map(item=>`<option value="${item.id}" ${item.id===product.id?'selected':''}>${item.name}${item.model?` · ${item.model}`:''}</option>`).join('')}</select></div><div class="product-quick-details"><div><small>IDENTIDADE</small><strong>${product.brand||'Marca a confirmar'} · ${product.model||'Modelo a confirmar'}</strong><span>${product.sku||'Sem SKU'} · ${product.technicalType||product.category||'Tipo a confirmar'}</span></div><div><small>RECEBE DE</small><strong>${definition.input||'A confirmar'}</strong><span>Cabo: ${definition.cable||'A confirmar'}</span></div><div><small>ENTREGa PARA</small><strong>${definition.output||'A confirmar'}</strong><span>${definition.capacity||'Capacidade a confirmar'}</span></div></div><div class="product-port-summary"><div><small>PORTAS DE ENTRADA</small><p>${portList(inputPorts)}</p></div><div><small>PORTAS DE SAÍDA</small><p>${portList(outputPorts)}</p></div></div></section>`;
+}
+const productQuickConsultView=views.products;
+views.products=()=>{const content=productQuickConsultView();return productQuickConsult()+content.replace('<div class="card table-wrap"><table>','<div class="card table-wrap product-catalog-table"><table>');};
+const productQuickConsultRender=render;
+render=()=>{productQuickConsultRender();const picker=$('[data-product-quick-consult]');if(picker)picker.onchange=()=>{state.productTechnicalConsultId=picker.value;render()};document.querySelectorAll('[data-edit-consulted-product]').forEach(button=>button.onclick=()=>openForm('product',button.dataset.editConsultedProduct));};
+render();
