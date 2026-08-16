@@ -594,7 +594,7 @@ function normalizeTableHeaders(){
     }
   });
 }
-// Infraestrutura compartilhada: itens gerais começam distribuídos de forma igual por todos os ambientes.
+// Infraestrutura compartilhada é uma decisão comercial: nunca ratear automaticamente pelo tipo do produto.
 function isSharedInfrastructure(product){return /roteador|router|gateway|modem|switch|rack|nobreak|patch\s*panel|cabo\s*(?:de\s*)?rede|cabeamento\s*(?:estruturado|de\s*rede)/i.test(`${product?.name||''} ${product?.model||''} ${product?.category||''}`)}
 const sharedInfrastructureSearchOpen=openQuoteItemSearch;
 openQuoteItemSearch=(prefill={})=>{
@@ -602,14 +602,13 @@ openQuoteItemSearch=(prefill={})=>{
   const form=$('#recordForm');
   if(!form||form.dataset.kind!=='quoteItemSearch'||form.querySelector('[name="generalItem"]'))return;
   const roomField=form.elements.roomId;
-  roomField?.closest('.field')?.insertAdjacentHTML('afterend',`<div class="field full shared-item-field"><label class="shared-item-toggle"><input type="checkbox" name="generalItem"><span><strong>Item geral do orçamento</strong><small>Distribui custo e venda igualmente por todos os ambientes. O local selecionado acima continua sendo o local físico do equipamento.</small></span></label><small class="subtext" data-general-item-hint>Use para infraestrutura central, como roteador, switch, rack, cabeamento principal ou nobreak.</small></div>`);
+  roomField?.closest('.field')?.insertAdjacentHTML('afterend',`<div class="field full shared-item-field"><label class="shared-item-toggle"><input type="checkbox" name="generalItem"><span><strong>Ratear estrategicamente pelo projeto</strong><small>Opcional: distribui custo e venda pelos ambientes. O local selecionado acima continua sendo o local físico do equipamento.</small></span></label><small class="subtext" data-general-item-hint>Use somente quando o vendedor decidir tratar o item como compartilhado, por exemplo roteador, switch, rack ou infraestrutura principal.</small></div>`);
   const toggle=form.elements.generalItem,hint=form.querySelector('[data-general-item-hint]');
   form.addEventListener('click',event=>{
     const option=event.target.closest('[data-search-product]');
     if(!option)return;
     const product=productById(option.dataset.searchProduct),suggested=isSharedInfrastructure(product);
-    toggle.checked=suggested;
-    if(hint)hint.textContent=suggested?'Infraestrutura detectada: o rateio geral foi ativado. Você pode desligá-lo se este item atender apenas um ambiente.':'Ative quando o item atender a casa inteira; depois, use “Distribuir” para ajustar a participação de cada ambiente.';
+    if(hint)hint.textContent=suggested?'Infraestrutura central identificada. O rateio continua desligado: ative-o somente se essa for a estratégia comercial desta proposta.':'Mantenha desligado para um item próprio do ambiente; ative apenas se o vendedor decidir distribuir seu custo e venda.';
   });
 };
 const sharedInfrastructureSave=saveRecord;
@@ -1306,8 +1305,8 @@ openQuoteItemSearch=(prefill={})=>{
   quantityField.insertAdjacentElement('afterend',sharedField);
   const title=sharedField.querySelector('strong'),description=sharedField.querySelector('.shared-item-toggle small'),hint=sharedField.querySelector('[data-general-item-hint]');
   const roomCount=(state.data.quoteRooms||[]).filter(room=>room.quoteId===state.selectedQuote).length;
-  if(title)title.textContent=`Ratear pelo projeto (${roomCount} ${roomCount===1?'cômodo':'cômodos'})`;
-  if(description)description.textContent='Divide custo e venda igualmente entre todos os cômodos deste orçamento.';
+  if(title)title.textContent=`Ratear estrategicamente (${roomCount} ${roomCount===1?'cômodo':'cômodos'})`;
+  if(description)description.textContent='Opcional: divide custo e venda conforme a estratégia comercial deste orçamento.';
   if(prefill.generalItem&&form.elements.generalItem)form.elements.generalItem.checked=true;
   if(hint)hint.remove();
 };

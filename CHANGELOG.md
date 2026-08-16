@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Rateio comercial: itens de rede, automação e infraestrutura deixam de ser pré-selecionados para distribuição. Eles entram integralmente no ambiente físico; o rateio é opcional e só ocorre quando o vendedor o ativa como decisão financeira e estratégica. Rateios existentes foram preservados para não alterar decisões já registradas.
+
 - Orçamento-modelo: aplicadas referências identificadas como **valores de teste** para custo e venda dos itens usados na proposta de demonstração, permitindo validar total, margem e rateio sem confundir os números com tabela comercial oficial.
 
 - Levantamento e orçamento: incluída a Visão geral de quantitativos do projeto. Ela consolida os sistemas, itens e quantidades antes da distribuição por ambientes e funciona como base para a futura importação assistida de planta em PDF/imagem, sempre com validação técnica.
