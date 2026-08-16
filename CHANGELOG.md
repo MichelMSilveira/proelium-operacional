@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos: a caixa “Ratear por todos os cômodos” também está disponível no modo Ajustar, junto da quantidade, para distribuir um item que já foi incluído;
 - Orçamentos: a ação Mover foi incorporada a Distribuir; agora basta ajustar a participação de cada ambiente para transferir parte ou todo o item;
 - Orçamentos: a opção de ratear um item por todos os cômodos agora fica ao lado da quantidade, antes de inserir o item;
 - Diagrama técnico: adicionada a base de pontos técnicos por ambiente, com vínculo opcional a switch/central, conferência de portas usadas/livres, avisos de capacidade excedida e auditoria de criação, ajuste ou exclusão;

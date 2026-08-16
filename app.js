@@ -522,6 +522,33 @@ openCapacityDistribution=(roomId,itemIndex)=>{
 };
 render();
 
+// Também no Ajustar: a decisão de distribuir pode ser tomada depois que o item já entrou no orçamento.
+const projectRateEditOpen=openQuoteItemEdit;
+openQuoteItemEdit=(roomId,itemIndex)=>{
+  projectRateEditOpen(roomId,itemIndex);
+  const form=$('#recordForm'),room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[itemIndex],quantityField=form?.elements?.qty?.closest('.field');
+  if(!form||form.dataset.kind!=='quoteItemEdit'||!item||!quantityField||form.querySelector('[name="generalItem"]'))return;
+  const field=document.createElement('div');
+  field.className='field shared-item-field shared-item-inline';
+  field.innerHTML=`<label class="shared-item-toggle"><input type="checkbox" name="generalItem" ${item.capacityAllocation?.sharedInfrastructure?'checked':''}><span><strong>Ratear por todos os cômodos</strong><small>Distribui o valor deste item pelo projeto.</small></span></label>`;
+  quantityField.insertAdjacentElement('afterend',field);
+};
+const projectRateEditSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='quoteItemEdit'&&data.generalItem==='on'){
+    const room=(state.data.quoteRooms||[]).find(entry=>entry.id===data.roomId),item=room?.items?.[Number(data.itemIndex)],product=item&&productById(item.productId),rooms=(state.data.quoteRooms||[]).filter(entry=>entry.quoteId===room?.quoteId),quantity=Number(data.qty||0),discount=Number(data.discount||0);
+    if(!room||!item||!product||!rooms.length||!Number.isFinite(quantity)||quantity<=0){toast('Confira a quantidade antes de distribuir este item.');return false}
+    const oldGroup=item.capacityAllocation?.groupId;
+    if(oldGroup)rooms.forEach(entry=>entry.items=entry.items.filter(candidate=>candidate.capacityAllocation?.groupId!==oldGroup));else room.items.splice(Number(data.itemIndex),1);
+    const groupId=uid('geral'),part=Number((quantity/rooms.length).toFixed(4));
+    rooms.forEach((entry,index)=>entry.items.push({productId:product.id,qty:index===rooms.length-1?Number((quantity-part*(rooms.length-1)).toFixed(4)):part,discount,capacityAllocation:{groupId,hostRoomId:room.id,capacityTotal:rooms.length,capacityUnit:'ambientes',amount:1,sourceProductQty:quantity,sharedInfrastructure:true}}));
+    logAudit('Distribuiu item geral','Orçamento',`${product.name} ajustado para ${rooms.length} ambientes`);
+    persist();render();toast(`${product.name} foi rateado por todos os cômodos.`);return;
+  }
+  return projectRateEditSave(kind,data,editId);
+};
+render();
+
 // Conferência antes de confirmar: o rateio mostra o total, o já distribuído e o saldo em tempo real.
 const capacityDistributionPreviewOpen=openCapacityDistribution;
 openCapacityDistribution=(roomId,itemIndex)=>{
