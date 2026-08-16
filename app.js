@@ -490,6 +490,47 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Esta é a camada final da tela: mantém o rascunho em primeiro plano mesmo após todos os módulos.
+const finalSimpleDiagramView=views.diagram;
+views.diagram=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),projectLabel=project?`${project.code||'Projeto'} · ${project.name}`:'Selecione um projeto para desenhar';
+  const sketch=`<section class="card technical-sketch-card"><div class="card-head"><div><p class="eyebrow">RASCUNHO TÉCNICO</p><h2>Desenhe a ideia primeiro.</h2><p class="subtext">Faça setas, escreva os equipamentos e mostre o caminho que você imagina. Depois eu traduzo isso para as regras do sistema.</p></div><span class="subtext">${projectLabel}</span></div><div class="technical-sketch-toolbar"><span>✎ Toque e arraste para desenhar</span><button type="button" class="button secondary" data-sketch-clear>Limpar</button><button type="button" class="button primary" data-sketch-save>Salvar neste aparelho</button></div><canvas class="technical-sketch-canvas" data-sketch-project="${project?.id||''}" aria-label="Área livre para rascunhar o diagrama técnico"></canvas><small class="subtext">Comece com Internet → roteador → switch. Depois acrescente os aparelhos e envie uma captura para eu interpretar.</small></section>`;
+  const detail=`<section class="diagram-detail-toggle"><button type="button" class="button secondary" data-diagram-detail-toggle>${state.diagramDetailMode?'Ocultar mapa automático':'Ver mapa automático e registro de cabos'}</button><small>${state.diagramDetailMode?'O cenário detalhado está visível abaixo.':'O mapa automático continua guardado até você precisar conferir.'}</small></section>`;
+  return sketch+detail+(state.diagramDetailMode?`<div class="technical-diagram-detail">${finalSimpleDiagramView()}</div>`:'');
+};
+const finalSimpleDiagramRender=render;
+render=()=>{finalSimpleDiagramRender();document.querySelector('[data-diagram-detail-toggle]')?.addEventListener('click',()=>{state.diagramDetailMode=!state.diagramDetailMode;render();});setupTechnicalSketch();};
+render();
+
+// O diagrama começa simples: primeiro o rascunho humano, depois o cenário automático.
+state.diagramDetailMode=state.diagramDetailMode===true;
+const simplifiedDiagramView=views.diagram;
+views.diagram=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));
+  const projectLabel=project?`${project.code||'Projeto'} · ${project.name}`:'Selecione um projeto para desenhar';
+  const sketch=`<section class="card technical-sketch-card"><div class="card-head"><div><p class="eyebrow">RASCUNHO TÉCNICO</p><h2>Desenhe a ideia primeiro.</h2><p class="subtext">Faça setas, escreva os equipamentos e mostre o caminho que você imagina. Depois eu traduzo isso para as regras do sistema.</p></div><span class="subtext">${projectLabel}</span></div><div class="technical-sketch-toolbar"><span>✎ Toque e arraste para desenhar</span><button type="button" class="button secondary" data-sketch-clear>Limpar</button><button type="button" class="button primary" data-sketch-save>Salvar neste aparelho</button></div><canvas class="technical-sketch-canvas" data-sketch-project="${project?.id||''}" aria-label="Área livre para rascunhar o diagrama técnico"></canvas><small class="subtext">Dica: comece por “Internet → roteador → switch” e depois acrescente os aparelhos. Você pode mandar uma captura deste rascunho para eu interpretar.</small></section>`;
+  const detailButton=`<section class="diagram-detail-toggle"><button type="button" class="button secondary" data-diagram-detail-toggle>${state.diagramDetailMode?'Ocultar mapa automático':'Ver mapa automático e registro de cabos'}</button><small>${state.diagramDetailMode?'O cenário detalhado está visível abaixo.':'O mapa automático continua guardado; abra somente quando quiser conferir.'}</small></section>`;
+  return sketch+detailButton+(state.diagramDetailMode?`<div class="technical-diagram-detail">${simplifiedDiagramView()}</div>`:'');
+};
+function setupTechnicalSketch(){
+  const canvas=document.querySelector('.technical-sketch-canvas');if(!canvas||canvas.dataset.bound)return;canvas.dataset.bound='true';
+  const projectId=canvas.dataset.sketchProject||'general',key=`proelium-technical-sketch:${projectId}`,context=canvas.getContext('2d');let drawing=false,last=null;
+  const paintBackground=()=>{context.fillStyle='#fffefb';context.fillRect(0,0,canvas.width,canvas.height);context.strokeStyle='rgba(70,116,112,.13)';context.lineWidth=1;for(let x=0;x<canvas.width;x+=44){context.beginPath();context.moveTo(x,0);context.lineTo(x,canvas.height);context.stroke()}for(let y=0;y<canvas.height;y+=44){context.beginPath();context.moveTo(0,y);context.lineTo(canvas.width,y);context.stroke()}};
+  const restore=()=>{paintBackground();const saved=localStorage.getItem(key);if(!saved)return;const image=new Image();image.onload=()=>context.drawImage(image,0,0,canvas.width,canvas.height);image.src=saved};
+  const resize=()=>{const ratio=Math.min(2,window.devicePixelRatio||1),width=Math.max(280,Math.floor(canvas.clientWidth*ratio)),height=Math.floor(Math.max(300,canvas.clientHeight)*ratio);if(canvas.width===width&&canvas.height===height)return;canvas.width=width;canvas.height=height;context.lineCap='round';context.lineJoin='round';restore()};
+  const point=event=>{const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*(canvas.width/rect.width),y:(event.clientY-rect.top)*(canvas.height/rect.height)}};
+  const save=()=>localStorage.setItem(key,canvas.toDataURL('image/png'));
+  canvas.addEventListener('pointerdown',event=>{drawing=true;last=point(event);canvas.setPointerCapture?.(event.pointerId);event.preventDefault()});
+  canvas.addEventListener('pointermove',event=>{if(!drawing)return;const next=point(event);context.strokeStyle='#234d54';context.lineWidth=Math.max(3,canvas.width/280);context.beginPath();context.moveTo(last.x,last.y);context.lineTo(next.x,next.y);context.stroke();last=next;});
+  const finish=()=>{if(!drawing)return;drawing=false;save();};canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);
+  document.querySelector('[data-sketch-clear]')?.addEventListener('click',()=>{if(!confirm('Limpar este rascunho técnico?'))return;localStorage.removeItem(key);paintBackground();toast('Rascunho limpo.')});
+  document.querySelector('[data-sketch-save]')?.addEventListener('click',()=>{save();toast('Rascunho salvo neste aparelho.')});
+  resize();window.addEventListener('resize',resize,{once:true});
+}
+const simplifiedDiagramRender=render;
+render=()=>{simplifiedDiagramRender();document.querySelector('[data-diagram-detail-toggle]')?.addEventListener('click',()=>{state.diagramDetailMode=!state.diagramDetailMode;render();});setupTechnicalSketch();};
+render();
+
 // Ajuste manual no fluxograma: a ponta de uma seta pode ser solta sobre outro nó.
 // A alteração não apaga o padrão; ela fica registrada e pede confirmação técnica.
 state.data.technicalConnectionOverrides=Array.isArray(state.data.technicalConnectionOverrides)?state.data.technicalConnectionOverrides:[];
@@ -2422,4 +2463,16 @@ saveRecord=(kind,data,editId='')=>{
   product.connectionProfile={role:data.technicalRole||'other',label:standard.label,input:product.technicalDefinition.input,output:product.technicalDefinition.output,media:product.technicalDefinition.cable,capacity:product.technicalDefinition.capacity,targets:standard.targets||[],source:'Cadastro técnico Proelium'};
   ensureConnectionProfiles();persist();render();toast('Produto e mapa técnico cadastrados.');return result;
 };
+render();
+
+// Esta é a camada final da tela: mantém o rascunho em primeiro plano mesmo após todos os módulos.
+const finalDiagramSketchView=views.diagram;
+views.diagram=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),projectLabel=project?`${project.code||'Projeto'} · ${project.name}`:'Selecione um projeto para desenhar';
+  const sketch=`<section class="card technical-sketch-card"><div class="card-head"><div><p class="eyebrow">RASCUNHO TÉCNICO</p><h2>Desenhe a ideia primeiro.</h2><p class="subtext">Faça setas, escreva os equipamentos e mostre o caminho que você imagina. Depois eu traduzo isso para as regras do sistema.</p></div><span class="subtext">${projectLabel}</span></div><div class="technical-sketch-toolbar"><span>✎ Toque e arraste para desenhar</span><button type="button" class="button secondary" data-sketch-clear>Limpar</button><button type="button" class="button primary" data-sketch-save>Salvar neste aparelho</button></div><canvas class="technical-sketch-canvas" data-sketch-project="${project?.id||''}" aria-label="Área livre para rascunhar o diagrama técnico"></canvas><small class="subtext">Comece com Internet → roteador → switch. Depois acrescente os aparelhos e envie uma captura para eu interpretar.</small></section>`;
+  const detail=`<section class="diagram-detail-toggle"><button type="button" class="button secondary" data-diagram-detail-toggle>${state.diagramDetailMode?'Ocultar mapa automático':'Ver mapa automático e registro de cabos'}</button><small>${state.diagramDetailMode?'O cenário detalhado está visível abaixo.':'O mapa automático continua guardado até você precisar conferir.'}</small></section>`;
+  return sketch+detail+(state.diagramDetailMode?`<div class="technical-diagram-detail">${finalDiagramSketchView()}</div>`:'');
+};
+const finalDiagramSketchRender=render;
+render=()=>{finalDiagramSketchRender();document.querySelector('[data-diagram-detail-toggle]')?.addEventListener('click',()=>{state.diagramDetailMode=!state.diagramDetailMode;render();});setupTechnicalSketch();};
 render();
