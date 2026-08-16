@@ -1512,6 +1512,16 @@ function isLinearProjectMaterial(product){
   const description=`${product?.name||''} ${product?.model||''} ${product?.category||''} ${product?.unit||''}`;
   return product?.unit==='m'||/\bcabo\b|cabeamento|eletroduto|condu[ií]te|tubula[cç][aã]o|infraestrutura|pre[- ]?infra/i.test(description);
 }
+function useWholeNumberSteppers(){
+  const form=$('#recordForm');
+  if(!form)return;
+  form.querySelectorAll('input[type="number"]').forEach(field=>{
+    if(/discount/i.test(field.name)||field.type==='hidden')return;
+    field.step='1';
+    const value=Number(field.value);
+    if(Number.isFinite(value))field.value=String(Math.round(value));
+  });
+}
 function linearMaterialEntries(room,item){
   const group=item?.capacityAllocation?.groupId;
   return group?capacityGroups(room.quoteId).find(entry=>entry.groupId===group)?.allocations||[]:[];
@@ -1525,6 +1535,7 @@ function openLinearMaterialDistribution(roomId,itemIndex){
   $('#formFields').innerHTML=`<input type="hidden" name="sourceRoomId" value="${sourceRoom.id}"><input type="hidden" name="itemIndex" value="${itemIndex}"><input type="hidden" name="groupId" value="${allocation?.groupId||uid('mat')}"><input type="hidden" name="productId" value="${product.id}"><input type="hidden" name="discount" value="${Number(item.discount||0)}"><input type="hidden" name="sourceQty" value="${total}"><div class="field full"><label>Material</label><input value="${product.name} · ${total} ${product.unit||'m'}" disabled><small class="subtext">Distribua a metragem que atende cada ambiente. Isto não cria portas, canais ou capacidade técnica.</small></div><div class="field full"><p class="subtext"><strong>Conferência:</strong> a soma dos ambientes deve fechar exatamente ${total} ${product.unit||'m'}.</p></div>${rooms.map(room=>`<div class="field"><label>${room.name}</label><input name="material_${room.id}" type="number" min="0" step="0.01" value="${amountFor(room.id)}"></div>`).join('')}`;
   if(item.pendingMaterialDistribution)$('#recordForm').dataset.linearMaterialDraft=`${sourceRoom.id}:${itemIndex}`;
   $('#recordDialog').showModal();
+  useWholeNumberSteppers();
 }
 function saveLinearMaterialDistribution(data){
   const sourceRoom=(state.data.quoteRooms||[]).find(room=>room.id===data.sourceRoomId),sourceItem=sourceRoom?.items?.[Number(data.itemIndex)],product=productById(data.productId),quoteId=sourceRoom?.quoteId,total=Number(data.sourceQty);
@@ -1567,13 +1578,19 @@ openCapacityDistribution=(roomId,itemIndex)=>{
 const cableAwareMoveOpen=openQuoteItemMove;
 openQuoteItemMove=(roomId,itemIndex)=>{
   const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
-  return item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareMoveOpen(roomId,Number(itemIndex));
+  const result=item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareMoveOpen(roomId,Number(itemIndex));
+  useWholeNumberSteppers();return result;
 };
 const cableAwareEditOpen=openQuoteItemEdit;
 openQuoteItemEdit=(roomId,itemIndex)=>{
   const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
-  return item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareEditOpen(roomId,Number(itemIndex));
+  const result=item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareEditOpen(roomId,Number(itemIndex));
+  useWholeNumberSteppers();return result;
 };
+const wholeNumberQuoteSearchOpen=openQuoteItemSearch;
+openQuoteItemSearch=(prefill={})=>{const result=wholeNumberQuoteSearchOpen(prefill);useWholeNumberSteppers();return result};
+const wholeNumberCapacityOpen=openCapacityDistribution;
+openCapacityDistribution=(roomId,itemIndex)=>{const result=wholeNumberCapacityOpen(roomId,itemIndex);useWholeNumberSteppers();return result};
 const materialDistributionRender=render;
 render=()=>{
   materialDistributionRender();
