@@ -166,6 +166,9 @@ function ensureEmbraceCatalog(data){if(!Array.isArray(data.products))data.produc
 function loadData(){try{const saved=JSON.parse(localStorage.getItem('proelium-data'));if(!saved)return ensureEmbraceCatalog(structuredClone(seed));const resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||structuredClone(seed.installations),activities:saved.activities||structuredClone(seed.activities),quotes:saved.quotes||structuredClone(seed.quotes),opportunities:saved.opportunities||[],appointments:saved.appointments||[],products:resetCatalog?structuredClone(seed.products):(saved.products||structuredClone(seed.products)),quoteRooms:resetCatalog?(saved.quoteRooms||structuredClone(seed.quoteRooms)).map(r=>({...r,items:[]})):(saved.quoteRooms||structuredClone(seed.quoteRooms))};merged.clients=merged.clients.map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=merged.projects.map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return ensureEmbraceCatalog(merged)}catch{return ensureEmbraceCatalog(structuredClone(seed))}}
 state.data=loadData();
 async function persist(){
+  // Keep the denormalized quote value synchronized with its current rooms/items.
+  // This prevents BI and project views from showing a stale total after edits.
+  (state.data.quotes||[]).forEach(quote=>{ quote.value=Number(quoteTotals(quote.id).price.toFixed(2)); });
   localStorage.setItem('proelium-data',JSON.stringify(state.data));
   if(location.protocol==='file:')return;
   if(state.syncing){toast('Aguarde a sincronização terminar e tente novamente.');return}
@@ -211,7 +214,8 @@ async function connectSharedData(){
   if(!await authenticate())return;
   try{
     const payload=await refreshSharedData(true);
-    if(!payload.data||!payload.data.collaborators?.length||!payload.data.evaluations?.length||payload.data.collaborators.some(person=>person.name==='Hernani'||person.name==='Hernani Queiroz')||embraceCatalogSyncNeeded){await persist();embraceCatalogSyncNeeded=false}
+    const quoteTotalsChanged=(state.data.quotes||[]).some(quote=>Math.abs(Number(quote.value||0)-Number(quoteTotals(quote.id).price||0))>.005);
+    if(quoteTotalsChanged||!payload.data||!payload.data.collaborators?.length||!payload.data.evaluations?.length||payload.data.collaborators.some(person=>person.name==='Hernani'||person.name==='Hernani Queiroz')||embraceCatalogSyncNeeded){await persist();embraceCatalogSyncNeeded=false}
     const events=new EventSource('./api/events');
     events.addEventListener('data-updated',async event=>{
       const update=JSON.parse(event.data);
