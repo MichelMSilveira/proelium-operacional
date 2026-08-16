@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Diagrama técnico: relações lógicas padronizadas incluídas no mapa — roteador para switch, switch para access points, receiver para caixas de som e NTL para keypads. Quando a origem não está cadastrada, o sistema exibe a ligação como pendência pontilhada.
+
 - Diagrama técnico: o mapa de conexões foi compactado e os nós passaram a ser agrupados por sistema — Rede, Automação, Áudio, Vídeo e Outros — com sinalização cromática discreta para facilitar a leitura da lógica.
 
 - Diagrama técnico: incluído o mapa de conexões com linhas entre origem/rack, centrais, equipamentos e pontos técnicos. Linhas contínuas representam origem cadastrada; linhas pontilhadas marcam conexões lógicas que ainda exigem conferência de ficha técnica ou visita.
