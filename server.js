@@ -54,6 +54,22 @@ function passwordMatches(password, user) {
   } catch { return false; }
 }
 
+function passwordRecord(password) {
+  const salt = crypto.randomBytes(16);
+  return { salt: salt.toString('base64'), hash: crypto.scryptSync(password, salt, 64).toString('base64') };
+}
+
+function publicUser(user) {
+  return { username: user.username, name: user.name || user.username, role: user.role || 'operador', active: user.active !== false };
+}
+
+function writeUsers(users) {
+  fs.mkdirSync(dataDirectory, { recursive: true });
+  const temporary = `${usersFile}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify(users, null, 2), { encoding: 'utf8', mode: 0o600 });
+  fs.renameSync(temporary, usersFile);
+}
+
 function requireUser(req, res) {
   const user = currentUser(req);
   if (!user) {
@@ -115,6 +131,35 @@ http.createServer(async (req, res) => {
     if (token) sessions.delete(token);
     setSessionCookie(res, '', 0, secureCookie);
     return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/auth/users' && ['GET', 'POST', 'DELETE'].includes(req.method)) {
+    const actor = requireUser(req, res);
+    if (!actor) return;
+    if (actor.role !== 'admin') return sendJson(res, 403, { error: 'Apenas administradores podem gerenciar usuários.' });
+    const users = readUsers();
+    if (req.method === 'GET') return sendJson(res, 200, { users: users.map(publicUser) });
+    try {
+      const payload = req.method === 'DELETE' ? { username: new URL(req.url, `http://${req.headers.host}`).searchParams.get('username') } : JSON.parse(await readBody(req));
+      const username = String(payload.username || '').trim().toLowerCase();
+      const index = users.findIndex(item => item.username === username);
+      if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)) return sendJson(res, 400, { error: 'Usuário inválido.' });
+      if (req.method === 'DELETE') {
+        if (username === actor.username) return sendJson(res, 400, { error: 'Você não pode excluir o próprio usuário.' });
+        if (index < 0) return sendJson(res, 404, { error: 'Usuário não encontrado.' });
+        if (users[index].role === 'admin' && users.filter(item => item.role === 'admin' && item.active !== false).length <= 1) return sendJson(res, 400, { error: 'Mantenha pelo menos um administrador ativo.' });
+        users.splice(index, 1); writeUsers(users); return sendJson(res, 200, { ok: true });
+      }
+      const password = String(payload.password || '');
+      if (index < 0 && password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' });
+      if (payload.role && !['admin', 'operador'].includes(payload.role)) return sendJson(res, 400, { error: 'Papel inválido.' });
+      const existing = index >= 0 ? users[index] : { username, createdAt: new Date().toISOString() };
+      const next = { ...existing, username, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false };
+      if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
+      users[index >= 0 ? index : users.length] = next;
+      writeUsers(users);
+      return sendJson(res, index >= 0 ? 200 : 201, { ok: true, user: publicUser(next) });
+    } catch { return sendJson(res, 400, { error: 'Dados de usuário inválidos.' }); }
   }
 
   if (pathname.startsWith('/api/')) {
