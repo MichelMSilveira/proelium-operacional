@@ -3,6 +3,7 @@
 ## 0.4.1 — 2026-08-15
 
 - Orçamentos: adicionada leitura de circuitos de iluminação por ambiente, incluindo módulos instalados em outro cômodo e rateados pela capacidade atendida;
+- Orçamentos: módulos de iluminação rateados agora mostram, ao lado da fração do módulo em cada ambiente, os circuitos efetivamente disponibilizados;
 - Navegação móvel: restaurada a rolagem vertical ao iniciar o gesto dentro de tabelas, filtros, cartões e janelas de formulário;
 - Orçamentos: a caixa “Ratear por todos os cômodos” também está disponível no modo Ajustar, junto da quantidade, para distribuir um item que já foi incluído;
 - Orçamentos: a ação Mover foi incorporada a Distribuir; agora basta ajustar a participação de cada ambiente para transferir parte ou todo o item;

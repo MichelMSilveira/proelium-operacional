@@ -1122,5 +1122,18 @@ render=()=>{
     const circuits=lightingCircuitsForRoom(quote.id,room.id),label=circuits===1?'circuito':'circuitos';
     target.insertAdjacentHTML('beforeend',` <span class="lighting-circuit-inline">· 💡 ${circuits} ${label}</span>`);
   });
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent);
+    if(!room)return;
+    const visibleItems=(room.items||[]).filter(item=>productById(item.productId));
+    card.querySelectorAll('tbody tr').forEach((row,index)=>{
+      const item=visibleItems[index],allocation=item?.capacityAllocation;
+      if(!allocation||!isLightingCircuitGroup({...allocation,productId:item.productId}))return;
+      const quantityCell=row.children[2]; // Ações ocupa a segunda coluna no orçamento compacto.
+      if(!quantityCell||quantityCell.querySelector('.circuit-allocation'))return;
+      const circuits=Number(allocation.amount||0),label=circuits===1?'circuito':'circuitos';
+      quantityCell.insertAdjacentHTML('beforeend',`<small class="circuit-allocation">💡 ${circuits} ${label}</small>`);
+    });
+  });
 };
 render();
