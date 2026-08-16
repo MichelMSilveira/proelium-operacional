@@ -1606,6 +1606,21 @@ document.addEventListener('click',event=>{
   openQuoteItemReplace(roomId,Number(index));
 },true);
 
+function openBulkMorelReplace(){
+  const quote=state.data.quotes.find(item=>item.id===state.selectedQuote),options=(state.data.products||[]).filter(product=>product.active!==false&&product.brand?.toLowerCase()!=='morel').map(product=>`<option value="${product.id}">${product.name} · ${product.brand||product.category||'Sem marca'} · ${product.price?money(product.price):'A cotar'}</option>`).join('');
+  if(!quote||!options){toast('Cadastre um produto substituto ativo no catálogo primeiro.');return}
+  $('#dialogTitle').textContent='Substituir todas as caixas Morel';$('#recordForm').dataset.kind='bulkMorelReplace';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Substituir caixas';
+  $('#formFields').innerHTML=`<input type="hidden" name="quoteId" value="${quote.id}"><div class="field full"><label>Novo produto ou serviço *</label><select name="productId" required>${options}</select></div><div class="field full"><p class="subtext">A substituição será aplicada a todas as caixas Morel deste orçamento, preservando quantidades, descontos, rateios e ambientes.</p></div>`;$('#recordDialog').showModal();
+}
+const bulkMorelReplaceSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind!=='bulkMorelReplace')return bulkMorelReplaceSave(kind,data,editId);
+  const to=productById(data.productId),rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===data.quoteId),matches=rooms.flatMap(room=>room.items||[]).filter(item=>productById(item.productId)?.brand?.toLowerCase()==='morel');
+  if(!to||!matches.length){toast('Nenhuma caixa Morel encontrada neste orçamento.');return false}
+  matches.forEach(item=>item.productId=to.id);logAudit('Substituiu caixas Morel','Orçamento',`${matches.length} item(ns) → ${to.name}`);persist();closeRecordDialog();render();toast(`${matches.length} caixa(s) Morel substituída(s) por ${to.name}.`);return;
+};
+document.addEventListener('click',event=>{const button=event.target.closest('[data-bulk-replace-morel]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();openBulkMorelReplace()},true);
+
 // Portas ignoradas não são consumo técnico: são uma decisão explícita de não usar a sobra daquele equipamento neste projeto.
 state.data.capacityIgnored=state.data.capacityIgnored&&typeof state.data.capacityIgnored==='object'?state.data.capacityIgnored:{};
 const capacityIgnoredNormalize=normalizeSharedData;
@@ -1670,7 +1685,13 @@ render=()=>{
   quoteHeaderLayoutRender();
   if(state.view!=='quoteDetail')return;
   const actions=document.querySelector('.quote-actions');
-  if(!actions||document.querySelector('.quote-extra-actions'))return;
+  if(!actions)return;
+  const quote=state.data.quotes.find(item=>item.id===state.selectedQuote);
+  const hasMorel=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote?.id).some(room=>(room.items||[]).some(item=>productById(item.productId)?.brand?.toLowerCase()==='morel'));
+  if(hasMorel&&!actions.querySelector('[data-bulk-replace-morel]')){
+    const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.bulkReplaceMorel='';button.textContent='Substituir caixas Morel';actions.append(button);
+  }
+  if(document.querySelector('.quote-extra-actions'))return;
   const optional=[...actions.querySelectorAll('[data-add="packageToQuote"],[data-quote-revision]')];
   if(!optional.length)return;
   const extra=document.createElement('section');
