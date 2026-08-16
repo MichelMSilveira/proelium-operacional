@@ -2537,7 +2537,7 @@ state.connectionDraft=state.connectionDraft||null;
 function connectionWorkbench(project){
   if(!project)return '';
   const nodes=projectConnectionInventory(project),connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),glyph={router:'⇄',switch:'▦','access-point':'◉','network-device':'▣',controller:'◇',ntl:'⌁','ps5-hub':'✦',keypad:'▤','automation-device':'▥',receiver:'▰',speaker:'◉','game-console':'▹'};
-  const portList=(node,direction)=>{const product=node.product||{},definition=product.technicalDefinition||{},profile=product.connectionProfile||{},registered=connections.filter(connection=>direction==='out'?connection.fromId===node.id:connection.toId===node.id).map(connection=>direction==='out'?connection.fromPort:connection.toPort).filter(Boolean),capacity=Number((String(definition.capacity||profile.capacity||'').match(/\d+/)||[])[0]||0),fallback=direction==='out'?(definition.output||profile.output||'Saída'):(definition.input||profile.input||'Entrada');let ports=[...new Set(registered)];if(!ports.length&&direction==='out'&&node.role==='switch')ports=Array.from({length:Math.max(8,Math.min(24,capacity||24))},(_,index)=>`Porta ${index+1}${/poe/i.test(product.name||'')?' / PoE':''}`);if(!ports.length)ports=[fallback];return ports.slice(0,24)};
+  const portList=(node,direction)=>{const product=node.product||{},definition=product.technicalDefinition||{},profile=product.connectionProfile||{},registered=connections.filter(connection=>direction==='out'?connection.fromId===node.id:connection.toId===node.id).map(connection=>direction==='out'?connection.fromPort:connection.toPort).filter(Boolean),declared=Array.isArray(direction==='out'?definition.outputPorts:definition.inputPorts)?(direction==='out'?definition.outputPorts:definition.inputPorts):String(direction==='out'?definition.outputPorts||'':definition.inputPorts||'').split(/[,;\n]/).map(port=>port.trim()).filter(Boolean),capacity=Number((String(definition.capacity||profile.capacity||'').match(/\d+/)||[])[0]||0),fallback=direction==='out'?(definition.output||profile.output||'Saída'):(definition.input||profile.input||'Entrada');let ports=[...new Set([...declared,...registered])];if(!ports.length&&direction==='out'&&node.role==='switch')ports=Array.from({length:Math.max(8,Math.min(24,capacity||24))},(_,index)=>`Porta ${index+1}${/poe/i.test(product.name||'')?' / PoE':''}`);if(!ports.length)ports=[fallback];return ports.slice(0,24)};
   const button=(node,port,direction)=>`<button type="button" class="connection-port ${direction} ${state.connectionDraft?.nodeId===node.id&&state.connectionDraft?.port===port?'selected':''}" data-connect-port="${direction}" data-connect-node="${node.id}" data-connect-name="${port}" title="${direction==='out'?'Sair por':'Entrar em'} ${port}">${port}</button>`;
   const cards=nodes.map(node=>{const product=node.product||{},name=product.name||node.label||'Equipamento',model=product.model||node.detail||'Modelo a confirmar';return `<article class="connection-device-card"><header><i class="connection-device-glyph wire-${node.role}" aria-hidden="true">${glyph[node.role]||'•'}</i><div><strong>${name}</strong><small>${model}</small></div></header><div class="connection-port-bank"><span>Entradas</span><div>${portList(node,'in').map(port=>button(node,port,'in')).join('')}</div></div><div class="connection-port-bank"><span>Saídas</span><div>${portList(node,'out').map(port=>button(node,port,'out')).join('')}</div></div></article>`}).join('')||'<div class="empty">Inclua equipamentos no orçamento para montar as ligações.</div>';
   const draft=state.connectionDraft?`Saída selecionada: <strong>${state.connectionDraft.label} · ${state.connectionDraft.port}</strong>. Agora toque na entrada do equipamento de destino.`:'1. Toque em uma saída. 2. Toque na entrada do outro aparelho. 3. Confirme a ligação.';
@@ -2557,4 +2557,27 @@ const workbenchDiagramView=views.diagram;
 views.diagram=()=>{const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));return workbenchDiagramView().replace('<section class="card technical-wire-card">',connectionWorkbench(project)+'<section class="card technical-wire-card">');};
 const workbenchRender=render;
 render=()=>{workbenchRender();if(state.view==='diagram'){const connections=$('#content .technical-wire-card'),workbench=$('#content .connection-workbench');if(connections&&workbench)connections.insertAdjacentElement('afterend',workbench)}document.querySelectorAll('[data-connect-port]').forEach(button=>button.onclick=()=>connectWorkbenchPorts(button.dataset.connectPort,button.dataset.connectNode,button.dataset.connectName));document.querySelectorAll('[data-cancel-connection]').forEach(button=>button.onclick=()=>{state.connectionDraft=null;render()});};
+render();
+
+// Complementa o formulário técnico final com portas próprias de cada modelo.
+const finalProductPortsOpenForm=openForm;
+openForm=(kind,editId='',prefill={})=>{
+  finalProductPortsOpenForm(kind,editId,prefill);
+  if(kind!=='product')return;
+  const product=editId?(state.data.products||[]).find(item=>item.id===editId):null,definition=product?.technicalDefinition||{},ports=value=>Array.isArray(value)?value.join(', '):(value||''),capacity=$('[name="technicalCapacity"]')?.closest('.field');
+  if(!capacity||$('#productPortIdentity'))return;
+  capacity.insertAdjacentHTML('afterend',`<div id="productPortIdentity" class="field full"><h3 class="form-subtitle">Identidade e portas do modelo</h3><p class="subtext">Nomeie as portas exatamente como aparecerão no diagrama. Ex.: WAN, LAN 1, Porta 01 / PoE, HDMI OUT.</p></div><div class="field"><label>Portas de entrada</label><input name="technicalInputPorts" value="${ports(prefill.technicalInputPorts??definition.inputPorts)}" placeholder="Ex.: WAN, HDMI IN 1"></div><div class="field"><label>Portas de saída</label><input name="technicalOutputPorts" value="${ports(prefill.technicalOutputPorts??definition.outputPorts)}" placeholder="Ex.: LAN 1, Porta 01 / PoE"></div>`);
+};
+const finalProductPortsSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  const result=finalProductPortsSave(kind,data,editId);
+  if(kind!=='product'||result===false)return result;
+  const product=editId?(state.data.products||[]).find(item=>item.id===editId):(state.data.products||[]).find(item=>item.sku===data.sku&&item.name===data.name);
+  if(!product)return result;
+  const readPorts=value=>String(value||'').split(/[,;\n]/).map(port=>port.trim()).filter(Boolean);
+  product.technicalIdentity={version:1,brand:product.brand||'Marca a confirmar',model:product.model||'Modelo a confirmar',sku:product.sku||'Código a confirmar',source:'Cadastro técnico Proelium'};
+  product.technicalDefinition={...(product.technicalDefinition||{}),inputPorts:readPorts(data.technicalInputPorts),outputPorts:readPorts(data.technicalOutputPorts)};
+  persist();render();toast('Identidade do modelo e portas técnicas salvas.');
+  return result;
+};
 render();
