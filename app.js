@@ -1089,6 +1089,7 @@ openQuoteItemSearch=(prefill={})=>{
   const roomCount=(state.data.quoteRooms||[]).filter(room=>room.quoteId===state.selectedQuote).length;
   if(title)title.textContent=`Ratear pelo projeto (${roomCount} ${roomCount===1?'cômodo':'cômodos'})`;
   if(description)description.textContent='Divide custo e venda igualmente entre todos os cômodos deste orçamento.';
+  if(prefill.generalItem&&form.elements.generalItem)form.elements.generalItem.checked=true;
   if(hint)hint.remove();
 };
 render();
@@ -1117,6 +1118,13 @@ render=()=>{
   if(state.view!=='quoteDetail')return;
   const quote=state.data.quotes.find(item=>item.id===state.selectedQuote);
   if(!quote)return;
+  const quoteActions=document.querySelector('.quote-actions');
+  if(quoteActions&&!quoteActions.querySelector('[data-add-general-quote-item]')){
+    const button=document.createElement('button');
+    button.type='button';button.className='button secondary';button.dataset.addGeneralQuoteItem='';button.textContent='+ Item geral / ratear pelo projeto';
+    button.onclick=()=>openQuoteItemSearch({generalItem:true});
+    quoteActions.insertBefore(button,quoteActions.querySelector('[data-add="quoteItem"]')?.nextSibling||null);
+  }
   const hasLightingCircuits=capacityGroups(quote.id).some(isLightingCircuitGroup);
   if(hasLightingCircuits){
   document.querySelectorAll('.room-grid .room-card').forEach(card=>{
