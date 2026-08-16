@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Diagrama técnico foi simplificado visualmente: cada aparelho prioriza nome e modelo, com conectores coloridos para rede, controle, áudio, vídeo e energia nas laterais do símbolo.
+- A Mesa de Ligação deixa de ocupar a tela principal; o fluxograma volta a ser a leitura central das conexões.
 - Diagrama técnico ganhou a Mesa de Ligação: cada cabo pode ser criado ou ajustado por campos claros de origem, saída, cabo, entrada e destino, sem depender de arrastar setas no desenho.
 - O fluxograma passa a refletir as ligações registradas na mesa; ajustes manuais ficam marcados para confirmação em campo e entram na auditoria.
 - Diagrama técnico passou a oferecer leitura por camadas: Rede, Automação, Áudio e Vídeo.
