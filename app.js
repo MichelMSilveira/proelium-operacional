@@ -2612,3 +2612,15 @@ render();
 const productConsultShortcutRender=render;
 render=()=>{productConsultShortcutRender();document.querySelectorAll('.product-catalog-table [data-edit-product]').forEach(edit=>{const id=edit.dataset.editProduct;if(edit.parentElement?.querySelector('[data-consult-product]'))return;const button=document.createElement('button');button.type='button';button.className='button secondary catalog-consult';button.dataset.consultProduct=id;button.textContent='Consultar';button.onclick=()=>{state.productTechnicalConsultId=id;render();requestAnimationFrame(()=>document.querySelector('.product-quick-consult')?.scrollIntoView({block:'start',behavior:'smooth'}));};edit.parentElement?.insertBefore(button,edit);});};
 render();
+
+// A ficha técnica também é uma área própria no menu: não fica escondida dentro do catálogo.
+views.productConnections=()=>heading('Conexões de produtos','Consulte e ajuste entradas, saídas, portas, cabo e modelo antes de usar o item no orçamento ou no diagrama.')+productQuickConsult();
+validViews.add('productConnections');
+if(!navItems.some(item=>item[0]==='productConnections')){
+  const productIndex=menuFlowOrder.indexOf('products');
+  menuFlowOrder.splice(productIndex+1,0,'productConnections');
+  menuFlowGroup.productConnections='Comercial';
+  navItems.push(['productConnections','⌁','Conexões de produtos']);
+  navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
+}
+render();
