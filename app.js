@@ -490,6 +490,60 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Mesa de ligação: edição direta e previsível. O fluxograma passa a ser a leitura visual do registro,
+// não a única forma de tentar criar uma conexão.
+state.data.technicalConnectionEdits=Array.isArray(state.data.technicalConnectionEdits)?state.data.technicalConnectionEdits:[];
+const connectionDeskSynchronize=synchronizeProjectConnectionStandards;
+synchronizeProjectConnectionStandards=()=>{
+  const result=connectionDeskSynchronize();
+  (state.data.technicalConnectionEdits||[]).forEach(edit=>{
+    const connection=(state.data.technicalConnections||[]).find(item=>item.id===edit.connectionId);
+    if(connection)Object.assign(connection,edit.changes,{status:'Ajuste manual — confirmar',manualOverride:true});
+  });
+  return result;
+};
+function connectionDeskNodes(project){
+  const nodes=projectConnectionInventory(project);
+  return [{id:'origin',label:'Internet / origem externa',role:'external',input:'—',output:'Link WAN',media:'Ethernet WAN'},...nodes.map(node=>{
+    const profile=node.product?.connectionProfile||{},definition=node.product?.technicalDefinition||{};
+    return {id:node.id,label:node.label||node.product?.name||'Equipamento',role:node.role||'other',input:definition.input||profile.input||'Entrada a confirmar',output:definition.output||profile.output||'Saída a confirmar',media:definition.cable||profile.media||'Cabo a confirmar'};
+  })];
+}
+function openConnectionDesk(projectId,connectionId=''){
+  const project=(state.data.projects||[]).find(item=>item.id===projectId),connection=(state.data.technicalConnections||[]).find(item=>item.id===connectionId&&item.projectId===projectId);
+  if(!project)return;
+  const nodes=connectionDeskNodes(project),byId=id=>nodes.find(node=>node.id===id),from=byId(connection?.fromId)||nodes[0],to=byId(connection?.toId)||nodes.find(node=>node.id!==from.id)||nodes[0],option=(node,selected)=>`<option value="${node.id}" ${node.id===selected?'selected':''}>${node.label}</option>`;
+  $('#dialogTitle').textContent=connection?'Ajustar ligação técnica':'Criar ligação técnica';
+  $('#recordForm').dataset.kind='technicalConnectionDesk';$('#recordForm').dataset.editId=connectionId;$('#saveButton').textContent=connection?'Salvar ligação':'Criar ligação';
+  $('#formFields').innerHTML=`<input type="hidden" name="projectId" value="${project.id}"><div class="field full"><p class="subtext"><strong>Ligação objetiva</strong> · escolha de onde o cabo sai e onde ele chega. Depois o diagrama desenha a linha sozinho.</p></div><div class="field"><label>Origem *</label><select name="fromId" required>${nodes.map(node=>option(node,from.id)).join('')}</select></div><div class="field"><label>Saída / porta</label><input name="fromPort" value="${connection?.fromPort||from.output}" required></div><div class="field"><label>Destino *</label><select name="toId" required>${nodes.filter(node=>node.id!==from.id).map(node=>option(node,to.id)).join('')}</select></div><div class="field"><label>Entrada / porta</label><input name="toPort" value="${connection?.toPort||to.input}" required></div><div class="field"><label>Cabo / sinal *</label><input name="cable" value="${connection?.cable||from.media||'Cat6'}" required></div><div class="field"><label>Situação</label><select name="status">${['Proposto — confirmar','Confirmado em campo','Ajuste manual — confirmar'].map(status=>`<option ${status===(connection?.status||'Proposto — confirmar')?'selected':''}>${status}</option>`).join('')}</select></div><div class="field full"><small class="subtext">Não é preciso arrastar bolinhas. Para corrigir depois, volte aqui em <strong>ajustar</strong>.</small></div>`;
+  $('#recordDialog').showModal();
+}
+function saveTechnicalConnectionDesk(kind,data,editId=''){
+  if(kind!=='technicalConnectionDesk')return false;
+  const project=(state.data.projects||[]).find(item=>item.id===data.projectId),nodes=project&&connectionDeskNodes(project),from=nodes?.find(node=>node.id===data.fromId),to=nodes?.find(node=>node.id===data.toId);
+  if(!project||!from||!to||from.id===to.id){toast('Escolha uma origem e um destino diferentes.');return false}
+  const changes={fromId:from.id==='origin'?'':from.id,fromLabel:from.label,fromRole:from.role,fromPort:String(data.fromPort||'Saída a confirmar').trim(),toId:to.id,toLabel:to.label,toRole:to.role,toPort:String(data.toPort||'Entrada a confirmar').trim(),cable:String(data.cable||'Cabo a confirmar').trim(),status:data.status||'Proposto — confirmar'};
+  if(editId){
+    const edits=state.data.technicalConnectionEdits||[],existing=edits.find(item=>item.connectionId===editId),next={connectionId:editId,projectId:project.id,changes,updatedAt:new Date().toISOString()};
+    if(existing)Object.assign(existing,next);else edits.push(next);
+    state.data.technicalConnectionEdits=edits;
+    logAudit('Ajustou ligação técnica','Diagrama',`${from.label} → ${to.label} · ${changes.cable}`);
+  }else{
+    state.data.technicalConnections.unshift({id:uid('conn'),projectId:project.id,...changes,cableCount:1,origin:'Manual Proelium',createdAt:new Date().toISOString()});
+    logAudit('Criou ligação técnica','Diagrama',`${from.label} → ${to.label} · ${changes.cable}`);
+  }
+  persist();render();toast(editId?'Ligação ajustada e refletida no diagrama.':'Ligação criada e desenhada no diagrama.');
+  return;
+};
+function connectionDeskDiagram(baseView){
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),connections=(state.data.technicalConnections||[]).filter(item=>item.projectId===project?.id);
+  if(!project)return baseView();
+  const rows=connections.map(connection=>`<tr><td>${connection.fromLabel}</td><td>${connection.fromPort||'—'}</td><td><strong>${connection.cable||'—'}</strong></td><td>${connection.toPort||'—'}</td><td>${connection.toLabel}</td><td><button class="link-button" data-edit-technical-connection="${connection.id}" data-connection-project="${project.id}">Ajustar</button></td></tr>`).join('');
+  const desk=`<section class="card connection-desk"><div class="card-head"><div><p class="eyebrow">MESA DE LIGAÇÃO</p><h3>Monte o cabo em quatro passos</h3><p class="subtext">Origem → saída → cabo → destino. Salve aqui; o desenho abaixo se atualiza sozinho.</p></div><button class="button primary" data-new-technical-connection="${project.id}">+ Nova ligação</button></div>${connections.length?table(['Origem','Saída','Cabo','Entrada','Destino',''],rows):'<div class="empty">Ainda não há ligações. Crie a primeira pelo botão acima.</div>'}</section>`;
+  return baseView().replace('<section class="card technical-wire-card">',desk+'<section class="card technical-wire-card">').replace('Cada equipamento e cada cabo têm uma linha própria. Arraste a ponta circular de uma seta sobre outro equipamento para propor um ajuste no registro.','O desenho é gerado pelas ligações salvas na mesa acima. Use “Ajustar” para corrigir uma conexão, sem arrastar.');
+};
+function bindConnectionDesk(){document.querySelectorAll('[data-new-technical-connection]').forEach(button=>button.onclick=()=>openConnectionDesk(button.dataset.newTechnicalConnection));document.querySelectorAll('[data-edit-technical-connection]').forEach(button=>button.onclick=()=>openConnectionDesk(button.dataset.connectionProject,button.dataset.editTechnicalConnection));}
+
 // Ajuste manual no fluxograma: a ponta de uma seta pode ser solta sobre outro nó.
 // A alteração não apaga o padrão; ela fica registrada e pede confirmação técnica.
 state.data.technicalConnectionOverrides=Array.isArray(state.data.technicalConnectionOverrides)?state.data.technicalConnectionOverrides:[];
@@ -2422,4 +2476,13 @@ saveRecord=(kind,data,editId='')=>{
   product.connectionProfile={role:data.technicalRole||'other',label:standard.label,input:product.technicalDefinition.input,output:product.technicalDefinition.output,media:product.technicalDefinition.cable,capacity:product.technicalDefinition.capacity,targets:standard.targets||[],source:'Cadastro técnico Proelium'};
   ensureConnectionProfiles();persist();render();toast('Produto e mapa técnico cadastrados.');return result;
 };
+render();
+
+// Ativação final da mesa de ligação, depois de todos os módulos carregados.
+const connectionDeskFinalSave=saveRecord;
+saveRecord=(kind,data,editId='')=>kind==='technicalConnectionDesk'?saveTechnicalConnectionDesk(kind,data,editId):connectionDeskFinalSave(kind,data,editId);
+const connectionDeskFinalDiagram=views.diagram;
+views.diagram=()=>connectionDeskDiagram(connectionDeskFinalDiagram);
+const connectionDeskFinalRender=render;
+render=()=>{connectionDeskFinalRender();bindConnectionDesk();};
 render();

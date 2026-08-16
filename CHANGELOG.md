@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Diagrama técnico ganhou a Mesa de Ligação: cada cabo pode ser criado ou ajustado por campos claros de origem, saída, cabo, entrada e destino, sem depender de arrastar setas no desenho.
+- O fluxograma passa a refletir as ligações registradas na mesa; ajustes manuais ficam marcados para confirmação em campo e entram na auditoria.
 - Diagrama técnico passou a oferecer leitura por camadas: Rede, Automação, Áudio e Vídeo.
 - Cada camada mantém o mesmo cenário e destaca somente seus equipamentos e ligações, sem duplicar informações do orçamento ou da operação.
 - Diagrama e Registro de ligações do cenário agora usam a mesma lista de conexões como fonte de verdade.
