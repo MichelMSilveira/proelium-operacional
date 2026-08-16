@@ -2242,8 +2242,8 @@ function projectConnectionInventory(project){
 function createProjectConnectionStandard(project){
   const nodes=projectConnectionInventory(project),byRole=role=>nodes.filter(node=>node.role===role),firstSource=(role,roomId='')=>byRole(role).find(node=>node.roomId===roomId)||byRole(role)[0]||null,connections=[];
   const primary=role=>byRole(role)[0]||null,targets=(role,primaryOnly=false)=>primaryOnly?[primary(role)].filter(Boolean):byRole(role);
-  const portCounters={},nextPort=(source,role)=>{const number=(portCounters[source.id]=(portCounters[source.id]||0)+1);if(role==='switch')return `Porta ${number} / ${/PoE/.test(source.product?.name||'')?'PoE':'LAN'}`;if(role==='router')return `LAN ${number}`;if(role==='ps5-hub'){const cord=((number-1)%5)+1,branch=Math.ceil(number/5);return branch>1?`Cordão ${cord} · derivação ${branch}`:`Cordão ${cord}`;}if(role==='receiver')return `Canal ${number}`;return `Saída ${number}`},inputPort=role=>({router:'WAN',switch:'Uplink', 'access-point':'Ethernet / PoE','network-device':'Ethernet',controller:'RJ‑45',ntl:'Entrada NTL','ps5-hub':'Entrada NTL',keypad:'Entrada de comunicação','automation-device':'Entrada de comunicação','game-console':'Ethernet / Wi‑Fi',receiver:'HDMI IN',speaker:'Terminal de alto-falante'}[role]||'Entrada');
-  const add=(fromRole,toRole,cable,primaryTarget=false)=>targets(toRole,primaryTarget).forEach(target=>{const source=firstSource(fromRole,target.roomId),fromPort=source?nextPort(source,fromRole):'Origem pendente';connections.push({id:`conn:${project.id}:${fromRole}:${target.id}`,projectId:project.id,fromId:source?.id||'',fromLabel:source?.label||`${standardConnectionProfiles[fromRole]?.label||fromRole} ausente`,fromRole,fromPort,toId:target.id,toLabel:target.label,toRole,toPort:inputPort(toRole),cable,cableCount:1,status:source?'Proposto — confirmar':'Origem ausente',origin:'Padrão Proelium'});});
+  const portCounters={},nextPort=(source,role,targetRole='')=>{const number=(portCounters[source.id]=(portCounters[source.id]||0)+1);if(role==='switch')return `Porta ${number} / ${/PoE/.test(source.product?.name||'')?'PoE':'LAN'}`;if(role==='router')return `LAN ${number}`;if(role==='ps5-hub'){const key=`${source.id}:${targetRole}`;if(targetRole==='automation-device'){const branch=(portCounters[key]=(portCounters[key]||0)+1);return branch>1?`Cordão 1 · chicote do quadro · derivação ${branch}`:'Cordão 1 · chicote do quadro';}const device=(portCounters[key]=(portCounters[key]||0)+1),cord=((device-1)%4)+2,branch=Math.ceil(device/4);return branch>1?`Cordão ${cord} · derivação ${branch}`:`Cordão ${cord}`;}if(role==='receiver')return `Canal ${number}`;return `Saída ${number}`},inputPort=role=>({router:'WAN',switch:'Uplink', 'access-point':'Ethernet / PoE','network-device':'Ethernet',controller:'RJ‑45',ntl:'Entrada NTL','ps5-hub':'Entrada NTL',keypad:'Entrada de comunicação','automation-device':'Entrada de comunicação','game-console':'Ethernet / Wi‑Fi',receiver:'HDMI IN',speaker:'Terminal de alto-falante'}[role]||'Entrada');
+  const add=(fromRole,toRole,cable,primaryTarget=false)=>targets(toRole,primaryTarget).forEach(target=>{const source=firstSource(fromRole,target.roomId),fromPort=source?nextPort(source,fromRole,toRole):'Origem pendente';connections.push({id:`conn:${project.id}:${fromRole}:${target.id}`,projectId:project.id,fromId:source?.id||'',fromLabel:source?.label||`${standardConnectionProfiles[fromRole]?.label||fromRole} ausente`,fromRole,fromPort,toId:target.id,toLabel:target.label,toRole,toPort:inputPort(toRole),cable,cableCount:1,status:source?'Proposto — confirmar':'Origem ausente',origin:'Padrão Proelium'});});
   const addExternal=(toRole,primaryTarget=false)=>targets(toRole,primaryTarget).forEach(target=>connections.push({id:`conn:${project.id}:external:${target.id}`,projectId:project.id,fromId:'',fromLabel:'Link externo / internet',fromRole:'external',fromPort:'Link da operadora',toId:target.id,toLabel:target.label,toRole,toPort:inputPort(toRole),cable:'Ethernet WAN',cableCount:1,status:'Proposto — confirmar',origin:'Padrão Proelium'}));
   addExternal('router',true);
   add('router','switch','Ethernet / Cat6',true);
@@ -2254,8 +2254,8 @@ function createProjectConnectionStandard(project){
   add('switch','controller','Cat6 RJ‑45 / rede');
   add('controller','ntl','Cat6 / barramento de controle');
   add('ntl','ps5-hub','Cordão de comunicação / 12 V');
-  add('ps5-hub','keypad','Cordão de comunicação');
   add('ps5-hub','automation-device','Cordão de comunicação');
+  add('ps5-hub','keypad','Cordão de comunicação');
   add('receiver','speaker','Cabo de alto-falante');
   return connections;
 }
@@ -2295,6 +2295,7 @@ setTimeout(()=>{if(state.data.connectionStandardV6)return;ensureConnectionProfil
 setTimeout(()=>{if(state.data.connectionStandardV7)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV7=true;persist();},11800);
 setTimeout(()=>{if(state.data.connectionStandardV8)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV8=true;persist();},12400);
 setTimeout(()=>{if(state.data.connectionStandardV9)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV9=true;persist();},13000);
+setTimeout(()=>{if(state.data.connectionStandardV10)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV10=true;persist();},13600);
 render();
 
 // Camadas de leitura: o mesmo cenário pode ser conferido por disciplina, sem duplicar dados.
