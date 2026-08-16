@@ -1588,7 +1588,22 @@ openQuoteItemEdit=(roomId,itemIndex)=>{
   useWholeNumberSteppers();return result;
 };
 const wholeNumberQuoteSearchOpen=openQuoteItemSearch;
-openQuoteItemSearch=(prefill={})=>{const result=wholeNumberQuoteSearchOpen(prefill);useWholeNumberSteppers();return result};
+openQuoteItemSearch=(prefill={})=>{
+  const result=wholeNumberQuoteSearchOpen(prefill),form=$('#recordForm');
+  useWholeNumberSteppers();
+  if(!form||form.dataset.cablePresetBound)return result;
+  form.dataset.cablePresetBound='true';
+  form.addEventListener('click',event=>{
+    const option=event.target.closest('[data-search-product]'),product=option&&productById(option.dataset.searchProduct),quantity=form.elements.qty;
+    if(!product||!quantity)return;
+    if(isLinearProjectMaterial(product)){
+      quantity.min='30';quantity.step='1';
+      if(Number(quantity.value)<30)quantity.value='30';
+      toast('Cabo selecionado: inclusão preparada a partir de 30 m.');
+    }else{quantity.min='1';quantity.step='1'}
+  },true);
+  return result;
+};
 const wholeNumberCapacityOpen=openCapacityDistribution;
 openCapacityDistribution=(roomId,itemIndex)=>{const result=wholeNumberCapacityOpen(roomId,itemIndex);useWholeNumberSteppers();return result};
 const materialDistributionRender=render;
