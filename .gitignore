@@ -6,6 +6,7 @@ desktop/node_modules
 desktop/dist
 desktop/dist-release
 .tools
+/*.exe
 
 # Runtime data (users, sessions and shared records)
 data/*.json
