@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Análise de orçamento: ações foram unificadas em todos os itens na ordem Ajustar, Ratear, Mover, Substituir e Excluir; nos rateados, Ratear e Mover abrem o ajuste do rateio completo, incluindo o local físico.
 - Análise de orçamento: itens rateados agora usam a mesma tabela dos itens normais no ambiente físico, com ações, quantidade, venda, total e ajuste manual de rateio; qualquer item comum pode ser rateado automaticamente e de forma igual entre os ambientes do projeto.
 - Tabelas: revisão automática dos cabeçalhos para manter a mesma quantidade de colunas e identificar corretamente colunas de ações; índices dos itens visíveis do orçamento preservam a referência real do ambiente.
 - Análise de orçamento: itens rateados instalados fisicamente em um ambiente receberam visual de linha comercial, com destaque suave, capacidade e ajuste de rateio organizados;
