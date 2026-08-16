@@ -2152,6 +2152,7 @@ render();
 function technicalDeviceRole(product={}){
   const text=`${product.name||''} ${product.brand||''} ${product.model||''} ${product.technicalType||''}`.toLocaleLowerCase('pt-BR');
   const identity=`${product.name||''} ${product.brand||''}`.toLocaleLowerCase('pt-BR');
+  if(/\beb[- ]?ps5\b|hub\s+de\s+rede\s+embrace/.test(text))return 'ps5-hub';
   if(/netlink|\bntl\b/.test(text))return 'ntl';
   if(/gateway|roteador|router|dream\s*machine|udm/.test(text))return 'router';
   if(/switch/.test(text))return 'switch';
@@ -2160,6 +2161,7 @@ function technicalDeviceRole(product={}){
   if(/playstation|xbox|nintendo|\bps\s?5\b|\bps\s?4\b|console/.test(identity))return 'game-console';
   if(/câmera|camera|ponto\s*de\s*rede|tomada\s*de\s*rede|smart\s*tv|\btv\b|nvr|interfone|controle\s*de\s*acesso/.test(text))return 'network-device';
   if(/keypad|virtue|tecla|pulsador/.test(text))return 'keypad';
+  if(/módulo|modulo|dimmer|rel[ée]|\bpwm\b|\bmpl\b|\bsdm\b/.test(text))return 'automation-device';
   if(/caixa|morel|stage|b&w|subwoofer|alto.falante/.test(text)&&!/cabo/.test(text))return 'speaker';
   if(/controladora|central.*automa|embrace|scenario/.test(text))return 'controller';
   return 'other';
@@ -2171,17 +2173,17 @@ technicalWireMap=function(project){
     const product=productById(group.productId);
     centrals.push({id:`group:${group.groupId}`,product,role:technicalDeviceRole(product),roomId:group.hostRoomId,detail:`${roomName(group.hostRoomId)} · ${group.capacityUsed??group.capacityTotal}/${group.capacityTotal} ${group.capacityUnit||'un'}`});
   });
-  rooms.forEach(room=>(room.items||[]).forEach((item,index)=>{if(item.capacityAllocation)return;const product=productById(item.productId);if(!product)return;const record={id:`item:${room.id}:${index}`,product,role:technicalDeviceRole(product),roomId:room.id,detail:`${room.name} · ${item.qty} ${product.unit||'un'}`};if(['router','switch','ntl','receiver','controller'].includes(record.role))centrals.push(record);else devices.push(record)}));
+  rooms.forEach(room=>(room.items||[]).forEach((item,index)=>{if(item.capacityAllocation)return;const product=productById(item.productId);if(!product)return;const record={id:`item:${room.id}:${index}`,product,role:technicalDeviceRole(product),roomId:room.id,detail:`${room.name} · ${item.qty} ${product.unit||'un'}`};if(['router','switch','ntl','ps5-hub','receiver','controller'].includes(record.role))centrals.push(record);else devices.push(record)}));
   points.forEach(point=>devices.push({id:`point:${point.id}`,product:{technicalType:point.type},role:technicalDeviceRole({technicalType:point.type,name:point.label}),roomId:point.roomId,detail:`${roomName(point.roomId)} · ${point.type}`,point,capacityGroupId:point.capacityGroupId||''}));
   const first=(role,roomId='')=>centrals.find(node=>node.role===role&&(!roomId||node.roomId===roomId))||centrals.find(node=>node.role===role)||null;
   // A tabela de ligações é a fonte de verdade do desenho: nenhuma conexão é inventada só no mapa.
   const registered=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),connections=registered.map(connection=>({from:connection.fromId||'origin',to:connection.toId,dashed:connection.status==='Origem ausente'})).filter(connection=>connection.to&&connection.from!==connection.to);
   // No mapa de rede, o equipamento rateado é o núcleo físico. Duplicações comerciais não viram outro switch no desenho.
-  const centralOrder={router:10,switch:20,controller:30,ntl:40,receiver:50};
+  const centralOrder={router:10,switch:20,controller:30,ntl:40,'ps5-hub':50,receiver:60};
   const visibleCentrals=centrals.filter((node,index,list)=>!['router','switch'].includes(node.role)||list.findIndex(candidate=>candidate.role===node.role)===index).sort((a,b)=>(centralOrder[a.role]||90)-(centralOrder[b.role]||90));
   const nodeLabel=node=>node.point?.label||node.product?.model||node.product?.name||'Ponto técnico',nodeLegend=node=>node.product?.model&&node.product?.name!==node.product.model?node.product.name:node.detail,miniNode=(node,kind)=>`<article class="wire-node wire-mini wire-${kind} wire-${node.role}" data-wire-node="${node.id}" title="${node.product?.name||node.point?.label||'Equipamento técnico'}"><i class="wire-glyph" aria-hidden="true"></i><div><strong>${nodeLabel(node)}</strong><small>${nodeLegend(node)}</small></div></article>`;
   const centralNodes=visibleCentrals.map(node=>miniNode(node,'central')).join('')||'<article class="wire-node wire-mini wire-central" data-wire-node="central-pendente"><i class="wire-glyph" aria-hidden="true"></i><div><strong>Central a definir</strong><small>Adicione a central do sistema.</small></div></article>';
-  const systemFor=node=>{if(node.role==='access-point'||node.role==='network-device'||node.role==='switch'||node.role==='router')return 'rede';if(node.role==='keypad'||node.role==='ntl'||node.role==='controller')return 'automacao';if(node.role==='speaker'||node.role==='receiver')return 'audio';if(node.role==='game-console')return 'video';const type=String(node.product?.technicalType||'').toLocaleLowerCase('pt-BR');return /vídeo|video|tv|câmera|camera/.test(type)?'video':'outros'},labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo',outros:'Outros'};
+  const systemFor=node=>{if(node.role==='access-point'||node.role==='network-device'||node.role==='switch'||node.role==='router')return 'rede';if(node.role==='keypad'||node.role==='automation-device'||node.role==='ntl'||node.role==='ps5-hub'||node.role==='controller')return 'automacao';if(node.role==='speaker'||node.role==='receiver')return 'audio';if(node.role==='game-console')return 'video';const type=String(node.product?.technicalType||'').toLocaleLowerCase('pt-BR');return /vídeo|video|tv|câmera|camera/.test(type)?'video':'outros'},labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo',outros:'Outros'};
   const deviceNodes=Object.entries(devices.reduce((all,node)=>{const system=systemFor(node);(all[system]??=[]).push({...node,system});return all},{})).map(([system,list])=>`<section class="wire-system wire-system-${system}"><h4>${labels[system]}</h4><div>${list.map(node=>miniNode(node,`device wire-${system}`)).join('')}</div></section>`).join('')||'<div class="empty">Inclua equipamentos ou pontos técnicos para desenhar as conexões.</div>';
   return `<section class="card technical-wire-card"><div class="card-head"><div><h3>Conexões do sistema</h3><p class="subtext">Este desenho usa exatamente o Registro de ligações do cenário acima. Linha pontilhada indica uma origem ainda pendente de conferência.</p></div></div><div class="technical-wire-map"><svg class="technical-wire-svg" aria-hidden="true"><defs><marker id="wire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"></path></marker></defs></svg><div class="wire-stage wire-origin"><article class="wire-node wire-root" data-wire-node="origin"><small>Origem</small><strong>Internet · energia · rack</strong><span>Entrada e distribuição principal</span></article></div><div class="wire-stage wire-centrals">${centralNodes}</div><div class="wire-stage wire-devices">${deviceNodes}</div>${connections.map(connection=>`<i class="wire-connection" data-wire-from="${connection.from}" data-wire-to="${connection.to}" data-wire-dashed="${connection.dashed}"></i>`).join('')}</div></section>`;
 };
@@ -2196,15 +2198,17 @@ const standardConnectionProfiles={
   'access-point':{label:'Access point',input:'Ethernet / PoE',output:'Wi‑Fi',media:'Cat6',targets:[]},
   'network-device':{label:'Dispositivo de rede',input:'Ethernet / PoE conforme modelo',output:'Serviço no ambiente',media:'Cat6',targets:[]},
   'game-console':{label:'Console de jogos',input:'Ethernet / Wi‑Fi e HDMI',output:'Vídeo e áudio digital',media:'Cat6 / HDMI 2.1',targets:['receiver']},
-  ntl:{label:'Interface NTL',input:'Central de automação / barramento',output:'Comando para keypads',media:'Cat6 / protocolo de controle',targets:['keypad']},
-  controller:{label:'Central de automação',input:'Rede RJ‑45, alimentação e programação',output:'Interface NTL e módulos',media:'Cat6 / barramento de controle',targets:['ntl']},
+  ntl:{label:'Interface NTL',input:'Central de automação / barramento',output:'Sinal para hub de distribuição',media:'Cat6 / protocolo de controle',targets:['ps5-hub']},
+  'ps5-hub':{label:'Hub EB-PS5 Embrace-Net',input:'Sinal NTL e alimentação 12 V',output:'Cordões de comunicação para dispositivos',media:'Cordão Embrace-Net / 12 V',targets:['keypad','automation-device']},
+  controller:{label:'Central de automação',input:'Rede RJ‑45, alimentação e programação',output:'Interface NTL',media:'Cat6 / barramento de controle',targets:['ntl']},
+  'automation-device':{label:'Módulo de automação',input:'Cordão de comunicação e alimentação',output:'Circuitos, cenas ou cargas',media:'Conforme módulo',targets:[]},
   receiver:{label:'Receiver',input:'Fontes A/V e rede',output:'Canais amplificados',media:'Cabo de alto-falante',targets:['speaker']},
   speaker:{label:'Caixa de som',input:'Sinal amplificado',output:'Áudio no ambiente',media:'Cabo de alto-falante',targets:[]},
   keypad:{label:'Keypad',input:'Controle / comunicação',output:'Cenas e comandos',media:'Cat6',targets:[]},
   other:{label:'Item técnico',input:'A confirmar',output:'A confirmar',media:'A confirmar',targets:[]}
 };
 function ensureConnectionProfiles(data=state.data){
-  (data.products||[]).forEach(product=>{const role=technicalDeviceRole(product),standard=standardConnectionProfiles[role]||standardConnectionProfiles.other,previous=product.connectionProfile&&typeof product.connectionProfile==='object'?product.connectionProfile:{};product.connectionProfile={role:previous.role&&previous.role!=='other'?previous.role:role,label:previous.label||standard.label,input:previous.input||standard.input,output:previous.output||standard.output,media:previous.media||standard.media,targets:Array.isArray(previous.targets)?previous.targets:standard.targets,source:previous.source||'Padrão Proelium — confirmar modelo'};});
+  (data.products||[]).forEach(product=>{const role=technicalDeviceRole(product),standard=standardConnectionProfiles[role]||standardConnectionProfiles.other,previous=product.connectionProfile&&typeof product.connectionProfile==='object'?product.connectionProfile:{},generated=previous.source==='Padrão Proelium — confirmar modelo';product.connectionProfile={role,label:generated?standard.label:(previous.label||standard.label),input:generated?standard.input:(previous.input||standard.input),output:generated?standard.output:(previous.output||standard.output),media:generated?standard.media:(previous.media||standard.media),targets:generated?standard.targets:(Array.isArray(previous.targets)?previous.targets:standard.targets),source:previous.source||'Padrão Proelium — confirmar modelo'};});
   return data;
 }
 function projectConnectionInventory(project){
@@ -2228,7 +2232,9 @@ function createProjectConnectionStandard(project){
   add('game-console','receiver','HDMI 2.1');
   add('switch','controller','Cat6 RJ‑45 / rede');
   add('controller','ntl','Cat6 / barramento de controle');
-  add('ntl','keypad','Cat6 / controle');
+  add('ntl','ps5-hub','Cordão de comunicação / 12 V');
+  add('ps5-hub','keypad','Cordão de comunicação');
+  add('ps5-hub','automation-device','Cordão de comunicação');
   add('receiver','speaker','Cabo de alto-falante');
   return connections;
 }
@@ -2257,6 +2263,7 @@ setTimeout(()=>{if(state.data.connectionStandardV2)return;ensureConnectionProfil
 setTimeout(()=>{if(state.data.connectionStandardV3)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV3=true;persist();},9400);
 setTimeout(()=>{if(state.data.connectionStandardV4)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV4=true;persist();},10000);
 setTimeout(()=>{if(state.data.connectionStandardV5)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV5=true;persist();},10600);
+setTimeout(()=>{if(state.data.connectionStandardV6)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV6=true;persist();},11200);
 render();
 
 // Camadas de leitura: o mesmo cenário pode ser conferido por disciplina, sem duplicar dados.
@@ -2270,7 +2277,7 @@ views.diagram=()=>{
 function diagramWireLayer(node){
   if(!node||node.dataset.wireNode==='origin')return 'origin';
   if(node.closest('.wire-system-rede')||node.matches('.wire-router,.wire-switch,.wire-rede'))return 'rede';
-  if(node.closest('.wire-system-automacao')||node.matches('.wire-ntl,.wire-controller,.wire-automacao'))return 'automacao';
+  if(node.closest('.wire-system-automacao')||node.matches('.wire-ntl,.wire-controller,.wire-ps5-hub,.wire-automation-device,.wire-automacao'))return 'automacao';
   if(node.closest('.wire-system-audio')||node.matches('.wire-receiver,.wire-audio'))return 'audio';
   if(node.closest('.wire-system-video')||node.matches('.wire-video'))return 'video';
   return 'outros';
