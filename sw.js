@@ -1,4 +1,4 @@
-const CACHE = 'proelium-shell-v130';
+const CACHE = 'proelium-shell-v131';
 const ASSETS = ['./','./index.html','./styles.css','./crm.css','./bi.css','./quotes.css','./danger.css','./app.js','./manifest.webmanifest','./icon.svg','./assets/ems-studio-logo.png'];
 
 self.addEventListener('install', event => {
