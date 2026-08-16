@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Correção crítica: restaurada a inicialização da interface após a atualização do catálogo Scenario Embrace;
 - Produtos e serviços: importado o catálogo Scenario Embrace da tabela fornecida, com códigos, modelos, acabamentos e valores de referência de junho de 2021, sujeitos à validação antes de cotar;
 - Orçamentos: itens podem ser movidos parcialmente entre cômodos, escolhendo a quantidade e preservando desconto e auditoria da alteração;
 - Menu: Visão geral, Comercial, Orçamentos, Clientes e Produtos e serviços agora formam o grupo Comercial;
