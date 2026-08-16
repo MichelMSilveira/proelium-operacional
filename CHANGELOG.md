@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Diagrama técnico: a primeira leitura da camada de Rede passou a mostrar a cadeia Internet → roteador → switch e, abaixo, uma linha por porta de saída com cabo e destino cadastrados. A mudança é apenas visual e preserva o orçamento, a auditoria e as conexões técnicas existentes.
 - Diagrama técnico recebeu a Bancada de Ligação: equipamentos do projeto aparecem juntos com entradas e saídas; selecionar uma saída e depois uma entrada cria o cabo, registra auditoria e atualiza o fluxograma.
 - Saídas do switch agora mostram as duas pontas da ligação: miniatura do switch, número e tipo de porta, cabo, miniatura do aparelho de destino, nome/modelo e entrada correspondente.
 - No Diagrama técnico, “Conexões do sistema” passa a aparecer logo após o título, antes de guias, mapa de portas e demais painéis.
