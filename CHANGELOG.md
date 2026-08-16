@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Comercial: o visor de oportunidades ganhas agora contabiliza todos os negócios concluídos e informa separadamente quantos já viraram clientes;
 - Indicadores do Comercial passaram a ser interativos, levando às oportunidades em atendimento, próximas ações, ganhas e perdidas;
 - Auditoria: exclusões de oportunidades comerciais agora ficam disponíveis para recuperação segura pelo próprio histórico;
 - Comercial: oportunidades em tratamento agora podem ser excluídas com confirmação, limpeza do orçamento ainda não aprovado e opção de desfazer;

@@ -458,6 +458,10 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// O total do visor precisa refletir exatamente os itens exibidos ao tocar em “Ganhas”.
+const commercialMetricConsistencyView=views.commercial;views.commercial=()=>{const won=state.data.opportunities.filter(item=>item.stage==='Ganho').length,converted=state.data.opportunities.filter(item=>item.stage==='Ganho'&&state.data.clients.some(client=>client.name.toLowerCase()===item.company.toLowerCase())).length;return commercialMetricConsistencyView().replace(/(<div class="kpi-top">Ganhas<\/div><div class="kpi-value">)\d+(<\/div><div class="kpi-note">)[^<]+(<\/div>)/,`$1${won}$2${won} negócio(s) concluído(s) · ${converted} cliente(s) criado(s)$3`)};
+render();
+
 // Auditoria e diagrama técnico: base rastreável para o futuro login e para a leitura de projetos.
 if(!navItems.some(item=>item[0]==='diagram'))navItems.splice(navItems.findIndex(item=>item[0]==='purchases')+1,0,['diagram','⌘','Diagrama técnico']);
 if(!navItems.some(item=>item[0]==='audit'))navItems.splice(navItems.findIndex(item=>item[0]==='diagram')+1,0,['audit','◷','Auditoria']);
