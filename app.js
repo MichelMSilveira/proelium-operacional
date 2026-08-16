@@ -476,6 +476,33 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Conferência antes de confirmar: o rateio mostra o total, o já distribuído e o saldo em tempo real.
+const capacityDistributionPreviewOpen=openCapacityDistribution;
+openCapacityDistribution=(roomId,itemIndex)=>{
+  capacityDistributionPreviewOpen(roomId,itemIndex);
+  const form=$('#recordForm');
+  if(!form||form.dataset.kind!=='capacityDistribution')return;
+  const totalField=form.elements.capacityTotal;
+  const unitField=form.elements.capacityUnit;
+  const allocationFields=[...form.querySelectorAll('input[name^="capacity_"]')];
+  const preview=document.createElement('section');
+  preview.className='capacity-rateio-preview';
+  preview.setAttribute('aria-live','polite');
+  form.querySelector('#formFields')?.append(preview);
+  const updatePreview=()=>{
+    const total=Number(totalField?.value||0);
+    const distributed=allocationFields.reduce((sum,field)=>sum+Number(field.value||0),0);
+    const balance=Number((total-distributed).toFixed(4));
+    const closed=Math.abs(balance)<.001;
+    preview.classList.toggle('balanced',closed);
+    preview.classList.toggle('unbalanced',!closed);
+    preview.innerHTML=`<strong>Conferência do rateio</strong><div><span>Capacidade total <b>${total||0} ${unitField?.value||'unidades'}</b></span><span>Distribuída <b>${distributed} ${unitField?.value||'unidades'}</b></span><span>${closed?'Rateio fechado':'Saldo a distribuir'} <b>${closed?'✓ 0':balance} ${unitField?.value||'unidades'}</b></span></div><small>${closed?'A soma está correta e pode ser confirmada.':'A soma dos ambientes precisa fechar exatamente a capacidade total.'}</small>`;
+  };
+  [totalField,unitField,...allocationFields].filter(Boolean).forEach(field=>field.addEventListener('input',updatePreview));
+  updatePreview();
+};
+render();
+
 // O total do visor precisa refletir exatamente os itens exibidos ao tocar em “Ganhas”.
 const commercialMetricConsistencyView=views.commercial;views.commercial=()=>{const won=state.data.opportunities.filter(item=>item.stage==='Ganho').length,converted=state.data.opportunities.filter(item=>item.stage==='Ganho'&&state.data.clients.some(client=>client.name.toLowerCase()===item.company.toLowerCase())).length;return commercialMetricConsistencyView().replace(/(<div class="kpi-top">Ganhas<\/div><div class="kpi-value">)\d+(<\/div><div class="kpi-note">)[^<]+(<\/div>)/,`$1${won}$2${won} negócio(s) concluído(s) · ${converted} cliente(s) criado(s)$3`)};
 render();
