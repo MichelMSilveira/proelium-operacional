@@ -2507,3 +2507,17 @@ let persistPagePositionTimer;
 window.addEventListener('scroll',()=>{clearTimeout(persistPagePositionTimer);persistPagePositionTimer=setTimeout(rememberUiState,180)},{passive:true});
 render();
 if(Number.isFinite(Number(restoredUiState.scrollY))&&Number(restoredUiState.scrollY)>0)requestAnimationFrame(()=>window.scrollTo({top:Number(restoredUiState.scrollY),behavior:'instant'}));
+
+// Esquema de portas da rede: leitura de campo antes do fluxograma completo.
+function networkSwitchSchematic(project){
+  if(!project)return '';
+  const nodes=projectConnectionInventory(project),switchNode=nodes.find(node=>node.role==='switch');
+  if(!switchNode)return '';
+  const connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),uplink=connections.find(connection=>connection.toId===switchNode.id),routes=connections.filter(connection=>connection.fromId===switchNode.id).map(connection=>({...connection,port:Number((String(connection.fromPort||'').match(/(?:porta|lan)\s*(\d+)/i)||[])[1]||0)})).sort((a,b)=>a.port-b.port),definition=switchNode.product?.technicalDefinition||{},profile=switchNode.product?.connectionProfile||{},capacity=Math.max(8,Math.min(48,Number((String(definition.capacity||profile.capacity||switchNode.product?.name||'24').match(/\d+/)||[])[0]||24))),byPort=port=>routes.find(route=>route.port===port);
+  const portMap=Array.from({length:capacity},(_,index)=>{const port=index+1,route=byPort(port);return `<div class="switch-port ${route?'occupied':''}" title="${route?`Porta ${port}: ${route.toLabel} · ${route.cable}`:`Porta ${port}: livre`}"><b>${port}</b><i></i></div>`}).join('');
+  const routesView=routes.length?routes.map(route=>`<article class="switch-route"><span class="switch-route-port">P${route.port||'?'}</span><span class="switch-cable">${route.cable||'Cat6'}</span><i aria-hidden="true"></i><div><strong>${route.toLabel}</strong><small>${route.toPort||'Entrada'} · ${route.status||'A confirmar'}</small></div></article>`).join(''):'<p class="subtext">Ainda não há portas distribuídas. Quando os equipamentos forem adicionados ao orçamento, eles aparecerão aqui.</p>';
+  return `<section class="card network-switch-schematic"><div class="card-head"><div><p class="eyebrow">REDE · MAPA DE PORTAS</p><h3>${switchNode.product?.name||'Switch'}${switchNode.product?.model?` · ${switchNode.product.model}`:''}</h3><p class="subtext">Portas reais da central. Azul significa porta ocupada; cinza, porta livre.</p></div><span class="subtext">${routes.length}/${capacity} portas em uso</span></div><div class="switch-schematic-flow"><div class="switch-uplink"><small>UPLINK</small><strong>${uplink?.fromLabel||'Roteador / Dream Machine'}</strong><span>${uplink?.cable||'Cat6'} → ${uplink?.toPort||'Uplink'}</span></div><div class="switch-uplink-line" aria-hidden="true">→</div><div class="switch-chassis"><div class="switch-chassis-title"><span>UNI / REDE</span><b>SWITCH</b><small>${capacity} portas</small></div><div class="switch-ports">${portMap}</div></div></div><div class="switch-routes"><h4>Cabos saindo do switch</h4>${routesView}</div></section>`;
+}
+const networkSwitchDiagramView=views.diagram;
+views.diagram=()=>{const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));return networkSwitchDiagramView().replace('<section class="card technical-wire-card">',networkSwitchSchematic(project)+'<section class="card technical-wire-card">');};
+render();
