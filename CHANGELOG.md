@@ -19,6 +19,7 @@
 - Produtos e Serviços ganhou Consulta técnica: a ficha mostra papel, entrada, saída, cabo, destinos e capacidade usados pelo diagrama.
 - Hub EB-PS5 passou a distribuir aparelhos individualmente pelos cinco cordões de comunicação; após o quinto aparelho, o cenário identifica a derivação no respectivo cordão para conferência em campo.
 - Topologia do EB-PS5 refinada: o Cordão 1 fica reservado ao chicote do quadro, agrupando os módulos; keypads e demais aparelhos ocupam os Cordões 2 a 5 restantes.
+- Movimentação entre ambientes agora exige quantidade inteira para aparelhos por unidade, como TVs, evitando bloqueio causado pela antiga precisão decimal.
 
 ## 0.4.1 — 2026-08-15
 

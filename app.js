@@ -1713,7 +1713,17 @@ const cableAwareMoveOpen=openQuoteItemMove;
 openQuoteItemMove=(roomId,itemIndex)=>{
   const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
   const result=item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareMoveOpen(roomId,Number(itemIndex));
+  const quantity=$('#recordForm')?.elements?.quantity;
+  if(quantity&&product&&!isLinearProjectMaterial(product)){quantity.min='1';quantity.step='1';quantity.value=String(Math.max(1,Math.min(Math.floor(Number(item.qty)||1),Math.round(Number(quantity.value)||1))));}
   useWholeNumberSteppers();return result;
+};
+const wholeUnitMoveSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='quoteItemMove'){
+    const room=(state.data.quoteRooms||[]).find(entry=>entry.id===data.sourceRoomId),item=room?.items?.[Number(data.itemIndex)],product=item&&productById(item.productId),quantity=Number(data.quantity);
+    if(product&&!isLinearProjectMaterial(product)&&!Number.isInteger(quantity)){toast('Este item é contado por unidade. Informe uma quantidade inteira para mover.');return false;}
+  }
+  return wholeUnitMoveSave(kind,data,editId);
 };
 const cableAwareEditOpen=openQuoteItemEdit;
 openQuoteItemEdit=(roomId,itemIndex)=>{
