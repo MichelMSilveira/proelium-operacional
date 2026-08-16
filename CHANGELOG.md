@@ -23,6 +23,7 @@
 - Diagrama técnico passou a usar linhas de fluxograma com saída e entrada laterais ou verticais conforme a posição dos equipamentos, evitando zigue-zagues e facilitando a leitura organizada do cenário.
 - Diagrama técnico ganhou leitura compacta: ícones menores, sem caixas pesadas, núcleo técnico em ordem de fluxo e aparelhos agrupados por disciplina.
 - Fluxograma técnico agora permite arrastar a ponta de uma seta sobre outro equipamento. Após confirmação, o Registro de ligações é atualizado como ajuste manual pendente de validação em campo.
+- Corrigida a camada de interação do fluxograma: os controles circulares das setas ficam acima dos ícones e identificam corretamente o equipamento de destino ao soltar.
 
 ## 0.4.1 — 2026-08-15
 

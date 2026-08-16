@@ -522,7 +522,7 @@ function bindWireDragControls(){
     const svg=map.querySelector('.technical-wire-svg');if(!svg)return;let drag=null;
     svg.addEventListener('pointerdown',event=>{const handle=event.target.closest('.wire-link-handle');if(!handle?.dataset.wireConnectionId)return;event.preventDefault();const bounds=map.getBoundingClientRect();drag={connectionId:handle.dataset.wireConnectionId,handle,bounds};map.classList.add('wire-dragging');svg.setPointerCapture?.(event.pointerId);});
     svg.addEventListener('pointermove',event=>{if(!drag)return;const x=event.clientX-drag.bounds.left,y=event.clientY-drag.bounds.top;drag.handle.setAttribute('cx',x);drag.handle.setAttribute('cy',y);});
-    const finish=event=>{if(!drag)return;const active=drag;drag=null;map.classList.remove('wire-dragging');const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-wire-node]');requestAnimationFrame(drawTechnicalWireMaps);if(target?.dataset.wireNode)saveWireDragAdjustment(active.connectionId,target.dataset.wireNode);};
+    const finish=event=>{if(!drag)return;const active=drag;drag=null;map.classList.remove('wire-dragging');active.handle.style.pointerEvents='none';const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-wire-node]');active.handle.style.pointerEvents='';requestAnimationFrame(drawTechnicalWireMaps);if(target?.dataset.wireNode)saveWireDragAdjustment(active.connectionId,target.dataset.wireNode);};
     svg.addEventListener('pointerup',finish);svg.addEventListener('pointercancel',finish);
   });
 }
