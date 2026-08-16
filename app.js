@@ -1169,7 +1169,18 @@ render=()=>{
       const item=visibleItems[index],actionCell=row.querySelector('[data-edit-quote-item]')?.closest('td');
       if(!item||!actionCell||actionCell.querySelector('[data-delete-quote-item]'))return;
       actionCell.classList.add('quote-item-actions');
-      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-distribute" data-distribute-capacity="${room.id}:${index}">Distribuir / mover</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
+      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
+    });
+  });
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent);
+    if(!room)return;
+    const visibleItems=(room.items||[]).filter(item=>productById(item.productId)),headers=[...card.querySelectorAll('thead th')].map(header=>header.textContent.trim()),quantityIndex=headers.indexOf('Qtd.');
+    card.querySelectorAll('tbody tr').forEach((row,index)=>{
+      const item=visibleItems[index],quantityCell=row.children[quantityIndex];
+      if(!item||!quantityCell||quantityCell.querySelector('.quote-item-rateio'))return;
+      row.querySelectorAll('[data-distribute-capacity]').forEach(button=>button.remove());
+      quantityCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-rateio" data-distribute-capacity="${room.id}:${index}">Rateio</button>`);
     });
   });
 };

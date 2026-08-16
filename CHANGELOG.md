@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Análise de orçamento: a ação de rateio foi posicionada ao lado da quantidade de cada equipamento, dentro do respectivo ambiente;
 - Análise de orçamento: todos os itens agora recebem ações padronizadas para ajustar, distribuir/mover, substituir e excluir;
 - Orçamentos: adicionada ação direta “Item geral / ratear pelo projeto”, que abre o item já marcado para dividir custo e venda pelos cômodos da proposta;
 - Rateios de portas: o orçamento agora separa capacidade física da capacidade usada na obra; somente as portas usadas recebem custo comercial e o diagrama compara portas rateadas, ocupadas e livres;
