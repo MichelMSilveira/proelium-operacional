@@ -123,5 +123,23 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
   #recordDialog form{padding:18px 14px}
   #recordDialog .form-grid{margin:16px 0}
 }
+
+/* Orçamento no telefone: os painéis ocupam toda a largura útil; somente as tabelas extensas deslizam por dentro. */
+@media(max-width:720px){
+  html,body{max-width:100%;overflow-x:hidden}
+  .app-shell,main,.content{width:100%;max-width:none;min-width:0}
+  .content{margin:0;padding:20px 8px 74px}
+  .quote-analysis,.commercial-history,.capacity-summary,.room-grid,.room-card{width:100%;max-width:none;min-width:0;margin-left:0;margin-right:0}
+  .quote-analysis .card-head,.commercial-history .card-head,.capacity-summary .card-head{align-items:flex-start;gap:6px}
+  .room-bars{padding:12px 13px}
+  .room-bar{grid-template-columns:minmax(82px,.9fr) minmax(0,1fr);gap:5px 9px}
+  .room-bar>span,.room-bar small{grid-column:2;text-align:left}
+  .capacity-summary-list{grid-template-columns:minmax(0,1fr)}
+  .capacity-summary-list article{padding:14px}
+  .room-card .card-head{padding:15px 14px}
+  .room-card footer{gap:8px;padding:12px 14px;align-items:flex-start;flex-direction:column}
+  .room-card .table-wrap{width:100%;max-width:100%}
+  dialog:not(#recordDialog){width:calc(100vw - 16px);max-width:none;margin:10px 8px}
+}
 .opportunity-delete{color:#a8433d!important}
 .kpi-action{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.kpi-action:hover,.kpi-action:focus-visible{transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,62,48,.14);outline:2px solid rgba(23,62,48,.32);outline-offset:2px}
