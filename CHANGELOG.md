@@ -9,6 +9,7 @@
 - Mapa de rede agora consolida duplicações comerciais de roteador e switch: o desenho mostra apenas o núcleo físico principal e evita loops falsos entre access points e switches.
 - Seletor de camadas reposicionado imediatamente acima do diagrama de conexões para manter a leitura técnica agrupada.
 - Camada de Rede ganhou leitura vertical: origem, roteador, switch e ramificações para os equipamentos.
+- Diagrama técnico recebeu visual minimalista: linhas em destaque, símbolo técnico compacto e legenda curta do modelo em cada equipamento.
 
 ## 0.4.1 — 2026-08-15
 
