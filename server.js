@@ -10,9 +10,9 @@ const dataFile = path.join(dataDirectory, 'shared-data.json');
 const usersFile = path.join(dataDirectory, 'users.json');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const eventClients = new Set();
-const sessions = new Map();
 // Keep the authenticated session across app/browser restarts without storing passwords.
 const sessionTtl = 30 * 24 * 60 * 60 * 1000;
+const sessionSecret = process.env.SESSION_SECRET || 'proelium-development-session-secret-change-me';
 
 function readUsers() {
   if (!fs.existsSync(usersFile)) return [];
@@ -27,15 +27,23 @@ function parseCookies(req) {
     .filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
 }
 
+function signedSession(payload) {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', sessionSecret).update(encoded).digest('base64url');
+  return `${encoded}.${signature}`;
+}
+
 function currentUser(req) {
-  const token = parseCookies(req).proelium_session;
-  const session = token && sessions.get(token);
-  if (!session || session.expiresAt < Date.now()) {
-    if (token) sessions.delete(token);
-    return null;
-  }
-  session.expiresAt = Date.now() + sessionTtl;
-  return session;
+  const value = parseCookies(req).proelium_session || '';
+  const [encoded, signature] = value.split('.');
+  if (!encoded || !signature) return null;
+  const expected = crypto.createHmac('sha256', sessionSecret).update(encoded).digest('base64url');
+  const actualBuffer = Buffer.from(signature), expectedBuffer = Buffer.from(expected);
+  if (actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) return null;
+  try {
+    const session = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+    return session.expiresAt >= Date.now() ? session : null;
+  } catch { return null; }
 }
 
 function sendJson(res, status, value, extraHeaders = {}) {
@@ -120,16 +128,13 @@ http.createServer(async (req, res) => {
       const password = String(payload.password || '');
       const user = readUsers().find(item => item.username === username && item.active !== false);
       if (!user || !passwordMatches(password, user)) return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
-      const token = crypto.randomBytes(32).toString('base64url');
-      sessions.set(token, { username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
+      const token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
       setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
       return sendJson(res, 200, { ok: true, user: { username: user.username, role: user.role || 'operador', name: user.name || user.username } });
     } catch { return sendJson(res, 400, { error: 'Solicitação de login inválida.' }); }
   }
 
   if (pathname === '/api/auth/logout' && req.method === 'POST') {
-    const token = parseCookies(req).proelium_session;
-    if (token) sessions.delete(token);
     setSessionCookie(res, '', 0, secureCookie);
     return sendJson(res, 200, { ok: true });
   }
