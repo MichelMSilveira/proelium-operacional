@@ -1,13 +1,67 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const port = Number(process.env.PORT || 4173);
 const root = __dirname;
 const dataDirectory = path.join(root, 'data');
 const dataFile = path.join(dataDirectory, 'shared-data.json');
+const usersFile = path.join(dataDirectory, 'users.json');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const eventClients = new Set();
+const sessions = new Map();
+const sessionTtl = 8 * 60 * 60 * 1000;
+
+function readUsers() {
+  if (!fs.existsSync(usersFile)) return [];
+  try {
+    const saved = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+    return Array.isArray(saved) ? saved : [];
+  } catch { return []; }
+}
+
+function parseCookies(req) {
+  return Object.fromEntries((req.headers.cookie || '').split(';').map(item => item.trim().split('='))
+    .filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
+}
+
+function currentUser(req) {
+  const token = parseCookies(req).proelium_session;
+  const session = token && sessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    if (token) sessions.delete(token);
+    return null;
+  }
+  session.expiresAt = Date.now() + sessionTtl;
+  return session;
+}
+
+function sendJson(res, status, value, extraHeaders = {}) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders });
+  res.end(JSON.stringify(value));
+}
+
+function setSessionCookie(res, token, maxAge = sessionTtl / 1000, secure = false) {
+  res.setHeader('Set-Cookie', `proelium_session=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+}
+
+function passwordMatches(password, user) {
+  try {
+    const actual = crypto.scryptSync(password, Buffer.from(user.salt, 'base64'), 64);
+    const expected = Buffer.from(user.hash, 'base64');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  } catch { return false; }
+}
+
+function requireUser(req, res) {
+  const user = currentUser(req);
+  if (!user) {
+    sendJson(res, 401, { error: 'É necessário entrar no sistema.' });
+    return null;
+  }
+  return user;
+}
 
 function readSharedData() {
   if (!fs.existsSync(dataFile)) return { data: null, updatedAt: null, revision: 0 };
@@ -18,11 +72,6 @@ function readSharedData() {
 function broadcastUpdate(saved) {
   const message = `event: data-updated\ndata: ${JSON.stringify({ revision: saved.revision, updatedAt: saved.updatedAt })}\n\n`;
   for (const client of eventClients) client.write(message);
-}
-
-function sendJson(res, status, value) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(value));
 }
 
 function readBody(req) {
@@ -39,6 +88,39 @@ function readBody(req) {
 
 http.createServer(async (req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
+  const secureCookie = req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
+
+  if (pathname === '/api/auth/me' && req.method === 'GET') {
+    const user = currentUser(req);
+    return user ? sendJson(res, 200, { authenticated: true, user: { username: user.username, role: user.role, name: user.name || user.username } })
+      : sendJson(res, 401, { authenticated: false });
+  }
+
+  if (pathname === '/api/auth/login' && req.method === 'POST') {
+    try {
+      const payload = JSON.parse(await readBody(req));
+      const username = String(payload.username || '').trim().toLowerCase();
+      const password = String(payload.password || '');
+      const user = readUsers().find(item => item.username === username && item.active !== false);
+      if (!user || !passwordMatches(password, user)) return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
+      const token = crypto.randomBytes(32).toString('base64url');
+      sessions.set(token, { username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
+      setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
+      return sendJson(res, 200, { ok: true, user: { username: user.username, role: user.role || 'operador', name: user.name || user.username } });
+    } catch { return sendJson(res, 400, { error: 'Solicitação de login inválida.' }); }
+  }
+
+  if (pathname === '/api/auth/logout' && req.method === 'POST') {
+    const token = parseCookies(req).proelium_session;
+    if (token) sessions.delete(token);
+    setSessionCookie(res, '', 0, secureCookie);
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname.startsWith('/api/')) {
+    const user = requireUser(req, res);
+    if (!user) return;
+  }
 
   if (pathname === '/api/data' && req.method === 'GET') {
     try {

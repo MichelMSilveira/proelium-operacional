@@ -104,6 +104,30 @@ if(!Array.isArray(state.data.collaborators)||!state.data.collaborators.length)st
 function normalizeTeamNames(data){data.collaborators=(data.collaborators||[]).filter(person=>person.name!=='Hernani').map(person=>person.name==='Hernani Queiroz'?{...person,name:'Ernani Queiroz',role:'Direção estratégica',specialty:'Liderança, qualidade e visão de longo prazo',relationship:'Direção e parceiro estratégico'}:person);data.evaluations=(data.evaluations||[]).map(record=>({...record,collaborator:record.collaborator==='Hernani'||record.collaborator==='Hernani Queiroz'?'Ernani Queiroz':record.collaborator,evaluator:record.evaluator==='Hernani Queiroz'?'Ernani Queiroz':record.evaluator}));return data}
 normalizeTeamNames(state.data);
 const $ = s => document.querySelector(s);
+let authenticatedUser = null;
+let authenticationPromise = null;
+function showAuthError(message){const error=$('#authError');if(error){error.textContent=message;error.hidden=!message}}
+function setAuthenticatedUser(user){authenticatedUser=user;document.body.classList.remove('auth-pending');const badge=$('#authUserBadge'),logout=$('#authLogout');if(badge){badge.textContent=`${user.name||user.username} · ${user.role==='admin'?'Administrador':'Operador'}`;badge.hidden=false}if(logout){logout.hidden=false;logout.onclick=async()=>{await fetch('./api/auth/logout',{method:'POST'}).catch(()=>{});location.reload()}}localStorage.setItem('proelium-current-actor',user.name||user.username)}
+function authenticate(){
+  if(location.protocol==='file:')return Promise.resolve(true);
+  if(authenticationPromise)return authenticationPromise;
+  authenticationPromise=(async()=>{
+    const gate=$('#authGate'),form=$('#authForm');
+    try{
+      const response=await fetch('./api/auth/me',{cache:'no-store'});
+      if(response.ok){const payload=await response.json();setAuthenticatedUser(payload.user);return true}
+      if(response.status!==401)showAuthError('O serviço de autenticação ainda não está configurado.');
+    }catch{showAuthError('Não foi possível conectar ao servidor.')}
+    if(gate)gate.hidden=false;
+    if(form)form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=form.querySelector('button[type="submit"]');button.disabled=true;showAuthError('');
+      try{const response=await fetch('./api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:form.username.value,password:form.password.value})}),payload=await response.json();if(!response.ok)throw new Error(payload.error||'Usuário ou senha inválidos.');setAuthenticatedUser(payload.user);form.reset();authenticationPromise=null;await connectSharedData()}catch(error){showAuthError(error.message)}finally{button.disabled=false}
+    },{once:true});
+    return false;
+  })();
+  return authenticationPromise;
+}
 function rememberUiState(){try{sessionStorage.setItem('proelium-ui-state',JSON.stringify({view:state.view,selectedClient:state.selectedClient,selectedQuote:state.selectedQuote,productCategory:state.productCategory,productBrand:state.productBrand,productMode:state.productMode,agendaYear:state.agendaYear,agendaMonth:state.agendaMonth}))}catch{}}
 let quickAgendaEntries=[];
 const money = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
@@ -184,6 +208,7 @@ async function refreshSharedData(force=false){
 }
 async function connectSharedData(){
   if(location.protocol==='file:')return;
+  if(!await authenticate())return;
   try{
     const payload=await refreshSharedData(true);
     if(!payload.data||!payload.data.collaborators?.length||!payload.data.evaluations?.length||payload.data.collaborators.some(person=>person.name==='Hernani'||person.name==='Hernani Queiroz')||embraceCatalogSyncNeeded){await persist();embraceCatalogSyncNeeded=false}

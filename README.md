@@ -47,4 +47,8 @@ Execute `Publicar-GitHub.ps1`. O assistente mostra os arquivos alterados, solici
 
 ## Atenção
 
-Esta é uma base experimental. Há proteção básica contra sobrescrita simultânea, mas ainda não existem login, permissões ou banco transacional. Use dados de teste e faça backup do arquivo compartilhado.
+Esta é uma base experimental. Há proteção básica contra sobrescrita simultânea, mas ainda não há permissões detalhadas por módulo nem banco transacional. Use dados de teste e faça backup do arquivo compartilhado.
+
+## Usuários
+
+O sistema agora usa login por usuário e senha. Os usuários ficam em `data/users.json`, fora do Git. Para criar ou atualizar um usuário no servidor, execute `node auth-admin.js <usuario> admin` ou `node auth-admin.js <usuario> operador`; a senha é solicitada de forma interativa e armazenada somente como hash.

@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="quotes.css">
   <link rel="stylesheet" href="danger.css">
 </head>
-<body>
+<body class="auth-pending">
   <div id="splash" class="splash-screen" aria-label="EMS Studio">
     <img class="ems-logo splash-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
     <strong>EXPERIÊNCIAS QUE ATRAVESSAM GERAÇÕES</strong>
@@ -24,6 +24,18 @@
     <div class="splash-tribute"><span></span><small>COM CARINHO E RESPEITO A</small><b>Ernani Queiroz Andrade</b><em>Presença, experiência e inspiração em cada novo projeto.</em><span></span></div>
     <small>PROELIUM OPERACIONAL</small>
   </div>
+  <section id="authGate" class="auth-gate" aria-labelledby="authTitle">
+    <form id="authForm" class="auth-card">
+      <img class="ems-logo auth-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
+      <p class="eyebrow">PROELIUM OPERACIONAL</p>
+      <h1 id="authTitle">Entrar no sistema</h1>
+      <p class="auth-description">Use seu usuário e senha para acessar a operação compartilhada.</p>
+      <label class="auth-field">Usuário<input id="authUsername" name="username" autocomplete="username" required></label>
+      <label class="auth-field">Senha<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
+      <p id="authError" class="auth-error" role="alert" hidden></p>
+      <button class="button primary auth-submit" type="submit">Entrar</button>
+    </form>
+  </section>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand"><span class="brand-mark">P</span><div><strong>PROELIUM</strong><small>Serviços</small></div></div>
@@ -46,6 +58,8 @@
         </div>
         <div class="top-actions">
           <label class="search"><span>⌕</span><input id="globalSearch" placeholder="Buscar neste módulo"></label>
+          <span id="authUserBadge" class="auth-user-badge" hidden></span>
+          <button id="authLogout" class="button secondary auth-logout" type="button" hidden>Sair</button>
         </div>
       </header>
       <section id="content" class="content"></section>
