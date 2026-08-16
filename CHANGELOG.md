@@ -11,6 +11,7 @@
 - Camada de Rede ganhou leitura vertical: origem, roteador, switch e ramificações para os equipamentos.
 - Diagrama técnico recebeu visual minimalista: linhas em destaque, símbolo técnico compacto e legenda curta do modelo em cada equipamento.
 - Rede teve a hierarquia visual fixada em roteador → switch, com setas de maior contraste; automação passou a seguir rede → controladora (RJ‑45) → NTL → keypads/comandos.
+- Consoles são classificados como vídeo: recebem a ligação de rede do switch e podem enviar sinal HDMI 2.1 ao receiver. O código Embrace `EB-PS5` permanece classificado como hub de automação, sem confusão com PlayStation 5.
 
 ## 0.4.1 — 2026-08-15
 
