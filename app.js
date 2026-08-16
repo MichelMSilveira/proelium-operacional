@@ -508,6 +508,20 @@ saveRecord=(kind,data,editId='')=>{
 };
 render();
 
+// A distribuição engloba a movimentação: ajuste simples ou redistribuição de quantidade no mesmo lugar.
+const streamlinedQuoteActionsView=views.quoteDetail;
+views.quoteDetail=()=>streamlinedQuoteActionsView().replace(/\s*<button class="link-button" data-move-quote-item="[^"]+">Mover<\/button>/g,'');
+const distributionAsMoveOpen=openCapacityDistribution;
+openCapacityDistribution=(roomId,itemIndex)=>{
+  distributionAsMoveOpen(roomId,itemIndex);
+  const form=$('#recordForm');
+  if(!form||form.dataset.kind!=='capacityDistribution')return;
+  $('#dialogTitle').textContent='Distribuir ou mover item';
+  const explanation=form.querySelector('.field.full .subtext');
+  if(explanation)explanation.innerHTML='<strong>Distribuir entre ambientes</strong> · informe quanto deste item atende cada cômodo. Para mover tudo, deixe zero no ambiente atual e coloque o total no destino. A soma deve fechar a capacidade total.';
+};
+render();
+
 // Conferência antes de confirmar: o rateio mostra o total, o já distribuído e o saldo em tempo real.
 const capacityDistributionPreviewOpen=openCapacityDistribution;
 openCapacityDistribution=(roomId,itemIndex)=>{

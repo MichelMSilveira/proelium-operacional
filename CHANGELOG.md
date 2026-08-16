@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos: a ação Mover foi incorporada a Distribuir; agora basta ajustar a participação de cada ambiente para transferir parte ou todo o item;
 - Orçamentos: a opção de ratear um item por todos os cômodos agora fica ao lado da quantidade, antes de inserir o item;
 - Diagrama técnico: adicionada a base de pontos técnicos por ambiente, com vínculo opcional a switch/central, conferência de portas usadas/livres, avisos de capacidade excedida e auditoria de criação, ajuste ou exclusão;
 - Infraestrutura compartilhada: ao adicionar um item ao orçamento, roteadores, switches, racks, nobreaks e cabeamento de rede sugerem automaticamente o modo “Item geral”, distribuindo valor de forma igual por todos os ambientes e mantendo o local físico registrado;
