@@ -2581,3 +2581,17 @@ saveRecord=(kind,data,editId='')=>{
   return result;
 };
 render();
+
+// Diagrama por portas: lê o catálogo técnico e o registro de cabos sem criar conexões fictícias.
+state.portDiagramLayer=state.portDiagramLayer||'rede';
+function productPortDiagram(project){
+  if(!project)return '';
+  const nodes=projectConnectionInventory(project),layers=[['rede','Rede'],['automacao','Automação'],['audio','Áudio'],['video','Vídeo']],layer=layers.some(([id])=>id===state.portDiagramLayer)?state.portDiagramLayer:'rede',connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id&&technicalConnectionLayer(connection)===layer),node=id=>nodes.find(item=>item.id===id),identity=(connection,side)=>{const item=node(side==='from'?connection.fromId:connection.toId),product=item?.product||{},label=side==='from'?connection.fromLabel:connection.toLabel,port=side==='from'?connection.fromPort:connection.toPort,role=side==='from'?connection.fromRole:connection.toRole;return {name:product.name||label||'Origem externa',model:product.model||product.technicalIdentity?.model||'Modelo a confirmar',port:port||'Porta a confirmar',role:role||item?.role||'other'}};
+  const routes=connections.length?connections.map(connection=>{const from=identity(connection,'from'),to=identity(connection,'to');return `<article class="product-port-route"><div class="product-port-device source"><small>SAÍDA · ${from.role}</small><strong>${from.name}</strong><span>${from.model}</span><b>${from.port}</b></div><div class="product-port-cable"><i aria-hidden="true"></i><span>${connection.cable||'Cabo a confirmar'}</span></div><div class="product-port-device target"><small>ENTRADA · ${to.role}</small><strong>${to.name}</strong><span>${to.model}</span><b>${to.port}</b></div></article>`;}).join(''):'<div class="empty">Ainda não há cabos registrados nesta camada. Use a Bancada de Ligação abaixo para selecionar uma saída e uma entrada do catálogo.</div>';
+  return `<section class="card product-port-diagram"><div class="card-head"><div><p class="eyebrow">DIAGRAMA POR PORTAS</p><h3>Equipamento → porta → cabo → porta → equipamento</h3><p class="subtext">A leitura usa nome, modelo e portas cadastradas em Produtos e Serviços.</p></div><span class="subtext">${connections.length} ligação(ões)</span></div><div class="product-port-layer-controls" role="group" aria-label="Camada do diagrama por portas">${layers.map(([id,label])=>`<button type="button" class="${id===layer?'active':''}" data-port-diagram-layer="${id}" aria-pressed="${id===layer}">${label}</button>`).join('')}</div><div class="product-port-routes">${routes}</div></section>`;
+}
+const productPortDiagramView=views.diagram;
+views.diagram=()=>{const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));return productPortDiagramView().replace('<section class="card technical-wire-card">',productPortDiagram(project)+'<section class="card technical-wire-card">');};
+const productPortDiagramRender=render;
+render=()=>{productPortDiagramRender();document.querySelectorAll('[data-port-diagram-layer]').forEach(button=>button.onclick=()=>{state.portDiagramLayer=button.dataset.portDiagramLayer;render();requestAnimationFrame(()=>document.querySelector('.product-port-diagram')?.scrollIntoView({block:'start',behavior:'smooth'}));});};
+render();
