@@ -17,6 +17,7 @@
 - Ligações individuais foram formalizadas como registros de cabo: cada uma guarda origem, porta de saída, tipo de cabo, porta de entrada, destino e situação.
 - Registro de ligações do cenário passou a separar cabos por Rede, Automação, Áudio e Vídeo.
 - Produtos e Serviços ganhou Consulta técnica: a ficha mostra papel, entrada, saída, cabo, destinos e capacidade usados pelo diagrama.
+- Hub EB-PS5 passou a distribuir aparelhos individualmente pelos cinco cordões de comunicação; após o quinto aparelho, o cenário identifica a derivação no respectivo cordão para conferência em campo.
 
 ## 0.4.1 — 2026-08-15
 
