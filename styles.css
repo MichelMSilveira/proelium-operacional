@@ -115,5 +115,6 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 }
 
 .capacity-summary{margin:18px 0}.capacity-summary-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:var(--line)}.capacity-summary-list article{display:grid;gap:5px;padding:15px 18px;background:rgba(255,255,255,.9)}.capacity-summary-list strong{font-size:13px}.capacity-summary-list small{color:var(--muted);font-size:11px}.capacity-summary-list span{color:var(--forest2);font-size:11px;line-height:1.45}.link-button[data-distribute-capacity]{color:var(--forest2);font-weight:800}
+.room-card .link-button{font-size:10px;line-height:1.2;white-space:nowrap}.room-card td:nth-child(2){white-space:nowrap}
 .opportunity-delete{color:#a8433d!important}
 .kpi-action{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.kpi-action:hover,.kpi-action:focus-visible{transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,62,48,.14);outline:2px solid rgba(23,62,48,.32);outline-offset:2px}

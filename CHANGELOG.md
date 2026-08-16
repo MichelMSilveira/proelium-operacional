@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos por ambiente: a tabela ficou mais compacta, com ações Ajustar, Mover e Distribuir, sem coluna de desconto na visualização;
 - Correção mobile: o seletor de ambientes do orçamento deixa de ficar preso sobre o conteúdo, evitando travamento e bloqueio da rolagem;
 - Rateios técnicos: itens compartilhados agora distinguem local físico de ambientes atendidos e usam a ação “Editar rateio / local físico” em vez de mover o item isoladamente;
 - Orçamentos: itens centrais agora podem distribuir capacidade entre cômodos, rateando custo e venda por circuitos, canais, zonas ou outra unidade técnica;
