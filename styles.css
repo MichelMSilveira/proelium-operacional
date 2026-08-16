@@ -119,7 +119,7 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 
 /* Formulários de orçamento no telefone usam quase toda a largura útil. */
 @media(max-width:720px){
-  #recordDialog{width:calc(100vw - 16px);max-width:none;max-height:calc(100dvh - 20px);margin:10px 8px}
+  #recordDialog{position:fixed;left:8px;right:8px;width:auto;max-width:none;max-height:calc(100dvh - 20px);margin:auto}
   #recordDialog form{padding:18px 14px}
   #recordDialog .form-grid{margin:16px 0}
 }
