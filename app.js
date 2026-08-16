@@ -2491,3 +2491,19 @@ views.diagram=()=>connectionDeskDiagram(connectionDeskFinalDiagram);
 const connectionDeskFinalRender=render;
 render=()=>{connectionDeskFinalRender();bindConnectionDesk();};
 render();
+
+// A página atual é uma continuação do trabalho: recarregar não devolve o usuário à Visão geral.
+const persistentUiRemember=rememberUiState;
+rememberUiState=()=>{try{sessionStorage.setItem('proelium-ui-state',JSON.stringify({view:state.view,selectedClient:state.selectedClient,selectedQuote:state.selectedQuote,selectedProject:state.selectedProject||null,selectedServiceOrder:state.selectedServiceOrder||null,selectedSurvey:state.selectedSurvey||null,diagramProjectId:state.diagramProjectId||null,productCategory:state.productCategory,productBrand:state.productBrand,productMode:state.productMode,agendaYear:state.agendaYear,agendaMonth:state.agendaMonth,scrollY:window.scrollY||0}))}catch{persistentUiRemember()}};
+const restoredUiState=loadUiState();
+if(restoredUiState.view&&views[restoredUiState.view]){
+  state.view=restoredUiState.view;
+  state.selectedProject=restoredUiState.selectedProject||state.selectedProject;
+  state.selectedServiceOrder=restoredUiState.selectedServiceOrder||state.selectedServiceOrder;
+  state.selectedSurvey=restoredUiState.selectedSurvey||state.selectedSurvey;
+  state.diagramProjectId=restoredUiState.diagramProjectId||state.diagramProjectId;
+}
+let persistPagePositionTimer;
+window.addEventListener('scroll',()=>{clearTimeout(persistPagePositionTimer);persistPagePositionTimer=setTimeout(rememberUiState,180)},{passive:true});
+render();
+if(Number.isFinite(Number(restoredUiState.scrollY))&&Number(restoredUiState.scrollY)>0)requestAnimationFrame(()=>window.scrollTo({top:Number(restoredUiState.scrollY),behavior:'instant'}));

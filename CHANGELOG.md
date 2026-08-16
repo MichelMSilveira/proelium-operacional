@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Ao recarregar, o aplicativo restaura a página de trabalho, os registros em foco e a posição de rolagem daquele aparelho; voltar para Visão geral continua sendo a escolha explícita de início.
 - Diagrama técnico foi simplificado visualmente: cada aparelho prioriza nome e modelo, com conectores coloridos para rede, controle, áudio, vídeo e energia nas laterais do símbolo.
 - A Mesa de Ligação deixa de ocupar a tela principal; o fluxograma volta a ser a leitura central das conexões.
 - Diagrama técnico ganhou a Mesa de Ligação: cada cabo pode ser criado ou ajustado por campos claros de origem, saída, cabo, entrada e destino, sem depender de arrastar setas no desenho.
