@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Auditoria e sincronização: data e hora passam a ser exibidas com segundos, e o estado do servidor informa a última sincronização deste aparelho e o responsável pela última ação registrada;
 - Orçamentos: ao mover apenas parte de um item entre cômodos, a janela permanece aberta com o saldo atualizado; ela fecha somente ao transferir a última unidade;
 - Correção crítica: restaurada a inicialização da interface após a atualização do catálogo Scenario Embrace;
 - Produtos e serviços: importado o catálogo Scenario Embrace da tabela fornecida, com códigos, modelos, acabamentos e valores de referência de junho de 2021, sujeitos à validação antes de cotar;
