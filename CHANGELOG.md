@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Análise de orçamento: Rateio agora é um interruptor real com os estados “Ativar” e “Ativo”; desligá-lo, após confirmação, reúne o item no ambiente físico e libera suas conexões técnicas sem apagá-las.
 - Rateio automático: produtos com capacidade identificável — como switches PoE, módulos PWM, dimmers e centrais por canais — passaram a preencher a capacidade física pelo próprio catálogo, sem redigitação pelo técnico.
 - Análise de orçamento: Ratear passou a ser apresentado como interruptor; desligado, ativa o rateio automático igual entre os ambientes, e ligado, abre o ajuste fino da distribuição existente.
 - Análise de orçamento: ações foram unificadas em todos os itens na ordem Ajustar, Ratear, Mover, Substituir e Excluir; nos rateados, Ratear e Mover abrem o ajuste do rateio completo, incluindo o local físico.

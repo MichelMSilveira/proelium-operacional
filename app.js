@@ -994,10 +994,10 @@ const capacityMoveGuard=openQuoteItemMove;openQuoteItemMove=(roomId,itemIndex)=>
 // Rateio rápido: transforma um item comum em item compartilhado sem abrir a planilha manual.
 function automaticallyDistributeQuoteItem(roomId,itemIndex){
   const sourceRoom=(state.data.quoteRooms||[]).find(room=>room.id===roomId),sourceItem=sourceRoom?.items?.[Number(itemIndex)],product=sourceItem&&productById(sourceItem.productId),rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===sourceRoom?.quoteId);
-  if(!sourceRoom||!sourceItem||!product||sourceItem.capacityAllocation)return;
-  if(rooms.length<2){toast('Adicione outro ambiente antes de ratear este item.');return}
+  if(!sourceRoom||!sourceItem||!product||sourceItem.capacityAllocation)return false;
+  if(rooms.length<2){toast('Adicione outro ambiente antes de ratear este item.');return false}
   const quantity=Number(sourceItem.qty||0),capacityTotal=capacityDefault(product,quantity),unitMatch=`${product.name||''} ${product.model||''}`.match(/\b(portas?|canais|circuitos|zonas)\b/i),capacityUnit=unitMatch?unitMatch[1].toLocaleLowerCase('pt-BR'):'unidades';
-  if(!Number.isFinite(quantity)||quantity<=0||!confirm(`Ratear “${product.name}” igualmente entre os ${rooms.length} ambientes deste projeto?\n\nDepois você poderá ajustar a distribuição manualmente.`))return;
+  if(!Number.isFinite(quantity)||quantity<=0||!confirm(`Ratear “${product.name}” igualmente entre os ${rooms.length} ambientes deste projeto?\n\nDepois você poderá ajustar a distribuição manualmente.`))return false;
   const groupId=uid('rateio'),part=capacityTotal/rooms.length;
   sourceRoom.items.splice(Number(itemIndex),1);
   let distributedQty=0;
@@ -1008,14 +1008,24 @@ function automaticallyDistributeQuoteItem(roomId,itemIndex){
     room.items.push({productId:product.id,qty,discount:Number(sourceItem.discount||0),capacityAllocation:{groupId,hostRoomId:sourceRoom.id,capacityTotal,capacityUsed:capacityTotal,capacityUnit,amount,sourceProductQty:quantity}});
   });
   logAudit('Rateou item automaticamente','Orçamento',`${product.name} · ${quantity} ${product.unit||'un'} · ${rooms.length} ambientes · instalado em ${sourceRoom.name}`);
-  persist();render();toast(`${product.name} foi rateado igualmente entre os ${rooms.length} ambientes. Use “Ajustar rateio” para refinar.`);
+  persist();render();toast(`${product.name} foi rateado igualmente entre os ${rooms.length} ambientes. Use “Ajustar” para refinar.`);return true;
 }
-document.addEventListener('click',event=>{
-  const button=event.target.closest('[data-auto-rateio]');
-  if(!button)return;
-  event.preventDefault();event.stopImmediatePropagation();
-  const [roomId,index]=button.dataset.autoRateio.split(':');
-  automaticallyDistributeQuoteItem(roomId,Number(index));
+function deactivateQuoteRateio(roomId,itemIndex){
+  const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],allocation=item?.capacityAllocation,group=allocation&&capacityGroups(room.quoteId).find(entry=>entry.groupId===allocation.groupId),product=group&&productById(group.productId),host=(state.data.quoteRooms||[]).find(entry=>entry.id===group?.hostRoomId);
+  if(!room||!item||!group||!product||!host)return false;
+  if(!confirm(`Desativar o rateio de “${product.name}”?\n\nO item será reunido no ambiente físico: ${host.name}.`))return false;
+  (state.data.quoteRooms||[]).filter(entry=>entry.quoteId===room.quoteId).forEach(entry=>entry.items=(entry.items||[]).filter(entryItem=>entryItem.capacityAllocation?.groupId!==group.groupId));
+  const existing=host.items.find(entry=>entry.productId===product.id&&!entry.capacityAllocation&&Number(entry.discount||0)===Number(group.discount||0));
+  if(existing)existing.qty+=Number(group.sourceProductQty||1);else host.items.push({productId:product.id,qty:Number(group.sourceProductQty||1),discount:Number(group.discount||0)});
+  (state.data.technicalPoints||[]).forEach(point=>{if(point.capacityGroupId===group.groupId)point.capacityGroupId=''});
+  logAudit('Desativou rateio','Orçamento',`${product.name} · reunido em ${host.name}`);persist();render();toast(`Rateio desativado: ${product.name} voltou para ${host.name}.`);return true;
+}
+document.addEventListener('change',event=>{
+  const toggle=event.target.closest('[data-rateio-switch]');
+  if(!toggle)return;
+  const [roomId,index]=toggle.dataset.rateioSwitch.split(':');
+  const completed=toggle.checked?automaticallyDistributeQuoteItem(roomId,Number(index)):deactivateQuoteRateio(roomId,Number(index));
+  if(!completed)toggle.checked=!toggle.checked;
 },true);
 const rateioSafeQuoteItemEdit=openQuoteItemEdit;
 openQuoteItemEdit=(roomId,itemIndex)=>{
@@ -1351,14 +1361,14 @@ render=()=>{
     table.querySelector('thead tr').innerHTML='<th>Item</th><th>Ações</th><th>Quantidade</th><th>Venda</th><th>Total</th>';
     table.querySelector('tbody').innerHTML=items.map(({item,index})=>{
       const product=productById(item.productId),allocation=item.capacityAllocation,host=allocation&&(state.data.quoteRooms||[]).find(entry=>entry.id===allocation.hostRoomId),secondary=Boolean(allocation&&allocation.hostRoomId!==room.id),circuits=allocation&&isLightingCircuitGroup({...allocation,productId:item.productId})?`<small class="circuit-allocation">💡 ${Number(allocation.amount||0)} ${Number(allocation.amount||0)===1?'circuito':'circuitos'}</small>`:'',rateioNote=secondary?` <span class="rateio-secondary-note">· Rateio técnico · módulo em ${host?.name||'outro ambiente'}</span>`:'',total=Number(product.price||0)*Number(item.qty||0)*(1-Number(item.discount||0)/100);
-      return `<tr class="${secondary?'rateio-secondary':''}"><td><div class="entity">${product.name}</div><div class="subtext">${product.mode||'Produto'}${rateioNote}</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${index}">Ajustar</button> <button class="rateio-toggle" data-auto-rateio="${room.id}:${index}" aria-pressed="false" title="Ativar rateio automático pelos ambientes"><span aria-hidden="true"></span>Rateio</button> <button class="link-button" data-move-quote-item="${room.id}:${index}">Mover</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button></td><td>${item.qty} ${product.unit||'un'}${circuits}</td><td>${money(product.price)}</td><td>${money(total)}</td></tr>`;
+      return `<tr class="${secondary?'rateio-secondary':''}"><td><div class="entity">${product.name}</div><div class="subtext">${product.mode||'Produto'}${rateioNote}</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${index}">Ajustar</button> <label class="rateio-switch" title="Ativar rateio automático pelos ambientes"><input type="checkbox" data-rateio-switch="${room.id}:${index}"><span aria-hidden="true"></span><b>Rateio</b><small>Ativar</small></label> <button class="link-button" data-move-quote-item="${room.id}:${index}">Mover</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button></td><td>${item.qty} ${product.unit||'un'}${circuits}</td><td>${money(product.price)}</td><td>${money(total)}</td></tr>`;
     }).join('');
     card.querySelector('.physical-rateio-box')?.remove();
     const physicalGroups=capacityGroups(quote.id).filter(group=>group.hostRoomId===room.id);
     if(physicalGroups.length){
       const panel=document.createElement('aside');
       panel.className='physical-rateio-box';
-      panel.innerHTML=`<div class="physical-rateio-title"><strong>Itens rateados instalados neste ambiente</strong><small>Os valores já estão distribuídos entre os ambientes atendidos.</small></div><div class="table-wrap physical-rateio-table"><table><thead><tr><th>Item</th><th>Ações</th><th>Quantidade</th><th>Venda</th><th>Total</th></tr></thead><tbody>${physicalGroups.map(group=>{const product=productById(group.productId),used=Number(group.capacityUsed??group.capacityTotal),sourceQty=Number(group.sourceProductQty||1),itemIndex=room.items.findIndex(item=>item.capacityAllocation?.groupId===group.groupId),total=Number(product?.price||0)*sourceQty*(1-Number(group.discount||0)/100);return `<tr><td><div class="entity">${product?.name||'Equipamento'}</div><div class="subtext">Instalado fisicamente aqui · rateado por ${used}/${group.capacityTotal} ${group.capacityUnit}</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${itemIndex}">Ajustar</button> <button class="rateio-toggle active" data-distribute-capacity="${room.id}:${itemIndex}" aria-pressed="true" title="Rateio ativo: abrir ajuste"><span aria-hidden="true"></span>Rateio</button> <button class="link-button" data-move-quote-item="${room.id}:${itemIndex}">Mover</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${itemIndex}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${itemIndex}">Excluir</button></td><td>${sourceQty} ${product?.unit||'un'}</td><td>${money(product?.price||0)}</td><td>${money(total)}</td></tr>`}).join('')}</tbody></table></div>`;
+      panel.innerHTML=`<div class="physical-rateio-title"><strong>Itens rateados instalados neste ambiente</strong><small>Os valores já estão distribuídos entre os ambientes atendidos.</small></div><div class="table-wrap physical-rateio-table"><table><thead><tr><th>Item</th><th>Ações</th><th>Quantidade</th><th>Venda</th><th>Total</th></tr></thead><tbody>${physicalGroups.map(group=>{const product=productById(group.productId),used=Number(group.capacityUsed??group.capacityTotal),sourceQty=Number(group.sourceProductQty||1),itemIndex=room.items.findIndex(item=>item.capacityAllocation?.groupId===group.groupId),total=Number(product?.price||0)*sourceQty*(1-Number(group.discount||0)/100);return `<tr><td><div class="entity">${product?.name||'Equipamento'}</div><div class="subtext">Instalado fisicamente aqui · rateado por ${used}/${group.capacityTotal} ${group.capacityUnit}</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${itemIndex}">Ajustar</button> <label class="rateio-switch" title="Rateio ativo: desligar reúne o item no ambiente físico"><input type="checkbox" data-rateio-switch="${room.id}:${itemIndex}" checked><span aria-hidden="true"></span><b>Rateio</b><small>Ativo</small></label> <button class="link-button" data-move-quote-item="${room.id}:${itemIndex}">Mover</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${itemIndex}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${itemIndex}">Excluir</button></td><td>${sourceQty} ${product?.unit||'un'}</td><td>${money(product?.price||0)}</td><td>${money(total)}</td></tr>`}).join('')}</tbody></table></div>`;
       table.closest('.table-wrap')?.insertAdjacentElement('afterend',panel);
     }
   });
