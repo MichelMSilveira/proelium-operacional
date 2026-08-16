@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Status do servidor: o resumo agora informa a área e uma descrição curta da última ação sincronizada;
 - Auditoria e sincronização: data e hora passam a ser exibidas com segundos, e o estado do servidor informa a última sincronização deste aparelho e o responsável pela última ação registrada;
 - Orçamentos: ao mover apenas parte de um item entre cômodos, a janela permanece aberta com o saldo atualizado; ela fecha somente ao transferir a última unidade;
 - Correção crítica: restaurada a inicialização da interface após a atualização do catálogo Scenario Embrace;
