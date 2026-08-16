@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Rateios técnicos: itens compartilhados agora distinguem local físico de ambientes atendidos e usam a ação “Editar rateio / local físico” em vez de mover o item isoladamente;
 - Orçamentos: itens centrais agora podem distribuir capacidade entre cômodos, rateando custo e venda por circuitos, canais, zonas ou outra unidade técnica;
 - Orçamentos no celular: o seletor de ambientes acompanha a rolagem da análise e permite deslizar entre os cômodos;
 - Comercial: avanço de oportunidade agora exige conferência dos dados essenciais, assinatura do operador identificado e registra a autorização na Auditoria;
