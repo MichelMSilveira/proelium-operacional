@@ -134,7 +134,7 @@ const money = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL
 const clientName = id => state.data.clients.find(c=>c.id===id)?.name || 'Sem cliente';
 const projectName = id => state.data.projects.find(p=>p.id===id)?.name || 'Sem projeto';
 const productById = id => state.data.products.find(p=>p.id===id);
-const roomTotals = room => room.items.reduce((t,item)=>{const p=productById(item.productId);if(p){t.cost+=p.cost*item.qty;t.price+=p.price*item.qty}return t},{cost:0,price:0});
+const roomTotals = room => (room.items||[]).reduce((t,item)=>{const p=productById(item.productId);if(p){const qty=Number(item.qty||0),discount=Math.max(0,Math.min(100,Number(item.discount||0)));t.cost+=Number(p.cost||0)*qty;t.price+=Number(p.price||0)*qty*(1-discount/100)}return t},{cost:0,price:0});
 const uid = prefix => `${prefix}-${Date.now().toString(36)}`;
 const embraceCatalogVersion=1,embracePriceReference='Tabela Scenario Embrace - São Paulo, jun/2021. Referência histórica: validar fornecedor, disponibilidade, impostos e preço antes de enviar o orçamento.';
 const cableCatalogProducts=[
