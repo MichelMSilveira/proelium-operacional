@@ -2156,6 +2156,7 @@ function technicalDeviceRole(product={}){
   if(/switch/.test(text))return 'switch';
   if(/receiver|amplificador/.test(text))return 'receiver';
   if(/access\s*point|\bu7\b|\bap\b/.test(text))return 'access-point';
+  if(/câmera|camera|ponto\s*de\s*rede|tomada\s*de\s*rede|smart\s*tv|\btv\b|nvr|interfone|controle\s*de\s*acesso/.test(text))return 'network-device';
   if(/keypad|virtue|tecla|pulsador/.test(text))return 'keypad';
   if(/caixa|morel|stage|b&w|subwoofer|alto.falante/.test(text)&&!/cabo/.test(text))return 'speaker';
   if(/controladora|central.*automa|embrace|scenario/.test(text))return 'controller';
@@ -2174,7 +2175,7 @@ technicalWireMap=function(project){
   // A tabela de ligações é a fonte de verdade do desenho: nenhuma conexão é inventada só no mapa.
   const registered=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),connections=registered.map(connection=>({from:connection.fromId||'origin',to:connection.toId,dashed:connection.status==='Origem ausente'})).filter(connection=>connection.to&&connection.from!==connection.to);
   const centralNodes=centrals.map(node=>`<article class="wire-node wire-central wire-${node.role}" data-wire-node="${node.id}"><small>${node.role==='ntl'?'Interface de controle':'Central'}</small><strong>${node.product?.name||'Equipamento central'}</strong><span>${node.detail}</span></article>`).join('')||'<article class="wire-node wire-central" data-wire-node="central-pendente"><small>Central</small><strong>Rack / central a definir</strong><span>Adicione a central e sua capacidade.</span></article>';
-  const systemFor=node=>{if(node.role==='access-point'||node.role==='switch'||node.role==='router')return 'rede';if(node.role==='keypad'||node.role==='ntl'||node.role==='controller')return 'automacao';if(node.role==='speaker'||node.role==='receiver')return 'audio';const type=String(node.product?.technicalType||'').toLocaleLowerCase('pt-BR');return /vídeo|video|tv|câmera|camera/.test(type)?'video':'outros'},labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo',outros:'Outros'};
+  const systemFor=node=>{if(node.role==='access-point'||node.role==='network-device'||node.role==='switch'||node.role==='router')return 'rede';if(node.role==='keypad'||node.role==='ntl'||node.role==='controller')return 'automacao';if(node.role==='speaker'||node.role==='receiver')return 'audio';const type=String(node.product?.technicalType||'').toLocaleLowerCase('pt-BR');return /vídeo|video|tv|câmera|camera/.test(type)?'video':'outros'},labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo',outros:'Outros'};
   const deviceNodes=Object.entries(devices.reduce((all,node)=>{const system=systemFor(node);(all[system]??=[]).push({...node,system});return all},{})).map(([system,list])=>`<section class="wire-system wire-system-${system}"><h4>${labels[system]}</h4><div>${list.map(node=>`<article class="wire-node wire-device wire-${system}" data-wire-node="${node.id}"><small>${node.point?'Ponto':'Equipamento'}</small><strong>${node.point?.label||node.product?.name||'Ponto técnico'}</strong><span>${node.detail}</span></article>`).join('')}</div></section>`).join('')||'<div class="empty">Inclua equipamentos ou pontos técnicos para desenhar as conexões.</div>';
   return `<section class="card technical-wire-card"><div class="card-head"><div><h3>Conexões do sistema</h3><p class="subtext">Este desenho usa exatamente o Registro de ligações do cenário acima. Linha pontilhada indica uma origem ainda pendente de conferência.</p></div></div><div class="technical-wire-map"><svg class="technical-wire-svg" aria-hidden="true"><defs><marker id="wire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"></path></marker></defs></svg><div class="wire-stage wire-origin"><article class="wire-node wire-root" data-wire-node="origin"><small>Origem</small><strong>Internet · energia · rack</strong><span>Entrada e distribuição principal</span></article></div><div class="wire-stage wire-centrals">${centralNodes}</div><div class="wire-stage wire-devices">${deviceNodes}</div>${connections.map(connection=>`<i class="wire-connection" data-wire-from="${connection.from}" data-wire-to="${connection.to}" data-wire-dashed="${connection.dashed}"></i>`).join('')}</div></section>`;
 };
@@ -2183,9 +2184,11 @@ render();
 // Padrão de ligação reutilizável: estas fichas são a fonte de verdade para catálogo, orçamento,
 // diagrama e futura leitura de planta. O perfil pode ser refinado por modelo sem alterar o fluxo.
 const standardConnectionProfiles={
+  external:{label:'Link externo / internet',input:'Operadora / ONT',output:'WAN',media:'Cabo Ethernet',targets:['router']},
   router:{label:'Roteador / gateway',input:'Internet / WAN',output:'Rede LAN',media:'Ethernet',targets:['switch']},
-  switch:{label:'Switch',input:'Uplink de rede',output:'Portas LAN / PoE',media:'Cat6 / patch cord',targets:['access-point']},
+  switch:{label:'Switch',input:'Uplink de rede',output:'Portas LAN / PoE',media:'Cat6 / patch cord',targets:['access-point','network-device']},
   'access-point':{label:'Access point',input:'Ethernet / PoE',output:'Wi‑Fi',media:'Cat6',targets:[]},
+  'network-device':{label:'Dispositivo de rede',input:'Ethernet / PoE conforme modelo',output:'Serviço no ambiente',media:'Cat6',targets:[]},
   ntl:{label:'Interface NTL',input:'Rede ou barramento de controle',output:'Comando para keypads',media:'Cat6 / protocolo do fabricante',targets:['keypad']},
   controller:{label:'Central de automação',input:'Rede, barramento e alimentação',output:'Módulos e comandos',media:'Conforme protocolo',targets:[]},
   receiver:{label:'Receiver',input:'Fontes A/V e rede',output:'Canais amplificados',media:'Cabo de alto-falante',targets:['speaker']},
@@ -2202,13 +2205,17 @@ function projectConnectionInventory(project){
   const rooms=projectQuoteRooms(project),nodes=[];
   capacityGroups(project.quoteId).forEach(group=>{const product=productById(group.productId);nodes.push({id:`group:${group.groupId}`,role:technicalDeviceRole(product),product,roomId:group.hostRoomId,label:product?.name||'Central'});});
   rooms.forEach(room=>(room.items||[]).forEach((item,index)=>{if(item.capacityAllocation)return;const product=productById(item.productId);if(product)nodes.push({id:`item:${room.id}:${index}`,role:technicalDeviceRole(product),product,roomId:room.id,label:product.name});}));
+  (state.data.technicalPoints||[]).filter(point=>point.projectId===project.id).forEach(point=>nodes.push({id:`point:${point.id}`,role:technicalDeviceRole({technicalType:point.type,name:point.label}),product:{technicalType:point.type},roomId:point.roomId,label:point.label||point.type||'Ponto técnico'}));
   return nodes;
 }
 function createProjectConnectionStandard(project){
   const nodes=projectConnectionInventory(project),byRole=role=>nodes.filter(node=>node.role===role),firstSource=(role,roomId='')=>byRole(role).find(node=>node.roomId===roomId)||byRole(role)[0]||null,connections=[];
   const add=(fromRole,toRole,cable)=>byRole(toRole).forEach(target=>{const source=firstSource(fromRole,target.roomId);connections.push({id:`conn:${project.id}:${fromRole}:${target.id}`,projectId:project.id,fromId:source?.id||'',fromLabel:source?.label||`${standardConnectionProfiles[fromRole]?.label||fromRole} ausente`,fromRole,toId:target.id,toLabel:target.label,toRole,cable,status:source?'Proposto — confirmar':'Origem ausente',origin:'Padrão Proelium'});});
+  const addExternal=toRole=>byRole(toRole).forEach(target=>connections.push({id:`conn:${project.id}:external:${target.id}`,projectId:project.id,fromId:'',fromLabel:'Link externo / internet',fromRole:'external',toId:target.id,toLabel:target.label,toRole,cable:'Ethernet WAN',status:'Proposto — confirmar',origin:'Padrão Proelium'}));
+  addExternal('router');
   add('router','switch','Ethernet / Cat6');
   add('switch','access-point','Cat6 com PoE');
+  add('switch','network-device','Cat6 / PoE conforme equipamento');
   add('ntl','keypad','Cat6 / controle');
   add('receiver','speaker','Cabo de alto-falante');
   return connections;
@@ -2227,13 +2234,14 @@ persist=(...args)=>{ensureConnectionProfiles();synchronizeProjectConnectionStand
 const connectionStandardWarnings=projectTechnicalWarnings;
 projectTechnicalWarnings=project=>{const warnings=connectionStandardWarnings(project),connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project?.id);connections.filter(connection=>connection.status==='Origem ausente').forEach(connection=>warnings.push(`Ligação pendente: ${connection.toLabel} requer ${connection.fromLabel}.`));return [...new Set(warnings)]};
 const connectionStandardCatalogView=views.products;
-views.products=()=>connectionStandardCatalogView()+`<section class="card"><div class="card-head"><div><h3>Padrão de ligação Proelium</h3><p class="subtext">Modelo de informações utilizado para gerar cenário, validar coerência e desenhar conexões. A ficha do fabricante confirma ou ajusta cada modelo.</p></div></div>${table(['Papel técnico','Entrada','Saída','Meio de conexão','Destino padrão'],Object.entries(standardConnectionProfiles).filter(([role])=>role!=='other').map(([role,profile])=>`<tr><td><strong>${profile.label}</strong></td><td>${profile.input}</td><td>${profile.output}</td><td>${profile.media}</td><td>${profile.targets.map(target=>standardConnectionProfiles[target]?.label||target).join(', ')||'—'}</td></tr>`))}</section>`;
+views.products=()=>connectionStandardCatalogView()+`<section class="card"><div class="card-head"><div><h3>Padrão de ligação Proelium</h3><p class="subtext">Modelo de informações utilizado para gerar cenário, validar coerência e desenhar conexões. A ficha do fabricante confirma ou ajusta cada modelo.</p></div></div>${table(['Papel técnico','Entrada','Saída','Meio de conexão','Destino padrão'],Object.entries(standardConnectionProfiles).filter(([role])=>!['other','external'].includes(role)).map(([role,profile])=>`<tr><td><strong>${profile.label}</strong></td><td>${profile.input}</td><td>${profile.output}</td><td>${profile.media}</td><td>${profile.targets.map(target=>standardConnectionProfiles[target]?.label||target).join(', ')||'—'}</td></tr>`))}</section>`;
 const connectionStandardDiagramView=views.diagram;
 views.diagram=()=>{
   const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project?.id),panel=project?`<section class="card connection-register"><div class="card-head"><div><h3>Registro de ligações do cenário</h3><p class="subtext">Relações geradas pelo padrão Proelium; valide rota, porta, conector e modelo antes da execução.</p></div><span class="subtext">${connections.length} ligação(ões)</span></div>${connections.length?table(['Origem','Ligação','Destino','Cabo / meio','Situação'],connections.map(connection=>`<tr><td>${connection.fromLabel}</td><td>→</td><td><strong>${connection.toLabel}</strong></td><td>${connection.cable}</td><td>${badge(connection.status)}</td></tr>`)):'<div class="empty">Ainda não há equipamentos compatíveis para gerar ligações padrão.</div>'}</section>`:'';
   return connectionStandardDiagramView().replace('<section class="card technical-wire-card">',panel+'<section class="card technical-wire-card">');
 };
 setTimeout(()=>{if(state.data.connectionStandardV1)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV1=true;persist();},8200);
+setTimeout(()=>{if(state.data.connectionStandardV2)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV2=true;persist();},8800);
 render();
 
 // Camadas de leitura: o mesmo cenário pode ser conferido por disciplina, sem duplicar dados.
