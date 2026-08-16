@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Catálogo e levantamento: cada produto agora recebe uma classificação por **tipo técnico** e **função na obra**. A categoria comercial continua existente, mas o levantamento passa a indicar, por exemplo, “Switch de rede / distribuição de portas e PoE” ou “Cabo de rede / transporte de dados e alimentação PoE”.
+
 - Levantamento técnico: gerado o primeiro modelo reverso a partir do orçamento atual, preservando ambiente, item, quantitativo e origem para revisão antes do uso como escopo validado.
 - Fluxo comercial: criada a etapa Levantamento técnico entre Comercial e Orçamentos, com ambientes, pontos, quantitativos, origem manual/visita/PDF, validação e envio controlado dos ambientes ao orçamento.
 - Regras comerciais: access points e pontos de rede passam a solicitar Cat6 próprio, com metragem configurável; access points existentes receberam regularização sem reaproveitar a metragem destinada aos keypads.

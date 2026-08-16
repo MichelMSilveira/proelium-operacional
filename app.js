@@ -460,7 +460,7 @@ const catalogSaveRecord=saveRecord;saveRecord=(kind,data,editId='')=>{if(kind===
 function packageTotals(pack){return(pack.items||[]).reduce((total,item)=>{const product=productById(item.productId);if(product){total.cost+=Number(product.cost||0)*Number(item.qty||0);total.price+=Number(product.price||0)*Number(item.qty||0)}return total},{cost:0,price:0})}
 function openCatalogSelect(kind,prefill={}){const title=kind==='packageItem'?'Adicionar item ao pacote':'Inserir pacote no orçamento',packages=state.data.packages.filter(pack=>pack.active!==false),rooms=state.data.quoteRooms.filter(room=>room.quoteId===state.selectedQuote);$('#dialogTitle').textContent=title;$('#recordForm').dataset.kind=kind;$('#recordForm').dataset.editId='';$('#saveButton').textContent=kind==='packageItem'?'Adicionar ao pacote':'Inserir no orçamento';const packageOptions=packages.map(pack=>`<option value="${pack.id}" ${pack.id===prefill.packageId?'selected':''}>${pack.name}</option>`).join(''),productOptions=state.data.products.filter(product=>product.active!==false).map(product=>`<option value="${product.id}">${product.name} · ${money(product.price)}</option>`).join(''),roomOptions=rooms.map(room=>`<option value="${room.id}">${room.name}</option>`).join('');$('#formFields').innerHTML=kind==='packageItem'?`<div class="field full"><label>Pacote</label><select name="packageId" required>${packageOptions}</select></div><div class="field full"><label>Produto ou serviço</label><select name="productId" required>${productOptions}</select></div><div class="field"><label>Quantidade</label><input name="qty" type="number" min="1" step="1" value="1" required></div>`:`<div class="field full"><label>Pacote</label><select name="packageId" required>${packageOptions}</select></div><div class="field full"><label>Cômodo / ambiente</label><select name="roomId" required>${roomOptions}</select></div>`;$('#recordDialog').showModal()}
 const catalogOpenForm=openForm;openForm=(kind,editId='',prefill={})=>['packageItem','packageToQuote'].includes(kind)?openCatalogSelect(kind,prefill):catalogOpenForm(kind,editId,prefill);
-function products(){const list=state.data.products||[],packages=state.data.packages||[],visible=list.filter(product=>matches(product.sku,product.name,product.brand,product.model,product.category,product.supplier));const rows=visible.map(product=>`<tr><td><div class="entity">${product.name}</div><div class="subtext">${product.sku} · ${product.brand||'Sem marca'}${product.model?` · Modelo: ${product.model}`:''}${product.supplier?` · ${product.supplier}`:''}</div></td><td>${product.category}</td><td>${badge(product.mode)}</td><td>${product.unit}</td><td>${money(product.cost||0)}</td><td>${product.price?money(product.price):'A cotar'}</td><td>${badge(product.active!==false?'Ativo':'Descontinuado')}</td><td><button class="button secondary catalog-edit" data-edit-product="${product.id}">Editar</button> <button class="button secondary catalog-status" data-toggle-product="${product.id}">${product.active!==false?'Descontinuar':'Ativar'}</button> <button class="delete-icon" data-delete-product="${product.id}" aria-label="Excluir ${product.name}">×</button></td></tr>`);const packageCards=packages.map(pack=>{const totals=packageTotals(pack),items=(pack.items||[]).map(item=>{const product=productById(item.productId);return product?`${item.qty}× ${product.name}`:'Item removido'});return `<article class="card package-card"><div class="card-head"><div><p class="eyebrow">PACOTE</p><h3>${pack.name}</h3><span class="subtext">${pack.category||'Solução composta'} · ${badge(pack.active!==false?'Ativo':'Descontinuado')}</span></div><strong>${money(totals.price)}</strong></div><p>${pack.description||'Pacote composto por produtos, serviços e mão de obra.'}</p><ul>${items.map(item=>`<li>${item}</li>`).join('')||'<li>Sem itens ainda.</li>'}</ul><footer><span>Custo previsto: ${money(totals.cost)}</span><button class="button secondary" data-add-package-item="${pack.id}">+ Adicionar item</button></footer></article>`}).join('');return heading('Produtos, serviços e pacotes','Catálogo central para alimentar orçamentos, com custos, venda, fornecedor e soluções reutilizáveis.','product')+`<div class="module-toolbar"><button class="button secondary" data-add="package">+ Novo pacote</button><span class="subtext">${list.length} itens · ${packages.length} pacote(s)</span></div>`+table(['Produto / serviço','Categoria','Modalidade','Unid.','Custo','Venda','Status',''],rows)+`<section class="package-section"><div class="section-heading"><div><h2>Pacotes comerciais</h2><p>Combine produtos, serviços e mão de obra para reutilizar no orçamento.</p></div></div><div class="package-grid">${packageCards||'<div class="empty">Crie o primeiro pacote comercial.</div>'}</div></section>`}
+function products(){const list=state.data.products||[],packages=state.data.packages||[],visible=list.filter(product=>matches(product.sku,product.name,product.brand,product.model,product.category,product.supplier,product.technicalType,product.technicalFunction));const rows=visible.map(product=>`<tr><td><div class="entity">${product.name}</div><div class="subtext">${product.sku} · ${product.brand||'Sem marca'}${product.model?` · Modelo: ${product.model}`:''}${product.supplier?` · ${product.supplier}`:''}</div><div class="subtext"><strong>${product.technicalType||product.category||'Item técnico'}</strong> · ${product.technicalFunction||'Função a definir'}</div></td><td>${product.category}</td><td>${badge(product.mode)}</td><td>${product.unit}</td><td>${money(product.cost||0)}</td><td>${product.price?money(product.price):'A cotar'}</td><td>${badge(product.active!==false?'Ativo':'Descontinuado')}</td><td><button class="button secondary catalog-edit" data-edit-product="${product.id}">Editar</button> <button class="button secondary catalog-status" data-toggle-product="${product.id}">${product.active!==false?'Descontinuar':'Ativar'}</button> <button class="delete-icon" data-delete-product="${product.id}" aria-label="Excluir ${product.name}">×</button></td></tr>`);const packageCards=packages.map(pack=>{const totals=packageTotals(pack),items=(pack.items||[]).map(item=>{const product=productById(item.productId);return product?`${item.qty}× ${product.name}`:'Item removido'});return `<article class="card package-card"><div class="card-head"><div><p class="eyebrow">PACOTE</p><h3>${pack.name}</h3><span class="subtext">${pack.category||'Solução composta'} · ${badge(pack.active!==false?'Ativo':'Descontinuado')}</span></div><strong>${money(totals.price)}</strong></div><p>${pack.description||'Pacote composto por produtos, serviços e mão de obra.'}</p><ul>${items.map(item=>`<li>${item}</li>`).join('')||'<li>Sem itens ainda.</li>'}</ul><footer><span>Custo previsto: ${money(totals.cost)}</span><button class="button secondary" data-add-package-item="${pack.id}">+ Adicionar item</button></footer></article>`}).join('');return heading('Produtos, serviços e pacotes','Catálogo central para alimentar orçamentos, com custos, venda, fornecedor e soluções reutilizáveis.','product')+`<div class="module-toolbar"><button class="button secondary" data-add="package">+ Novo pacote</button><span class="subtext">${list.length} itens · ${packages.length} pacote(s)</span></div>`+table(['Produto / serviço','Categoria','Modalidade','Unid.','Custo','Venda','Status',''],rows)+`<section class="package-section"><div class="section-heading"><div><h2>Pacotes comerciais</h2><p>Combine produtos, serviços e mão de obra para reutilizar no orçamento.</p></div></div><div class="package-grid">${packageCards||'<div class="empty">Crie o primeiro pacote comercial.</div>'}</div></section>`}
 const catalogQuoteDetail=quoteDetail;quoteDetail=()=>catalogQuoteDetail().replace('data-add="quoteItem">+ Adicionar item</button>','data-add="quoteItem">+ Adicionar item</button><button class="button secondary" data-add="packageToQuote">+ Inserir pacote</button>');
 views.products=products;views.quoteDetail=quoteDetail;
 document.addEventListener('click',event=>{const edit=event.target.closest('[data-edit-product]'),editEquipment=event.target.closest('[data-edit-equipment]'),toggle=event.target.closest('[data-toggle-product]'),addItem=event.target.closest('[data-add-package-item]');if(edit)openForm('product',edit.dataset.editProduct);if(editEquipment)openForm('equipment',editEquipment.dataset.editEquipment);if(toggle){const product=productById(toggle.dataset.toggleProduct);if(!product)return;product.active=product.active===false;product.status=product.active?'Ativo':'Descontinuado';persist();render();toast(product.active?'Produto ativado.':'Produto descontinuado.')}if(addItem)openForm('packageItem','',{packageId:addItem.dataset.addPackageItem})});
@@ -488,6 +488,93 @@ function quoteDetail(){const quote=state.data.quotes.find(item=>item.id===state.
 views.commercial=commercial;views.quoteDetail=quoteDetail;
 document.addEventListener('click',event=>{const revision=event.target.closest('[data-quote-revision]'),status=event.target.closest('[data-quote-set-status]'),item=event.target.closest('[data-edit-quote-item]');if(revision)requestQuoteRevision(revision.dataset.quoteRevision);if(status)setQuoteStatus(status.dataset.quoteId,status.dataset.quoteSetStatus);if(item){const [roomId,index]=item.dataset.editQuoteItem.split(':');openQuoteItemEdit(roomId,Number(index))}});
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
+render();
+
+// Classificação técnica do catálogo: categoria comercial sozinha não basta para o levantamento.
+// Tipo identifica o objeto; função explica o que ele entrega na obra. Ambos podem ser ajustados
+// manualmente mais adiante, pois esta rotina só preenche campos ainda vazios.
+function inferProductTechnicalClassification(product={}){
+  const text=`${product.name||''} ${product.brand||''} ${product.model||''} ${product.category||''} ${product.mode||''}`.toLocaleLowerCase('pt-BR');
+  if(/cat\s*6|cabo.*rede|cabeamento.*rede|patch\s*cord/.test(text))return {technicalType:'Cabo de rede',technicalFunction:'Transporte de dados e alimentação PoE'};
+  if(/cabo.*(áudio|audio|alto.falante|speaker)|\b(12|14|16|18)\s*awg/.test(text))return {technicalType:'Cabo de áudio',technicalFunction:'Transporte de sinal para alto-falantes'};
+  if(/hdmi|cabo.*vídeo|cabo.*video/.test(text))return {technicalType:'Cabo de vídeo',technicalFunction:'Transporte de sinal de vídeo'};
+  if(/access\s*point|\bap\b/.test(text))return {technicalType:'Ponto de rede Wi‑Fi',technicalFunction:'Cobertura e acesso sem fio à rede'};
+  if(/switch/.test(text))return {technicalType:'Switch de rede',technicalFunction:'Distribuição de portas de rede e PoE'};
+  if(/gateway|roteador|router|dream\s*machine|firewall/.test(text))return {technicalType:'Gateway de rede',technicalFunction:'Roteamento, segurança e gestão da rede'};
+  if(/keypad|tecla|pulsador|botão de cena|botao de cena/.test(text))return {technicalType:'Interface de automação',technicalFunction:'Comando de iluminação, cenas e automações'};
+  if(/pwm|dimmer|rel[eé]|módulo.*ilumina|modulo.*ilumina/.test(text))return {technicalType:'Módulo de iluminação',technicalFunction:'Controle de circuitos, dimerização ou fitas LED'};
+  if(/quadro.*automa/.test(text))return {technicalType:'Quadro de automação',technicalFunction:'Abrigo, organização e proteção dos módulos'};
+  if(/controladora|central.*automa|embrace|scenario/.test(text))return {technicalType:'Central de automação',technicalFunction:'Processamento e comunicação do sistema de automação'};
+  if(/c[âa]mera|camera/.test(text))return {technicalType:'Câmera de segurança',technicalFunction:'Videomonitoramento'};
+  if(/nvr|gravador/.test(text))return {technicalType:'Gravador de vídeo',technicalFunction:'Gravação e gerenciamento de câmeras'};
+  if(/receiver|amplificador/.test(text))return {technicalType:'Receiver / amplificador',technicalFunction:'Processamento, amplificação e distribuição de áudio'};
+  if(/caixa|morel|stage|b&w|subwoofer/.test(text))return {technicalType:'Caixa de som',technicalFunction:'Reprodução sonora no ambiente'};
+  if(/tv|televis/.test(text))return {technicalType:'Tela / TV',technicalFunction:'Exibição de conteúdo audiovisual'};
+  if(/servi[cç]o|m[aã]o de obra|instala[cç][aã]o|configura[cç][aã]o/.test(text))return {technicalType:'Serviço técnico',technicalFunction:'Execução, instalação e configuração especializada'};
+  return {technicalType:product.category||'Item técnico',technicalFunction:'Função técnica a definir no levantamento'};
+}
+function classifyCatalogProducts(data=state.data){
+  (data.products||[]).forEach(product=>{
+    const inferred=inferProductTechnicalClassification(product);
+    product.technicalType=String(product.technicalType||'').trim()||inferred.technicalType;
+    product.technicalFunction=String(product.technicalFunction||'').trim()||inferred.technicalFunction;
+  });
+  return data;
+}
+classifyCatalogProducts();
+const productClassificationNormalize=normalizeSharedData;
+normalizeSharedData=shared=>classifyCatalogProducts(productClassificationNormalize(shared));
+const productClassificationPersist=persist;
+persist=(...args)=>{classifyCatalogProducts();return productClassificationPersist(...args)};
+
+// No levantamento, o tipo comercial continua simples para conferência rápida, enquanto a
+// classificação técnica deixa explícita a função de cada item derivado do orçamento.
+const productClassificationPointType=surveyPointTypeFromProduct;
+surveyPointTypeFromProduct=product=>product?.technicalType||productClassificationPointType(product);
+function synchronizeSurveyPointClassifications(){
+  let changed=false;
+  (state.data.surveyPoints||[]).forEach(point=>{
+    const product=productById(point.sourceProductId);
+    if(!product)return;
+    const type=product.technicalType||inferProductTechnicalClassification(product).technicalType;
+    const purpose=product.technicalFunction||inferProductTechnicalClassification(product).technicalFunction;
+    if(point.technicalType!==type||point.technicalFunction!==purpose){point.technicalType=type;point.technicalFunction=purpose;changed=true;}
+  });
+  return changed;
+}
+const productClassificationSurveyView=survey;
+survey=()=>{
+  let markup=productClassificationSurveyView();
+  if(!state.selectedSurvey)return markup;
+  (state.data.surveyPoints||[]).filter(point=>point.surveyId===state.selectedSurvey).forEach(point=>{
+    const detail=point.technicalType?`<strong>${point.type}</strong><div class="subtext">${point.technicalType} · ${point.technicalFunction||'Função a definir'}</div>`:point.type;
+    markup=markup.replace(`<td>${point.type}</td><td>${point.quantity}</td>`,`<td>${detail}</td><td>${point.quantity}</td>`);
+  });
+  return markup;
+};
+views.survey=survey;
+
+// A tela do catálogo passa a explicar as classificações que o levantamento usará, evitando
+// confundir categoria comercial (ex.: Automação) com a função concreta do item.
+const productClassificationCatalogView=views.products;
+views.products=()=>{
+  const base=productClassificationCatalogView(),products=state.data.products||[];
+  const groups=Object.values(products.reduce((all,product)=>{
+    const key=`${product.technicalType}|||${product.technicalFunction}`;
+    (all[key]??={type:product.technicalType,function:product.technicalFunction,count:0}).count++;
+    return all;
+  },{})).sort((a,b)=>a.type.localeCompare(b.type,'pt-BR'));
+  const guide=`<section class="card"><div class="card-head"><div><h3>Classificação para levantamento</h3><p class="subtext">Tipo técnico identifica o objeto; função na obra orienta o que deve ser conferido em visita, planta ou escopo.</p></div><span class="subtext">${groups.length} combinação(ões)</span></div>${table(['Tipo técnico','Função na obra','Itens'],groups.map(group=>`<tr><td><strong>${group.type}</strong></td><td>${group.function}</td><td>${group.count}</td></tr>`))}</section>`;
+  return base+guide;
+};
+
+// Atualiza os registros já criados pelo modelo reverso sem apagar informações preenchidas.
+setTimeout(()=>{
+  if(!synchronizeSurveyPointClassifications())return;
+  logAudit('Classificou produtos para levantamento','Catálogo',`${(state.data.products||[]).length} item(ns) categorizados por tipo e função`);
+  persist();
+  if(state.view==='products'||state.view==='survey')render();
+},5200);
 render();
 
 // Cada tabela declara a mesma quantidade de títulos e colunas. Isso evita ações
@@ -1806,4 +1893,19 @@ document.addEventListener('click',event=>{
   const add=event.target.closest('[data-add-survey]'),open=event.target.closest('[data-open-survey]'),back=event.target.closest('[data-survey-back]'),edit=event.target.closest('[data-edit-survey]'),point=event.target.closest('[data-add-survey-point]'),editPoint=event.target.closest('[data-edit-survey-point]'),send=event.target.closest('[data-survey-create-rooms]');
   if(add){event.preventDefault();openTechnicalSurvey();return}if(open){event.preventDefault();state.selectedSurvey=open.dataset.openSurvey;state.view='survey';render();return}if(back){event.preventDefault();state.selectedSurvey=null;render();return}if(edit){event.preventDefault();openTechnicalSurvey(edit.dataset.editSurvey);return}if(point){event.preventDefault();openSurveyPoint();return}if(editPoint){event.preventDefault();openSurveyPoint(editPoint.dataset.editSurveyPoint);return}if(send){event.preventDefault();const current=(state.data.surveys||[]).find(item=>item.id===send.dataset.surveyCreateRooms),quote=(state.data.quotes||[]).find(item=>item.opportunityId===current?.opportunityId&&item.status!=='Aprovado');if(!current||!quote)return;const rooms=[...new Set((state.data.surveyPoints||[]).filter(item=>item.surveyId===current.id&&item.room).map(item=>item.room.trim()))],existing=(state.data.quoteRooms||[]).filter(item=>item.quoteId===quote.id).map(item=>item.name),missing=rooms.filter(room=>!existing.includes(room));missing.forEach(name=>state.data.quoteRooms.push({id:uid('amb'),quoteId:quote.id,name,items:[]}));current.status='Enviado ao orçamento';logAudit('Enviou ambientes ao orçamento','Levantamento técnico',`${current.title} · ${missing.length} ambiente(s) criados em ${quote.title}`);persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`${missing.length} ambiente(s) enviados ao orçamento. Os itens continuam aguardando validação comercial.`)}
 },true);
+render();
+
+// Camadas adicionadas depois do levantamento também normalizam os dados recebidos do servidor.
+const productClassificationFinalNormalize=normalizeSharedData;
+normalizeSharedData=shared=>classifyCatalogProducts(productClassificationFinalNormalize(shared));
+function productClassificationGuide(){
+  const products=state.data.products||[],groups=Object.values(products.reduce((all,product)=>{
+    const key=`${product.technicalType}|||${product.technicalFunction}`;
+    (all[key]??={type:product.technicalType,function:product.technicalFunction,count:0}).count++;
+    return all;
+  },{})).sort((a,b)=>a.type.localeCompare(b.type,'pt-BR'));
+  return `<section class="card"><div class="card-head"><div><h3>Classificação para levantamento</h3><p class="subtext">Tipo técnico identifica o objeto; função na obra orienta o que deve ser conferido em visita, planta ou escopo.</p></div><span class="subtext">${groups.length} combinação(ões)</span></div>${table(['Tipo técnico','Função na obra','Itens'],groups.map(group=>`<tr><td><strong>${group.type}</strong></td><td>${group.function}</td><td>${group.count}</td></tr>`))}</section>`;
+}
+const productClassificationFinalCatalogView=views.products;
+views.products=()=>productClassificationFinalCatalogView()+productClassificationGuide();
 render();
