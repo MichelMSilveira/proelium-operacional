@@ -1684,4 +1684,57 @@ async function migrateExistingKeypadInfrastructure(){
   await persist();render();toast(`Infraestrutura atualizada: ${adjusted} ambiente(s) de keypad receberam cabo Cat6.`);
 }
 setTimeout(()=>migrateExistingKeypadInfrastructure().catch(()=>{}),2200);
+function isNetworkEndpointProduct(product){return /access\s*point|\bap\b|ponto\s+de\s+rede/i.test(`${product?.name||''} ${product?.model||''} ${product?.category||''}`)}
+function openNetworkEndpointCableRule(roomId,endpointLabel,qty=1,kind='Ponto de rede'){
+  const room=(state.data.quoteRooms||[]).find(item=>item.id===roomId),choices=networkCableChoices();
+  if(!room||!choices.length){toast('Cadastre ao menos um cabo Cat6 para aplicar esta regra.');return}
+  const suggested=Math.max(30,Math.round(Number(qty||1)*30));
+  $('#dialogTitle').textContent=`Infraestrutura de ${kind}`;
+  $('#recordForm').dataset.kind='networkEndpointCable';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Adicionar cabo ao orçamento';
+  $('#formFields').innerHTML=`<input type="hidden" name="roomId" value="${room.id}"><input type="hidden" name="endpointLabel" value="${endpointLabel}"><input type="hidden" name="endpointKind" value="${kind}"><div class="field full"><label>Ponto que exige infraestrutura</label><input value="${endpointLabel} · ${qty} un" disabled><small class="subtext">Regra ativa: access point e ponto de rede precisam de um cabo Cat6 próprio. A metragem deve refletir o trajeto real.</small></div><div class="field full"><label>Cabo de rede</label><select name="cableProductId" required>${choices.map(product=>`<option value="${product.id}">${product.name} · ${product.brand||'Sem marca'}</option>`).join('')}</select></div><div class="field"><label>Metragem total (m)</label><input name="qty" type="number" min="30" step="1" value="${suggested}" required></div><div class="field"><label>Desconto (%)</label><input name="discount" type="number" min="0" max="100" step="0.01" value="0"></div><div class="field full"><small class="subtext">Sugestão inicial: 30 m por ponto. Ajuste antes de confirmar.</small></div>`;
+  $('#recordDialog').showModal();
+}
+const endpointRuleSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='networkEndpointCable'){
+    const room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),cable=productById(data.cableProductId),meters=Number(data.qty);
+    if(!room||!cable||!Number.isFinite(meters)||meters<30){toast('Informe ao menos 30 m de cabo de rede.');return false}
+    room.items.push({productId:cable.id,qty:meters,discount:Number(data.discount||0),infrastructureRule:data.endpointKind||'Ponto de rede',infrastructureFor:data.endpointLabel||''});
+    logAudit('Aplicou regra de infraestrutura','Orçamento',`${data.endpointKind||'Ponto de rede'}: ${data.endpointLabel||'sem identificação'} → ${cable.name} · ${meters} m · ${room.name}`);
+    persist();render();toast(`${meters} m de ${cable.name} adicionados para ${data.endpointKind||'o ponto'}.`);return;
+  }
+  if(kind==='quoteItemSearch'&&data.productId){
+    const endpoint=productById(data.productId),room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),qty=Number(data.qty||0);
+    if(endpoint&&room&&qty>0&&isNetworkEndpointProduct(endpoint)){
+      endpointRuleSaveRecord(kind,data,editId);
+      openNetworkEndpointCableRule(room.id,endpoint.name,qty,'Access point');
+      return false;
+    }
+  }
+  if(kind==='technicalPoint'&&/^(Access point|Ponto de rede)$/i.test(String(data.type||''))){
+    endpointRuleSaveRecord(kind,data,editId);
+    const project=(state.data.projects||[]).find(item=>item.id===data.projectId),room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId);
+    if(project?.quoteId&&room)openNetworkEndpointCableRule(room.id,data.label||data.type,Number(data.quantity||1),data.type);
+    return false;
+  }
+  return endpointRuleSaveRecord(kind,data,editId);
+};
+async function migrateExistingAccessPointInfrastructure(){
+  if(state.data.accessPointCableRuleMigrationV1)return;
+  let adjusted=0;
+  (state.data.quoteRooms||[]).forEach(room=>{
+    const accessPoints=(room.items||[]).filter(item=>!item.capacityAllocation&&isNetworkEndpointProduct(productById(item.productId))),required=accessPoints.reduce((sum,item)=>sum+Number(item.qty||0)*30,0);
+    if(!required)return;
+    const keypadMeters=(room.items||[]).filter(item=>!item.capacityAllocation&&isKeypadProduct(productById(item.productId))).reduce((sum,item)=>sum+Number(item.qty||0)*30,0),cables=(room.items||[]).filter(item=>!item.capacityAllocation&&networkCableChoices().some(product=>product.id===item.productId)),covered=Math.max(0,cables.reduce((sum,item)=>sum+Number(item.qty||0),0)-keypadMeters),missing=Math.max(0,required-covered);
+    if(!missing)return;
+    const cableItem=cables[0],cable=cableItem?productById(cableItem.productId):networkCableChoices()[0];
+    if(!cable)return;
+    if(cableItem)cableItem.qty=Number(cableItem.qty||0)+missing;else room.items.push({productId:cable.id,qty:missing,discount:0});
+    adjusted++;logAudit('Regularizou infraestrutura de access point','Orçamento',`${room.name} · ${missing} m de ${cable.name} adicionados para ${accessPoints.length} access point(s)`);
+  });
+  state.data.accessPointCableRuleMigrationV1=true;
+  if(!adjusted){await persist();return}
+  await persist();render();toast(`Infraestrutura atualizada: ${adjusted} ambiente(s) de access point receberam cabo Cat6.`);
+}
+setTimeout(()=>migrateExistingAccessPointInfrastructure().catch(()=>{}),3200);
 render();

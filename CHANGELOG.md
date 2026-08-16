@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Regras comerciais: access points e pontos de rede passam a solicitar Cat6 próprio, com metragem configurável; access points existentes receberam regularização sem reaproveitar a metragem destinada aos keypads.
 - Regras comerciais: keypads já presentes em orçamentos recebem uma migração única de infraestrutura, completando 30 m de Cat6 por keypad sem duplicar a metragem que já existe no ambiente.
 - Regras comerciais: ao adicionar um keypad, o orçamento abre a infraestrutura vinculada, sugere cabo Cat6 e permite definir a metragem antes de incluí-la no mesmo ambiente.
 - Catálogo: adicionado quadro de automação configurável Proelium com preço de referência de R$ 4.000,00.
