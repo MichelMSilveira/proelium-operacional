@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Regras comerciais: ao adicionar um keypad, o orçamento abre a infraestrutura vinculada, sugere cabo Cat6 e permite definir a metragem antes de incluí-la no mesmo ambiente.
 - Catálogo: adicionado quadro de automação configurável Proelium com preço de referência de R$ 4.000,00.
 - Orçamentos: ao selecionar cabo ou pré-infraestrutura, a quantidade parte de 30 m em vez de exigir rolos de 200 ou 300 m.
 - Orçamentos: controles de quantidade, mover e distribuir agora avançam ou recuam de um em um; desconto permanece decimal para não limitar a negociação.

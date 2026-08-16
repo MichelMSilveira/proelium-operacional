@@ -1631,4 +1631,37 @@ $('#recordDialog').addEventListener('close',()=>{
   if(item?.pendingMaterialDistribution)room.items.splice(Number(index),1);
   delete form.dataset.linearMaterialDraft;
 });
+// Primeira regra de composição comercial: cada keypad precisa de infraestrutura de rede.
+// A metragem continua uma escolha consciente do orçamentista, em vez de uma quantidade escondida.
+function isKeypadProduct(product){return /keypad|tecla\s+virtue|pulsador/i.test(`${product?.name||''} ${product?.model||''}`)}
+function networkCableChoices(){return(state.data.products||[]).filter(product=>product.active!==false&&(/cat\s*6/i.test(`${product.name||''} ${product.model||''}`)||product.category==='Cabeamento de rede'))}
+function openKeypadCableRule(roomId,keypad,qty){
+  const room=(state.data.quoteRooms||[]).find(item=>item.id===roomId),choices=networkCableChoices();
+  if(!room||!choices.length){toast('Cadastre ao menos um cabo Cat6 para aplicar esta regra.');return}
+  const suggested=Math.max(30,Math.round(Number(qty||1)*30));
+  $('#dialogTitle').textContent='Infraestrutura obrigatória do keypad';
+  $('#recordForm').dataset.kind='keypadNetworkCable';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Adicionar cabo ao orçamento';
+  $('#formFields').innerHTML=`<input type="hidden" name="roomId" value="${room.id}"><input type="hidden" name="keypadId" value="${keypad.id}"><input type="hidden" name="keypadQty" value="${qty}"><div class="field full"><label>Item adicionado</label><input value="${keypad.name} · ${qty} un" disabled><small class="subtext">Regra ativa: keypad exige cabo de rede para comunicação. Confira o caminho real antes de enviar a proposta.</small></div><div class="field full"><label>Cabo de rede</label><select name="cableProductId" required>${choices.map(product=>`<option value="${product.id}">${product.name} · ${product.brand||'Sem marca'}</option>`).join('')}</select></div><div class="field"><label>Metragem total (m)</label><input name="qty" type="number" min="30" step="1" value="${suggested}" required></div><div class="field"><label>Desconto (%)</label><input name="discount" type="number" min="0" max="100" step="0.01" value="0"></div><div class="field full"><small class="subtext">Sugestão inicial: 30 m por keypad. Ajuste para a metragem real do trajeto.</small></div>`;
+  $('#recordDialog').showModal();
+}
+const keypadRuleSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='keypadNetworkCable'){
+    const room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),cable=productById(data.cableProductId),meters=Number(data.qty),keypad=productById(data.keypadId);
+    if(!room||!cable||!Number.isFinite(meters)||meters<30){toast('Informe ao menos 30 m de cabo de rede.');return false}
+    const discount=Number(data.discount||0),existing=(room.items||[]).find(item=>item.productId===cable.id&&Number(item.discount||0)===discount&&!item.capacityAllocation);
+    if(existing)existing.qty+=meters;else room.items.push({productId:cable.id,qty:meters,discount});
+    logAudit('Aplicou regra de infraestrutura','Orçamento',`${keypad?.name||'Keypad'} → ${cable.name} · ${meters} m · ${room.name}`);
+    persist();render();toast(`${meters} m de ${cable.name} adicionados para o keypad.`);return;
+  }
+  if(kind==='quoteItemSearch'&&data.productId){
+    const keypad=productById(data.productId),room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),qty=Number(data.qty||0);
+    if(keypad&&room&&qty>0&&isKeypadProduct(keypad)){
+      keypadRuleSaveRecord(kind,data,editId);
+      openKeypadCableRule(room.id,keypad,qty);
+      return false;
+    }
+  }
+  return keypadRuleSaveRecord(kind,data,editId);
+};
 render();
