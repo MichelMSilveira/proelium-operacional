@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Diagrama técnico: o mapa de conexões foi compactado e os nós passaram a ser agrupados por sistema — Rede, Automação, Áudio, Vídeo e Outros — com sinalização cromática discreta para facilitar a leitura da lógica.
+
 - Diagrama técnico: incluído o mapa de conexões com linhas entre origem/rack, centrais, equipamentos e pontos técnicos. Linhas contínuas representam origem cadastrada; linhas pontilhadas marcam conexões lógicas que ainda exigem conferência de ficha técnica ou visita.
 
 - Base técnica: cada produto passa a ter uma ficha padronizada de entrada, saída/função, cabo/interface e capacidade. O catálogo expõe a tabela de definição técnica e o diagrama mostra pendências detectáveis — capacidade excedida, ponto sem origem e infraestrutura mínima ausente — sem assumir como confirmado o que ainda precisa ser validado pela ficha técnica.
