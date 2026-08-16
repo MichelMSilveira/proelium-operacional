@@ -1262,3 +1262,24 @@ document.addEventListener('click',event=>{
   if(!button)return;
   event.preventDefault();event.stopImmediatePropagation();toggleIgnoredCapacity(button.dataset.ignoreCapacity);
 },true);
+
+// Uma única ordem de colunas evita que ações, quantidade e desconto se desencontrem após ajustes de rateio.
+const standardQuoteTableRender=render;
+render=()=>{
+  standardQuoteTableRender();
+  if(state.view!=='quoteDetail')return;
+  const quote=state.data.quotes.find(item=>item.id===state.selectedQuote);
+  if(!quote)return;
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent),table=card.querySelector('table');
+    if(!room||!table)return;
+    const items=(room.items||[]).filter(item=>productById(item.productId));
+    table.classList.add('quote-room-table');
+    table.querySelector('thead tr').innerHTML='<th>Item</th><th>Ações</th><th>Quantidade</th><th>Venda</th><th>Total</th>';
+    table.querySelector('tbody').innerHTML=items.map((item,index)=>{
+      const product=productById(item.productId),allocation=item.capacityAllocation,host=allocation&&(state.data.quoteRooms||[]).find(entry=>entry.id===allocation.hostRoomId),secondary=Boolean(allocation&&allocation.hostRoomId!==room.id),circuits=allocation&&isLightingCircuitGroup({...allocation,productId:item.productId})?`<small class="circuit-allocation">💡 ${Number(allocation.amount||0)} ${Number(allocation.amount||0)===1?'circuito':'circuitos'}</small>`:'',rateioNote=secondary?` <span class="rateio-secondary-note">· Rateio técnico · módulo em ${host?.name||'outro ambiente'}</span>`:'',total=Number(product.price||0)*Number(item.qty||0)*(1-Number(item.discount||0)/100);
+      return `<tr class="${secondary?'rateio-secondary':''}"><td><div class="entity">${product.name}</div><div class="subtext">${product.mode||'Produto'}${rateioNote}</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${index}">Ajustar</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button></td><td>${item.qty} ${product.unit||'un'} <button class="link-button quote-item-rateio" data-distribute-capacity="${room.id}:${index}">Rateio</button>${circuits}</td><td>${money(product.price)}</td><td>${money(total)}</td></tr>`;
+    }).join('');
+  });
+};
+render();

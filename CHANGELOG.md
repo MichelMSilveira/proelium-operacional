@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Análise de orçamento: tabelas por ambiente foram reconstruídas com a ordem padrão Item, Ações, Quantidade, Venda e Total, eliminando inversões entre cabeçalho e conteúdo;
 - Análise de orçamento: a ação de rateio foi posicionada ao lado da quantidade de cada equipamento, dentro do respectivo ambiente;
 - Análise de orçamento: todos os itens agora recebem ações padronizadas para ajustar, distribuir/mover, substituir e excluir;
 - Orçamentos: adicionada ação direta “Item geral / ratear pelo projeto”, que abre o item já marcado para dividir custo e venda pelos cômodos da proposta;
