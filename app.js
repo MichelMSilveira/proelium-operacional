@@ -1505,4 +1505,95 @@ saveBlock6Record=(next,kind,data,editId='')=>{
   persist();render();
   return result;
 };
+
+// Cabos e pré-infraestrutura são materiais lineares: metragem por ambiente, nunca
+// capacidade de equipamento. Esta camada evita que "mover" abra uma tela de portas/canais.
+function isLinearProjectMaterial(product){
+  const description=`${product?.name||''} ${product?.model||''} ${product?.category||''} ${product?.unit||''}`;
+  return product?.unit==='m'||/\bcabo\b|cabeamento|eletroduto|condu[ií]te|tubula[cç][aã]o|infraestrutura|pre[- ]?infra/i.test(description);
+}
+function linearMaterialEntries(room,item){
+  const group=item?.capacityAllocation?.groupId;
+  return group?capacityGroups(room.quoteId).find(entry=>entry.groupId===group)?.allocations||[]:[];
+}
+function openLinearMaterialDistribution(roomId,itemIndex){
+  const sourceRoom=(state.data.quoteRooms||[]).find(room=>room.id===roomId),item=sourceRoom?.items?.[Number(itemIndex)],product=item&&productById(item.productId),rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===sourceRoom?.quoteId);
+  if(!sourceRoom||!item||!product)return;
+  const allocation=item.capacityAllocation,entries=linearMaterialEntries(sourceRoom,item),total=Number((allocation?.sourceProductQty??item.qty)||0),amountFor=id=>entries.find(entry=>entry.roomId===id)?.amount??(id===sourceRoom.id?total:0);
+  $('#dialogTitle').textContent=allocation?'Ajustar distribuição de metragem':'Distribuir material por ambiente';
+  $('#recordForm').dataset.kind='linearMaterialDistribution';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Salvar distribuição';
+  $('#formFields').innerHTML=`<input type="hidden" name="sourceRoomId" value="${sourceRoom.id}"><input type="hidden" name="itemIndex" value="${itemIndex}"><input type="hidden" name="groupId" value="${allocation?.groupId||uid('mat')}"><input type="hidden" name="productId" value="${product.id}"><input type="hidden" name="discount" value="${Number(item.discount||0)}"><input type="hidden" name="sourceQty" value="${total}"><div class="field full"><label>Material</label><input value="${product.name} · ${total} ${product.unit||'m'}" disabled><small class="subtext">Distribua a metragem que atende cada ambiente. Isto não cria portas, canais ou capacidade técnica.</small></div><div class="field full"><p class="subtext"><strong>Conferência:</strong> a soma dos ambientes deve fechar exatamente ${total} ${product.unit||'m'}.</p></div>${rooms.map(room=>`<div class="field"><label>${room.name}</label><input name="material_${room.id}" type="number" min="0" step="0.01" value="${amountFor(room.id)}"></div>`).join('')}`;
+  if(item.pendingMaterialDistribution)$('#recordForm').dataset.linearMaterialDraft=`${sourceRoom.id}:${itemIndex}`;
+  $('#recordDialog').showModal();
+}
+function saveLinearMaterialDistribution(data){
+  const sourceRoom=(state.data.quoteRooms||[]).find(room=>room.id===data.sourceRoomId),sourceItem=sourceRoom?.items?.[Number(data.itemIndex)],product=productById(data.productId),quoteId=sourceRoom?.quoteId,total=Number(data.sourceQty);
+  if(!sourceRoom||!sourceItem||!product||!Number.isFinite(total)||total<=0)return false;
+  const rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quoteId),allocations=rooms.map(room=>({roomId:room.id,amount:Number(data[`material_${room.id}`]||0)})).filter(entry=>Number.isFinite(entry.amount)&&entry.amount>0),distributed=allocations.reduce((sum,entry)=>sum+entry.amount,0);
+  if(Math.abs(distributed-total)>.01){toast(`A distribuição soma ${distributed.toFixed(2)} ${product.unit||'m'}; ela precisa fechar ${total.toFixed(2)} ${product.unit||'m'}.`);return false}
+  const groupId=data.groupId;
+  rooms.forEach(room=>room.items=(room.items||[]).filter(item=>item.capacityAllocation?.groupId!==groupId));
+  if(!sourceItem.capacityAllocation){const index=sourceRoom.items.indexOf(sourceItem);if(index>=0)sourceRoom.items.splice(index,1)}
+  allocations.forEach(entry=>{const room=rooms.find(candidate=>candidate.id===entry.roomId);room?.items.push({productId:product.id,qty:Number(entry.amount.toFixed(4)),discount:Number(data.discount||0),capacityAllocation:{groupId,hostRoomId:sourceRoom.id,capacityTotal:total,capacityUsed:total,capacityUnit:product.unit||'m',amount:entry.amount,sourceProductQty:total,materialAllocation:true}})});
+  logAudit('Distribuiu material','Orçamento',`${product.name} · ${total} ${product.unit||'m'} entre ${allocations.length} ambiente(s)`);
+  persist();render();toast(`${product.name} distribuído por metragem entre os ambientes.`);return true;
+}
+const cableAwareSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='linearMaterialDistribution')return saveLinearMaterialDistribution(data);
+  if(kind==='quoteItemSearch'&&data.generalItem==='on'&&data.productId&&isLinearProjectMaterial(productById(data.productId))){
+    const room=(state.data.quoteRooms||[]).find(entry=>entry.id===data.roomId),item={productId:data.productId,qty:Number(data.qty||0),discount:Number(data.discount||0)};
+    if(!room||!item.qty){toast('Informe a metragem do material.');return false}
+    item.pendingMaterialDistribution=true;room.items.push(item);openLinearMaterialDistribution(room.id,room.items.length-1);return false;
+  }
+  if(kind==='quoteItemEdit'&&data.generalItem==='on'){
+    const room=(state.data.quoteRooms||[]).find(entry=>entry.id===data.roomId),item=room?.items?.[Number(data.itemIndex)],product=item&&productById(item.productId);
+    if(product&&isLinearProjectMaterial(product)){item.qty=Number(data.qty||0);item.discount=Number(data.discount||0);return openLinearMaterialDistribution(room.id,Number(data.itemIndex)),false}
+  }
+  return cableAwareSaveRecord(kind,data,editId);
+};
+const cableAwareAutoDistribution=automaticallyDistributeQuoteItem;
+automaticallyDistributeQuoteItem=(roomId,itemIndex)=>{
+  const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
+  if(!product||!isLinearProjectMaterial(product))return cableAwareAutoDistribution(roomId,itemIndex);
+  if(!confirm(`Distribuir “${product.name}” por metragem entre os ambientes do projeto?\n\nVocê poderá informar os metros de cada ambiente antes de confirmar.`))return false;
+  openLinearMaterialDistribution(roomId,Number(itemIndex));return false;
+};
+const cableAwareCapacityOpen=openCapacityDistribution;
+openCapacityDistribution=(roomId,itemIndex)=>{
+  const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
+  return product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareCapacityOpen(roomId,Number(itemIndex));
+};
+const cableAwareMoveOpen=openQuoteItemMove;
+openQuoteItemMove=(roomId,itemIndex)=>{
+  const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
+  return item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareMoveOpen(roomId,Number(itemIndex));
+};
+const cableAwareEditOpen=openQuoteItemEdit;
+openQuoteItemEdit=(roomId,itemIndex)=>{
+  const room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
+  return item?.capacityAllocation&&product&&isLinearProjectMaterial(product)?openLinearMaterialDistribution(roomId,Number(itemIndex)):cableAwareEditOpen(roomId,Number(itemIndex));
+};
+const materialDistributionRender=render;
+render=()=>{
+  materialDistributionRender();
+  if(state.view!=='quoteDetail')return;
+  const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote);if(!quote)return;
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(entry=>entry.quoteId===quote.id&&entry.name===card.querySelector('.card-head h3')?.textContent);
+    if(!room||card.querySelector('.linear-material-box'))return;
+    const items=(room.items||[]).map((item,index)=>({item,index,product:productById(item.productId)})).filter(entry=>entry.item.capacityAllocation?.materialAllocation&&entry.product);
+    if(!items.length)return;
+    const box=document.createElement('aside');box.className='physical-rateio-box linear-material-box';
+    box.innerHTML=`<div class="physical-rateio-title"><strong>Materiais distribuídos neste ambiente</strong><small>Metragem comercial deste cômodo; não representa portas ou capacidade técnica.</small></div><div class="table-wrap physical-rateio-table"><table><thead><tr><th>Material</th><th>Ações</th><th>Metragem</th><th>Venda</th><th>Total</th></tr></thead><tbody>${items.map(({item,index,product})=>`<tr><td><div class="entity">${product.name}</div><div class="subtext">Rateio por metragem</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${index}">Ajustar</button> <button class="link-button" data-move-quote-item="${room.id}:${index}">Distribuir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button></td><td>${item.qty} ${product.unit||'m'}</td><td>${money(product.price||0)}</td><td>${money(Number(product.price||0)*Number(item.qty||0)*(1-Number(item.discount||0)/100))}</td></tr>`).join('')}</tbody></table></div>`;
+    card.querySelector('.table-wrap')?.insertAdjacentElement('afterend',box);
+  });
+};
+$('#recordDialog').addEventListener('close',()=>{
+  const form=$('#recordForm'),draft=form.dataset.linearMaterialDraft;
+  if(!draft)return;
+  const [roomId,index]=draft.split(':'),room=(state.data.quoteRooms||[]).find(item=>item.id===roomId),item=room?.items?.[Number(index)];
+  if(item?.pendingMaterialDistribution)room.items.splice(Number(index),1);
+  delete form.dataset.linearMaterialDraft;
+});
 render();
