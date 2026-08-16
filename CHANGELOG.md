@@ -1,5 +1,10 @@
 # Histórico de versões
 
+## Em desenvolvimento
+
+- Diagrama técnico passou a oferecer leitura por camadas: Rede, Automação, Áudio e Vídeo.
+- Cada camada mantém o mesmo cenário e destaca somente seus equipamentos e ligações, sem duplicar informações do orçamento ou da operação.
+
 ## 0.4.1 — 2026-08-15
 
 - Padrão de cenário: criado o modelo reutilizável de ligação Proelium. Perfis técnicos descrevem entrada, saída, meio de conexão e destino esperado para roteador, switch, access point, NTL, keypad, receiver e caixas de som; o projeto passa a guardar um registro de ligações propostas e suas pendências.

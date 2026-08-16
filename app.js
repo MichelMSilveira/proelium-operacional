@@ -2134,7 +2134,7 @@ function drawTechnicalWireMaps(){
   document.querySelectorAll('.technical-wire-map').forEach(map=>{
     const bounds=map.getBoundingClientRect(),svg=map.querySelector('.technical-wire-svg');if(!svg||!bounds.width||!bounds.height)return;
     svg.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);svg.setAttribute('width',bounds.width);svg.setAttribute('height',bounds.height);
-    const lines=[...map.querySelectorAll('.wire-connection')].map(link=>{const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`);if(!from||!to)return '';const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),x1=a.left-bounds.left+a.width/2,y1=a.bottom-bounds.top,x2=b.left-bounds.left+b.width/2,y2=b.top-bounds.top;const middle=(y1+y2)/2;return `<path class="${link.dataset.wireDashed==='true'?'wire-dashed':''}" d="M ${x1} ${y1} V ${middle} H ${x2} V ${y2}" marker-end="url(#wire-arrow)"></path>`}).join('');svg.querySelectorAll('path:not([d="M0,0 L8,4 L0,8 z"])').forEach(path=>path.remove());svg.insertAdjacentHTML('beforeend',lines);
+    const lines=[...map.querySelectorAll('.wire-connection')].map(link=>{const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`);if(!from||!to)return '';const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),x1=a.left-bounds.left+a.width/2,y1=a.bottom-bounds.top,x2=b.left-bounds.left+b.width/2,y2=b.top-bounds.top;const middle=(y1+y2)/2,key=`${link.dataset.wireFrom}__${link.dataset.wireTo}`;return `<path data-wire-key="${key}" class="${link.dataset.wireDashed==='true'?'wire-dashed':''}" d="M ${x1} ${y1} V ${middle} H ${x2} V ${y2}" marker-end="url(#wire-arrow)"></path>`}).join('');svg.querySelectorAll('path:not([d="M0,0 L8,4 L0,8 z"])').forEach(path=>path.remove());svg.insertAdjacentHTML('beforeend',lines);
   });
 }
 const technicalWireDiagramView=views.diagram;
@@ -2235,4 +2235,42 @@ views.diagram=()=>{
   return connectionStandardDiagramView().replace('<section class="card technical-wire-card">',panel+'<section class="card technical-wire-card">');
 };
 setTimeout(()=>{if(state.data.connectionStandardV1)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV1=true;persist();},8200);
+render();
+
+// Camadas de leitura: o mesmo cenário pode ser conferido por disciplina, sem duplicar dados.
+state.diagramLayer=['all','rede','automacao','audio','video'].includes(state.diagramLayer)?state.diagramLayer:'all';
+const diagramLayerBaseView=views.diagram;
+views.diagram=()=>{
+  const layer=state.diagramLayer;
+  const controls=`<section class="card diagram-layer-card"><div><h3>Camadas do diagrama</h3><p class="subtext">Isole uma disciplina para conferir suas ligações. O cenário, o orçamento e o registro técnico continuam sendo os mesmos.</p></div><div class="diagram-layer-controls" role="group" aria-label="Filtrar camada do diagrama">${[['all','Todas'],['rede','Rede'],['automacao','Automação'],['audio','Áudio'],['video','Vídeo']].map(([id,label])=>`<button type="button" class="diagram-layer-button ${layer===id?'active':''}" data-diagram-layer="${id}" aria-pressed="${layer===id}">${label}</button>`).join('')}</div></section>`;
+  return controls+diagramLayerBaseView();
+};
+function diagramWireLayer(node){
+  if(!node||node.dataset.wireNode==='origin')return 'origin';
+  if(node.closest('.wire-system-rede')||node.matches('.wire-router,.wire-switch,.wire-rede'))return 'rede';
+  if(node.closest('.wire-system-automacao')||node.matches('.wire-ntl,.wire-controller,.wire-automacao'))return 'automacao';
+  if(node.closest('.wire-system-audio')||node.matches('.wire-receiver,.wire-audio'))return 'audio';
+  if(node.closest('.wire-system-video')||node.matches('.wire-video'))return 'video';
+  return 'outros';
+}
+const diagramLayerBaseDraw=drawTechnicalWireMaps;
+drawTechnicalWireMaps=()=>{
+  diagramLayerBaseDraw();
+  document.querySelectorAll('.technical-wire-map').forEach(map=>{
+    const selected=map.dataset.layer||'all';
+    map.querySelectorAll('.wire-connection').forEach(link=>{
+      const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`),path=map.querySelector(`[data-wire-key="${link.dataset.wireFrom}__${link.dataset.wireTo}"]`);
+      if(!path)return;
+      const fromLayer=diagramWireLayer(from),toLayer=diagramWireLayer(to),visible=selected==='all'||fromLayer===selected||toLayer===selected;
+      path.style.display=visible?'':'none';
+    });
+  });
+};
+const diagramLayerBaseRender=render;
+render=()=>{
+  diagramLayerBaseRender();
+  document.querySelectorAll('.technical-wire-map').forEach(map=>{map.dataset.layer=state.diagramLayer;});
+  document.querySelectorAll('[data-diagram-layer]').forEach(button=>{button.onclick=()=>{state.diagramLayer=button.dataset.diagramLayer;render();};});
+  requestAnimationFrame(drawTechnicalWireMaps);
+};
 render();
