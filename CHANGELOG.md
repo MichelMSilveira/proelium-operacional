@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Catálogo: o botão **Consultar** agora aparece ao lado de cada produto e abre a **Ficha técnica de conexões**, onde ficam entradas, saídas, portas e cabo. A versão do aplicativo foi atualizada para os aparelhos receberem esse ajuste.
 - Produtos e Serviços recebeu consulta técnica fixa no topo: selecionar um produto mostra identidade, modelo, função, cabo, portas de entrada e saída; há atalho para editar o mapeamento. No celular, a lista passa a exibir todos os campos como cartões verticais, sem esconder colunas.
 - Diagrama técnico ganhou a leitura “Diagrama por portas”: por camada (Rede, Automação, Áudio ou Vídeo), cada cabo mostra os dois equipamentos, respectivos modelos, porta de saída, tipo de cabo e porta de entrada. A tela apenas interpreta conexões existentes; ela não cria cabos sem confirmação.
 - Produtos e serviços agora possuem identidade técnica por modelo: marca, modelo, SKU e listas de portas de entrada e saída. Essas portas aparecem na Bancada de Ligação e passam a alimentar as próximas conexões do diagrama.
