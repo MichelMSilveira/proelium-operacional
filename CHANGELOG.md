@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Padrão de cenário: criado o modelo reutilizável de ligação Proelium. Perfis técnicos descrevem entrada, saída, meio de conexão e destino esperado para roteador, switch, access point, NTL, keypad, receiver e caixas de som; o projeto passa a guardar um registro de ligações propostas e suas pendências.
+
 - Diagrama técnico: relações lógicas padronizadas incluídas no mapa — roteador para switch, switch para access points, receiver para caixas de som e NTL para keypads. Quando a origem não está cadastrada, o sistema exibe a ligação como pendência pontilhada.
 
 - Diagrama técnico: o mapa de conexões foi compactado e os nós passaram a ser agrupados por sistema — Rede, Automação, Áudio, Vídeo e Outros — com sinalização cromática discreta para facilitar a leitura da lógica.

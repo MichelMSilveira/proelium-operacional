@@ -2180,3 +2180,59 @@ technicalWireMap=function(project){
   return `<section class="card technical-wire-card"><div class="card-head"><div><h3>Conexões do sistema</h3><p class="subtext">Padrão aplicado: roteador → switch → access points; receiver → caixas; NTL → keypads. Linha pontilhada indica a origem ainda pendente de conferência.</p></div></div><div class="technical-wire-map"><svg class="technical-wire-svg" aria-hidden="true"><defs><marker id="wire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"></path></marker></defs></svg><div class="wire-stage wire-origin"><article class="wire-node wire-root" data-wire-node="origin"><small>Origem</small><strong>Internet · energia · rack</strong><span>Entrada e distribuição principal</span></article></div><div class="wire-stage wire-centrals">${centralNodes}</div><div class="wire-stage wire-devices">${deviceNodes}</div>${connections.map(connection=>`<i class="wire-connection" data-wire-from="${connection.from}" data-wire-to="${connection.to}" data-wire-dashed="${connection.dashed}"></i>`).join('')}</div></section>`;
 };
 render();
+
+// Padrão de ligação reutilizável: estas fichas são a fonte de verdade para catálogo, orçamento,
+// diagrama e futura leitura de planta. O perfil pode ser refinado por modelo sem alterar o fluxo.
+const standardConnectionProfiles={
+  router:{label:'Roteador / gateway',input:'Internet / WAN',output:'Rede LAN',media:'Ethernet',targets:['switch']},
+  switch:{label:'Switch',input:'Uplink de rede',output:'Portas LAN / PoE',media:'Cat6 / patch cord',targets:['access-point']},
+  'access-point':{label:'Access point',input:'Ethernet / PoE',output:'Wi‑Fi',media:'Cat6',targets:[]},
+  ntl:{label:'Interface NTL',input:'Rede ou barramento de controle',output:'Comando para keypads',media:'Cat6 / protocolo do fabricante',targets:['keypad']},
+  controller:{label:'Central de automação',input:'Rede, barramento e alimentação',output:'Módulos e comandos',media:'Conforme protocolo',targets:[]},
+  receiver:{label:'Receiver',input:'Fontes A/V e rede',output:'Canais amplificados',media:'Cabo de alto-falante',targets:['speaker']},
+  speaker:{label:'Caixa de som',input:'Sinal amplificado',output:'Áudio no ambiente',media:'Cabo de alto-falante',targets:[]},
+  keypad:{label:'Keypad',input:'Controle / comunicação',output:'Cenas e comandos',media:'Cat6',targets:[]},
+  other:{label:'Item técnico',input:'A confirmar',output:'A confirmar',media:'A confirmar',targets:[]}
+};
+function ensureConnectionProfiles(data=state.data){
+  (data.products||[]).forEach(product=>{const role=technicalDeviceRole(product),standard=standardConnectionProfiles[role]||standardConnectionProfiles.other,previous=product.connectionProfile&&typeof product.connectionProfile==='object'?product.connectionProfile:{};product.connectionProfile={role:previous.role||role,label:previous.label||standard.label,input:previous.input||standard.input,output:previous.output||standard.output,media:previous.media||standard.media,targets:Array.isArray(previous.targets)?previous.targets:standard.targets,source:previous.source||'Padrão Proelium — confirmar modelo'};});
+  return data;
+}
+function projectConnectionInventory(project){
+  if(!project?.quoteId)return [];
+  const rooms=projectQuoteRooms(project),nodes=[];
+  capacityGroups(project.quoteId).forEach(group=>{const product=productById(group.productId);nodes.push({id:`group:${group.groupId}`,role:technicalDeviceRole(product),product,roomId:group.hostRoomId,label:product?.name||'Central'});});
+  rooms.forEach(room=>(room.items||[]).forEach((item,index)=>{if(item.capacityAllocation)return;const product=productById(item.productId);if(product)nodes.push({id:`item:${room.id}:${index}`,role:technicalDeviceRole(product),product,roomId:room.id,label:product.name});}));
+  return nodes;
+}
+function createProjectConnectionStandard(project){
+  const nodes=projectConnectionInventory(project),byRole=role=>nodes.filter(node=>node.role===role),firstSource=(role,roomId='')=>byRole(role).find(node=>node.roomId===roomId)||byRole(role)[0]||null,connections=[];
+  const add=(fromRole,toRole,cable)=>byRole(toRole).forEach(target=>{const source=firstSource(fromRole,target.roomId);connections.push({id:`conn:${project.id}:${fromRole}:${target.id}`,projectId:project.id,fromId:source?.id||'',fromLabel:source?.label||`${standardConnectionProfiles[fromRole]?.label||fromRole} ausente`,fromRole,toId:target.id,toLabel:target.label,toRole,cable,status:source?'Proposto — confirmar':'Origem ausente',origin:'Padrão Proelium'});});
+  add('router','switch','Ethernet / Cat6');
+  add('switch','access-point','Cat6 com PoE');
+  add('ntl','keypad','Cat6 / controle');
+  add('receiver','speaker','Cabo de alto-falante');
+  return connections;
+}
+function synchronizeProjectConnectionStandards(){
+  const manual=(state.data.technicalConnections||[]).filter(connection=>connection.origin!=='Padrão Proelium'),generated=(state.data.projects||[]).flatMap(project=>createProjectConnectionStandard(project));
+  state.data.technicalConnections=[...manual,...generated];
+  return generated;
+}
+state.data.technicalConnections=Array.isArray(state.data.technicalConnections)?state.data.technicalConnections:[];
+ensureConnectionProfiles();
+const connectionStandardNormalize=normalizeSharedData;
+normalizeSharedData=shared=>{const data=ensureConnectionProfiles(connectionStandardNormalize(shared));data.technicalConnections=Array.isArray(data.technicalConnections)?data.technicalConnections:[];return data};
+const connectionStandardPersist=persist;
+persist=(...args)=>{ensureConnectionProfiles();synchronizeProjectConnectionStandards();return connectionStandardPersist(...args)};
+const connectionStandardWarnings=projectTechnicalWarnings;
+projectTechnicalWarnings=project=>{const warnings=connectionStandardWarnings(project),connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project?.id);connections.filter(connection=>connection.status==='Origem ausente').forEach(connection=>warnings.push(`Ligação pendente: ${connection.toLabel} requer ${connection.fromLabel}.`));return [...new Set(warnings)]};
+const connectionStandardCatalogView=views.products;
+views.products=()=>connectionStandardCatalogView()+`<section class="card"><div class="card-head"><div><h3>Padrão de ligação Proelium</h3><p class="subtext">Modelo de informações utilizado para gerar cenário, validar coerência e desenhar conexões. A ficha do fabricante confirma ou ajusta cada modelo.</p></div></div>${table(['Papel técnico','Entrada','Saída','Meio de conexão','Destino padrão'],Object.entries(standardConnectionProfiles).filter(([role])=>role!=='other').map(([role,profile])=>`<tr><td><strong>${profile.label}</strong></td><td>${profile.input}</td><td>${profile.output}</td><td>${profile.media}</td><td>${profile.targets.map(target=>standardConnectionProfiles[target]?.label||target).join(', ')||'—'}</td></tr>`))}</section>`;
+const connectionStandardDiagramView=views.diagram;
+views.diagram=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project?.id),panel=project?`<section class="card connection-register"><div class="card-head"><div><h3>Registro de ligações do cenário</h3><p class="subtext">Relações geradas pelo padrão Proelium; valide rota, porta, conector e modelo antes da execução.</p></div><span class="subtext">${connections.length} ligação(ões)</span></div>${connections.length?table(['Origem','Ligação','Destino','Cabo / meio','Situação'],connections.map(connection=>`<tr><td>${connection.fromLabel}</td><td>→</td><td><strong>${connection.toLabel}</strong></td><td>${connection.cable}</td><td>${badge(connection.status)}</td></tr>`)):'<div class="empty">Ainda não há equipamentos compatíveis para gerar ligações padrão.</div>'}</section>`:'';
+  return connectionStandardDiagramView().replace('<section class="card technical-wire-card">',panel+'<section class="card technical-wire-card">');
+};
+setTimeout(()=>{if(state.data.connectionStandardV1)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV1=true;persist();},8200);
+render();
