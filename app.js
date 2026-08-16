@@ -1405,3 +1405,93 @@ render();
 const finalTableHeaderIntegrityRender=render;
 render=()=>{finalTableHeaderIntegrityRender();normalizeTableHeaders()};
 render();
+
+// Base única de execução: cada item aprovado ganha uma ficha que conserva sua origem
+// comercial e acompanha compra, instalação, ativo físico e diagrama técnico.
+const executionItemNormalize=normalizeSharedData;
+normalizeSharedData=shared=>{const data=executionItemNormalize(shared);data.executionItems=Array.isArray(shared?.executionItems)?shared.executionItems:[];return data};
+if(!Array.isArray(state.data.executionItems))state.data.executionItems=[];
+function executionItemsForProject(projectId){return(state.data.executionItems||[]).filter(item=>item.projectId===projectId)}
+function executionItemSourceKey(room,item,itemIndex){return item.capacityAllocation?`rateio:${item.capacityAllocation.groupId}`:`item:${room.id}:${item.productId}:${Number(item.discount||0)}:${itemIndex}`}
+function syncProjectExecutionItems(projectId){
+  const project=(state.data.projects||[]).find(item=>item.id===projectId),quote=project?.quoteId&&state.data.quotes.find(item=>item.id===project.quoteId);
+  if(!project||!quote)return [];
+  const rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id),existing=executionItemsForProject(projectId),desired=[],seen=new Set();
+  rooms.forEach(room=>(room.items||[]).forEach((item,itemIndex)=>{
+    const allocation=item.capacityAllocation;
+    if(allocation&&allocation.hostRoomId!==room.id)return;
+    const sourceKey=executionItemSourceKey(room,item,itemIndex);
+    if(seen.has(sourceKey))return;seen.add(sourceKey);
+    const product=productById(item.productId),previous=existing.find(entry=>entry.sourceKey===sourceKey),servedRooms=allocation?capacityGroups(quote.id).find(group=>group.groupId===allocation.groupId)?.allocations.map(entry=>({roomId:entry.roomId,roomName:rooms.find(room=>room.id===entry.roomId)?.name||'Ambiente',amount:entry.amount}))||[]:[];
+    desired.push({...previous,id:previous?.id||uid('exe'),projectId,clientId:project.clientId,quoteId:quote.id,sourceKey,sourceRoomId:room.id,roomName:room.name,productId:item.productId,productName:product?.name||'Item sem catálogo',plannedQty:Number((allocation?.sourceProductQty??item.qty)||0),discount:Number(item.discount||0),rateioGroupId:allocation?.groupId||'',servedRooms,capacity:allocation?{total:allocation.capacityTotal,used:allocation.capacityUsed,unit:allocation.capacityUnit}:null,purchaseStatus:previous?.purchaseStatus||'Planejado',installationStatus:previous?.installationStatus||'Planejado',equipmentId:previous?.equipmentId||'',updatedAt:new Date().toISOString()});
+  }));
+  state.data.executionItems=[...(state.data.executionItems||[]).filter(item=>item.projectId!==projectId),...desired];
+  return desired;
+}
+function ensureProjectOperationalChain(project){
+  const client=(state.data.clients||[]).find(item=>item.id===project.clientId),items=syncProjectExecutionItems(project.id);
+  if(!state.data.installations.some(item=>item.projectId===project.id))state.data.installations.push({id:uid('ins'),clientId:project.clientId,projectId:project.id,site:client?.address||client?.city||project.name,type:'Projeto integrado',lead:project.manager||'A definir',stage:project.technicalStage||'Planejamento',progress:Number(project.progress||0),due:project.due||'A definir',status:project.status||'Planejamento'});
+  applyProjectChecklistTemplate(project.id,true);
+  generatePurchaseList(project.id);
+  return items;
+}
+const operationalApproveQuote=approveQuote;
+approveQuote=id=>{
+  operationalApproveQuote(id);
+  const project=(state.data.projects||[]).find(item=>item.quoteId===id),quote=(state.data.quotes||[]).find(item=>item.id===id);
+  if(!project||quote?.status!=='Aprovado')return;
+  const items=ensureProjectOperationalChain(project);
+  logAudit('Gerou base operacional','Projeto',`${project.name} · ${items.length} item(ns) de execução vinculados ao orçamento aprovado`);
+  persist();render();toast(`Projeto preparado: instalação, checklist e ${items.length} item(ns) de execução vinculados.`);
+};
+const foundationPurchaseGeneration=generatePurchaseList;
+generatePurchaseList=projectId=>{
+  foundationPurchaseGeneration(projectId);
+  const execution=syncProjectExecutionItems(projectId),purchases=(state.data.purchaseItems||[]).filter(item=>item.projectId===projectId);
+  purchases.forEach(purchase=>{const match=execution.find(item=>item.productId===purchase.productId&&item.roomName===purchase.room);if(match)purchase.executionItemId=match.id});
+  persist();
+};
+const foundationProjectDetail=projectDetail;
+projectDetail=()=>{
+  const base=foundationProjectDetail(),project=(state.data.projects||[]).find(item=>item.id===state.selectedProject);
+  if(!project)return base;
+  const items=executionItemsForProject(project.id),rows=items.map(item=>`<tr><td><div class="entity">${item.productName}</div><div class="subtext">${item.roomName}${item.rateioGroupId?' · atende '+item.servedRooms.map(room=>room.roomName).join(', '):''}</div></td><td>${item.plannedQty}</td><td>${badge(item.purchaseStatus)}</td><td>${badge(item.installationStatus)}</td><td>${item.equipmentId?'Ativo vinculado':'Aguardando ativo'}</td></tr>`);
+  return base+`<section class="card operational-section"><div class="card-head"><div><h3>Itens de execução vinculados</h3><p class="subtext">Origem comercial → compra → instalação → ativo físico → pós-venda.</p></div><button class="button secondary" data-sync-project-base="${project.id}">Sincronizar base</button></div>${items.length?table(['Item / ambiente','Quantidade','Compra','Instalação','Ativo físico'],rows):'<div class="empty">Este projeto ainda não possui itens vinculados. Sincronize a base a partir do orçamento aprovado.</div>'}</section>`;
+};
+document.addEventListener('click',event=>{const button=event.target.closest('[data-sync-project-base]');if(!button)return;const project=(state.data.projects||[]).find(item=>item.id===button.dataset.syncProjectBase);if(!project)return;const items=ensureProjectOperationalChain(project);logAudit('Sincronizou base operacional','Projeto',`${project.name} · ${items.length} item(ns)`);persist();render();toast(`${items.length} item(ns) vinculados ao projeto.`)},true);
+const foundationDeleteProject=deleteProject;
+deleteProject=id=>{foundationDeleteProject(id);if(!(state.data.projects||[]).some(item=>item.id===id)){state.data.executionItems=(state.data.executionItems||[]).filter(item=>item.projectId!==id);persist()}};
+const foundationDeleteClient=deleteClient;
+deleteClient=id=>{
+  const projectIds=(state.data.projects||[]).filter(project=>project.clientId===id).map(project=>project.id);
+  foundationDeleteClient(id);
+  if(!(state.data.clients||[]).some(client=>client.id===id)){
+    state.data.executionItems=(state.data.executionItems||[]).filter(item=>item.clientId!==id&&!projectIds.includes(item.projectId));
+    persist();
+  }
+};
+// O ativo físico aponta de volta para a ficha do item aprovado. Assim, número de série,
+// garantia e manutenção nunca perdem a ligação com o ambiente e a proposta de origem.
+const foundationOpenOperationalEquipment=openOperationalEquipment;
+openOperationalEquipment=id=>{
+  foundationOpenOperationalEquipment(id);
+  const equipment=id?(state.data.equipment||[]).find(item=>item.id===id):null,projectId=equipment?.projectId||document.querySelector('#recordForm [name="projectId"]')?.value||'',field=document.querySelector('#formFields');
+  if(!field||field.querySelector('[name="executionItemId"]'))return;
+  const options=[`<option value="">Sem vínculo com item do orçamento</option>`,...executionItemsForProject(projectId).map(item=>`<option value="${item.id}" ${item.id===equipment?.executionItemId?'selected':''}>${item.productName} · ${item.roomName}</option>`)].join('');
+  field.insertAdjacentHTML('beforeend',`<div class="field full"><label>Item aprovado de origem</label><select name="executionItemId">${options}</select><small class="subtext">Vincula este ativo à compra, ao ambiente e ao orçamento de origem.</small></div>`);
+};
+const foundationSaveBlock6Record=saveBlock6Record;
+saveBlock6Record=(next,kind,data,editId='')=>{
+  const result=foundationSaveBlock6Record(next,kind,data,editId);
+  if(kind!=='operationalEquipment')return result;
+  const equipment=editId?(state.data.equipment||[]).find(item=>item.id===editId):(state.data.equipment||[]).find(item=>item.name===data.name&&item.serial===data.serial&&item.projectId===data.projectId);
+  if(!equipment)return result;
+  (state.data.executionItems||[]).forEach(item=>{if(item.equipmentId===equipment.id&&item.id!==data.executionItemId)item.equipmentId=''});
+  equipment.executionItemId=data.executionItemId||'';
+  const execution=(state.data.executionItems||[]).find(item=>item.id===data.executionItemId);
+  if(execution){execution.equipmentId=equipment.id;execution.installationStatus=equipment.status==='Instalado'?'Instalado':execution.installationStatus;execution.updatedAt=new Date().toISOString();}
+  logAudit('Vinculou ativo físico','Operação',`${equipment.name} · ${execution?`${execution.productName} / ${execution.roomName}`:'sem item de origem'}`);
+  persist();render();
+  return result;
+};
+render();

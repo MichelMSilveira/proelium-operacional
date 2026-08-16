@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Base integrada: orçamento aprovado agora gera e mantém fichas de itens de execução ligadas ao projeto, cliente, ambiente, rateio, compra, instalação e ativo físico; também garante instalação e checklist padrão do projeto. O ativo instalado pode apontar para seu item de origem, preservando série, garantia e histórico técnico.
 - Análise de orçamento: o toque no interruptor de rateio agora é tratado diretamente pela própria área do controle, evitando falhas de ativação ou desativação em tabelas no celular.
 - Análise de orçamento: Rateio agora é um interruptor real com os estados “Ativar” e “Ativo”; desligá-lo, após confirmação, reúne o item no ambiente físico e libera suas conexões técnicas sem apagá-las.
 - Rateio automático: produtos com capacidade identificável — como switches PoE, módulos PWM, dimmers e centrais por canais — passaram a preencher a capacidade física pelo próprio catálogo, sem redigitação pelo técnico.
