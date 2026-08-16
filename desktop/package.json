@@ -1,0 +1,24 @@
+{
+  "name": "proelium-operacional-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cliente desktop do Proelium Operacional conectado à VPS.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "br.com.proelium.operacional",
+    "productName": "Proelium Operacional",
+    "directories": { "output": "dist-release" },
+    "files": ["main.js", "preload.js", "config.json"],
+    "win": { "target": ["nsis", "portable"], "artifactName": "Proelium-Operacional-${version}-${arch}.${ext}" },
+    "nsis": { "artifactName": "Proelium-Operacional-Setup-${version}-${arch}.${ext}", "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
+    "portable": { "artifactName": "Proelium-Operacional-Portable-${version}-${arch}.${ext}" }
+  }
+}

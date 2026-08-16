@@ -2,3 +2,11 @@ data/shared-data.json
 data/shared-data.json.tmp
 data/users.json
 data/users.json.tmp
+desktop/node_modules
+desktop/dist
+desktop/dist-release
+.tools
+
+# Runtime data (users, sessions and shared records)
+data/*.json
+data/*.tmp
