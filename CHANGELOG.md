@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Produtos e serviços: importado o catálogo Scenario Embrace da tabela fornecida, com códigos, modelos, acabamentos e valores de referência de junho de 2021, sujeitos à validação antes de cotar;
 - Orçamentos: itens podem ser movidos parcialmente entre cômodos, escolhendo a quantidade e preservando desconto e auditoria da alteração;
 - Menu: Visão geral, Comercial, Orçamentos, Clientes e Produtos e serviços agora formam o grupo Comercial;
 - Adicionada aba Orçamentos para consulta unitária de propostas e ação Mover em Equipamentos, com histórico técnico e auditoria de troca de local;
