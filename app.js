@@ -1285,15 +1285,9 @@ render=()=>{
     if(physicalGroups.length){
       const panel=document.createElement('aside');
       panel.className='physical-rateio-box';
-      panel.innerHTML=`<strong>Equipamentos rateados instalados aqui</strong><div>${physicalGroups.map(group=>{const product=productById(group.productId),used=Number(group.capacityUsed??group.capacityTotal);return `<span>${product?.name||'Equipamento'} · ${group.sourceProductQty||1} ${product?.unit||'un'} físico(s) · ${used}/${group.capacityTotal} ${group.capacityUnit}</span>`}).join('')}</div><small>O valor é distribuído entre os ambientes atendidos na área “Equipamentos rateados do orçamento”.</small>`;
+      panel.innerHTML=`<strong>Equipamentos rateados instalados aqui</strong><div>${physicalGroups.map(group=>{const product=productById(group.productId),used=Number(group.capacityUsed??group.capacityTotal),itemIndex=room.items.findIndex(item=>item.capacityAllocation?.groupId===group.groupId);return `<span>${product?.name||'Equipamento'} · ${group.sourceProductQty||1} ${product?.unit||'un'} físico(s) · ${used}/${group.capacityTotal} ${group.capacityUnit} <button class="link-button capacity-summary-adjust" data-distribute-capacity="${room.id}:${itemIndex}">Ajustar rateio</button></span>`}).join('')}</div><small>O valor é distribuído entre os ambientes atendidos, sem duplicar o equipamento na proposta.</small>`;
       table.closest('.table-wrap')?.insertAdjacentElement('afterend',panel);
     }
-  });
-  const groups=capacityGroups(quote.id);
-  document.querySelectorAll('.capacity-summary-list article').forEach((article,index)=>{
-    const group=groups[index],host=(state.data.quoteRooms||[]).find(room=>room.id===group?.hostRoomId),itemIndex=host?.items?.findIndex(item=>item.capacityAllocation?.groupId===group?.groupId);
-    if(!group||!host||itemIndex<0||article.querySelector('[data-distribute-capacity]'))return;
-    article.insertAdjacentHTML('beforeend',`<button class="link-button capacity-summary-adjust" data-distribute-capacity="${host.id}:${itemIndex}">Ajustar rateio</button>`);
   });
 };
 render();

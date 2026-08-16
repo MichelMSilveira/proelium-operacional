@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Análise de orçamento: equipamentos rateados e a ação Ajustar rateio passaram a aparecer somente no ambiente onde o equipamento está instalado fisicamente;
 - Análise de orçamento: equipamentos rateados passaram para uma área única de gestão; as tabelas dos ambientes exibem somente itens diretos, enquanto o local físico mostra uma referência técnica do equipamento instalado;
 - Análise de orçamento: removida a margem que sobrepunha ações ao título da proposta; Inserir pacote e revisão foram agrupados em “Mais opções” para preservar espaço;
 - Análise de orçamento: tabelas por ambiente foram reconstruídas com a ordem padrão Item, Ações, Quantidade, Venda e Total, eliminando inversões entre cabeçalho e conteúdo;
