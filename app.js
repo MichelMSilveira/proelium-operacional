@@ -1075,9 +1075,32 @@ state.data.technicalPoints=Array.isArray(state.data.technicalPoints)?state.data.
 const technicalPointNormalize=normalizeSharedData;
 normalizeSharedData=shared=>{const data=technicalPointNormalize(shared);data.technicalPoints=Array.isArray(data.technicalPoints)?data.technicalPoints:[];return data};
 const capacityDefaultWithPorts=capacityDefault;
+function productCapacityProfile(product,qty=1){
+  const description=`${product?.name||''} ${product?.model||''}`;
+  const explicit=Number(product?.capacity||product?.ports||product?.channels||product?.circuits||product?.zones||0);
+  const match=description.match(/(\d+)(?:[.,]\d+)?\s*(portas?|canais|circuitos|zonas)\b/i)||description.match(/(\d+)\s*(poe)\b/i);
+  const capacity=explicit||Number(match?.[1]||0),rawUnit=String(match?.[2]||'').toLocaleLowerCase('pt-BR');
+  const unit=rawUnit==='poe'?'portas':rawUnit||'';
+  return {detected:capacity>0,total:capacity>0?capacity*Math.max(1,Number(qty||1)):0,unit};
+}
 capacityDefault=(product,qty)=>{
-  const match=`${product?.name||''} ${product?.model||''}`.match(/(\d+)\s*(?:portas?|canais|circuitos|zonas)/i);
-  return match?Math.max(1,Number(match[1])*Number(qty||1)):capacityDefaultWithPorts(product,qty);
+  const profile=productCapacityProfile(product,qty);
+  return profile.detected?profile.total:capacityDefaultWithPorts(product,qty);
+};
+// Produtos com capacidade conhecida (ex.: switch 24 PoE e PWM 4 canais) não pedem
+// que o técnico informe a capacidade física novamente ao ajustar o rateio.
+const productCapacityDistributionOpen=openCapacityDistribution;
+openCapacityDistribution=(roomId,itemIndex)=>{
+  productCapacityDistributionOpen(roomId,itemIndex);
+  const form=$('#recordForm'),room=(state.data.quoteRooms||[]).find(entry=>entry.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId),profile=productCapacityProfile(product,Number((item?.capacityAllocation?.sourceProductQty??item?.qty)||1));
+  if(!form||form.dataset.kind!=='capacityDistribution'||!profile.detected)return;
+  const totalField=form.elements.capacityTotal,usedField=form.elements.capacityUsed,unitField=form.elements.capacityUnit;
+  if(!totalField||!usedField||!unitField)return;
+  totalField.value=String(profile.total);usedField.max=String(profile.total);
+  if(Number(usedField.value)>profile.total)usedField.value=String(profile.total);
+  if(profile.unit)unitField.value=profile.unit;
+  totalField.closest('.field').innerHTML=`<label>Capacidade física</label><input value="${profile.total} ${profile.unit||'unidades'}" disabled><input type="hidden" name="capacityTotal" value="${profile.total}">`;
+  if(profile.unit)unitField.closest('.field').innerHTML=`<label>Unidade de capacidade</label><input value="${profile.unit}" disabled><input type="hidden" name="capacityUnit" value="${profile.unit}">`;
 };
 function projectQuoteRooms(project){return project?.quoteId?(state.data.quoteRooms||[]).filter(room=>room.quoteId===project.quoteId):[]}
 function projectCapacitySources(project){
