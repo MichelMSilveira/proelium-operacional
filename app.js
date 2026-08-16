@@ -1908,4 +1908,44 @@ function productClassificationGuide(){
 }
 const productClassificationFinalCatalogView=views.products;
 views.products=()=>productClassificationFinalCatalogView()+productClassificationGuide();
+
+// Escopo geral: leitura do projeto antes de ele ser dividido por cômodos e precificado.
+// A mesma estrutura será a entrada da futura leitura assistida de PDF/imagem, sempre sujeita
+// à conferência do técnico antes de virar orçamento.
+function quantityLabel(quantity,unit='un'){
+  const amount=Number(quantity||0),label=unit||'un';
+  return `${Number.isInteger(amount)?amount:amount.toLocaleString('pt-BR',{maximumFractionDigits:2})} ${label}`;
+}
+function quoteScopeQuantities(quoteId){
+  const groups={},add=(product,quantity)=>{
+    if(!product||!Number(quantity||0))return;
+    const key=product.id;
+    if(!groups[key])groups[key]={product,quantity:0};
+    groups[key].quantity+=Number(quantity||0);
+  };
+  const distributedProducts=new Set((capacityGroups(quoteId)||[]).map(group=>group.productId));
+  (state.data.quoteRooms||[]).filter(room=>room.quoteId===quoteId).forEach(room=>(room.items||[]).forEach(item=>{
+    if(item.capacityAllocation||distributedProducts.has(item.productId))return;
+    add(productById(item.productId),item.qty);
+  }));
+  (capacityGroups(quoteId)||[]).forEach(group=>add(productById(group.productId),1));
+  return Object.values(groups).sort((a,b)=>`${a.product.technicalType} ${a.product.name}`.localeCompare(`${b.product.technicalType} ${b.product.name}`,'pt-BR'));
+}
+function scopeQuantityPanel(items,title='Visão geral de quantitativos',note='Antes da distribuição por ambiente: itens e capacidades a conferir no projeto.'){
+  if(!items.length)return '';
+  return `<section class="card scope-quantities"><div class="card-head"><div><h3>${title}</h3><p class="subtext">${note}</p></div><span class="subtext">${items.length} tipo(s) de item</span></div>${table(['Tipo e função','Item','Quantitativo','Conferência'],items.map(entry=>{const product=entry.product||{},type=entry.technicalType||product.technicalType||entry.type||'Item técnico',purpose=entry.technicalFunction||product.technicalFunction||entry.notes||'Função a definir';return `<tr><td><strong>${type}</strong><div class="subtext">${purpose}</div></td><td>${product.name||entry.label||entry.type||'Item levantado'}</td><td><strong>${quantityLabel(entry.quantity,product.unit||entry.unit||'un')}</strong></td><td>${badge(entry.status||'A conferir')}</td></tr>`}))}</section>`;
+}
+const scopeQuoteDetailView=views.quoteDetail;
+views.quoteDetail=()=>{
+  const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote);
+  const panel=quote?scopeQuantityPanel(quoteScopeQuantities(quote.id),'Visão geral do projeto','Quantitativos do projeto inteiro. Depois, os mesmos itens são alocados aos ambientes e avaliados financeiramente.'):'';
+  return scopeQuoteDetailView().replace('<div class="quote-analysis card">',panel+'<div class="quote-analysis card">');
+};
+const scopeSurveyView=views.survey;
+views.survey=()=>{
+  const selected=(state.data.surveys||[]).find(item=>item.id===state.selectedSurvey),points=selected?(state.data.surveyPoints||[]).filter(point=>point.surveyId===selected.id):[];
+  const grouped=Object.values(points.reduce((all,point)=>{const key=`${point.technicalType||point.type}|||${point.technicalFunction||point.notes||''}`;(all[key]??={type:point.type,technicalType:point.technicalType||point.type,technicalFunction:point.technicalFunction||'Função a validar',quantity:0,unit:'un',status:point.status||'Previsto',label:'Pontos levantados'}).quantity+=Number(point.quantity||0);return all;},{}));
+  const panel=selected?scopeQuantityPanel(grouped,'Resumo geral do levantamento','Quantitativos consolidados antes da separação por ambiente. Origem atual: '+selected.source+'.'):'';
+  return scopeSurveyView().replace('<div class="room-grid">',panel+'<div class="room-grid">');
+};
 render();
