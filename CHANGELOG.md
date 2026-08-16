@@ -10,6 +10,7 @@
 - Seletor de camadas reposicionado imediatamente acima do diagrama de conexões para manter a leitura técnica agrupada.
 - Camada de Rede ganhou leitura vertical: origem, roteador, switch e ramificações para os equipamentos.
 - Diagrama técnico recebeu visual minimalista: linhas em destaque, símbolo técnico compacto e legenda curta do modelo em cada equipamento.
+- Rede teve a hierarquia visual fixada em roteador → switch, com setas de maior contraste; automação passou a seguir rede → controladora (RJ‑45) → NTL → keypads/comandos.
 
 ## 0.4.1 — 2026-08-15
 

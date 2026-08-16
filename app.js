@@ -2175,7 +2175,8 @@ technicalWireMap=function(project){
   // A tabela de ligações é a fonte de verdade do desenho: nenhuma conexão é inventada só no mapa.
   const registered=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),connections=registered.map(connection=>({from:connection.fromId||'origin',to:connection.toId,dashed:connection.status==='Origem ausente'})).filter(connection=>connection.to&&connection.from!==connection.to);
   // No mapa de rede, o equipamento rateado é o núcleo físico. Duplicações comerciais não viram outro switch no desenho.
-  const visibleCentrals=centrals.filter((node,index,list)=>!['router','switch'].includes(node.role)||list.findIndex(candidate=>candidate.role===node.role)===index);
+  const centralOrder={router:10,switch:20,controller:30,ntl:40,receiver:50};
+  const visibleCentrals=centrals.filter((node,index,list)=>!['router','switch'].includes(node.role)||list.findIndex(candidate=>candidate.role===node.role)===index).sort((a,b)=>(centralOrder[a.role]||90)-(centralOrder[b.role]||90));
   const nodeLabel=node=>node.point?.label||node.product?.model||node.product?.name||'Ponto técnico',nodeLegend=node=>node.product?.model&&node.product?.name!==node.product.model?node.product.name:node.detail,miniNode=(node,kind)=>`<article class="wire-node wire-mini wire-${kind} wire-${node.role}" data-wire-node="${node.id}" title="${node.product?.name||node.point?.label||'Equipamento técnico'}"><i class="wire-glyph" aria-hidden="true"></i><div><strong>${nodeLabel(node)}</strong><small>${nodeLegend(node)}</small></div></article>`;
   const centralNodes=visibleCentrals.map(node=>miniNode(node,'central')).join('')||'<article class="wire-node wire-mini wire-central" data-wire-node="central-pendente"><i class="wire-glyph" aria-hidden="true"></i><div><strong>Central a definir</strong><small>Adicione a central do sistema.</small></div></article>';
   const systemFor=node=>{if(node.role==='access-point'||node.role==='network-device'||node.role==='switch'||node.role==='router')return 'rede';if(node.role==='keypad'||node.role==='ntl'||node.role==='controller')return 'automacao';if(node.role==='speaker'||node.role==='receiver')return 'audio';const type=String(node.product?.technicalType||'').toLocaleLowerCase('pt-BR');return /vídeo|video|tv|câmera|camera/.test(type)?'video':'outros'},labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo',outros:'Outros'};
@@ -2192,8 +2193,8 @@ const standardConnectionProfiles={
   switch:{label:'Switch',input:'Uplink de rede',output:'Portas LAN / PoE',media:'Cat6 / patch cord',targets:['access-point','network-device']},
   'access-point':{label:'Access point',input:'Ethernet / PoE',output:'Wi‑Fi',media:'Cat6',targets:[]},
   'network-device':{label:'Dispositivo de rede',input:'Ethernet / PoE conforme modelo',output:'Serviço no ambiente',media:'Cat6',targets:[]},
-  ntl:{label:'Interface NTL',input:'Rede ou barramento de controle',output:'Comando para keypads',media:'Cat6 / protocolo do fabricante',targets:['keypad']},
-  controller:{label:'Central de automação',input:'Rede, barramento e alimentação',output:'Módulos e comandos',media:'Conforme protocolo',targets:[]},
+  ntl:{label:'Interface NTL',input:'Central de automação / barramento',output:'Comando para keypads',media:'Cat6 / protocolo de controle',targets:['keypad']},
+  controller:{label:'Central de automação',input:'Rede RJ‑45, alimentação e programação',output:'Interface NTL e módulos',media:'Cat6 / barramento de controle',targets:['ntl']},
   receiver:{label:'Receiver',input:'Fontes A/V e rede',output:'Canais amplificados',media:'Cabo de alto-falante',targets:['speaker']},
   speaker:{label:'Caixa de som',input:'Sinal amplificado',output:'Áudio no ambiente',media:'Cabo de alto-falante',targets:[]},
   keypad:{label:'Keypad',input:'Controle / comunicação',output:'Cenas e comandos',media:'Cat6',targets:[]},
@@ -2220,6 +2221,8 @@ function createProjectConnectionStandard(project){
   add('router','switch','Ethernet / Cat6',true);
   add('switch','access-point','Cat6 com PoE');
   add('switch','network-device','Cat6 / PoE conforme equipamento');
+  add('switch','controller','Cat6 RJ‑45 / rede');
+  add('controller','ntl','Cat6 / barramento de controle');
   add('ntl','keypad','Cat6 / controle');
   add('receiver','speaker','Cabo de alto-falante');
   return connections;
@@ -2247,6 +2250,7 @@ views.diagram=()=>{
 setTimeout(()=>{if(state.data.connectionStandardV1)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV1=true;persist();},8200);
 setTimeout(()=>{if(state.data.connectionStandardV2)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV2=true;persist();},8800);
 setTimeout(()=>{if(state.data.connectionStandardV3)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV3=true;persist();},9400);
+setTimeout(()=>{if(state.data.connectionStandardV4)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV4=true;persist();},10000);
 render();
 
 // Camadas de leitura: o mesmo cenário pode ser conferido por disciplina, sem duplicar dados.
