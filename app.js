@@ -2164,7 +2164,10 @@ function technicalDeviceRole(product={}){
 technicalWireMap=function(project){
   if(!project?.quoteId)return '';
   const rooms=projectQuoteRooms(project),groups=capacityGroups(project.quoteId),points=(state.data.technicalPoints||[]).filter(point=>point.projectId===project.id),roomName=id=>rooms.find(room=>room.id===id)?.name||'Ambiente',centrals=[],devices=[];
-  groups.forEach(group=>{const product=productById(group.productId);centrals.push({id:`central-${group.groupId}`,product,role:technicalDeviceRole(product),roomId:group.hostRoomId,detail:`${roomName(group.hostRoomId)} · ${group.capacityUsed??group.capacityTotal}/${group.capacityTotal} ${group.capacityUnit||'un'}`)});
+  groups.forEach(group=>{
+    const product=productById(group.productId);
+    centrals.push({id:`central-${group.groupId}`,product,role:technicalDeviceRole(product),roomId:group.hostRoomId,detail:`${roomName(group.hostRoomId)} · ${group.capacityUsed??group.capacityTotal}/${group.capacityTotal} ${group.capacityUnit||'un'}`});
+  });
   rooms.forEach(room=>(room.items||[]).forEach((item,index)=>{if(item.capacityAllocation)return;const product=productById(item.productId);if(!product)return;const record={id:`device-${room.id}-${index}`,product,role:technicalDeviceRole(product),roomId:room.id,detail:`${room.name} · ${item.qty} ${product.unit||'un'}`};if(['router','switch','ntl','receiver','controller'].includes(record.role))centrals.push(record);else devices.push(record)}));
   points.forEach(point=>devices.push({id:`point-${point.id}`,product:{technicalType:point.type},role:technicalDeviceRole({technicalType:point.type,name:point.label}),roomId:point.roomId,detail:`${roomName(point.roomId)} · ${point.type}`,point,capacityGroupId:point.capacityGroupId||''}));
   const first=(role,roomId='')=>centrals.find(node=>node.role===role&&(!roomId||node.roomId===roomId))||centrals.find(node=>node.role===role)||null;
