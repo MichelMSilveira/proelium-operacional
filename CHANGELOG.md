@@ -6,6 +6,7 @@
 - Cada camada mantém o mesmo cenário e destaca somente seus equipamentos e ligações, sem duplicar informações do orçamento ou da operação.
 - Diagrama e Registro de ligações do cenário agora usam a mesma lista de conexões como fonte de verdade.
 - Padrão da rede refinado para: link externo / internet → Dream Machine (roteador) → Switch UniFi Pro Max 24 PoE → access points e demais dispositivos de rede da casa.
+- Mapa de rede agora consolida duplicações comerciais de roteador e switch: o desenho mostra apenas o núcleo físico principal e evita loops falsos entre access points e switches.
 
 ## 0.4.1 — 2026-08-15
 
