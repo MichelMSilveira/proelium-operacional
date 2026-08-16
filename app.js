@@ -1283,3 +1283,21 @@ render=()=>{
   });
 };
 render();
+
+// Ações secundárias não disputam espaço com o nome da proposta e com os comandos de montagem do orçamento.
+const quoteHeaderLayoutRender=render;
+render=()=>{
+  quoteHeaderLayoutRender();
+  if(state.view!=='quoteDetail')return;
+  const actions=document.querySelector('.quote-actions');
+  if(!actions||document.querySelector('.quote-extra-actions'))return;
+  const optional=[...actions.querySelectorAll('[data-add="packageToQuote"],[data-quote-revision]')];
+  if(!optional.length)return;
+  const extra=document.createElement('section');
+  extra.className='quote-extra-actions';
+  extra.innerHTML='<details><summary>Mais opções</summary><div></div></details>';
+  const target=extra.querySelector('div');
+  optional.forEach(button=>target.append(button));
+  actions.insertAdjacentElement('afterend',extra);
+};
+render();
