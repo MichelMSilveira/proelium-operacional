@@ -879,3 +879,30 @@ const compactQuoteRoomView=views.quoteDetail;views.quoteDetail=()=>compactQuoteR
 document.addEventListener('click',event=>{const button=event.target.closest('[data-distribute-capacity]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();const [roomId,index]=button.dataset.distributeCapacity.split(':');openCapacityDistribution(roomId,Number(index))},true);
 render();
 updateSharedStatus();
+
+// Inclusão contextual: cada ambiente abre o catálogo já selecionado, evitando adicionar item no cômodo errado.
+const quoteRoomItemSearch=openQuoteItemSearch;
+openQuoteItemSearch=(prefill={})=>{
+  quoteRoomItemSearch();
+  const roomField=$('#recordForm')?.elements?.roomId;
+  if(roomField&&prefill.roomId&&[...roomField.options].some(option=>option.value===prefill.roomId))roomField.value=prefill.roomId;
+};
+const quoteRoomItemButtonRender=render;
+render=()=>{
+  quoteRoomItemButtonRender();
+  if(state.view!=='quoteDetail')return;
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const roomName=card.querySelector('.card-head h3')?.textContent;
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===state.selectedQuote&&item.name===roomName);
+    const head=card.querySelector('.card-head');
+    if(!room||!head||head.querySelector('[data-add-room-quote-item]'))return;
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='button secondary room-add-item';
+    button.dataset.addRoomQuoteItem=room.id;
+    button.textContent='+ Adicionar item';
+    button.onclick=()=>openQuoteItemSearch({roomId:room.id});
+    head.append(button);
+  });
+};
+render();

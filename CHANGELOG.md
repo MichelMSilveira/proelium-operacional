@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos por ambiente: cada cômodo agora possui o botão “Adicionar item”, que abre o catálogo com o ambiente correto já escolhido;
 - Orçamentos no celular: comparação estratégica, histórico de versões, rateios técnicos e cartões de ambiente agora usam toda a largura útil; tabelas continuam com rolagem interna quando necessário;
 - Formulários no celular: janela centralizada no espaço útil, eliminando o vão lateral irregular;
 - Formulários no celular: a janela de registro passou a usar quase toda a largura útil da tela, com margens e preenchimento reduzidos;
