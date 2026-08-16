@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Saídas do switch agora mostram as duas pontas da ligação: miniatura do switch, número e tipo de porta, cabo, miniatura do aparelho de destino, nome/modelo e entrada correspondente.
 - No Diagrama técnico, “Conexões do sistema” passa a aparecer logo após o título, antes de guias, mapa de portas e demais painéis.
 - Mapa de portas foi refinado para uma leitura por cabo: `PORTA N → Cat6/PoE → equipamento`, repetida para cada saída do switch conforme o escopo do projeto.
 - Camada de Rede ganhou um mapa de portas do switch: uplink, chassi com portas numeradas, ocupação visual e um cabo identificado para cada equipamento conectado.
