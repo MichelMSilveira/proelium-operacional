@@ -979,3 +979,57 @@ saveRecord=(kind,data,editId='')=>{
   }
   return finalSharedInfrastructureSave(kind,data,editId);
 };
+
+// Pontos técnicos: a base que conecta orçamento, capacidades e o diagrama da obra.
+state.data.technicalPoints=Array.isArray(state.data.technicalPoints)?state.data.technicalPoints:[];
+const technicalPointNormalize=normalizeSharedData;
+normalizeSharedData=shared=>{const data=technicalPointNormalize(shared);data.technicalPoints=Array.isArray(data.technicalPoints)?data.technicalPoints:[];return data};
+const capacityDefaultWithPorts=capacityDefault;
+capacityDefault=(product,qty)=>{
+  const match=`${product?.name||''} ${product?.model||''}`.match(/(\d+)\s*(?:portas?|canais|circuitos|zonas)/i);
+  return match?Math.max(1,Number(match[1])*Number(qty||1)):capacityDefaultWithPorts(product,qty);
+};
+function projectQuoteRooms(project){return project?.quoteId?(state.data.quoteRooms||[]).filter(room=>room.quoteId===project.quoteId):[]}
+function projectCapacitySources(project){
+  if(!project?.quoteId)return [];
+  return capacityGroups(project.quoteId).map(group=>{
+    const product=productById(group.productId),host=(state.data.quoteRooms||[]).find(room=>room.id===group.hostRoomId);
+    return {...group,name:product?.name||'Equipamento central',hostName:host?.name||'Local físico não informado'};
+  }).filter(group=>/porta|poe/i.test(group.capacityUnit||''));
+}
+function openTechnicalPoint(projectId,id=''){
+  const project=(state.data.projects||[]).find(item=>item.id===projectId),point=id?(state.data.technicalPoints||[]).find(item=>item.id===id):null,rooms=projectQuoteRooms(project),sources=projectCapacitySources(project),value=(key,fallback='')=>point?.[key]??fallback;
+  if(!project)return;
+  $('#dialogTitle').textContent=point?'Ajustar ponto técnico':'Adicionar ponto técnico';
+  $('#recordForm').dataset.kind='technicalPoint';$('#recordForm').dataset.editId=id;$('#saveButton').textContent=point?'Salvar ponto':'Adicionar ao diagrama';
+  $('#formFields').innerHTML=`<input type="hidden" name="projectId" value="${project.id}"><div class="field full"><label>Projeto</label><input value="${project.code||'Projeto'} · ${project.name}" disabled></div><div class="field"><label>Ambiente *</label><select name="roomId" required><option value="">Selecione</option>${rooms.map(room=>`<option value="${room.id}" ${room.id===value('roomId')?'selected':''}>${room.name}</option>`).join('')}</select></div><div class="field"><label>Tipo de ponto *</label><select name="type">${['Ponto de rede','Access point','Câmera IP','TV / mídia','Computador','Automação','Telefonia','Outro'].map(type=>`<option ${type===value('type','Ponto de rede')?'selected':''}>${type}</option>`).join('')}</select></div><div class="field full"><label>Descrição / identificação *</label><input name="label" value="${value('label')}" placeholder="Ex.: AP corredor, câmera portão ou TV sala" required></div><div class="field"><label>Quantidade de portas *</label><input name="quantity" type="number" min="1" step="1" value="${value('quantity',1)}" required></div><div class="field"><label>Equipamento que fornece as portas</label><select name="capacityGroupId"><option value="">Ainda não vincular</option>${sources.map(source=>`<option value="${source.groupId}" ${source.groupId===value('capacityGroupId')?'selected':''}>${source.name} · ${source.capacityTotal} ${source.capacityUnit} · ${source.hostName}</option>`).join('')}</select></div><div class="field full"><label>Observação</label><textarea name="note" placeholder="Ex.: ponto PoE, cabo previsto, porta identificada no rack.">${value('note')}</textarea></div><p class="subtext">Para contabilizar portas, primeiro distribua o switch e informe a capacidade em “portas”. O ponto pode ser cadastrado antes e vinculado depois.</p>`;
+  $('#recordDialog').showModal();
+}
+function technicalPointPanel(project){
+  if(!project)return '';
+  const points=(state.data.technicalPoints||[]).filter(point=>point.projectId===project.id),sources=projectCapacitySources(project),roomName=id=>projectQuoteRooms(project).find(room=>room.id===id)?.name||'Ambiente não informado';
+  const sourceCards=sources.map(source=>{const used=points.filter(point=>point.capacityGroupId===source.groupId).reduce((sum,point)=>sum+Number(point.quantity||0),0),free=Number(source.capacityTotal||0)-used,status=free<0?'over':free===0?'full':'ok';return `<article class="technical-capacity ${status}"><strong>${source.name}</strong><small>${source.hostName} · ${source.capacityTotal} ${source.capacityUnit}</small><div><span>Usadas <b>${used}</b></span><span>Livres <b>${free}</b></span></div><em>${free<0?`Faltam ${Math.abs(free)} portas`:free===0?'Capacidade completa':'Capacidade disponível'}</em></article>`}).join('')||'<p class="subtext technical-empty">Nenhum switch/central com capacidade em portas foi distribuído neste orçamento ainda.</p>';
+  const pointRows=points.map(point=>{const source=sources.find(item=>item.groupId===point.capacityGroupId);return `<tr><td><strong>${point.label}</strong><div class="subtext">${point.type}${point.note?` · ${point.note}`:''}</div></td><td>${roomName(point.roomId)}</td><td>${point.quantity}</td><td>${source?source.name:'Não vinculado'}</td><td><button class="link-button" data-edit-technical-point="${point.id}">Ajustar</button> <button class="link-button technical-delete" data-delete-technical-point="${point.id}">Excluir</button></td></tr>`});
+  return `<section class="card technical-points-panel"><div class="card-head"><div><h3>Portas e pontos técnicos</h3><p class="subtext">Conferência de pontos de rede, câmeras, antenas e outros consumos que alimentam o diagrama.</p></div><button class="button primary" data-add-technical-point="${project.id}">+ Adicionar ponto</button></div><div class="technical-capacity-grid">${sourceCards}</div>${table(['Ponto','Ambiente','Portas','Capacidade vinculada',''],pointRows)}</section>`;
+}
+const diagramTechnicalPointView=views.diagram;
+views.diagram=()=>{const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));return diagramTechnicalPointView()+technicalPointPanel(project)};
+const technicalPointSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='technicalPoint'){
+    const point={id:editId||uid('pto'),projectId:data.projectId,roomId:data.roomId,type:data.type,label:data.label.trim(),quantity:Number(data.quantity),capacityGroupId:data.capacityGroupId||'',note:data.note?.trim()||''};
+    if(!point.roomId||!point.label||!Number.isFinite(point.quantity)||point.quantity<=0){toast('Informe ambiente, descrição e quantidade de portas.');return false}
+    const index=(state.data.technicalPoints||[]).findIndex(item=>item.id===editId);
+    if(index>=0)state.data.technicalPoints[index]=point;else state.data.technicalPoints.unshift(point);
+    logAudit(editId?'Ajustou ponto técnico':'Criou ponto técnico','Diagrama',`${point.label} · ${point.quantity} porta(s)`);
+    persist();render();toast(editId?'Ponto técnico ajustado.':'Ponto técnico adicionado ao diagrama.');return;
+  }
+  return technicalPointSave(kind,data,editId);
+};
+document.addEventListener('click',event=>{
+  const add=event.target.closest('[data-add-technical-point]'),edit=event.target.closest('[data-edit-technical-point]'),remove=event.target.closest('[data-delete-technical-point]');
+  if(add){event.preventDefault();openTechnicalPoint(add.dataset.addTechnicalPoint);return}
+  if(edit){event.preventDefault();const point=(state.data.technicalPoints||[]).find(item=>item.id===edit.dataset.editTechnicalPoint);if(point)openTechnicalPoint(point.projectId,point.id);return}
+  if(remove){event.preventDefault();const point=(state.data.technicalPoints||[]).find(item=>item.id===remove.dataset.deleteTechnicalPoint);if(!point||!confirm(`Excluir o ponto técnico “${point.label}”?`))return;state.data.technicalPoints=state.data.technicalPoints.filter(item=>item.id!==point.id);logAudit('Excluiu ponto técnico','Diagrama',point.label);persist();render();toast('Ponto técnico excluído.');}
+},true);
+render();
