@@ -8,6 +8,7 @@
 - Padrão da rede refinado para: link externo / internet → Dream Machine (roteador) → Switch UniFi Pro Max 24 PoE → access points e demais dispositivos de rede da casa.
 - Mapa de rede agora consolida duplicações comerciais de roteador e switch: o desenho mostra apenas o núcleo físico principal e evita loops falsos entre access points e switches.
 - Seletor de camadas reposicionado imediatamente acima do diagrama de conexões para manter a leitura técnica agrupada.
+- Camada de Rede ganhou leitura vertical: origem, roteador, switch e ramificações para os equipamentos.
 
 ## 0.4.1 — 2026-08-15
 
