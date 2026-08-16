@@ -2254,7 +2254,7 @@ const diagramLayerBaseView=views.diagram;
 views.diagram=()=>{
   const layer=state.diagramLayer;
   const controls=`<section class="card diagram-layer-card"><div><h3>Camadas do diagrama</h3><p class="subtext">Isole uma disciplina para conferir suas ligações. O cenário, o orçamento e o registro técnico continuam sendo os mesmos.</p></div><div class="diagram-layer-controls" role="group" aria-label="Filtrar camada do diagrama">${[['all','Todas'],['rede','Rede'],['automacao','Automação'],['audio','Áudio'],['video','Vídeo']].map(([id,label])=>`<button type="button" class="diagram-layer-button ${layer===id?'active':''}" data-diagram-layer="${id}" aria-pressed="${layer===id}">${label}</button>`).join('')}</div></section>`;
-  return controls+diagramLayerBaseView();
+  return diagramLayerBaseView().replace('<section class="card technical-wire-card">',controls+'<section class="card technical-wire-card">');
 };
 function diagramWireLayer(node){
   if(!node||node.dataset.wireNode==='origin')return 'origin';
