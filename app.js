@@ -1115,7 +1115,9 @@ render=()=>{
   lightingCircuitRender();
   if(state.view!=='quoteDetail')return;
   const quote=state.data.quotes.find(item=>item.id===state.selectedQuote);
-  if(!quote||!capacityGroups(quote.id).some(isLightingCircuitGroup))return;
+  if(!quote)return;
+  const hasLightingCircuits=capacityGroups(quote.id).some(isLightingCircuitGroup);
+  if(hasLightingCircuits){
   document.querySelectorAll('.room-grid .room-card').forEach(card=>{
     const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent);
     const target=card.querySelector('.card-head small');
@@ -1134,6 +1136,20 @@ render=()=>{
       if(!quantityCell||quantityCell.querySelector('.circuit-allocation'))return;
       const circuits=Number(allocation.amount||0),label=circuits===1?'circuito':'circuitos';
       quantityCell.insertAdjacentHTML('beforeend',`<small class="circuit-allocation">💡 ${circuits} ${label}</small>`);
+    });
+  });
+  }
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent);
+    if(!room)return;
+    const visibleItems=(room.items||[]).filter(item=>productById(item.productId));
+    card.querySelectorAll('tbody tr').forEach((row,index)=>{
+      const item=visibleItems[index],allocation=item?.capacityAllocation;
+      if(!allocation||allocation.hostRoomId===room.id||row.dataset.rateioSecondary)return;
+      const host=(state.data.quoteRooms||[]).find(entry=>entry.id===allocation.hostRoomId);
+      row.dataset.rateioSecondary='true';row.classList.add('rateio-secondary');
+      const detail=row.querySelector('td .subtext');
+      detail?.insertAdjacentHTML('beforeend',` <span class="rateio-secondary-note">· Rateio técnico · módulo em ${host?.name||'outro ambiente'}</span>`);
     });
   });
   document.querySelectorAll('.room-grid .room-card').forEach(card=>{
