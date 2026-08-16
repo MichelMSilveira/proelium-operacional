@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Navegação móvel: restaurada a rolagem vertical ao iniciar o gesto dentro de tabelas, filtros, cartões e janelas de formulário;
 - Orçamentos: a caixa “Ratear por todos os cômodos” também está disponível no modo Ajustar, junto da quantidade, para distribuir um item que já foi incluído;
 - Orçamentos: a ação Mover foi incorporada a Distribuir; agora basta ajustar a participação de cada ambiente para transferir parte ou todo o item;
 - Orçamentos: a opção de ratear um item por todos os cômodos agora fica ao lado da quantidade, antes de inserir o item;
