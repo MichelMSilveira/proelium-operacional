@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Diagrama técnico recebeu a Bancada de Ligação: equipamentos do projeto aparecem juntos com entradas e saídas; selecionar uma saída e depois uma entrada cria o cabo, registra auditoria e atualiza o fluxograma.
 - Saídas do switch agora mostram as duas pontas da ligação: miniatura do switch, número e tipo de porta, cabo, miniatura do aparelho de destino, nome/modelo e entrada correspondente.
 - No Diagrama técnico, “Conexões do sistema” passa a aparecer logo após o título, antes de guias, mapa de portas e demais painéis.
 - Mapa de portas foi refinado para uma leitura por cabo: `PORTA N → Cat6/PoE → equipamento`, repetida para cada saída do switch conforme o escopo do projeto.
