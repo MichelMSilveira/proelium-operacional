@@ -1664,4 +1664,24 @@ saveRecord=(kind,data,editId='')=>{
   }
   return keypadRuleSaveRecord(kind,data,editId);
 };
+async function migrateExistingKeypadInfrastructure(){
+  if(state.data.keypadCableRuleMigrationV1)return;
+  let adjusted=0,ready=true;
+  (state.data.quoteRooms||[]).forEach(room=>{
+    const keypads=(room.items||[]).filter(item=>!item.capacityAllocation&&isKeypadProduct(productById(item.productId))),required=keypads.reduce((sum,item)=>sum+Number(item.qty||0)*30,0);
+    if(!required)return;
+    const cables=(room.items||[]).filter(item=>!item.capacityAllocation&&networkCableChoices().some(product=>product.id===item.productId)),covered=cables.reduce((sum,item)=>sum+Number(item.qty||0),0),missing=Math.max(0,required-covered);
+    if(!missing)return;
+    const cableItem=cables[0],cable=cableItem?productById(cableItem.productId):networkCableChoices()[0];
+    if(!cable){ready=false;return}
+    if(cableItem)cableItem.qty=Number(cableItem.qty||0)+missing;else room.items.push({productId:cable.id,qty:missing,discount:0});
+    adjusted++;
+    logAudit('Regularizou infraestrutura de keypad','Orçamento',`${room.name} · ${missing} m de ${cable.name} adicionados para ${keypads.length} keypad(s) existentes`);
+  });
+  if(!ready)return;
+  state.data.keypadCableRuleMigrationV1=true;
+  if(!adjusted)return;
+  await persist();render();toast(`Infraestrutura atualizada: ${adjusted} ambiente(s) de keypad receberam cabo Cat6.`);
+}
+setTimeout(()=>migrateExistingKeypadInfrastructure().catch(()=>{}),2200);
 render();
