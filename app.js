@@ -1168,7 +1168,8 @@ render=()=>{
     card.querySelectorAll('tbody tr').forEach((row,index)=>{
       const item=visibleItems[index],actionCell=row.querySelector('[data-edit-quote-item]')?.closest('td');
       if(!item||!actionCell||actionCell.querySelector('[data-delete-quote-item]'))return;
-      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
+      actionCell.classList.add('quote-item-actions');
+      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-distribute" data-distribute-capacity="${room.id}:${index}">Distribuir / mover</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
     });
   });
 };
