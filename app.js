@@ -1033,3 +1033,19 @@ document.addEventListener('click',event=>{
   if(remove){event.preventDefault();const point=(state.data.technicalPoints||[]).find(item=>item.id===remove.dataset.deleteTechnicalPoint);if(!point||!confirm(`Excluir o ponto técnico “${point.label}”?`))return;state.data.technicalPoints=state.data.technicalPoints.filter(item=>item.id!==point.id);logAudit('Excluiu ponto técnico','Diagrama',point.label);persist();render();toast('Ponto técnico excluído.');}
 },true);
 render();
+
+// O rateio geral é uma decisão da quantidade: fica ao lado dela no formulário de inclusão.
+const inlineSharedItemSearchOpen=openQuoteItemSearch;
+openQuoteItemSearch=(prefill={})=>{
+  inlineSharedItemSearchOpen(prefill);
+  const form=$('#recordForm'),quantityField=form?.elements?.qty?.closest('.field'),sharedField=form?.querySelector('.shared-item-field');
+  if(!quantityField||!sharedField)return;
+  sharedField.classList.remove('full');
+  sharedField.classList.add('shared-item-inline');
+  quantityField.insertAdjacentElement('afterend',sharedField);
+  const title=sharedField.querySelector('strong'),description=sharedField.querySelector('.shared-item-toggle small'),hint=sharedField.querySelector('[data-general-item-hint]');
+  if(title)title.textContent='Ratear por todos os cômodos';
+  if(description)description.textContent='Distribui o valor deste item por todo o projeto.';
+  if(hint)hint.remove();
+};
+render();
