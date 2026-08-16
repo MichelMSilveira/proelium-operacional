@@ -11,7 +11,8 @@ const usersFile = path.join(dataDirectory, 'users.json');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const eventClients = new Set();
 const sessions = new Map();
-const sessionTtl = 8 * 60 * 60 * 1000;
+// Keep the authenticated session across app/browser restarts without storing passwords.
+const sessionTtl = 30 * 24 * 60 * 60 * 1000;
 
 function readUsers() {
   if (!fs.existsSync(usersFile)) return [];
