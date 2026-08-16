@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Infraestrutura compartilhada: ao adicionar um item ao orçamento, roteadores, switches, racks, nobreaks e cabeamento de rede sugerem automaticamente o modo “Item geral”, distribuindo valor de forma igual por todos os ambientes e mantendo o local físico registrado;
 - Rateios técnicos: a janela agora exibe conferência ao vivo de capacidade total, valor distribuído e saldo antes da confirmação;
 - Orçamentos por ambiente: cada cômodo agora possui o botão “Adicionar item”, que abre o catálogo com o ambiente correto já escolhido;
 - Orçamentos no celular: comparação estratégica, histórico de versões, rateios técnicos e cartões de ambiente agora usam toda a largura útil; tabelas continuam com rolagem interna quando necessário;

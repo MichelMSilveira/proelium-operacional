@@ -476,6 +476,38 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Infraestrutura compartilhada: itens gerais começam distribuídos de forma igual por todos os ambientes.
+function isSharedInfrastructure(product){return /roteador|router|gateway|modem|switch|rack|nobreak|patch\s*panel|cabo\s*(?:de\s*)?rede|cabeamento\s*(?:estruturado|de\s*rede)/i.test(`${product?.name||''} ${product?.model||''} ${product?.category||''}`)}
+const sharedInfrastructureSearchOpen=openQuoteItemSearch;
+openQuoteItemSearch=(prefill={})=>{
+  sharedInfrastructureSearchOpen(prefill);
+  const form=$('#recordForm');
+  if(!form||form.dataset.kind!=='quoteItemSearch'||form.querySelector('[name="generalItem"]'))return;
+  const roomField=form.elements.roomId;
+  roomField?.closest('.field')?.insertAdjacentHTML('afterend',`<div class="field full shared-item-field"><label class="shared-item-toggle"><input type="checkbox" name="generalItem"><span><strong>Item geral do orçamento</strong><small>Distribui custo e venda igualmente por todos os ambientes. O local selecionado acima continua sendo o local físico do equipamento.</small></span></label><small class="subtext" data-general-item-hint>Use para infraestrutura central, como roteador, switch, rack, cabeamento principal ou nobreak.</small></div>`);
+  const toggle=form.elements.generalItem,hint=form.querySelector('[data-general-item-hint]');
+  form.addEventListener('click',event=>{
+    const option=event.target.closest('[data-search-product]');
+    if(!option)return;
+    const product=productById(option.dataset.searchProduct),suggested=isSharedInfrastructure(product);
+    toggle.checked=suggested;
+    if(hint)hint.textContent=suggested?'Infraestrutura detectada: o rateio geral foi ativado. Você pode desligá-lo se este item atender apenas um ambiente.':'Ative quando o item atender a casa inteira; depois, use “Distribuir” para ajustar a participação de cada ambiente.';
+  });
+};
+const sharedInfrastructureSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='quoteItemSearch'&&data.generalItem==='on'&&data.productId){
+    const hostRoom=(state.data.quoteRooms||[]).find(room=>room.id===data.roomId),product=productById(data.productId),rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===hostRoom?.quoteId),quantity=Number(data.qty||0),discount=Number(data.discount||0);
+    if(!hostRoom||!product||!rooms.length||!Number.isFinite(quantity)||quantity<=0){toast('Confira o item, o ambiente físico e a quantidade antes de distribuir.');return false}
+    const groupId=uid('geral'),part=Number((quantity/rooms.length).toFixed(4));
+    rooms.forEach((room,index)=>room.items.push({productId:product.id,qty:index===rooms.length-1?Number((quantity-part*(rooms.length-1)).toFixed(4)):part,discount,capacityAllocation:{groupId,hostRoomId:hostRoom.id,capacityTotal:rooms.length,capacityUnit:'ambientes',amount:1,sourceProductQty:quantity,sharedInfrastructure:true}}));
+    logAudit('Distribuiu item geral','Orçamento',`${product.name} · ${quantity} ${product.unit||'un'} · ${rooms.length} ambientes · local físico: ${hostRoom.name}`);
+    persist();render();toast(`${product.name} foi distribuído igualmente pelos ${rooms.length} ambientes.`);return;
+  }
+  return sharedInfrastructureSave(kind,data,editId);
+};
+render();
+
 // Conferência antes de confirmar: o rateio mostra o total, o já distribuído e o saldo em tempo real.
 const capacityDistributionPreviewOpen=openCapacityDistribution;
 openCapacityDistribution=(roomId,itemIndex)=>{
@@ -933,3 +965,17 @@ render=()=>{
   });
 };
 render();
+
+// Esta camada fica após o catálogo pesquisável e, por isso, trata primeiro o modo geral antes do salvamento comum.
+const finalSharedInfrastructureSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='quoteItemSearch'&&data.generalItem==='on'&&data.productId){
+    const hostRoom=(state.data.quoteRooms||[]).find(room=>room.id===data.roomId),product=productById(data.productId),rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===hostRoom?.quoteId),quantity=Number(data.qty||0),discount=Number(data.discount||0);
+    if(!hostRoom||!product||!rooms.length||!Number.isFinite(quantity)||quantity<=0){toast('Confira o item, o ambiente físico e a quantidade antes de distribuir.');return false}
+    const groupId=uid('geral'),part=Number((quantity/rooms.length).toFixed(4));
+    rooms.forEach((room,index)=>room.items.push({productId:product.id,qty:index===rooms.length-1?Number((quantity-part*(rooms.length-1)).toFixed(4)):part,discount,capacityAllocation:{groupId,hostRoomId:hostRoom.id,capacityTotal:rooms.length,capacityUnit:'ambientes',amount:1,sourceProductQty:quantity,sharedInfrastructure:true}}));
+    logAudit('Distribuiu item geral','Orçamento',`${product.name} · ${quantity} ${product.unit||'un'} · ${rooms.length} ambientes · local físico: ${hostRoom.name}`);
+    persist();render();toast(`${product.name} foi distribuído igualmente pelos ${rooms.length} ambientes.`);return;
+  }
+  return finalSharedInfrastructureSave(kind,data,editId);
+};
