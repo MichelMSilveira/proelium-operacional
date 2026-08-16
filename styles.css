@@ -109,7 +109,7 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 
 /* A navegação por cômodos acompanha a análise do orçamento no telefone. */
 @media(max-width:720px){
-  .quote-room-filter{position:sticky;top:70px;z-index:39;margin-bottom:14px;box-shadow:0 8px 22px rgba(18,42,33,.14);overflow:visible}
+  .quote-room-filter{position:relative;z-index:1;margin-bottom:14px;overflow:visible}
   .quote-room-filter .module-toolbar{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:0 2px 4px;margin:0}
   .quote-room-filter .module-toolbar .button{flex:0 0 auto}
 }
