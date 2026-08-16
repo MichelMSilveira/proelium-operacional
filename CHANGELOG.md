@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Diagrama técnico: portas livres de switches e centrais podem ser ignoradas explicitamente no planejamento, sem registrá-las como consumo e com opção de reconsiderar depois;
 - Orçamentos: adicionada ação Substituir, que troca um item preservando quantidade, desconto, local físico e, quando houver, rateio de capacidade e vínculos técnicos;
 - Orçamentos: frações de equipamentos rateados em ambientes secundários agora aparecem com baixa ênfase e identificação do local físico do módulo;
 - Orçamentos: itens agora podem ser excluídos por ambiente com confirmação, Auditoria e desfazer temporário; itens rateados são removidos de todos os ambientes para preservar o total;

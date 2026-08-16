@@ -1214,3 +1214,30 @@ document.addEventListener('click',event=>{
   const [roomId,index]=button.dataset.replaceQuoteItem.split(':');
   openQuoteItemReplace(roomId,Number(index));
 },true);
+
+// Portas ignoradas não são consumo técnico: são uma decisão explícita de não usar a sobra daquele equipamento neste projeto.
+state.data.capacityIgnored=state.data.capacityIgnored&&typeof state.data.capacityIgnored==='object'?state.data.capacityIgnored:{};
+const capacityIgnoredNormalize=normalizeSharedData;
+normalizeSharedData=shared=>{const data=capacityIgnoredNormalize(shared);data.capacityIgnored=data.capacityIgnored&&typeof data.capacityIgnored==='object'?data.capacityIgnored:{};return data};
+function ignoredCapacityFor(groupId,total,used){return Math.max(0,Math.min(Number(state.data.capacityIgnored?.[groupId]||0),Math.max(0,Number(total||0)-Number(used||0))))}
+function technicalPointPanel(project){
+  if(!project)return '';
+  const points=(state.data.technicalPoints||[]).filter(point=>point.projectId===project.id),sources=projectCapacitySources(project),roomName=id=>projectQuoteRooms(project).find(room=>room.id===id)?.name||'Ambiente não informado';
+  const sourceCards=sources.map(source=>{const used=points.filter(point=>point.capacityGroupId===source.groupId).reduce((sum,point)=>sum+Number(point.quantity||0),0),rawFree=Number(source.capacityTotal||0)-used,ignored=ignoredCapacityFor(source.groupId,source.capacityTotal,used),free=Math.max(0,rawFree-ignored),status=rawFree<0?'over':ignored>0?'ignored':free===0?'full':'ok',action=ignored>0?`<button class="link-button capacity-ignore" data-ignore-capacity="${source.groupId}">Reconsiderar ${ignored} porta(s)</button>`:rawFree>0?`<button class="link-button capacity-ignore" data-ignore-capacity="${source.groupId}">Ignorar ${rawFree} porta(s) livres</button>`:'';return `<article class="technical-capacity ${status}"><strong>${source.name}</strong><small>${source.hostName} · ${source.capacityTotal} ${source.capacityUnit}</small><div><span>Usadas <b>${used}</b></span><span>Livres <b>${free}</b></span>${ignored?`<span>Ignoradas <b>${ignored}</b></span>`:''}</div><em>${rawFree<0?`Faltam ${Math.abs(rawFree)} portas`:ignored?`${ignored} porta(s) livre(s) ignorada(s) no planejamento`:free===0?'Capacidade completa':'Capacidade disponível'}</em>${action}</article>`}).join('')||'<p class="subtext technical-empty">Nenhum switch/central com capacidade em portas foi distribuído neste orçamento ainda.</p>';
+  const pointRows=points.map(point=>{const source=sources.find(item=>item.groupId===point.capacityGroupId);return `<tr><td><strong>${point.label}</strong><div class="subtext">${point.type}${point.note?` · ${point.note}`:''}</div></td><td>${roomName(point.roomId)}</td><td>${point.quantity}</td><td>${source?source.name:'Não vinculado'}</td><td><button class="link-button" data-edit-technical-point="${point.id}">Ajustar</button> <button class="link-button technical-delete" data-delete-technical-point="${point.id}">Excluir</button></td></tr>`});
+  return `<section class="card technical-points-panel"><div class="card-head"><div><h3>Portas e pontos técnicos</h3><p class="subtext">Conferência de pontos de rede, câmeras, antenas e outros consumos que alimentam o diagrama.</p></div><button class="button primary" data-add-technical-point="${project.id}">+ Adicionar ponto</button></div><div class="technical-capacity-grid">${sourceCards}</div>${table(['Ponto','Ambiente','Portas','Capacidade vinculada',''],pointRows)}</section>`;
+}
+function toggleIgnoredCapacity(groupId){
+  const quoteIds=[...new Set((state.data.quoteRooms||[]).map(room=>room.quoteId))],group=quoteIds.flatMap(quoteId=>capacityGroups(quoteId)).find(item=>item.groupId===groupId);
+  if(!group)return;
+  const used=(state.data.technicalPoints||[]).filter(point=>point.capacityGroupId===groupId).reduce((sum,point)=>sum+Number(point.quantity||0),0),rawFree=Math.max(0,Number(group.capacityTotal||0)-used),currentlyIgnored=ignoredCapacityFor(groupId,group.capacityTotal,used),product=productById(group.productId);
+  if(currentlyIgnored){delete state.data.capacityIgnored[groupId];logAudit('Reconsiderou portas livres','Diagrama',`${product?.name||'Equipamento'} · ${currentlyIgnored} porta(s) voltaram para disponibilidade`);toast(`${currentlyIgnored} porta(s) voltaram para disponibilidade.`)}
+  else if(rawFree){state.data.capacityIgnored[groupId]=rawFree;logAudit('Ignorou portas livres','Diagrama',`${product?.name||'Equipamento'} · ${rawFree} porta(s) não utilizadas neste projeto`);toast(`${rawFree} porta(s) foram marcadas como não utilizadas neste projeto.`)}
+  else {toast('Não há portas livres para ignorar.');return}
+  persist();render();
+}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-ignore-capacity]');
+  if(!button)return;
+  event.preventDefault();event.stopImmediatePropagation();toggleIgnoredCapacity(button.dataset.ignoreCapacity);
+},true);
