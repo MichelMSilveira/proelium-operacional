@@ -476,6 +476,23 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Cada tabela declara a mesma quantidade de títulos e colunas. Isso evita ações
+// "soltas" quando uma tela acrescenta botões depois de a tabela ter sido montada.
+function normalizeTableHeaders(){
+  document.querySelectorAll('#content table').forEach(table=>{
+    const header=table.tHead?.rows[0],rows=[...table.tBodies].flatMap(body=>[...body.rows]);
+    if(!header||!rows.length)return;
+    const columns=Math.max(header.cells.length,...rows.map(row=>row.cells.length));
+    while(header.cells.length<columns)header.insertAdjacentHTML('beforeend','<th></th>');
+    for(let index=0;index<columns;index++){
+      const title=header.cells[index],hasAction=rows.some(row=>row.cells[index]?.querySelector('button,[role="button"]'));
+      if(hasAction&&!title.textContent.trim()){
+        title.textContent='Ações';
+        title.dataset.columnAction='true';
+      }
+    }
+  });
+}
 // Infraestrutura compartilhada: itens gerais começam distribuídos de forma igual por todos os ambientes.
 function isSharedInfrastructure(product){return /roteador|router|gateway|modem|switch|rack|nobreak|patch\s*panel|cabo\s*(?:de\s*)?rede|cabeamento\s*(?:estruturado|de\s*rede)/i.test(`${product?.name||''} ${product?.model||''} ${product?.category||''}`)}
 const sharedInfrastructureSearchOpen=openQuoteItemSearch;
@@ -1273,10 +1290,12 @@ render=()=>{
   document.querySelectorAll('.room-grid .room-card').forEach(card=>{
     const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent),table=card.querySelector('table');
     if(!room||!table)return;
-    const items=(room.items||[]).filter(item=>productById(item.productId)&&!item.capacityAllocation);
+    // Preserva o índice real do item: a tabela esconde os rateados, mas os botões
+    // ainda precisam apontar para a posição correta dentro do ambiente.
+    const items=(room.items||[]).map((item,index)=>({item,index})).filter(entry=>productById(entry.item.productId)&&!entry.item.capacityAllocation);
     table.classList.add('quote-room-table');
     table.querySelector('thead tr').innerHTML='<th>Item</th><th>Ações</th><th>Quantidade</th><th>Venda</th><th>Total</th>';
-    table.querySelector('tbody').innerHTML=items.map((item,index)=>{
+    table.querySelector('tbody').innerHTML=items.map(({item,index})=>{
       const product=productById(item.productId),allocation=item.capacityAllocation,host=allocation&&(state.data.quoteRooms||[]).find(entry=>entry.id===allocation.hostRoomId),secondary=Boolean(allocation&&allocation.hostRoomId!==room.id),circuits=allocation&&isLightingCircuitGroup({...allocation,productId:item.productId})?`<small class="circuit-allocation">💡 ${Number(allocation.amount||0)} ${Number(allocation.amount||0)===1?'circuito':'circuitos'}</small>`:'',rateioNote=secondary?` <span class="rateio-secondary-note">· Rateio técnico · módulo em ${host?.name||'outro ambiente'}</span>`:'',total=Number(product.price||0)*Number(item.qty||0)*(1-Number(item.discount||0)/100);
       return `<tr class="${secondary?'rateio-secondary':''}"><td><div class="entity">${product.name}</div><div class="subtext">${product.mode||'Produto'}${rateioNote}</div></td><td class="quote-item-actions"><button class="link-button" data-edit-quote-item="${room.id}:${index}">Ajustar</button> <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button></td><td>${item.qty} ${product.unit||'un'} <button class="link-button quote-item-rateio" data-distribute-capacity="${room.id}:${index}">Rateio</button>${circuits}</td><td>${money(product.price)}</td><td>${money(total)}</td></tr>`;
     }).join('');
@@ -1308,4 +1327,9 @@ render=()=>{
   optional.forEach(button=>target.append(button));
   actions.insertAdjacentElement('afterend',extra);
 };
+render();
+
+// Executa por último: as tabelas de orçamento são reconstruídas em etapas acima.
+const finalTableHeaderIntegrityRender=render;
+render=()=>{finalTableHeaderIntegrityRender();normalizeTableHeaders()};
 render();

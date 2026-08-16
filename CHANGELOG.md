@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Tabelas: revisão automática dos cabeçalhos para manter a mesma quantidade de colunas e identificar corretamente colunas de ações; índices dos itens visíveis do orçamento preservam a referência real do ambiente.
 - Análise de orçamento: itens rateados instalados fisicamente em um ambiente receberam visual de linha comercial, com destaque suave, capacidade e ajuste de rateio organizados;
 - Análise de orçamento: equipamentos rateados e a ação Ajustar rateio passaram a aparecer somente no ambiente onde o equipamento está instalado fisicamente;
 - Análise de orçamento: equipamentos rateados passaram para uma área única de gestão; as tabelas dos ambientes exibem somente itens diretos, enquanto o local físico mostra uma referência técnica do equipamento instalado;
