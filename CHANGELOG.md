@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Rateios de portas: o orçamento agora separa capacidade física da capacidade usada na obra; somente as portas usadas recebem custo comercial e o diagrama compara portas rateadas, ocupadas e livres;
 - Diagrama técnico: portas livres de switches e centrais podem ser ignoradas explicitamente no planejamento, sem registrá-las como consumo e com opção de reconsiderar depois;
 - Orçamentos: adicionada ação Substituir, que troca um item preservando quantidade, desconto, local físico e, quando houver, rateio de capacidade e vínculos técnicos;
 - Orçamentos: frações de equipamentos rateados em ambientes secundários agora aparecem com baixa ênfase e identificação do local físico do módulo;
