@@ -53,3 +53,13 @@ O ícone aparecerá junto dos demais aplicativos e continuará sincronizado com 
 ## APK e IPA nativos
 
 O PWA já funciona no Android e iOS sem loja. Para gerar um APK assinado ou um IPA para a App Store, será necessário configurar Android SDK/Android Studio e, para iOS, macOS com Xcode e uma conta Apple Developer.
+
+## Atualização remota
+
+O APK Android e o executável Windows carregam a interface do VPS. Para publicar alterações web sem reinstalar os aplicativos, execute no PowerShell:
+
+```powershell
+.\Atualizar-VPS.ps1
+```
+
+O script envia os arquivos da interface, atualiza os assets e reinicia o serviço. Os dados em `data/` e as credenciais não são enviados nem alterados.
