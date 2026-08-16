@@ -1090,3 +1090,37 @@ openQuoteItemSearch=(prefill={})=>{
   if(hint)hint.remove();
 };
 render();
+
+// Leitura para cliente/arquiteto: módulos centrais de iluminação aparecem pelo que atendem, não apenas pelo cômodo onde estão instalados.
+function isLightingCircuitGroup(group){
+  const product=productById(group.productId),description=`${product?.name||''} ${product?.model||''} ${group.capacityUnit||''}`;
+  return /circuit/i.test(group.capacityUnit||'')&&/(ilumin|lumin|dimmer|pwm|rel[eé]|lighting)/i.test(description);
+}
+function lightingCircuitsForRoom(quoteId,roomId){
+  return capacityGroups(quoteId).filter(isLightingCircuitGroup).reduce((total,group)=>total+Number(group.allocations.find(item=>item.roomId===roomId)?.amount||0),0);
+}
+const lightingCircuitQuoteView=views.quoteDetail;
+views.quoteDetail=()=>{
+  const quote=state.data.quotes.find(item=>item.id===state.selectedQuote);
+  if(!quote)return lightingCircuitQuoteView();
+  const rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id),groups=capacityGroups(quote.id).filter(isLightingCircuitGroup);
+  if(!groups.length)return lightingCircuitQuoteView();
+  const total=groups.reduce((sum,group)=>sum+Number(group.capacityTotal||0),0);
+  const panel=`<section class="card lighting-circuits-summary"><div class="card-head"><div><h3>Circuitos de iluminação por ambiente</h3><p class="subtext">${total} circuitos previstos nos módulos de iluminação. A quantidade mostra o que cada ambiente utiliza, mesmo que o módulo esteja instalado em outro local.</p></div></div><div class="lighting-circuit-grid">${rooms.map(room=>{const circuits=lightingCircuitsForRoom(quote.id,room.id);return `<article><strong>${room.name}</strong><b>${circuits}</b><span>${circuits===1?'circuito de iluminação':'circuitos de iluminação'}</span></article>`}).join('')}</div></section>`;
+  return lightingCircuitQuoteView().replace('<div class="room-grid">',panel+'<div class="room-grid">');
+};
+const lightingCircuitRender=render;
+render=()=>{
+  lightingCircuitRender();
+  if(state.view!=='quoteDetail')return;
+  const quote=state.data.quotes.find(item=>item.id===state.selectedQuote);
+  if(!quote||!capacityGroups(quote.id).some(isLightingCircuitGroup))return;
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent);
+    const target=card.querySelector('.card-head small');
+    if(!room||!target||target.querySelector('.lighting-circuit-inline'))return;
+    const circuits=lightingCircuitsForRoom(quote.id,room.id),label=circuits===1?'circuito':'circuitos';
+    target.insertAdjacentHTML('beforeend',` <span class="lighting-circuit-inline">· 💡 ${circuits} ${label}</span>`);
+  });
+};
+render();
