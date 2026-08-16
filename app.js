@@ -1177,6 +1177,35 @@ document.addEventListener('click',event=>{
   if(edit){event.preventDefault();const point=(state.data.technicalPoints||[]).find(item=>item.id===edit.dataset.editTechnicalPoint);if(point)openTechnicalPoint(point.projectId,point.id);return}
   if(remove){event.preventDefault();const point=(state.data.technicalPoints||[]).find(item=>item.id===remove.dataset.deleteTechnicalPoint);if(!point||!confirm(`Excluir o ponto técnico “${point.label}”?`))return;state.data.technicalPoints=state.data.technicalPoints.filter(item=>item.id!==point.id);logAudit('Excluiu ponto técnico','Diagrama',point.label);persist();render();toast('Ponto técnico excluído.');}
 },true);
+function surveyPointTypeFromProduct(product){
+  const text=`${product?.name||''} ${product?.category||''}`.toLocaleLowerCase('pt-BR');
+  if(/keypad|tecla\s+virtue|pulsador/.test(text))return 'Keypad';
+  if(/access\s*point|\bap\b/.test(text))return 'Access point';
+  if(/cabo|cabeamento|infraestrutura/.test(text))return 'Cabo / pré-infraestrutura';
+  if(/pwm|dimmer|rel[eé]|ilumina/.test(text))return 'Circuito de iluminação';
+  if(/caixa|morel|stage|b&w|subwoofer/.test(text))return 'Caixa de som';
+  if(/receiver|tv|m[ií]dia/.test(text))return 'TV / mídia';
+  return 'Outro';
+}
+async function createReverseSurveyModel(){
+  if(state.data.reverseSurveyModelV1)return;
+  const quote=(state.data.quotes||[]).find(item=>item.id==='orc-msv22b2e')||(state.data.quotes||[]).filter(item=>(state.data.quoteRooms||[]).some(room=>room.quoteId===item.id)).sort((a,b)=>(state.data.quoteRooms||[]).filter(room=>room.quoteId===b.id).length-(state.data.quoteRooms||[]).filter(room=>room.quoteId===a.id).length)[0];
+  if(!quote){state.data.reverseSurveyModelV1=true;await persist();return}
+  const existing=(state.data.surveys||[]).find(item=>item.sourceQuoteId===quote.id);
+  if(existing){state.data.reverseSurveyModelV1=true;await persist();return}
+  const survey={id:uid('lev'),opportunityId:quote.opportunityId||'',sourceQuoteId:quote.id,title:`Levantamento-modelo — ${quote.title.replace(/^Proposta\s*[—-]\s*/,'')}`,site:'Obra em definição',source:'Orçamento existente (reverso)',status:'Aguardando validação',notes:'Modelo gerado a partir do orçamento atual. Conferir em visita técnica, planta ou memorial antes de usar como escopo definitivo.',updatedAt:new Date().toISOString()};
+  state.data.surveys.unshift(survey);
+  let added=0;
+  (state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id).forEach(room=>(room.items||[]).forEach((item,index)=>{
+    const product=productById(item.productId);if(!product)return;
+    const allocation=item.capacityAllocation,quantity=allocation&&surveyPointTypeFromProduct(product)==='Circuito de iluminação'?Number(allocation.amount||item.qty||1):Number(item.qty||1);
+    state.data.surveyPoints.push({id:uid('ptl'),surveyId:survey.id,room:room.name,type:surveyPointTypeFromProduct(product),quantity, status:'Previsto',notes:`Derivado do orçamento: ${product.name}${allocation?' · item rateado/distribuído':''}`,sourceProductId:product.id,sourceQuoteId:quote.id,sourceRoomId:room.id,sourceItemIndex:index});added++;
+  }));
+  state.data.reverseSurveyModelV1=true;
+  logAudit('Gerou levantamento reverso','Levantamento técnico',`${survey.title} · ${added} item(ns) extraídos de ${quote.title}`);
+  await persist();render();toast(`Levantamento-modelo criado com ${added} item(ns). Revise antes de encaminhar ao orçamento.`);
+}
+setTimeout(()=>createReverseSurveyModel().catch(()=>{}),4200);
 render();
 
 // O rateio geral é uma decisão da quantidade: fica ao lado dela no formulário de inclusão.

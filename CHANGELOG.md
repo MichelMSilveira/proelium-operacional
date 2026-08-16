@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Levantamento técnico: gerado o primeiro modelo reverso a partir do orçamento atual, preservando ambiente, item, quantitativo e origem para revisão antes do uso como escopo validado.
 - Fluxo comercial: criada a etapa Levantamento técnico entre Comercial e Orçamentos, com ambientes, pontos, quantitativos, origem manual/visita/PDF, validação e envio controlado dos ambientes ao orçamento.
 - Regras comerciais: access points e pontos de rede passam a solicitar Cat6 próprio, com metragem configurável; access points existentes receberam regularização sem reaproveitar a metragem destinada aos keypads.
 - Regras comerciais: keypads já presentes em orçamentos recebem uma migração única de infraestrutura, completando 30 m de Cat6 por keypad sem duplicar a metragem que já existe no ambiente.
