@@ -2516,3 +2516,8 @@ function networkSwitchSchematic(project){
 const networkSwitchDiagramView=views.diagram;
 views.diagram=()=>{const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id));return networkSwitchDiagramView().replace('<section class="card technical-wire-card">',networkSwitchSchematic(project)+'<section class="card technical-wire-card">');};
 render();
+
+// No diagrama, a leitura das conexões vem antes de qualquer guia ou painel complementar.
+const connectionsFirstRender=render;
+render=()=>{connectionsFirstRender();if(state.view!=='diagram')return;const content=$('#content'),heading=content?.querySelector('.section-heading'),connections=content?.querySelector('.technical-wire-card');if(content&&heading&&connections)heading.insertAdjacentElement('afterend',connections);};
+render();
