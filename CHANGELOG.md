@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamento-modelo: aplicadas referências identificadas como **valores de teste** para custo e venda dos itens usados na proposta de demonstração, permitindo validar total, margem e rateio sem confundir os números com tabela comercial oficial.
+
 - Levantamento e orçamento: incluída a Visão geral de quantitativos do projeto. Ela consolida os sistemas, itens e quantidades antes da distribuição por ambientes e funciona como base para a futura importação assistida de planta em PDF/imagem, sempre com validação técnica.
 
 - Catálogo e levantamento: cada produto agora recebe uma classificação por **tipo técnico** e **função na obra**. A categoria comercial continua existente, mas o levantamento passa a indicar, por exemplo, “Switch de rede / distribuição de portas e PoE” ou “Cabo de rede / transporte de dados e alimentação PoE”.

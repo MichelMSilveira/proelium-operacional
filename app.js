@@ -1948,4 +1948,54 @@ views.survey=()=>{
   const panel=selected?scopeQuantityPanel(grouped,'Resumo geral do levantamento','Quantitativos consolidados antes da separação por ambiente. Origem atual: '+selected.source+'.'):'';
   return scopeSurveyView().replace('<div class="room-grid">',panel+'<div class="room-grid">');
 };
+
+// Valores exclusivamente para teste do fluxo comercial. Não são tabela de fabricante nem
+// compromisso de venda: ficam identificados no catálogo para revisão posterior pela equipe.
+const testPricingReferences=[
+  [/morel/i,3900,6500],
+  [/(denon.*x3800|receiver.*denon)/i,5200,7890],
+  [/(jbl.*220p|stage.*220p|subwoofer)/i,2900,4399],
+  [/(cat\s*6a|cabo.*rede)/i,6.5,12],
+  [/(cabo.*(áudio|audio|vídeo|video)|speaker.*cable)/i,11,22],
+  [/(u7\s*pro|access\s*point)/i,1050,1599],
+  [/(pro\s*max\s*24|switch.*24)/i,4500,6599],
+  [/(dream\s*machine|udm.pro)/i,2200,3199],
+  [/(embrace.*full|controladora.*full)/i,3650,5900],
+  [/(netlink|ntl1)/i,1550,2500],
+  [/(sdm8|dimmer.*8)/i,2450,3950],
+  [/(mpl4|pwm.*4)/i,840,1360],
+  [/(keypad|kp3|virtue)/i,520,830]
+];
+function applyTestBudgetPricing(){
+  if(state.data.testBudgetPricingV1)return false;
+  let adjusted=0;
+  (state.data.products||[]).forEach(product=>{
+    const text=`${product.name||''} ${product.brand||''} ${product.model||''}`;
+    const rule=testPricingReferences.find(([pattern])=>pattern.test(text));
+    if(!rule)return;
+    const [,cost,price]=rule;
+    if(!Number(product.price||0)){product.price=price;adjusted++;}
+    if(!Number(product.cost||0)){product.cost=cost;adjusted++;}
+    product.priceReference='Valor de teste — validar compra, impostos e margem';
+  });
+  // Produtos que já têm venda cadastrada também recebem custo de teste para a margem ser útil.
+  (state.data.products||[]).forEach(product=>{
+    if(Number(product.price||0)>0&&!Number(product.cost||0)){
+      product.cost=Math.round(Number(product.price)*0.65*100)/100;
+      product.priceReference=product.priceReference||'Custo estimado para teste — validar fornecedor';
+      adjusted++;
+    }
+  });
+  const quote=(state.data.quotes||[]).find(item=>item.id==='orc-msv22b2e');
+  if(quote){const totals=quoteTotals(quote.id);quote.value=totals.price;}
+  state.data.testBudgetPricingV1=true;
+  if(adjusted)logAudit('Aplicou valores de teste','Orçamento',`${adjusted} referência(s) de custo e venda adicionadas ao catálogo para validar o fluxo comercial.`);
+  return Boolean(adjusted);
+}
+setTimeout(()=>{
+  if(!applyTestBudgetPricing())return;
+  persist();
+  render();
+  toast('Valores de teste aplicados ao catálogo e ao orçamento-modelo.');
+},6200);
 render();
