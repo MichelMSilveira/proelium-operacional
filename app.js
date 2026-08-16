@@ -2337,7 +2337,7 @@ function technicalConnectionLayer(connection={}){
 const connectionStandardDiagramView=views.diagram;
 views.diagram=()=>{
   const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),connections=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project?.id),labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo'},section=layer=>{const records=connections.filter(connection=>technicalConnectionLayer(connection)===layer);return `<section class="technical-connection-layer connection-${layer}"><div><h4>${labels[layer]}</h4><span>${records.length} cabo(s)</span></div>${records.length?table(['Origem','Porta','Cabo','Porta','Destino','Situação'],records.map(connection=>`<tr><td>${connection.fromLabel}</td><td>${connection.fromPort||'—'}</td><td><strong>${connection.cable}</strong></td><td>${connection.toPort||'—'}</td><td>${connection.toLabel}</td><td>${badge(connection.status)}</td></tr>`)):'<p class="subtext">Nenhuma ligação cadastrada nesta camada.</p>'}</section>`},panel=project?`<section class="card connection-register"><div class="card-head"><div><h3>Registro de ligações do cenário</h3><p class="subtext">Cada linha é um cabo físico: origem, porta de saída, cabo, porta de entrada e destino.</p></div><span class="subtext">${connections.length} cabo(s)</span></div><div class="technical-connection-layers">${['rede','automacao','audio','video'].map(section).join('')}</div></section>`:'';
-  return connectionStandardDiagramView().replace('<section class="card technical-wire-card">',panel+'<section class="card technical-wire-card">');
+  return connectionStandardDiagramView()+panel;
 };
 setTimeout(()=>{if(state.data.connectionStandardV1)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV1=true;persist();},8200);
 setTimeout(()=>{if(state.data.connectionStandardV2)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV2=true;persist();},8800);
@@ -2392,6 +2392,13 @@ render();
 // Mantém o arraste disponível após todas as camadas de renderização do diagrama.
 const finalWireDragRender=render;
 render=()=>{finalWireDragRender();bindWireDragControls();};
+render();
+
+// Guia rápido antes do cenário detalhado: o usuário vê a lógica de cada disciplina sem rolar a tela.
+const connectionGuideDiagramView=views.diagram;
+views.diagram=()=>{const guide=`<section class="card diagram-connection-guide"><div><p class="eyebrow">GUIA RÁPIDO DE LIGAÇÃO</p><h2>Comece pelo fluxo. Depois ajuste o detalhe.</h2><p class="subtext">Toque em um modelo para destacar a camada correspondente no diagrama real.</p></div><div class="diagram-guide-grid"><button type="button" data-diagram-guide="rede"><b>Internet</b><i>→</i><b>Roteador</b><i>→</i><b>Switch</b><i>→</i><b>Pontos de rede</b><small>Cat6 / PoE</small></button><button type="button" data-diagram-guide="automacao"><b>Switch</b><i>→</i><b>Controladora</b><i>→</i><b>NTL</b><i>→</i><b>EB-PS5</b><i>→</i><b>Keypads e módulos</b><small>Rede + cordões de comunicação</small></button><button type="button" data-diagram-guide="audio"><b>Fonte A/V</b><i>→</i><b>Receiver</b><i>→</i><b>Caixas de som</b><small>HDMI + cabo de alto-falante</small></button><button type="button" data-diagram-guide="video"><b>Rede</b><i>→</i><b>Console / mídia</b><i>→</i><b>Receiver ou TV</b><small>Cat6 / HDMI</small></button></div></section>`;return guide+connectionGuideDiagramView();};
+const connectionGuideRender=render;
+render=()=>{connectionGuideRender();document.querySelectorAll('[data-diagram-guide]').forEach(button=>button.onclick=()=>{state.diagramLayer=button.dataset.diagramGuide;render();requestAnimationFrame(()=>document.querySelector('.technical-wire-card')?.scrollIntoView({behavior:'smooth',block:'start'}));});};
 render();
 
 // Cadastro técnico: o perfil nasce no catálogo e acompanha o item até orçamento, operação e diagrama.

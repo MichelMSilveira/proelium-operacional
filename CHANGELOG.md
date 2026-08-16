@@ -26,6 +26,7 @@
 - Corrigida a camada de interação do fluxograma: os controles circulares das setas ficam acima dos ícones e identificam corretamente o equipamento de destino ao soltar.
 - Nós do fluxograma agora exibem bolinhas de portas: entradas, saídas usadas versus capacidade conhecida e o tipo de conexão associado. Esses dados passam a sustentar sugestões automáticas e futuras validações de compatibilidade.
 - Cadastro de Produtos e Serviços agora inclui mapa técnico obrigatório de conferência: papel no sistema, entradas, saídas, interface, capacidade e observações. O perfil acompanha o item até o orçamento, operação e diagrama.
+- Diagrama técnico passou a abrir com um Guia rápido de ligação: Rede, Automação, Áudio e Vídeo. O cenário aparece antes do registro detalhado de cabos, e cada guia destaca sua camada com um toque.
 
 ## 0.4.1 — 2026-08-15
 
