@@ -490,6 +490,47 @@ document.addEventListener('click',event=>{const revision=event.target.closest('[
 const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill={})=>{if(kind==='packageToQuote'){const packages=(state.data.packages||[]).filter(item=>item.active!==false),rooms=state.data.quoteRooms.filter(item=>item.quoteId===state.selectedQuote);if(!packages.length){toast('Crie e preencha um pacote em Produtos e serviços antes de inseri-lo no orçamento.');return}if(!rooms.length){toast('Adicione ao menos um cômodo antes de inserir um pacote.');return}}block4OpenCatalogSelect(kind,prefill)};
 render();
 
+// Ajuste manual no fluxograma: a ponta de uma seta pode ser solta sobre outro nó.
+// A alteração não apaga o padrão; ela fica registrada e pede confirmação técnica.
+state.data.technicalConnectionOverrides=Array.isArray(state.data.technicalConnectionOverrides)?state.data.technicalConnectionOverrides:[];
+const wireDragSynchronize=synchronizeProjectConnectionStandards;
+synchronizeProjectConnectionStandards=()=>{
+  const generated=wireDragSynchronize(),overrides=state.data.technicalConnectionOverrides||[];
+  overrides.forEach(override=>{
+    const connection=state.data.technicalConnections.find(item=>item.id===override.connectionId),project=(state.data.projects||[]).find(item=>item.id===override.projectId);
+    const target=project&&projectConnectionInventory(project).find(node=>node.id===override.toId);
+    if(!connection||!target)return;
+    const duplicate=state.data.technicalConnections.find(item=>item.id!==connection.id&&item.projectId===project.id&&item.fromId===connection.fromId&&item.toId===target.id&&item.origin==='Padrão Proelium');
+    if(duplicate)state.data.technicalConnections=state.data.technicalConnections.filter(item=>item.id!==duplicate.id);
+    Object.assign(connection,{toId:target.id,toLabel:target.label||target.product?.name||'Equipamento técnico',toRole:target.role,toPort:'Entrada — confirmar',status:'Ajuste manual — confirmar',manualOverride:true});
+  });
+  return generated;
+};
+function saveWireDragAdjustment(connectionId,toId){
+  const connection=(state.data.technicalConnections||[]).find(item=>item.id===connectionId),project=(state.data.projects||[]).find(item=>item.id===connection?.projectId),target=project&&projectConnectionInventory(project).find(node=>node.id===toId);
+  if(!connection||!project||!target||connection.toId===toId)return;
+  if(!confirm(`Alterar a ligação de “${connection.toLabel}” para “${target.label||target.product?.name||'este equipamento'}”?\n\nO registro será atualizado como ajuste manual e deverá ser confirmado em campo.`))return;
+  const overrides=state.data.technicalConnectionOverrides||[],existing=overrides.find(item=>item.connectionId===connectionId),next={connectionId,projectId:project.id,toId,updatedAt:new Date().toISOString()};
+  if(existing)Object.assign(existing,next);else overrides.push(next);
+  state.data.technicalConnectionOverrides=overrides;
+  logAudit('Ajustou ligação técnica','Diagrama',`${connection.fromLabel} → ${target.label||target.product?.name||'equipamento técnico'}`);
+  persist();render();
+}
+function bindWireDragControls(){
+  document.querySelectorAll('.technical-wire-map').forEach(map=>{
+    if(map.dataset.wireDragBound)return;map.dataset.wireDragBound='true';
+    const svg=map.querySelector('.technical-wire-svg');if(!svg)return;let drag=null;
+    svg.addEventListener('pointerdown',event=>{const handle=event.target.closest('.wire-link-handle');if(!handle?.dataset.wireConnectionId)return;event.preventDefault();const bounds=map.getBoundingClientRect();drag={connectionId:handle.dataset.wireConnectionId,handle,bounds};map.classList.add('wire-dragging');svg.setPointerCapture?.(event.pointerId);});
+    svg.addEventListener('pointermove',event=>{if(!drag)return;const x=event.clientX-drag.bounds.left,y=event.clientY-drag.bounds.top;drag.handle.setAttribute('cx',x);drag.handle.setAttribute('cy',y);});
+    const finish=event=>{if(!drag)return;const active=drag;drag=null;map.classList.remove('wire-dragging');const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-wire-node]');requestAnimationFrame(drawTechnicalWireMaps);if(target?.dataset.wireNode)saveWireDragAdjustment(active.connectionId,target.dataset.wireNode);};
+    svg.addEventListener('pointerup',finish);svg.addEventListener('pointercancel',finish);
+  });
+}
+const wireDragRender=render;
+render=()=>{wireDragRender();bindWireDragControls();};
+setTimeout(()=>{if(state.data.connectionStandardV11)return;ensureConnectionProfiles();synchronizeProjectConnectionStandards();state.data.connectionStandardV11=true;persist();},14200);
+render();
+
 // Consulta técnica do catálogo: a regra exibida aqui é a que será usada para gerar cabos e linhas no cenário.
 state.productTechnicalConsultId=(state.data.products||[]).some(product=>product.id===state.productTechnicalConsultId)?state.productTechnicalConsultId:(state.data.products||[])[0]?.id||'';
 const productTechnicalConsultView=views.products;
@@ -2160,7 +2201,7 @@ function drawTechnicalWireMaps(){
   document.querySelectorAll('.technical-wire-map').forEach(map=>{
     const bounds=map.getBoundingClientRect(),svg=map.querySelector('.technical-wire-svg');if(!svg||!bounds.width||!bounds.height)return;
     svg.setAttribute('viewBox',`0 0 ${bounds.width} ${bounds.height}`);svg.setAttribute('width',bounds.width);svg.setAttribute('height',bounds.height);
-    const lines=[...map.querySelectorAll('.wire-connection')].map((link,index)=>{const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`);if(!from||!to)return '';const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),ax=a.left-bounds.left+a.width/2,ay=a.top-bounds.top+a.height/2,bx=b.left-bounds.left+b.width/2,by=b.top-bounds.top+b.height/2,dx=bx-ax,dy=by-ay,preferHorizontal=Math.abs(dx)>Math.abs(dy),offset=((index%5)-2)*7;let x1,y1,x2,y2,midX,midY,path;if(preferHorizontal){x1=dx>=0?a.right-bounds.left:a.left-bounds.left;y1=ay;x2=dx>=0?b.left-bounds.left:b.right-bounds.left;y2=by;midX=(x1+x2)/2;midY=(y1+y2)/2+offset;path=`M ${x1} ${y1} C ${midX} ${y1+offset}, ${midX} ${y2+offset}, ${x2} ${y2}`;}else{x1=ax;y1=dy>=0?a.bottom-bounds.top:a.top-bounds.top;x2=bx;y2=dy>=0?b.top-bounds.top:b.bottom-bounds.top;midX=(x1+x2)/2+offset;midY=(y1+y2)/2;path=`M ${x1} ${y1} C ${x1+offset} ${midY}, ${x2+offset} ${midY}, ${x2} ${y2}`;}const key=`${link.dataset.wireFrom}__${link.dataset.wireTo}`,cable=String(link.dataset.wireCable||'').replace(/[&<>]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[char]));return `<path data-wire-key="${key}" class="${link.dataset.wireDashed==='true'?'wire-dashed':''}" d="${path}" marker-end="url(#wire-arrow)"></path>${cable?`<text class="wire-cable-label" x="${midX}" y="${midY-5}">${cable}</text>`:''}`}).join('');svg.querySelectorAll('path:not([d="M0,0 L8,4 L0,8 z"]),.wire-cable-label').forEach(element=>element.remove());svg.insertAdjacentHTML('beforeend',lines);
+    const lines=[...map.querySelectorAll('.wire-connection')].map((link,index)=>{const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`);if(!from||!to)return '';const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),ax=a.left-bounds.left+a.width/2,ay=a.top-bounds.top+a.height/2,bx=b.left-bounds.left+b.width/2,by=b.top-bounds.top+b.height/2,dx=bx-ax,dy=by-ay,preferHorizontal=Math.abs(dx)>Math.abs(dy),offset=((index%5)-2)*7;let x1,y1,x2,y2,midX,midY,path;if(preferHorizontal){x1=dx>=0?a.right-bounds.left:a.left-bounds.left;y1=ay;x2=dx>=0?b.left-bounds.left:b.right-bounds.left;y2=by;midX=(x1+x2)/2;midY=(y1+y2)/2+offset;path=`M ${x1} ${y1} C ${midX} ${y1+offset}, ${midX} ${y2+offset}, ${x2} ${y2}`;}else{x1=ax;y1=dy>=0?a.bottom-bounds.top:a.top-bounds.top;x2=bx;y2=dy>=0?b.top-bounds.top:b.bottom-bounds.top;midX=(x1+x2)/2+offset;midY=(y1+y2)/2;path=`M ${x1} ${y1} C ${x1+offset} ${midY}, ${x2+offset} ${midY}, ${x2} ${y2}`;}const key=link.dataset.wireConnectionId||`${link.dataset.wireFrom}__${link.dataset.wireTo}`,cable=String(link.dataset.wireCable||'').replace(/[&<>]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[char]));return `<path data-wire-key="${key}" class="${link.dataset.wireDashed==='true'?'wire-dashed':''}" d="${path}" marker-end="url(#wire-arrow)"></path>${cable?`<text class="wire-cable-label" x="${midX}" y="${midY-5}">${cable}</text>`:''}<circle class="wire-link-handle" data-wire-connection-id="${link.dataset.wireConnectionId||''}" cx="${x2}" cy="${y2}" r="7"></circle>`}).join('');svg.querySelectorAll('path:not([d="M0,0 L8,4 L0,8 z"]),.wire-cable-label,.wire-link-handle').forEach(element=>element.remove());svg.insertAdjacentHTML('beforeend',lines);
   });
 }
 const technicalWireDiagramView=views.diagram;
@@ -2207,7 +2248,7 @@ technicalWireMap=function(project){
   points.forEach(point=>devices.push({id:`point:${point.id}`,product:{technicalType:point.type},role:technicalDeviceRole({technicalType:point.type,name:point.label}),roomId:point.roomId,detail:`${roomName(point.roomId)} · ${point.type}`,point,capacityGroupId:point.capacityGroupId||''}));
   const first=(role,roomId='')=>centrals.find(node=>node.role===role&&(!roomId||node.roomId===roomId))||centrals.find(node=>node.role===role)||null;
   // A tabela de ligações é a fonte de verdade do desenho: nenhuma conexão é inventada só no mapa.
-  const registered=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),connections=registered.map(connection=>({from:connection.fromId||'origin',to:connection.toId,cable:`${connection.cable||''}${connection.fromPort?` · ${connection.fromPort}`:''}`,dashed:connection.status==='Origem ausente'})).filter(connection=>connection.to&&connection.from!==connection.to);
+  const registered=(state.data.technicalConnections||[]).filter(connection=>connection.projectId===project.id),connections=registered.map(connection=>({id:connection.id,from:connection.fromId||'origin',to:connection.toId,cable:`${connection.cable||''}${connection.fromPort?` · ${connection.fromPort}`:''}`,dashed:connection.status==='Origem ausente'})).filter(connection=>connection.to&&connection.from!==connection.to);
   // No mapa de rede, o equipamento rateado é o núcleo físico. Duplicações comerciais não viram outro switch no desenho.
   const centralOrder={router:10,switch:20,controller:30,ntl:40,'ps5-hub':50,receiver:60};
   const visibleCentrals=centrals.filter((node,index,list)=>!['router','switch'].includes(node.role)||list.findIndex(candidate=>candidate.role===node.role)===index).sort((a,b)=>(centralOrder[a.role]||90)-(centralOrder[b.role]||90));
@@ -2215,7 +2256,7 @@ technicalWireMap=function(project){
   const centralNodes=visibleCentrals.map(node=>miniNode(node,'central')).join('')||'<article class="wire-node wire-mini wire-central" data-wire-node="central-pendente"><i class="wire-glyph" aria-hidden="true"></i><div><strong>Central a definir</strong><small>Adicione a central do sistema.</small></div></article>';
   const systemFor=node=>{if(node.role==='access-point'||node.role==='network-device'||node.role==='switch'||node.role==='router')return 'rede';if(node.role==='keypad'||node.role==='automation-device'||node.role==='ntl'||node.role==='ps5-hub'||node.role==='controller')return 'automacao';if(node.role==='speaker'||node.role==='receiver')return 'audio';if(node.role==='game-console')return 'video';const type=String(node.product?.technicalType||'').toLocaleLowerCase('pt-BR');return /vídeo|video|tv|câmera|camera/.test(type)?'video':'outros'},labels={rede:'Rede',automacao:'Automação',audio:'Áudio',video:'Vídeo',outros:'Outros'};
   const deviceNodes=Object.entries(devices.reduce((all,node)=>{const system=systemFor(node);(all[system]??=[]).push({...node,system});return all},{})).map(([system,list])=>`<section class="wire-system wire-system-${system}"><h4>${labels[system]}</h4><div>${list.map(node=>miniNode(node,`device wire-${system}`)).join('')}</div></section>`).join('')||'<div class="empty">Inclua equipamentos ou pontos técnicos para desenhar as conexões.</div>';
-  return `<section class="card technical-wire-card"><div class="card-head"><div><h3>Conexões do sistema</h3><p class="subtext">Cada equipamento e cada cabo têm uma linha própria. Linha pontilhada indica uma origem ainda pendente de conferência.</p></div></div><div class="technical-wire-map"><svg class="technical-wire-svg" aria-hidden="true"><defs><marker id="wire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"></path></marker></defs></svg><div class="wire-stage wire-origin"><article class="wire-node wire-root" data-wire-node="origin"><small>Origem</small><strong>Internet · energia · rack</strong><span>Entrada e distribuição principal</span></article></div><div class="wire-stage wire-centrals">${centralNodes}</div><div class="wire-stage wire-devices">${deviceNodes}</div>${connections.map(connection=>`<i class="wire-connection" data-wire-from="${connection.from}" data-wire-to="${connection.to}" data-wire-cable="${connection.cable}" data-wire-dashed="${connection.dashed}"></i>`).join('')}</div></section>`;
+  return `<section class="card technical-wire-card"><div class="card-head"><div><h3>Conexões do sistema</h3><p class="subtext">Cada equipamento e cada cabo têm uma linha própria. Arraste a ponta circular de uma seta sobre outro equipamento para propor um ajuste no registro.</p></div></div><div class="technical-wire-map"><svg class="technical-wire-svg" aria-hidden="true"><defs><marker id="wire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"></path></marker></defs></svg><div class="wire-stage wire-origin"><article class="wire-node wire-root" data-wire-node="origin"><small>Origem</small><strong>Internet · energia · rack</strong><span>Entrada e distribuição principal</span></article></div><div class="wire-stage wire-centrals">${centralNodes}</div><div class="wire-stage wire-devices">${deviceNodes}</div>${connections.map(connection=>`<i class="wire-connection" data-wire-connection-id="${connection.id}" data-wire-from="${connection.from}" data-wire-to="${connection.to}" data-wire-cable="${connection.cable}" data-wire-dashed="${connection.dashed}"></i>`).join('')}</div></section>`;
 };
 render();
 
@@ -2330,7 +2371,7 @@ drawTechnicalWireMaps=()=>{
   document.querySelectorAll('.technical-wire-map').forEach(map=>{
     const selected=map.dataset.layer||'all';
     map.querySelectorAll('.wire-connection').forEach(link=>{
-      const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`),path=map.querySelector(`[data-wire-key="${link.dataset.wireFrom}__${link.dataset.wireTo}"]`);
+      const from=map.querySelector(`[data-wire-node="${link.dataset.wireFrom}"]`),to=map.querySelector(`[data-wire-node="${link.dataset.wireTo}"]`),path=map.querySelector(`[data-wire-key="${link.dataset.wireConnectionId||`${link.dataset.wireFrom}__${link.dataset.wireTo}`}"]`);
       if(!path)return;
       const fromLayer=diagramWireLayer(from),toLayer=diagramWireLayer(to),visible=selected==='all'||fromLayer===selected||toLayer===selected;
       path.style.display=visible?'':'none';
@@ -2344,4 +2385,9 @@ render=()=>{
   document.querySelectorAll('[data-diagram-layer]').forEach(button=>{button.onclick=()=>{state.diagramLayer=button.dataset.diagramLayer;render();};});
   requestAnimationFrame(drawTechnicalWireMaps);
 };
+render();
+
+// Mantém o arraste disponível após todas as camadas de renderização do diagrama.
+const finalWireDragRender=render;
+render=()=>{finalWireDragRender();bindWireDragControls();};
 render();
