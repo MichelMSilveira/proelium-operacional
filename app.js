@@ -2060,3 +2060,57 @@ function technicalFlowchartView(){
 }
 views.diagram=technicalFlowchartView;
 render();
+
+// Ficha de definição técnica: contrato único usado por catálogo, orçamento e diagrama.
+// Quando o dado não veio de uma ficha do fabricante, fica explicitamente como "a confirmar".
+function inferTechnicalDefinition(product={}){
+  const text=`${product.name||''} ${product.brand||''} ${product.model||''}`.toLocaleLowerCase('pt-BR'),capacity=productCapacityProfile(product,1);
+  const make=(input,output,cable='',notes='')=>({input,output,cable,capacity:capacity.detected?`${capacity.total} ${capacity.unit}`:'—',notes,status:'A confirmar em ficha técnica'});
+  if(/switch/.test(text))return make('Uplink de rede','Portas LAN'+(/poe/.test(text)?' com PoE':'') ,'Cat6 / patch cord','Confirme uplinks, PoE disponível e orçamento de potência.');
+  if(/access\s*point|\bu7\b/.test(text))return make('Rede cabeada / PoE','Cobertura Wi‑Fi','Cat6','Confirme padrão PoE, alimentação e posição de instalação.');
+  if(/gateway|roteador|router|dream\s*machine|udm/.test(text))return make('Internet / WAN','Rede local e gestão','Cat6 / patch cord','Confirme portas WAN/LAN e serviços habilitados.');
+  if(/keypad|virtue|tecla|pulsador/.test(text))return make('Barramento ou rede de controle','Comandos e cenas','Cat6','Confirme protocolo, alimentação e quantidade de teclas.');
+  if(/sdm8|dimmer.*8|rel[eé]/.test(text))return make('Alimentação e comando de automação','Circuitos de iluminação','Condutor de iluminação + controle','Confirme tensão, carga e tipo de lâmpada por circuito.');
+  if(/pwm|mpl4/.test(text))return make('Alimentação e controle','Canais PWM para LED','Cabo de baixa tensão / LED','Confirme tensão, corrente e topologia da fita LED.');
+  if(/controladora|embrace|scenario/.test(text))return make('Rede / barramento / alimentação','Comandos da automação','Conforme protocolo','Confirme interfaces e módulos compatíveis.');
+  if(/receiver|amplificador/.test(text))return make('Fontes A/V e rede','Canais amplificados de áudio','HDMI, rede e cabo de alto-falante','Confirme impedância, zonas e canais utilizados.');
+  if(/caixa|morel|stage|b&w|subwoofer/.test(text))return make('Sinal amplificado','Reprodução sonora','Cabo de alto-falante','Confirme impedância, potência e posição acústica.');
+  if(/cat\s*6|cabo.*rede/.test(text))return make('Ponto de origem','Equipamento ou tomada de rede','Cat6','Confirme metragem, rota e certificação.');
+  if(/cabo.*(áudio|audio)|\bawg/.test(text))return make('Amplificador / receiver','Caixa de som','Cabo de alto-falante','Confirme bitola e metragem por canal.');
+  return make('A definir','A definir','','Inclua modelo e ficha técnica para liberar validações automáticas.');
+}
+function ensureTechnicalDefinitions(data=state.data){
+  (data.products||[]).forEach(product=>{product.technicalDefinition=product.technicalDefinition&&typeof product.technicalDefinition==='object'?product.technicalDefinition:inferTechnicalDefinition(product)});
+  return data;
+}
+ensureTechnicalDefinitions();
+const technicalDefinitionNormalize=normalizeSharedData;
+normalizeSharedData=shared=>ensureTechnicalDefinitions(technicalDefinitionNormalize(shared));
+const technicalDefinitionPersist=persist;
+persist=(...args)=>{ensureTechnicalDefinitions();return technicalDefinitionPersist(...args)};
+function projectTechnicalWarnings(project){
+  if(!project?.quoteId)return [];
+  const warnings=[],rooms=projectQuoteRooms(project),points=(state.data.technicalPoints||[]).filter(point=>point.projectId===project.id),groups=capacityGroups(project.quoteId);
+  groups.forEach(group=>{const used=Number(group.capacityUsed??group.capacityTotal),total=Number(group.capacityTotal||0);if(used>total)warnings.push(`Capacidade excedida: ${productById(group.productId)?.name||'equipamento'} usa ${used} de ${total} ${group.capacityUnit||'un'}.`)});
+  points.filter(point=>!point.capacityGroupId&&/rede|access point|câmera|câmera ip|tv/i.test(point.type||'')).forEach(point=>warnings.push(`Ponto sem origem definida: ${point.label} (${roomNameForPoint(point,rooms)}).`));
+  rooms.forEach(room=>{
+    const products=(room.items||[]).filter(item=>!item.capacityAllocation).map(item=>productById(item.productId)).filter(Boolean),hasNetworkCable=products.some(product=>product.technicalType==='Cabo de rede'),hasAudioCable=products.some(product=>product.technicalType==='Cabo de áudio');
+    if(products.some(isKeypadProduct)&&!hasNetworkCable)warnings.push(`Infraestrutura pendente: keypad em ${room.name} sem Cat6 no ambiente.`);
+    if(products.some(isNetworkEndpointProduct)&&!hasNetworkCable)warnings.push(`Infraestrutura pendente: ponto de rede/access point em ${room.name} sem Cat6 no ambiente.`);
+    if(products.some(isSpeakerProduct)&&!hasAudioCable)warnings.push(`Infraestrutura pendente: caixa de som em ${room.name} sem cabo de áudio no ambiente.`);
+  });
+  return warnings;
+}
+function roomNameForPoint(point,rooms){return rooms.find(room=>room.id===point.roomId)?.name||'ambiente não informado'}
+const technicalDefinitionCatalogView=views.products;
+views.products=()=>{
+  const products=state.data.products||[],rows=products.map(product=>{const spec=product.technicalDefinition||inferTechnicalDefinition(product);return `<tr><td><strong>${product.name}</strong><div class="subtext">${product.model||product.technicalType||'Modelo a definir'}</div></td><td>${spec.input}</td><td>${spec.output}</td><td>${spec.cable||'—'}</td><td>${spec.capacity}</td><td>${badge(spec.status)}</td></tr>`});
+  return technicalDefinitionCatalogView()+`<section class="card"><div class="card-head"><div><h3>Tabela de definição técnica</h3><p class="subtext">O padrão que alimenta a identificação, conexões e validações do diagrama. Itens inferidos devem ser conferidos com a ficha técnica do modelo antes da execução.</p></div><span class="subtext">${products.length} ficha(s)</span></div>${table(['Modelo / item','Entrada','Saída / função','Cabo ou interface','Capacidade','Situação'],rows)}</section>`;
+};
+const technicalDefinitionDiagramView=views.diagram;
+views.diagram=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===(state.diagramProjectId||state.data.projects?.[0]?.id)),warnings=projectTechnicalWarnings(project),panel=project?`<section class="card technical-validation"><div class="card-head"><div><h3>Validação técnica do fluxo</h3><p class="subtext">O diagrama não confirma uma ligação sem dados suficientes. Corrija as pendências antes de transformar o orçamento em execução.</p></div><strong>${warnings.length?`${warnings.length} pendência(s)`:'Fluxo sem pendências detectáveis'}</strong></div>${warnings.length?`<ul>${warnings.map(warning=>`<li>${warning}</li>`).join('')}</ul>`:'<p class="subtext">Capacidades, pontos vinculados e dependências técnicas cadastradas estão coerentes com as regras atuais.</p>'}</section>`:'';
+  return technicalDefinitionDiagramView().replace('<section class="technical-flowchart"',panel+'<section class="technical-flowchart"');
+};
+setTimeout(()=>{if(state.data.technicalDefinitionV1)return;ensureTechnicalDefinitions();state.data.technicalDefinitionV1=true;persist();},7000);
+render();

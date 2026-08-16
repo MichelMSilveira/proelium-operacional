@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Base técnica: cada produto passa a ter uma ficha padronizada de entrada, saída/função, cabo/interface e capacidade. O catálogo expõe a tabela de definição técnica e o diagrama mostra pendências detectáveis — capacidade excedida, ponto sem origem e infraestrutura mínima ausente — sem assumir como confirmado o que ainda precisa ser validado pela ficha técnica.
+
 - Diagrama técnico: a leitura do projeto foi convertida para um fluxograma visual com origem/rack, equipamentos centrais, distribuição e ambientes atendidos. Pontos técnicos vinculados passam a aparecer no ambiente com sua origem de capacidade.
 
 - Regras de infraestrutura: formalizado o catálogo de dependências técnicas. Keypads sugerem Cat6, access points/pontos de rede sugerem Cat6 para dados/PoE e caixas de som agora sugerem cabo de alto-falante, sempre com metragem editável e confirmação do orçamentista.
