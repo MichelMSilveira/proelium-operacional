@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Entrega: atualizada a identificação do service worker para que aparelhos presos em uma cópia antiga do menu recebam o shell atual, sem limpar os dados locais do aplicativo.
 - Menu: criada a entrada **Conexões de produtos**, ao lado de Produtos e Serviços. Ela abre diretamente a ficha de entradas, saídas, portas, cabos e modelo de cada equipamento, sem exigir procura dentro do catálogo.
 - Catálogo: o botão **Consultar** agora aparece ao lado de cada produto e abre a **Ficha técnica de conexões**, onde ficam entradas, saídas, portas e cabo. A versão do aplicativo foi atualizada para os aparelhos receberem esse ajuste.
 - Produtos e Serviços recebeu consulta técnica fixa no topo: selecionar um produto mostra identidade, modelo, função, cabo, portas de entrada e saída; há atalho para editar o mapeamento. No celular, a lista passa a exibir todos os campos como cartões verticais, sem esconder colunas.

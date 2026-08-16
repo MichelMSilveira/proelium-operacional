@@ -89,7 +89,9 @@
     // Proteção: mesmo que um módulo opcional falhe, a dedicatória não bloqueia o acesso ao app.
     setTimeout(() => document.getElementById('splash')?.classList.add('hide'), 4500);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      navigator.serviceWorker.register('./sw.js');
+      // A versão na URL garante que aparelhos que ficaram presos em um shell
+      // anterior recebam o trabalhador atual sem apagar os dados locais.
+      navigator.serviceWorker.register('./sw.js?release=20260816-menu');
       navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
     }
   </script>
