@@ -29,6 +29,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 
 ## Documentação
 
+- [Guia de acesso e instalação em Windows, Android e iOS](docs/GUIA-ACESSO-E-INSTALACAO.md)
 - [MVP e regras do produto](docs/MVP.md)
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Operação do servidor](docs/OPERATIONS.md)
