@@ -818,5 +818,53 @@ const quoteItemActionOrderView=views.quoteDetail;views.quoteDetail=()=>quoteItem
 // Indicadores do Comercial também funcionam como atalhos de consulta.
 function focusCommercialKpi(type){const pipeline=document.querySelector('.pipeline'),history=[...document.querySelectorAll('.commercial-history')].find(section=>section.querySelector('h3')?.textContent.includes('Oportunidades concluídas'));document.querySelectorAll('.pipeline .deal,.commercial-history tbody tr').forEach(item=>item.hidden=false);if(type==='open'){pipeline?.scrollIntoView({behavior:'smooth',block:'start'});toast('Exibindo todas as oportunidades em atendimento.');return}if(type==='actions'){const deals=[...document.querySelectorAll('.pipeline .deal')],visible=deals.filter(deal=>!deal.textContent.includes('Próxima: Não definida'));deals.forEach(deal=>deal.hidden=!visible.includes(deal));pipeline?.scrollIntoView({behavior:'smooth',block:'start'});toast(`${visible.length} oportunidade(s) com próxima ação definida.`);return}const target=type==='won'?'Ganho':'Perdido';history?.querySelectorAll('tbody tr').forEach(row=>{row.hidden=row.querySelector('.badge')?.textContent.trim()!==target});history?.scrollIntoView({behavior:'smooth',block:'start'});toast(`Exibindo oportunidades ${target==='Ganho'?'ganhas':'perdidas'}.`)}
 const commercialKpiRender=render;render=()=>{commercialKpiRender();if(state.view!=='commercial')return;const labels=['open','actions','won','lost'],titles=['Ver oportunidades em atendimento','Ver oportunidades com próxima ação','Ver oportunidades ganhas','Ver oportunidades perdidas'];document.querySelectorAll('#content .kpi-grid .kpi').forEach((card,index)=>{if(!labels[index])return;card.classList.add('kpi-action');card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',titles[index]);card.title=titles[index];const action=()=>focusCommercialKpi(labels[index]);card.onclick=action;card.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();action()}}})};
+
+// Avanços comerciais passam por conferência e assinatura do operador até existir login com credencial individual.
+function commercialAdvanceChecklist(opportunity){
+  const missing=[],phone=String(opportunity.phone||'').replace(/\D/g,''),email=String(opportunity.email||'').trim();
+  if(!String(opportunity.company||'').trim())missing.push('cliente ou empresa');
+  if(!String(opportunity.contact||'').trim())missing.push('pessoa de contato');
+  if(phone.length<10)missing.push('telefone válido com DDD');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))missing.push('e-mail válido');
+  if(!String(opportunity.owner||'').trim())missing.push('responsável interno');
+  if(!String(opportunity.nextAction||'').trim())missing.push('próxima ação');
+  if(!String(opportunity.nextDue||'').trim())missing.push('prazo da próxima ação');
+  if(opportunity.stage==='Visita'&&Number(opportunity.estimatedValue||0)<=0)missing.push('valor estimado para liberar o orçamento');
+  return missing;
+}
+function openOpportunityAdvanceAuthorization(id){
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id),stages=['Novo contato','Qualificação','Visita','Orçamento'];
+  if(!opportunity)return;
+  const index=stages.indexOf(opportunity.stage),nextStage=stages[index+1];
+  if(!nextStage){toast('Esta oportunidade já está em Orçamento. A próxima decisão acontece dentro do orçamento: enviar, aprovar ou recusar.');return}
+  const missing=commercialAdvanceChecklist(opportunity);
+  if(missing.length){toast(`Antes de avançar, complete: ${missing.join(', ')}.`);openForm('opportunity',id);return}
+  const actor=auditActor();
+  if(actor==='Usuário do dispositivo'){toast('Antes de autorizar, identifique o responsável na aba Auditoria.');return}
+  $('#dialogTitle').textContent=`Autorizar: ${opportunity.stage} → ${nextStage}`;
+  $('#recordForm').dataset.kind='opportunityAdvanceAuthorization';
+  $('#recordForm').dataset.editId=id;
+  $('#saveButton').textContent='Assinar e avançar';
+  $('#formFields').innerHTML=`<input type="hidden" name="opportunityId" value="${id}"><input type="hidden" name="nextStage" value="${nextStage}"><div class="field full"><p class="subtext">A oportunidade foi conferida e está apta para seguir. Esta autorização ficará registrada na Auditoria.</p></div><div class="field full"><label>Responsável que autoriza</label><input value="${actor}" disabled></div><div class="field full"><label>Assinatura de confirmação *</label><input name="signature" autocomplete="off" placeholder="Digite exatamente: ${actor}" required><small class="subtext">Enquanto o login individual não existe, esta é uma assinatura operacional provisória vinculada ao usuário selecionado na Auditoria.</small></div>`;
+  $('#recordDialog').showModal();
+}
+document.addEventListener('submit',event=>{
+  const form=event.target;
+  if(form?.id!=='recordForm'||form.dataset.kind!=='opportunityAdvanceAuthorization')return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const data=Object.fromEntries(new FormData(form)),opportunity=(state.data.opportunities||[]).find(item=>item.id===data.opportunityId),actor=auditActor();
+  if(!opportunity)return;
+  if(actor==='Usuário do dispositivo'){toast('Selecione o responsável na Auditoria antes de autorizar.');return}
+  if(String(data.signature||'').trim().toLocaleLowerCase('pt-BR')!==actor.toLocaleLowerCase('pt-BR')){toast('A assinatura não corresponde ao responsável identificado neste aparelho.');return}
+  const missing=commercialAdvanceChecklist(opportunity);
+  if(missing.length){toast(`A conferência precisa ser refeita: ${missing.join(', ')}.`);return}
+  const from=opportunity.stage;
+  opportunity.stage=data.nextStage;
+  opportunity.advanceAuthorizations=Array.isArray(opportunity.advanceAuthorizations)?opportunity.advanceAuthorizations:[];
+  opportunity.advanceAuthorizations.unshift({at:new Date().toISOString(),actor,from,to:data.nextStage,checklist:'Dados de contato, responsável, próxima ação e prazo conferidos'});
+  logAudit('Autorizou avanço','Comercial',`${opportunity.company} · ${from} → ${data.nextStage} · assinatura: ${actor}`);
+  persist();closeRecordDialog();render();toast(`Avanço autorizado por ${actor}: ${data.nextStage}.`);
+},true);
+document.addEventListener('click',event=>{const button=event.target.closest('[data-advance-opportunity]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();openOpportunityAdvanceAuthorization(button.dataset.advanceOpportunity)},true);
 render();
 updateSharedStatus();
