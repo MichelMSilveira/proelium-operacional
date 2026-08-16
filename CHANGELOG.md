@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos: itens centrais agora podem distribuir capacidade entre cômodos, rateando custo e venda por circuitos, canais, zonas ou outra unidade técnica;
 - Orçamentos no celular: o seletor de ambientes acompanha a rolagem da análise e permite deslizar entre os cômodos;
 - Comercial: avanço de oportunidade agora exige conferência dos dados essenciais, assinatura do operador identificado e registra a autorização na Auditoria;
 - Status do servidor: o resumo agora informa a área e uma descrição curta da última ação sincronizada;
