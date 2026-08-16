@@ -1085,8 +1085,9 @@ openQuoteItemSearch=(prefill={})=>{
   sharedField.classList.add('shared-item-inline');
   quantityField.insertAdjacentElement('afterend',sharedField);
   const title=sharedField.querySelector('strong'),description=sharedField.querySelector('.shared-item-toggle small'),hint=sharedField.querySelector('[data-general-item-hint]');
-  if(title)title.textContent='Ratear por todos os cômodos';
-  if(description)description.textContent='Distribui o valor deste item por todo o projeto.';
+  const roomCount=(state.data.quoteRooms||[]).filter(room=>room.quoteId===state.selectedQuote).length;
+  if(title)title.textContent=`Ratear pelo projeto (${roomCount} ${roomCount===1?'cômodo':'cômodos'})`;
+  if(description)description.textContent='Divide custo e venda igualmente entre todos os cômodos deste orçamento.';
   if(hint)hint.remove();
 };
 render();
@@ -1135,5 +1136,36 @@ render=()=>{
       quantityCell.insertAdjacentHTML('beforeend',`<small class="circuit-allocation">💡 ${circuits} ${label}</small>`);
     });
   });
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=(state.data.quoteRooms||[]).find(item=>item.quoteId===quote.id&&item.name===card.querySelector('.card-head h3')?.textContent);
+    if(!room)return;
+    const visibleItems=(room.items||[]).filter(item=>productById(item.productId));
+    card.querySelectorAll('tbody tr').forEach((row,index)=>{
+      const item=visibleItems[index],actionCell=row.querySelector('[data-edit-quote-item]')?.closest('td');
+      if(!item||!actionCell||actionCell.querySelector('[data-delete-quote-item]'))return;
+      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
+    });
+  });
 };
 render();
+
+function deleteQuoteItem(roomId,itemIndex){
+  const room=(state.data.quoteRooms||[]).find(item=>item.id===roomId),item=room?.items?.[Number(itemIndex)],product=item&&productById(item.productId);
+  if(!room||!item||!product)return;
+  const groupId=item.capacityAllocation?.groupId,distributed=Boolean(groupId),message=distributed
+    ?`Excluir “${product.name}” do orçamento?\n\nEle é um item rateado. A exclusão remove todas as frações deste item nos ambientes atendidos.`
+    :`Excluir “${product.name}” do ambiente ${room.name}?`;
+  if(!confirm(message))return;
+  const before=structuredClone(state.data);
+  if(distributed)(state.data.quoteRooms||[]).filter(entry=>entry.quoteId===room.quoteId).forEach(entry=>entry.items=(entry.items||[]).filter(entryItem=>entryItem.capacityAllocation?.groupId!==groupId));
+  else room.items.splice(Number(itemIndex),1);
+  logAudit('Excluiu item','Orçamento',`${product.name} · ${distributed?'item rateado removido de todos os ambientes':'removido de '+room.name}`);
+  persist();render();offerUndo(`${product.name} foi excluído do orçamento.`,before);
+}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-delete-quote-item]');
+  if(!button)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const [roomId,index]=button.dataset.deleteQuoteItem.split(':');
+  deleteQuoteItem(roomId,Number(index));
+},true);

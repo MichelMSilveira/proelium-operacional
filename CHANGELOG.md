@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos: itens agora podem ser excluídos por ambiente com confirmação, Auditoria e desfazer temporário; itens rateados são removidos de todos os ambientes para preservar o total;
+- Orçamentos: a opção de rateio junto da quantidade passou a informar quantos cômodos receberão o valor do item;
 - Orçamentos: adicionada leitura de circuitos de iluminação por ambiente, incluindo módulos instalados em outro cômodo e rateados pela capacidade atendida;
 - Orçamentos: módulos de iluminação rateados agora mostram, ao lado da fração do módulo em cada ambiente, os circuitos efetivamente disponibilizados;
 - Navegação móvel: restaurada a rolagem vertical ao iniciar o gesto dentro de tabelas, filtros, cartões e janelas de formulário;
