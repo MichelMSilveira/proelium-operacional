@@ -2217,6 +2217,8 @@ render();
 // Relações padrão da instalação. Elas partem do modelo/funcão técnica e podem ganhar regras
 // específicas por fabricante depois, sem quebrar o desenho lógico atual.
 function technicalDeviceRole(product={}){
+  const savedRole=product.connectionProfile?.role;
+  if(['router','switch','ntl','ps5-hub','receiver','controller','access-point','network-device','game-console','keypad','automation-device','speaker'].includes(savedRole))return savedRole;
   const text=`${product.name||''} ${product.brand||''} ${product.model||''} ${product.technicalType||''}`.toLocaleLowerCase('pt-BR');
   const identity=`${product.name||''} ${product.brand||''}`.toLocaleLowerCase('pt-BR');
   if(/\beb[- ]?ps5\b|hub\s+de\s+rede\s+embrace/.test(text))return 'ps5-hub';
@@ -2390,4 +2392,27 @@ render();
 // Mantém o arraste disponível após todas as camadas de renderização do diagrama.
 const finalWireDragRender=render;
 render=()=>{finalWireDragRender();bindWireDragControls();};
+render();
+
+// Cadastro técnico: o perfil nasce no catálogo e acompanha o item até orçamento, operação e diagrama.
+const technicalCatalogOpenForm=openForm;
+openForm=(kind,editId='',prefill={})=>{
+  if(kind!=='product')return technicalCatalogOpenForm(kind,editId,prefill);
+  const current=editId?(state.data.products||[]).find(item=>item.id===editId):null,value=(key,fallback='')=>prefill[key]??current?.[key]??fallback,definition=current?.technicalDefinition||{},profile=current?.connectionProfile||{},roles=[['other','Outro / a definir'],['router','Roteador / gateway'],['switch','Switch'],['access-point','Access point'],['network-device','Dispositivo de rede'],['controller','Controladora'],['ntl','Interface NTL'],['ps5-hub','Hub EB-PS5'],['keypad','Keypad'],['automation-device','Módulo de automação'],['receiver','Receiver'],['speaker','Caixa de som'],['game-console','Fonte de vídeo / console']];
+  $('#dialogTitle').textContent=current?'Editar produto e mapeamento':'Novo produto e mapeamento técnico';$('#recordForm').dataset.kind='product';$('#recordForm').dataset.editId=editId;$('#saveButton').textContent=current?'Salvar produto':'Cadastrar produto';
+  $('#formFields').innerHTML=`<div class="field full"><p class="subtext"><strong>Cadastro comercial e técnico</strong> · este perfil alimenta orçamento, portas, operação e diagrama. Preencha “a confirmar” quando a ficha técnica ainda não tiver sido validada.</p></div><div class="field"><label>Código / SKU *</label><input name="sku" value="${value('sku')}" required></div><div class="field"><label>Nome do item *</label><input name="name" value="${value('name')}" required></div><div class="field"><label>Marca / linha</label><input name="brand" value="${value('brand')}"></div><div class="field"><label>Modelo</label><input name="model" value="${value('model')}"></div><div class="field"><label>Categoria</label><input name="category" value="${value('category')}"></div><div class="field"><label>Fornecedor</label><input name="supplier" value="${value('supplier')}"></div><div class="field"><label>Modalidade</label><select name="mode">${['Venda','Disponibilização','Venda ou disponibilização','Serviço'].map(item=>`<option ${item===value('mode','Venda')?'selected':''}>${item}</option>`).join('')}</select></div><div class="field"><label>Unidade</label><select name="unit">${['un','m','h','kit','mês'].map(item=>`<option ${item===value('unit','un')?'selected':''}>${item}</option>`).join('')}</select></div><div class="field"><label>Custo unitário (R$)</label><input name="cost" type="number" min="0" step="0.01" value="${value('cost',0)}"></div><div class="field"><label>Preço de venda (R$)</label><input name="price" type="number" min="0" step="0.01" value="${value('price',0)}"></div><div class="field"><label>Status</label><select name="status">${['Ativo','Descontinuado'].map(item=>`<option ${item===value('status','Ativo')?'selected':''}>${item}</option>`).join('')}</select></div><div class="field full"><h3 class="form-subtitle">Mapa técnico do equipamento</h3></div><div class="field"><label>Tipo técnico *</label><input name="technicalType" value="${value('technicalType',current?.technicalType||current?.category||'A confirmar')}" required></div><div class="field"><label>Papel no sistema *</label><select name="technicalRole" required>${roles.map(([id,label])=>`<option value="${id}" ${id===value('technicalRole',profile.role||'other')?'selected':''}>${label}</option>`).join('')}</select></div><div class="field full"><label>Função na obra</label><input name="technicalFunction" value="${value('technicalFunction',current?.technicalFunction||'A confirmar')}" placeholder="Ex.: distribuir rede e PoE para os ambientes"></div><div class="field"><label>Entrada / recebe de *</label><input name="technicalInput" value="${value('technicalInput',definition.input||profile.input||'A confirmar')}" placeholder="Ex.: Ethernet WAN, RJ-45, HDMI" required></div><div class="field"><label>Saída / entrega para *</label><input name="technicalOutput" value="${value('technicalOutput',definition.output||profile.output||'A confirmar')}" placeholder="Ex.: LAN, cordão de comunicação, canais" required></div><div class="field"><label>Cabo / interface *</label><input name="technicalCable" value="${value('technicalCable',definition.cable||profile.media||'A confirmar')}" placeholder="Ex.: Cat6, HDMI 2.1, cordão de comunicação" required></div><div class="field"><label>Capacidade conhecida</label><input name="technicalCapacity" value="${value('technicalCapacity',definition.capacity||profile.capacity||'A confirmar')}" placeholder="Ex.: 24 portas, 5 cordões, 7 canais"></div><div class="field full"><label>Observação técnica</label><textarea name="technicalNotes" placeholder="Padrões, limites, compatibilidades e o que precisa conferir em campo.">${value('technicalNotes',definition.notes||'')}</textarea></div>`;
+  $('#recordDialog').showModal();
+};
+const technicalCatalogSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  const result=technicalCatalogSaveRecord(kind,data,editId);
+  if(kind!=='product'||result===false)return result;
+  const product=editId?(state.data.products||[]).find(item=>item.id===editId):(state.data.products||[]).find(item=>item.sku===data.sku&&item.name===data.name);
+  if(!product)return result;
+  const standard=standardConnectionProfiles[data.technicalRole]||standardConnectionProfiles.other;
+  product.technicalType=data.technicalType||product.category||'A confirmar';product.technicalFunction=data.technicalFunction||'A confirmar';
+  product.technicalDefinition={input:data.technicalInput||'A confirmar',output:data.technicalOutput||'A confirmar',cable:data.technicalCable||'A confirmar',capacity:data.technicalCapacity||'A confirmar',notes:data.technicalNotes||'',status:'Cadastro técnico — validar'};
+  product.connectionProfile={role:data.technicalRole||'other',label:standard.label,input:product.technicalDefinition.input,output:product.technicalDefinition.output,media:product.technicalDefinition.cable,capacity:product.technicalDefinition.capacity,targets:standard.targets||[],source:'Cadastro técnico Proelium'};
+  ensureConnectionProfiles();persist();render();toast('Produto e mapa técnico cadastrados.');return result;
+};
 render();
