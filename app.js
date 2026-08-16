@@ -1159,7 +1159,7 @@ render=()=>{
     card.querySelectorAll('tbody tr').forEach((row,index)=>{
       const item=visibleItems[index],actionCell=row.querySelector('[data-edit-quote-item]')?.closest('td');
       if(!item||!actionCell||actionCell.querySelector('[data-delete-quote-item]'))return;
-      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
+      actionCell.insertAdjacentHTML('beforeend',` <button class="link-button quote-item-replace" data-replace-quote-item="${room.id}:${index}">Substituir</button> <button class="link-button quote-item-delete" data-delete-quote-item="${room.id}:${index}">Excluir</button>`);
     });
   });
 };
@@ -1184,4 +1184,33 @@ document.addEventListener('click',event=>{
   event.preventDefault();event.stopImmediatePropagation();
   const [roomId,index]=button.dataset.deleteQuoteItem.split(':');
   deleteQuoteItem(roomId,Number(index));
+},true);
+
+function openQuoteItemReplace(roomId,itemIndex){
+  const room=(state.data.quoteRooms||[]).find(item=>item.id===roomId),item=room?.items?.[Number(itemIndex)],current=item&&productById(item.productId);
+  if(!room||!item||!current)return;
+  const distributed=Boolean(item.capacityAllocation?.groupId),options=(state.data.products||[]).filter(product=>product.active!==false).map(product=>`<option value="${product.id}" ${product.id===current.id?'selected':''}>${product.name} · ${product.model||product.category||'Sem modelo'} · ${product.price?money(product.price):'A cotar'}</option>`).join('');
+  $('#dialogTitle').textContent='Substituir item do orçamento';
+  $('#recordForm').dataset.kind='quoteItemReplace';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Substituir e preservar vínculos';
+  $('#formFields').innerHTML=`<input type="hidden" name="roomId" value="${roomId}"><input type="hidden" name="itemIndex" value="${itemIndex}"><div class="field full"><label>Item atual</label><input value="${current.name}" disabled></div><div class="field full"><label>Novo produto ou serviço *</label><select name="productId" required>${options}</select></div><div class="field full"><p class="subtext">${distributed?'Este item possui rateio técnico. A troca será aplicada em todos os ambientes atendidos e preservará local físico, conexões, circuitos e distribuição atual.':'A troca preserva quantidade, desconto e o ambiente deste item.'}</p></div>`;
+  $('#recordDialog').showModal();
+}
+const quoteItemReplaceSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind!=='quoteItemReplace')return quoteItemReplaceSave(kind,data,editId);
+  const room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),item=room?.items?.[Number(data.itemIndex)],from=item&&productById(item.productId),to=productById(data.productId);
+  if(!room||!item||!from||!to){toast('Não foi possível identificar o item para substituição.');return false}
+  if(from.id===to.id){toast('Selecione um produto diferente para substituir.');return false}
+  const groupId=item.capacityAllocation?.groupId,distributed=Boolean(groupId);
+  if(distributed)(state.data.quoteRooms||[]).filter(entry=>entry.quoteId===room.quoteId).forEach(entry=>(entry.items||[]).forEach(entryItem=>{if(entryItem.capacityAllocation?.groupId===groupId)entryItem.productId=to.id}));
+  else item.productId=to.id;
+  logAudit('Substituiu item','Orçamento',`${from.name} → ${to.name}${distributed?' · rateio, capacidade e conexões preservados':''}`);
+  persist();closeRecordDialog();render();toast(distributed?'Equipamento substituído em todo o rateio; conexões e distribuição foram preservadas.':'Item substituído no ambiente.');return;
+};
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-replace-quote-item]');
+  if(!button)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const [roomId,index]=button.dataset.replaceQuoteItem.split(':');
+  openQuoteItemReplace(roomId,Number(index));
 },true);
