@@ -1998,3 +1998,51 @@ setTimeout(()=>{
   toast('Valores de teste aplicados ao catálogo e ao orçamento-modelo.');
 },6200);
 render();
+
+// Regras de infraestrutura: o item principal permanece escolhido pelo orçamentista; ao adicioná-lo,
+// o sistema pede confirmação do cabo ou acessório mínimo. Novas regras entram nesta lista conforme
+// a equipe validar sua prática de instalação.
+const infrastructureDependencyRules=[
+  {id:'keypad-cat6',trigger:'Keypad / interface de comando',requires:'Cabo Cat6 para comunicação',suggestion:'30 m por item'},
+  {id:'network-point-cat6',trigger:'Access point ou ponto de rede',requires:'Cabo Cat6 para dados e PoE',suggestion:'30 m por ponto'},
+  {id:'speaker-audio-cable',trigger:'Caixa de som',requires:'Cabo de alto-falante padrão',suggestion:'15 m por item'}
+];
+function isSpeakerProduct(product){
+  const text=`${product?.name||''} ${product?.brand||''} ${product?.model||''} ${product?.category||''}`;
+  return /(caixa\s*de\s*som|morel|\bstage\b|b&w|subwoofer|alto.falante)/i.test(text)&&!/cabo/i.test(text);
+}
+function audioCableChoices(){
+  return (state.data.products||[]).filter(product=>product.active!==false&&(/cabo.*(áudio|audio|alto.falante|speaker)|\b(12|14|16|18)\s*awg/i.test(`${product.name||''} ${product.model||''}`)||product.technicalType==='Cabo de áudio'));
+}
+function openSpeakerCableRule(roomId,speaker,qty){
+  const room=(state.data.quoteRooms||[]).find(item=>item.id===roomId),choices=audioCableChoices();
+  if(!room||!choices.length){toast('Cadastre ao menos um cabo de alto-falante para aplicar esta regra.');return}
+  const suggested=Math.max(15,Math.round(Number(qty||1)*15));
+  $('#dialogTitle').textContent='Infraestrutura sugerida da caixa de som';
+  $('#recordForm').dataset.kind='speakerAudioCable';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Adicionar cabo ao orçamento';
+  $('#formFields').innerHTML=`<input type="hidden" name="roomId" value="${room.id}"><input type="hidden" name="speakerId" value="${speaker.id}"><input type="hidden" name="speakerQty" value="${qty}"><div class="field full"><label>Item adicionado</label><input value="${speaker.name} · ${qty} ${speaker.unit||'un'}" disabled><small class="subtext">Sugestão de infraestrutura: toda caixa de som precisa de cabo para alto-falante. A especificação e a metragem devem ser conferidas no trajeto real.</small></div><div class="field full"><label>Cabo de alto-falante</label><select name="cableProductId" required>${choices.map(product=>`<option value="${product.id}">${product.name} · ${product.brand||'Sem marca'}</option>`).join('')}</select></div><div class="field"><label>Metragem total (m)</label><input name="qty" type="number" min="1" step="1" value="${suggested}" required></div><div class="field"><label>Desconto (%)</label><input name="discount" type="number" min="0" max="100" step="0.01" value="0"></div><div class="field full"><small class="subtext">Sugestão inicial: 15 m por item. Ajuste para a rota, quantidade de vias e especificação do projeto.</small></div>`;
+  $('#recordDialog').showModal();
+}
+const infrastructureDependencySave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='speakerAudioCable'){
+    const room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),cable=productById(data.cableProductId),speaker=productById(data.speakerId),meters=Number(data.qty);
+    if(!room||!cable||!Number.isFinite(meters)||meters<=0){toast('Informe o cabo e uma metragem válida.');return false}
+    const discount=Number(data.discount||0),existing=(room.items||[]).find(item=>item.productId===cable.id&&Number(item.discount||0)===discount&&!item.capacityAllocation);
+    if(existing)existing.qty+=meters;else room.items.push({productId:cable.id,qty:meters,discount,infrastructureRule:'Caixa de som',infrastructureFor:speaker?.name||''});
+    logAudit('Aplicou regra de infraestrutura','Orçamento',`${speaker?.name||'Caixa de som'} → ${cable.name} · ${meters} m · ${room.name}`);
+    persist();render();toast(`${meters} m de ${cable.name} adicionados como infraestrutura de áudio.`);return;
+  }
+  if(kind==='quoteItemSearch'&&data.productId){
+    const product=productById(data.productId),room=(state.data.quoteRooms||[]).find(item=>item.id===data.roomId),qty=Number(data.qty||0);
+    if(product&&room&&qty>0&&isSpeakerProduct(product)){
+      infrastructureDependencySave(kind,data,editId);
+      openSpeakerCableRule(room.id,product,qty);
+      return false;
+    }
+  }
+  return infrastructureDependencySave(kind,data,editId);
+};
+const dependencyCatalogView=views.products;
+views.products=()=>dependencyCatalogView()+`<section class="card"><div class="card-head"><div><h3>Regras de infraestrutura</h3><p class="subtext">Sugestões que acompanham o item principal no orçamento. A equipe confirma ou ajusta cada metragem antes da proposta.</p></div><span class="subtext">Evolutivas com a prática da Proelium</span></div>${table(['Gatilho','Infraestrutura sugerida','Referência inicial'],infrastructureDependencyRules.map(rule=>`<tr><td><strong>${rule.trigger}</strong></td><td>${rule.requires}</td><td>${rule.suggestion}</td></tr>`))}</section>`;
+render();

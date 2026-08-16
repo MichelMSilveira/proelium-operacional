@@ -2,6 +2,8 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Regras de infraestrutura: formalizado o catálogo de dependências técnicas. Keypads sugerem Cat6, access points/pontos de rede sugerem Cat6 para dados/PoE e caixas de som agora sugerem cabo de alto-falante, sempre com metragem editável e confirmação do orçamentista.
+
 - Rateio comercial: itens de rede, automação e infraestrutura deixam de ser pré-selecionados para distribuição. Eles entram integralmente no ambiente físico; o rateio é opcional e só ocorre quando o vendedor o ativa como decisão financeira e estratégica. Rateios existentes foram preservados para não alterar decisões já registradas.
 
 - Orçamento-modelo: aplicadas referências identificadas como **valores de teste** para custo e venda dos itens usados na proposta de demonstração, permitindo validar total, margem e rateio sem confundir os números com tabela comercial oficial.
