@@ -21,6 +21,7 @@
 - Topologia do EB-PS5 refinada: o Cordão 1 fica reservado ao chicote do quadro, agrupando os módulos; keypads e demais aparelhos ocupam os Cordões 2 a 5 restantes.
 - Movimentação entre ambientes agora exige quantidade inteira para aparelhos por unidade, como TVs, evitando bloqueio causado pela antiga precisão decimal.
 - Diagrama técnico passou a usar linhas de fluxograma com saída e entrada laterais ou verticais conforme a posição dos equipamentos, evitando zigue-zagues e facilitando a leitura organizada do cenário.
+- Diagrama técnico ganhou leitura compacta: ícones menores, sem caixas pesadas, núcleo técnico em ordem de fluxo e aparelhos agrupados por disciplina.
 
 ## 0.4.1 — 2026-08-15
 
