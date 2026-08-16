@@ -14,6 +14,7 @@
 - Consoles são classificados como vídeo: recebem a ligação de rede do switch e podem enviar sinal HDMI 2.1 ao receiver. O código Embrace `EB-PS5` permanece classificado como hub de automação, sem confusão com PlayStation 5.
 - Corrigida a definição do `EB-PS5`: ele é o hub Embrace-Net que recebe o sinal da NTL e distribui cordões de comunicação para keypads e módulos; a controladora permanece ligada à rede por RJ‑45.
 - Diagrama técnico agora desdobra quantidades inteiras em equipamentos individuais e mostra uma linha rotulada para cada cabo/ligação.
+- Ligações individuais foram formalizadas como registros de cabo: cada uma guarda origem, porta de saída, tipo de cabo, porta de entrada, destino e situação.
 
 ## 0.4.1 — 2026-08-15
 
