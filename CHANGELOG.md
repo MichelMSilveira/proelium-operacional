@@ -2,6 +2,7 @@
 
 ## 0.4.1 — 2026-08-15
 
+- Orçamentos: itens podem ser movidos entre cômodos, preservando quantidade, desconto e auditoria da alteração;
 - Menu: Visão geral, Comercial, Orçamentos, Clientes e Produtos e serviços agora formam o grupo Comercial;
 - Adicionada aba Orçamentos para consulta unitária de propostas e ação Mover em Equipamentos, com histórico técnico e auditoria de troca de local;
 - Novo registro comercial: adicionada descrição livre e opcional da origem do contato;
