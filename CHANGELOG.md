@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- OrÃ§amentos: removidos da interface os controles de item geral e rateio pelo projeto; registros existentes permanecem preservados.
+
 - RelÃ³gio sincronizado: o cabeÃ§alho usa o horÃ¡rio do servidor, mantendo PC e celular alinhados mesmo com diferenÃ§as no relÃ³gio local.
 
 - PresenÃ§a detalhada: ao lado do participante aparecem os tipos de aparelho em uso e a quantidade de acessos simultÃ¢neos.
