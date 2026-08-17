@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Sessão no Android: a identificação do usuário logado voltou a aparecer no cabeçalho móvel, com truncamento seguro para nomes longos.
+
 - Permissões: usuários agora podem usar os perfis Administrador, Comercial, Operação, Financeiro e Leitura. O menu e a navegação respeitam o perfil, o cadastro de usuários permite escolher o papel e o servidor bloqueia gravações fora do domínio autorizado; `operador` permanece compatível como Operação.
 
 - Identidade visual: o cliente Windows passa a usar o `icon.svg` oficial na instalação e no executável; o APK Android foi versionado para distribuir a mesma marca vetorial já configurada no launcher.
