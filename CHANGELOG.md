@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Status no menu: o app mostra a versÃ£o instalada e a Ãºltima sincronizaÃ§Ã£o com o servidor.
+
 - AtualizaÃ§Ã£o no celular: o salvamento prÃ©vio da atualizaÃ§Ã£o agora possui limite de espera, evitando que a tela fique presa quando a conexÃ£o estiver instÃ¡vel.
 
 - Levantamento tÃ©cnico: corrigido o botÃ£o de novo registro da tela para abrir o formulÃ¡rio de novo levantamento tÃ©cnico.

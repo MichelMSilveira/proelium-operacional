@@ -550,6 +550,9 @@ const block4OpenCatalogSelect=openCatalogSelect;openCatalogSelect=(kind,prefill=
 const renderPresencePanelWithDevice=updatePresencePanel;
 updatePresencePanel=function(users=presenceUsers){renderPresencePanelWithDevice(users);const list=$('#presenceList');if(!list)return;presenceUsers.forEach(user=>{const row=[...list.querySelectorAll('.presence-person')].find(item=>item.querySelector('span')?.textContent?.startsWith(user.name||user.username));if(row&&!row.querySelector('.presence-device')){const device=document.createElement('small');device.className='presence-device';device.textContent=user.device||'Navegador';row.querySelector('span').appendChild(device)}})};
 render();
+const updateSharedStatusWithVersion=updateSharedStatus;
+updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v198 · sincronizado ${sync} · servidor atualizado ${server}`};
+updateSharedStatus();
 
 // Salvamento automático de segurança: cobre alterações de telas novas ou
 // campos que mudem o estado sem passar por um botão específico.
