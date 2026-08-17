@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- PresenÃ§a por dispositivo: a lista de participantes identifica se cada usuÃ¡rio estÃ¡ usando Android, iPhone/iPad, Windows, macOS, Linux ou navegador.
+
 - Atualização em tempo real: o app verifica novas versões enquanto permanece aberto, ao voltar ao foco e periodicamente, garantindo que a tela dedicada de atualização seja exibida sem exigir reinstalação.
 
 - Colaboração e auxílio: os botões de presença passaram a usar delegação global de clique, garantindo resposta também no WebView Android e em telas móveis.

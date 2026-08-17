@@ -96,9 +96,11 @@ function broadcastUpdate(saved) {
   for (const client of eventClients) client.write(message);
 }
 function broadcastEvent(name, payload) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) client.write(message); }
-function presencePayload() { return [...presence.values()].filter(item => Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available }) => ({ username, name, role, available: available !== false })); }
+function normalizeDevice(value) { const device = String(value || '').trim().slice(0, 32); return ['Android', 'iPhone/iPad', 'Windows', 'macOS', 'Linux', 'Navegador'].includes(device) ? device : 'Navegador'; }
+function deviceFromUserAgent(value) { const ua=String(value||''); return /Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone/iPad':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Navegador'; }
+function presencePayload() { return [...presence.values()].filter(item => Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => ({ username, name, role, device: normalizeDevice(device), available: available !== false })); }
 function announcePresence() { broadcastEvent('presence-updated', { users: presencePayload(), at: new Date().toISOString() }); }
-function touchPresence(user) { const previous=presence.get(user.username); presence.set(user.username, { username: user.username, name: user.name || user.username, role: user.role || 'operador', available: previous?.available !== false, lastSeen: Date.now() }); announcePresence(); }
+function touchPresence(user, req) { const previous=presence.get(user.username); presence.set(user.username, { username: user.username, name: user.name || user.username, role: user.role || 'operador', device: deviceFromUserAgent(req?.headers?.['user-agent']) || previous?.device || 'Navegador', available: previous?.available !== false, lastSeen: Date.now() }); announcePresence(); }
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -183,11 +185,11 @@ async function handleRequest(req, res) {
   if (pathname.startsWith('/api/')) {
     authenticatedUser = requireUser(req, res);
     if (!authenticatedUser) return;
-    touchPresence(authenticatedUser);
+    touchPresence(authenticatedUser, req);
   }
 
   if (pathname === '/api/presence' && req.method === 'GET') return sendJson(res, 200, { users: presencePayload() });
-  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') return sendJson(res, 200, { ok: true, users: presencePayload() });
+  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') { try { const payload=JSON.parse(await readBody(req)||'{}'), current=presence.get(authenticatedUser.username); if(current&&payload.device) current.device=normalizeDevice(payload.device); announcePresence(); return sendJson(res, 200, { ok: true, users: presencePayload() }); } catch { return sendJson(res, 400, { error: 'Heartbeat invÃ¡lido.' }); } }
   if (pathname === '/api/presence/availability' && req.method === 'POST') {
     try { const payload=JSON.parse(await readBody(req)), current=presence.get(authenticatedUser.username); if(current) { current.available=payload.available!==false; for(const client of eventClients)if(client.username===authenticatedUser.username)client.available=current.available; } announcePresence(); return sendJson(res,200,{ok:true,users:presencePayload()}); }
     catch { return sendJson(res,400,{error:'Disponibilidade inválida.'}); }
@@ -232,7 +234,7 @@ async function handleRequest(req, res) {
     res.username = authenticatedUser.username;
     res.userRole = normalizeRole(authenticatedUser.role);
     res.available = presence.get(authenticatedUser.username)?.available !== false;
-    touchPresence(authenticatedUser);
+    touchPresence(authenticatedUser, req);
     res.write(`event: presence-updated\ndata: ${JSON.stringify({ users: presencePayload() })}\n\n`);
     req.on('close', () => { eventClients.delete(res); if (![...eventClients].some(client => client.username === authenticatedUser.username)) { presence.delete(authenticatedUser.username); announcePresence(); } });
     return;
