@@ -1,8 +1,12 @@
-const CACHE = 'proelium-shell-v186';
+const CACHE = 'proelium-shell-v187';
 const ASSETS = ['./','./index.html','./styles.css','./crm.css','./bi.css','./quotes.css','./danger.css','./app.js','./manifest.webmanifest','./icon.svg','./assets/ems-studio-logo.png'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {

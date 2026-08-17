@@ -98,6 +98,15 @@
     <span id="toastText"></span>
     <button id="undoButton" type="button" hidden>Desfazer</button>
   </div>
+  <section id="appUpdateScreen" class="app-update-screen" hidden aria-labelledby="appUpdateTitle">
+    <div class="app-update-card">
+      <span class="app-update-mark">↗</span>
+      <p class="eyebrow">NOVA VERSÃO DISPONÍVEL</p>
+      <h2 id="appUpdateTitle">O Proelium foi atualizado</h2>
+      <p>A versão mais recente está pronta. Atualize agora para continuar usando o app com segurança.</p>
+      <button id="appUpdateButton" class="button primary" type="button">Atualizar aplicativo</button>
+    </div>
+  </section>
   <script src="app.js"></script>
   <script>
     // Proteção: mesmo que um módulo opcional falhe, a dedicatória não bloqueia o acesso ao app.
@@ -105,8 +114,14 @@
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       // A versão na URL garante que aparelhos que ficaram presos em um shell
       // anterior recebam o trabalhador atual sem apagar os dados locais.
-      navigator.serviceWorker.register('./sw.js?release=20260816-menu');
       navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+      navigator.serviceWorker.addEventListener('message', event => { if (event.data?.type === 'UPDATE_READY') window.__showAppUpdate?.(event.data.registration); });
+      navigator.serviceWorker.register('./sw.js?release=20260816-menu').then(registration => {
+        const showUpdate = registration => { if (!navigator.serviceWorker.controller || !registration.waiting) return; const screen=document.getElementById('appUpdateScreen'),button=document.getElementById('appUpdateButton'); if(!screen||!button)return; screen.hidden=false; button.onclick=()=>{button.disabled=true;button.textContent='Atualizando…';registration.waiting.postMessage({type:'SKIP_WAITING'})}; };
+        window.__showAppUpdate=showUpdate;
+        if (registration.waiting) showUpdate(registration);
+        registration.addEventListener('updatefound', () => { const worker=registration.installing; worker?.addEventListener('statechange', () => { if(worker.state==='installed' && navigator.serviceWorker.controller) showUpdate(registration); }); });
+      });
     }
   </script>
 </body>

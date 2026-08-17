@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Atualizações do app: quando uma nova versão web é detectada, o usuário recebe uma tela dedicada com a ação explícita de atualizar; a sessão e os dados locais são preservados durante o recarregamento.
+
 - BI Desempenho: os gráficos ganharam uma leitura central de trajetória da carteira/obra e um gráfico de volume por ativo, mantendo o detalhamento de margem, custo, prazo e score.
 
 - BI Desempenho: adicionada uma faixa de cotações dos ativos em movimento, mostrando cada obra como um ativo da carteira e sua variação de execução contra a etapa esperada.
