@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- BI Desempenho: os gráficos ganharam uma leitura central de trajetória da carteira/obra e um gráfico de volume por ativo, mantendo o detalhamento de margem, custo, prazo e score.
+
 - BI Desempenho: adicionada uma faixa de cotações dos ativos em movimento, mostrando cada obra como um ativo da carteira e sua variação de execução contra a etapa esperada.
 
 - Sessão no Android: a identificação do usuário logado voltou a aparecer no cabeçalho móvel, com truncamento seguro para nomes longos.
