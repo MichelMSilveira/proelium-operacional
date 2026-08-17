@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Status de aprovaÃ§Ã£o: a aprovaÃ§Ã£o de cliente e projeto agora Ã© registrada na auditoria e aparece no status do menu apÃ³s a sincronizaÃ§Ã£o.
+
 - Zoom no celular: adicionado cadeado para alternar entre zoom bloqueado e zoom por pinÃ§a na tela mÃ³vel.
 
 - OrÃ§amentos: removido o botÃ£o de substituiÃ§Ã£o das caixas Morel ao lado da aprovaÃ§Ã£o do cliente e projeto.
