@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Salvamento automático: o app verifica alterações de estado a cada poucos segundos e sincroniza automaticamente com o PostgreSQL, além dos salvamentos imediatos das ações existentes.
+
 - Relatórios: criada a aba de Emissão de relatórios, com emissão por obra, histórico de serviços e impressão da lista consolidada.
 
 - Auxílio operacional: participantes podem marcar disponibilidade, pedir auxílio e notificar automaticamente quem está online e disponível para atender.
