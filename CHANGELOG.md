@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Colaboração e auxílio: os botões de presença passaram a usar delegação global de clique, garantindo resposta também no WebView Android e em telas móveis.
+
 - Sincronização: corrigida a validação de gravações por perfil para comparar corretamente o estado dentro do envelope PostgreSQL; usuários autorizados voltam a sincronizar alterações normalmente.
 
 - Salvamento automático: o app verifica alterações de estado a cada poucos segundos e sincroniza automaticamente com o PostgreSQL, além dos salvamentos imediatos das ações existentes.
