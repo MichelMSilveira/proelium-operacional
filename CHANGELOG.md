@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- BI Desempenho: adicionada uma faixa de cotações dos ativos em movimento, mostrando cada obra como um ativo da carteira e sua variação de execução contra a etapa esperada.
+
 - Sessão no Android: a identificação do usuário logado voltou a aparecer no cabeçalho móvel, com truncamento seguro para nomes longos.
 
 - Permissões: usuários agora podem usar os perfis Administrador, Comercial, Operação, Financeiro e Leitura. O menu e a navegação respeitam o perfil, o cadastro de usuários permite escolher o papel e o servidor bloqueia gravações fora do domínio autorizado; `operador` permanece compatível como Operação.
