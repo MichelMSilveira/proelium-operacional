@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Implantação: a verificação automática do VPS agora aguarda a inicialização do serviço e repete o teste HTTP antes de declarar falha.
 - Visão Geral: indicadores, projetos em andamento e alertas passaram a funcionar como atalhos para os respectivos módulos e detalhes, com resposta visual, suporte a teclado e adaptação móvel.
 - Entrega contínua: formalizado o fluxo de documentação, validação, Git, GitHub e implantação no VPS. O app web permanece como fonte única para PWA, Android e Windows; pacotes nativos só ganham nova versão quando seus próprios arquivos mudam.
 - Entrega: atualizada a identificação do service worker para que aparelhos presos em uma cópia antiga do menu recebam o shell atual, sem limpar os dados locais do aplicativo.

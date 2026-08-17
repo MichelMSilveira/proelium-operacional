@@ -49,4 +49,4 @@ jobs:
       - name: Restart service
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'chown -R root:root /opt/proelium-operacional && systemctl restart proelium && systemctl is-active --quiet proelium && curl --fail --silent http://127.0.0.1:4173/ > /dev/null'
+            'chown -R root:root /opt/proelium-operacional && systemctl restart proelium && systemctl is-active --quiet proelium && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4173/ > /dev/null'
