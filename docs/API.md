@@ -4,7 +4,7 @@ Base: `/api/v1`. Respostas em JSON. Listagens usam `page`, `limit`, `sort` e fil
 
 ## Sincronização do protótipo
 
-Enquanto a API definitiva ainda não está implementada, o protótipo usa:
+Enquanto a API definitiva por recursos ainda não está implementada, os aplicativos usam o contrato agregado abaixo. Os dados são persistidos transacionalmente no PostgreSQL e mantêm o mesmo controle de revisão:
 
 | Método | Rota | Uso |
 |---|---|---|

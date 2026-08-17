@@ -1,4 +1,6 @@
--- PostgreSQL 16+. Valores monetários são inteiros em centavos.
+-- Modelo relacional futuro, compatível com PostgreSQL 14+. O armazenamento em produção
+-- inicia pelas tabelas de database/migrations para preservar o contrato atual da API.
+-- Valores monetários são inteiros em centavos.
 create extension if not exists pgcrypto;
 
 create type record_status as enum ('active', 'inactive', 'archived');

@@ -30,7 +30,7 @@ PostgreSQL + armazenamento de arquivos
 - Autenticação: provedor OIDC, com RBAC por organização.
 - Jobs/eventos: fila transacional quando surgirem notificações e integrações.
 
-O protótipo atual não fixa o framework de produção. Ele valida navegação, campos e fluxos antes de assumir esse custo.
+O frontend e o contrato agregado de `/api/data` permanecem no protótipo atual. O armazenamento principal já utiliza PostgreSQL com transações, histórico de revisões, migrações e espelho JSON temporário. A normalização por recurso e a API `/api/v1` continuam como evolução posterior.
 
 ## Preparação para o N.E.M.O.
 
@@ -45,8 +45,7 @@ O protótipo atual não fixa o framework de produção. Ele valida navegação, 
 ## Fases
 
 1. Validar o protótipo e os campos com 2–3 projetos reais.
-2. Implementar autenticação, PostgreSQL e API.
-3. Migrar dados existentes e adicionar anexos/auditoria.
+2. Implementar autenticação e PostgreSQL mantendo compatibilidade com a API atual. **Concluído.**
+3. Normalizar recursos gradualmente e adicionar anexos/auditoria estruturada.
 4. Conectar o N.E.M.O. primeiro em modo somente leitura.
 5. Liberar ações assistidas com permissões e registro completo.
-

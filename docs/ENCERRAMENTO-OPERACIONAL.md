@@ -6,15 +6,17 @@
 - Aplicativo web, APK Android e executável Windows conectados ao mesmo servidor.
 - Usuários e permissões funcionando.
 - Sessão de login mantida por cookie assinado por até 30 dias, inclusive após reinício do serviço.
-- Dados compartilhados entre os dispositivos.
+- Dados compartilhados entre os dispositivos por PostgreSQL.
 - Cache do aplicativo invalidado a cada atualização da interface.
 
 ## Onde os dados ficam
 
 No VPS:
 
-- `/var/lib/proelium-operacional/shared-data.json`: clientes, produtos, orçamentos, projetos e operações.
-- `/var/lib/proelium-operacional/users.json`: usuários e hashes de senha.
+- PostgreSQL: fonte principal de clientes, produtos, orçamentos, projetos, operações, usuários e revisões.
+- `/var/lib/proelium-operacional/shared-data.json`: espelho temporário de contingência.
+- `/var/lib/proelium-operacional/users.json`: espelho temporário dos usuários e hashes.
+- `/var/backups/proelium`: dumps diários e arquivos de integridade.
 
 Os arquivos `data/` do projeto local são cópias de trabalho. Eles não devem ser enviados ao GitHub.
 
@@ -50,7 +52,7 @@ Na tela **Lista de obra e compras**, o botão **Unificar repetidos** agrupa iten
 - Alterações web: execute `Atualizar-VPS.ps1`; não é necessário reinstalar o APK.
 - Alterações nativas (ícone, permissões ou código Android): compile e distribua um novo APK.
 - O APK possui verificador de versão no VPS e oferece o download quando encontra uma versão nova.
-- O workflow automático do GitHub ainda requer cadastro dos secrets SSH antes de ser ativado.
+- O workflow automático do GitHub instala dependências, aplica migrações e confirma o PostgreSQL antes de concluir a implantação.
 
 ## Backups importantes
 
@@ -59,9 +61,9 @@ Antes de alterações de dados foram criados backups no VPS, incluindo:
 - `shared-data.before-total-repair.json`;
 - `shared-data.before-speaker-unit-migration.json`.
 
-## Próxima etapa recomendada
+## Banco de dados
 
-Migrar o armazenamento JSON para PostgreSQL com backup, schema, importação, validação dos totais e período de compatibilidade. A migração deve ser feita em uma janela controlada, sem apagar os arquivos JSON até a conferência final.
+A migração inicial para PostgreSQL mantém o contrato atual da API, registra revisões e conserva o JSON como espelho durante a conferência. Backups diários e testes semanais de restauração complementam o histórico transacional.
 
 ## Encerramento da sessão
 

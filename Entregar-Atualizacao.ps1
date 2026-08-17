@@ -26,6 +26,10 @@ if (-not $nodeExecutable) { throw 'Node.js não foi encontrado para validar o pr
 if ($LASTEXITCODE -ne 0) { throw 'app.js possui erro de sintaxe.' }
 & $nodeExecutable --check server.js
 if ($LASTEXITCODE -ne 0) { throw 'server.js possui erro de sintaxe.' }
+& $nodeExecutable --check storage.js
+if ($LASTEXITCODE -ne 0) { throw 'storage.js possui erro de sintaxe.' }
+& $nodeExecutable --test test/storage.test.js
+if ($LASTEXITCODE -ne 0) { throw 'Os testes de armazenamento falharam.' }
 
 git diff --check
 if ($LASTEXITCODE -ne 0) { throw 'A revisão encontrou espaços ou conflitos inválidos.' }

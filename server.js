@@ -2,25 +2,20 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { createStorage } = require('./storage');
 
 const port = Number(process.env.PORT || 4173);
 const root = __dirname;
 const dataDirectory = path.join(root, 'data');
 const dataFile = path.join(dataDirectory, 'shared-data.json');
 const usersFile = path.join(dataDirectory, 'users.json');
+const storage = createStorage({ dataFile, usersFile });
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
+const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
 // Keep the authenticated session across app/browser restarts without storing passwords.
 const sessionTtl = 30 * 24 * 60 * 60 * 1000;
 const sessionSecret = process.env.SESSION_SECRET || 'proelium-development-session-secret-change-me';
-
-function readUsers() {
-  if (!fs.existsSync(usersFile)) return [];
-  try {
-    const saved = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
-    return Array.isArray(saved) ? saved : [];
-  } catch { return []; }
-}
 
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map(item => item.trim().split('='))
@@ -72,13 +67,6 @@ function publicUser(user) {
   return { username: user.username, name: user.name || user.username, role: user.role || 'operador', active: user.active !== false };
 }
 
-function writeUsers(users) {
-  fs.mkdirSync(dataDirectory, { recursive: true });
-  const temporary = `${usersFile}.tmp`;
-  fs.writeFileSync(temporary, JSON.stringify(users, null, 2), { encoding: 'utf8', mode: 0o600 });
-  fs.renameSync(temporary, usersFile);
-}
-
 function requireUser(req, res) {
   const user = currentUser(req);
   if (!user) {
@@ -86,12 +74,6 @@ function requireUser(req, res) {
     return null;
   }
   return user;
-}
-
-function readSharedData() {
-  if (!fs.existsSync(dataFile)) return { data: null, updatedAt: null, revision: 0 };
-  const saved = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
-  return { ...saved, revision: Number(saved.revision || 1) };
 }
 
 function broadcastUpdate(saved) {
@@ -111,9 +93,13 @@ function readBody(req) {
   });
 }
 
-http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   const pathname = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
   const secureCookie = req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
+
+  if (pathname === '/api/health' && req.method === 'GET') {
+    return sendJson(res, 200, { ok: true, storage: storage.backend });
+  }
 
   if (pathname === '/api/auth/me' && req.method === 'GET') {
     const user = currentUser(req);
@@ -126,7 +112,7 @@ http.createServer(async (req, res) => {
       const payload = JSON.parse(await readBody(req));
       const username = String(payload.username || '').trim().toLowerCase();
       const password = String(payload.password || '');
-      const user = readUsers().find(item => item.username === username && item.active !== false);
+      const user = (await storage.readUsers()).find(item => item.username === username && item.active !== false);
       if (!user || !passwordMatches(password, user)) return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
       const token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
       setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
@@ -143,7 +129,12 @@ http.createServer(async (req, res) => {
     const actor = requireUser(req, res);
     if (!actor) return;
     if (actor.role !== 'admin') return sendJson(res, 403, { error: 'Apenas administradores podem gerenciar usuários.' });
-    const users = readUsers();
+    let users;
+    try { users = await storage.readUsers(); }
+    catch (error) {
+      console.error('Falha ao ler usuários:', error.message);
+      return sendJson(res, 503, { error: 'Armazenamento temporariamente indisponível.' });
+    }
     if (req.method === 'GET') return sendJson(res, 200, { users: users.map(publicUser) });
     try {
       const payload = req.method === 'DELETE' ? { username: new URL(req.url, `http://${req.headers.host}`).searchParams.get('username') } : JSON.parse(await readBody(req));
@@ -154,7 +145,7 @@ http.createServer(async (req, res) => {
         if (username === actor.username) return sendJson(res, 400, { error: 'Você não pode excluir o próprio usuário.' });
         if (index < 0) return sendJson(res, 404, { error: 'Usuário não encontrado.' });
         if (users[index].role === 'admin' && users.filter(item => item.role === 'admin' && item.active !== false).length <= 1) return sendJson(res, 400, { error: 'Mantenha pelo menos um administrador ativo.' });
-        users.splice(index, 1); writeUsers(users); return sendJson(res, 200, { ok: true });
+        users.splice(index, 1); await storage.writeUsers(users); return sendJson(res, 200, { ok: true });
       }
       const password = String(payload.password || '');
       if (index < 0 && password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' });
@@ -163,19 +154,20 @@ http.createServer(async (req, res) => {
       const next = { ...existing, username, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false };
       if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
       users[index >= 0 ? index : users.length] = next;
-      writeUsers(users);
+      await storage.writeUsers(users);
       return sendJson(res, index >= 0 ? 200 : 201, { ok: true, user: publicUser(next) });
     } catch { return sendJson(res, 400, { error: 'Dados de usuário inválidos.' }); }
   }
 
+  let authenticatedUser = null;
   if (pathname.startsWith('/api/')) {
-    const user = requireUser(req, res);
-    if (!user) return;
+    authenticatedUser = requireUser(req, res);
+    if (!authenticatedUser) return;
   }
 
   if (pathname === '/api/data' && req.method === 'GET') {
     try {
-      return sendJson(res, 200, readSharedData());
+      return sendJson(res, 200, await storage.readSharedData());
     } catch {
       return sendJson(res, 500, { error: 'Não foi possível ler os dados compartilhados.' });
     }
@@ -198,20 +190,16 @@ http.createServer(async (req, res) => {
     try {
       const payload = JSON.parse(await readBody(req));
       if (!payload || typeof payload.data !== 'object') return sendJson(res, 400, { error: 'Dados inválidos.' });
-      const current = readSharedData();
       const baseRevision = Number(payload.baseRevision || 0);
-      if (current.revision !== baseRevision) {
+      const result = await storage.writeSharedData(payload.data, baseRevision, authenticatedUser.username);
+      if (result.conflict) {
         return sendJson(res, 409, {
           error: 'Os dados foram atualizados por outro aparelho.',
-          revision: current.revision,
-          updatedAt: current.updatedAt
+          revision: result.current.revision,
+          updatedAt: result.current.updatedAt
         });
       }
-      fs.mkdirSync(dataDirectory, { recursive: true });
-      const saved = { data: payload.data, updatedAt: new Date().toISOString(), revision: current.revision + 1 };
-      const temporary = `${dataFile}.tmp`;
-      fs.writeFileSync(temporary, JSON.stringify(saved, null, 2), 'utf8');
-      fs.renameSync(temporary, dataFile);
+      const saved = result.value;
       sendJson(res, 200, { ok: true, updatedAt: saved.updatedAt, revision: saved.revision });
       broadcastUpdate(saved);
       return;
@@ -221,6 +209,11 @@ http.createServer(async (req, res) => {
   }
 
   const requested = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
+  const safeSegments = requested.split('/').every(segment => segment && segment !== '.' && segment !== '..');
+  const publicAsset = safeSegments && (publicFiles.has(requested) || requested.startsWith('assets/') || requested.startsWith('downloads/'));
+  if (!publicAsset) {
+    res.writeHead(404); res.end('Not found'); return;
+  }
   const file = path.resolve(root, requested);
   if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404); res.end('Not found'); return;
@@ -230,7 +223,35 @@ http.createServer(async (req, res) => {
     'Cache-Control': path.extname(file) === '.html' || path.extname(file) === '.js' || path.extname(file) === '.css' ? 'no-cache' : 'public, max-age=3600'
   });
   fs.createReadStream(file).pipe(res);
-}).listen(port, '127.0.0.1', () => console.log(`Proelium Operacional: http://localhost:${port}`));
+}
+
+const server = http.createServer((req, res) => {
+  handleRequest(req, res).catch(error => {
+    console.error('Falha inesperada na requisição:', error.message);
+    if (!res.headersSent) sendJson(res, 500, { error: 'Falha interna do servidor.' });
+    else res.destroy();
+  });
+});
+
+async function start() {
+  await storage.initialize();
+  server.listen(port, '127.0.0.1', () => console.log(`Proelium Operacional: http://localhost:${port} · ${storage.backend}`));
+}
+
+async function shutdown() {
+  server.close(async () => {
+    await storage.close();
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+start().catch(error => {
+  console.error('Falha ao iniciar o Proelium:', error.message);
+  process.exit(1);
+});
 
 setInterval(() => {
   for (const client of eventClients) client.write(': keep-alive\n\n');

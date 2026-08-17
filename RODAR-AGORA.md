@@ -39,12 +39,12 @@ Nunca use `localhost`, `127.0.0.1` ou `file:///` em outro dispositivo.
 
 ## 5. Atualizações
 
-Atualize os arquivos da pasta e reinicie o servidor quando `server.js` for alterado. Nos demais casos, reabra ou atualize o app.
+As atualizações enviadas para `main` são implantadas automaticamente no VPS. O fluxo instala as dependências, aplica as migrações PostgreSQL, reinicia o serviço e confere `/api/health`.
 
 ## Limitações
 
-- não há login dentro do app;
-- o PC precisa permanecer ligado e sem suspensão;
-- o arquivo compartilhado não controla alterações simultâneas;
-- use apenas dados de teste;
-- faça backup antes de mudanças importantes.
+- o acesso exige login e conexão ao endereço oficial do VPS;
+- o contrato atual ainda envia o documento operacional de forma agregada;
+- alterações concorrentes usam revisões e podem pedir que a última ação seja repetida;
+- o PostgreSQL é a fonte principal e o JSON é somente um espelho temporário;
+- os dumps diários e os testes semanais de restauração devem permanecer ativos.

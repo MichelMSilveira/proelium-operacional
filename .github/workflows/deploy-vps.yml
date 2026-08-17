@@ -16,10 +16,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate JavaScript
+      - name: Install and validate
         run: |
-          node --check app.js
-          node --check server.js
+          npm ci --no-audit --no-fund
+          npm run check
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -39,14 +39,17 @@ jobs:
         run: |
           runtime_files=(
             server.js app.js index.html styles.css quotes.css bi.css crm.css
-            danger.css sw.js manifest.webmanifest icon.svg
+            danger.css sw.js manifest.webmanifest icon.svg storage.js
+            package.json package-lock.json
           )
           rsync -az "${runtime_files[@]}" \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/"
           rsync -az assets/ \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/assets/"
+          rsync -az database/ \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/database/"
 
-      - name: Restart service
+      - name: Install, migrate and restart
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'chown -R root:root /opt/proelium-operacional && systemctl restart proelium && systemctl is-active --quiet proelium && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4173/ > /dev/null'
+            'cd /opt/proelium-operacional && npm ci --omit=dev --no-audit --no-fund && set -a && . /etc/proelium/database.env && set +a && npm run db:migrate && chown -R root:root /opt/proelium-operacional && systemctl restart proelium && systemctl is-active --quiet proelium && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4173/api/health | grep -q postgresql'

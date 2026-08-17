@@ -2,7 +2,7 @@
 
 ## Fonte única dos dados
 
-O arquivo `data/shared-data.json`, armazenado no PC `homehell`, é a base central do ambiente de testes. Computadores e celulares devem acessar somente:
+O PostgreSQL no VPS é a base central. O documento operacional, sua revisão e o histórico de versões ficam no banco; `shared-data.json` é somente um espelho temporário de contingência. Computadores e celulares devem acessar somente o endereço oficial do VPS.
 
 `https://homehell.tail99a9b2.ts.net`
 
@@ -12,7 +12,7 @@ O endereço do Tailscale precisa encaminhar para `http://127.0.0.1:4173`. Live S
 
 1. O navegador carrega `/api/data` e recebe `data`, `revision` e `updatedAt`.
 2. Uma alteração envia a base com a revisão usada como origem.
-3. O servidor grava primeiro em arquivo temporário e depois substitui o arquivo central.
+3. O servidor bloqueia a revisão atual e grava a nova versão em uma transação PostgreSQL.
 4. O servidor incrementa a revisão e avisa os aparelhos conectados por `/api/events`.
 5. Como contingência, cada aparelho consulta a base a cada 5 segundos e quando volta ao primeiro plano.
 6. Se outro aparelho já tiver gravado uma versão mais nova, o servidor responde `409`, atualiza a tela e pede que a última ação seja repetida.
@@ -35,6 +35,6 @@ O endereço do Tailscale precisa encaminhar para `http://127.0.0.1:4173`. Live S
 | somente um aparelho muda | aparelho em modo local ou URL diferente | fechar o app e abrir o endereço `.ts.net` |
 | alteração recebe aviso de conflito | outro aparelho gravou primeiro | aguardar a atualização e repetir a ação |
 
-## Limites do protótipo
+## Limites atuais
 
-O arquivo JSON é adequado para testes com poucos usuários. Antes do uso operacional definitivo, a base deverá migrar para PostgreSQL com autenticação, permissões, auditoria e backup automatizado.
+O PostgreSQL já fornece transações, histórico de revisão e backup automatizado. O contrato ainda transporta o documento operacional agregado; a normalização por recurso, permissões detalhadas e auditoria relacional continuam como próximas evoluções.

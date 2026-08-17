@@ -35,3 +35,7 @@ O arquivo compartilhado é ignorado pelo Git para evitar versionar informações
 ## ADR-006 — Evolução orientada pelo uso
 
 Novas funções serão priorizadas após observação do uso real. A próxima etapa organizacional será definir responsáveis e pacotes de serviço.
+
+## ADR-010 — PostgreSQL com contrato agregado compatível
+
+O PostgreSQL passa a ser a fonte principal do estado operacional e dos usuários. Nesta primeira etapa, o documento agregado e sua revisão são armazenados em `jsonb`, com transação, bloqueio de concorrência e histórico imutável. Isso preserva os aplicativos atuais durante a migração. A normalização do modelo será gradual; o espelho JSON permanece temporariamente como contingência e não substitui os backups do banco.

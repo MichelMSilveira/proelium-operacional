@@ -1,0 +1,9 @@
+[Unit]
+Description=Backup PostgreSQL do Proelium
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/proelium-operacional
+ExecStart=/usr/bin/bash /opt/proelium-operacional/database/backup.sh

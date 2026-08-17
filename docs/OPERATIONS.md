@@ -9,7 +9,8 @@
 | GitHub | repositório remoto futuro |
 | `server.js` | servir o app e armazenar dados compartilhados |
 | Tailscale Serve | fornecer acesso HTTPS privado |
-| `data/shared-data.json` | manter os dados experimentais |
+| PostgreSQL | manter os dados operacionais, usuários e histórico de revisões |
+| Espelho JSON | contingência temporária durante a conferência da migração |
 
 ## Inicialização diária
 
@@ -25,11 +26,11 @@ Fechar a janela do servidor interrompe o acesso. Antes de desligar o PC, aguarde
 
 ## Backup
 
-Copie `data/shared-data.json` para uma pasta de backup com data no nome. O arquivo é ignorado pelo Git porque contém dados operacionais e pode incluir informações privadas.
+O PostgreSQL gera backup diário em `/var/backups/proelium` e executa uma restauração de teste semanal. O espelho JSON continua fora do Git, mas não substitui o dump do banco. Consulte [DATABASE.md](DATABASE.md).
 
 ## Recuperação
 
-Com o servidor parado, substitua `data/shared-data.json` por uma cópia válida. Reinicie o servidor e atualize o app. Nunca edite o JSON manualmente enquanto o servidor estiver rodando.
+A recuperação normal usa um dump PostgreSQL validado. A volta temporária ao espelho JSON exige janela controlada e conferência da revisão; nunca altere o arquivo manualmente enquanto o servidor estiver rodando.
 
 ## Diagnóstico rápido
 

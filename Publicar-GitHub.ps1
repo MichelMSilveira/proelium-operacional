@@ -26,6 +26,10 @@ if ($status) {
   if ($LASTEXITCODE -ne 0) { throw 'app.js possui erro de sintaxe.' }
   & $nodeExecutable --check server.js
   if ($LASTEXITCODE -ne 0) { throw 'server.js possui erro de sintaxe.' }
+  & $nodeExecutable --check storage.js
+  if ($LASTEXITCODE -ne 0) { throw 'storage.js possui erro de sintaxe.' }
+  & $nodeExecutable --test test/storage.test.js
+  if ($LASTEXITCODE -ne 0) { throw 'Os testes de armazenamento falharam.' }
 
   $message = Read-Host 'Descricao curta da atualizacao'
   if ([string]::IsNullOrWhiteSpace($message)) { throw 'A descricao do commit e obrigatoria.' }

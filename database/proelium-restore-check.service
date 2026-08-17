@@ -1,0 +1,9 @@
+[Unit]
+Description=Validação de restauração do backup Proelium
+After=postgresql.service proelium-backup.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/proelium-operacional
+ExecStart=/usr/bin/bash /opt/proelium-operacional/database/verify-backup.sh

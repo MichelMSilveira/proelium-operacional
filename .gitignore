@@ -3,11 +3,14 @@ data/shared-data.json.tmp
 data/users.json
 data/users.json.tmp
 desktop/node_modules
+node_modules
 desktop/dist
 desktop/dist-release
 .tools
 /*.exe
 /*.apk
+*.dump
+*.dump.sha256
 
 # Runtime data (users, sessions and shared records)
 data/*.json
