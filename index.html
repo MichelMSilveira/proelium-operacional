@@ -127,6 +127,10 @@
         const showUpdate = registration => { if (!navigator.serviceWorker.controller || !registration.waiting) return; const screen=document.getElementById('appUpdateScreen'),button=document.getElementById('appUpdateButton'); if(!screen||!button)return; screen.hidden=false; button.onclick=async()=>{button.disabled=true;button.textContent='Salvando alterações…';await window.proeliumPrepareForUpdate?.();button.textContent='Atualizando…';registration.waiting.postMessage({type:'SKIP_WAITING'})}; };
         window.__showAppUpdate=showUpdate;
         if (registration.waiting) showUpdate(registration);
+        const checkForUpdate=()=>registration.update().catch(()=>{});
+        document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForUpdate()});
+        window.addEventListener('focus',checkForUpdate);
+        setInterval(checkForUpdate,60000);
         registration.addEventListener('updatefound', () => { const worker=registration.installing; worker?.addEventListener('statechange', () => { if(worker.state==='installed' && navigator.serviceWorker.controller) showUpdate(registration); }); });
       });
     }
