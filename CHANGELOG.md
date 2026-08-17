@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- AtualizaÃ§Ã£o no celular: o salvamento prÃ©vio da atualizaÃ§Ã£o agora possui limite de espera, evitando que a tela fique presa quando a conexÃ£o estiver instÃ¡vel.
+
 - Levantamento tÃ©cnico: corrigido o botÃ£o de novo registro da tela para abrir o formulÃ¡rio de novo levantamento tÃ©cnico.
 
 - PresenÃ§a por dispositivo: a lista de participantes identifica se cada usuÃ¡rio estÃ¡ usando Android, iPhone/iPad, Windows, macOS, Linux ou navegador.
