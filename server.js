@@ -119,7 +119,7 @@ async function handleRequest(req, res) {
   const secureCookie = req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
 
   if (pathname === '/api/health' && req.method === 'GET') {
-    return sendJson(res, 200, { ok: true, storage: storage.backend });
+    return sendJson(res, 200, { ok: true, storage: storage.backend, serverTime: new Date().toISOString() });
   }
 
   if (pathname === '/api/auth/me' && req.method === 'GET') {

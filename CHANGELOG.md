@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- RelÃ³gio sincronizado: o cabeÃ§alho usa o horÃ¡rio do servidor, mantendo PC e celular alinhados mesmo com diferenÃ§as no relÃ³gio local.
+
 - PresenÃ§a detalhada: ao lado do participante aparecem os tipos de aparelho em uso e a quantidade de acessos simultÃ¢neos.
 
 - Status no menu: o app mostra a versÃ£o instalada e a Ãºltima sincronizaÃ§Ã£o com o servidor.

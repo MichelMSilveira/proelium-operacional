@@ -85,7 +85,10 @@ const seed = {
     {id:'kb-audio-entrega',tag:'Áudio · Atendimento',title:'Entrega orientada do sistema de áudio',summary:'Como apresentar comandos, cuidados de uso, rotinas básicas e canais de suporte ao cliente.'}]
 };
 
-const initialCalendarDate=new Date();
+let serverClockOffset=0;
+const appNow=()=>new Date(Date.now()+serverClockOffset);
+function synchronizeClock(){const sentAt=Date.now();fetch('./api/health',{cache:'no-store'}).then(response=>response.ok?response.json():null).then(payload=>{if(!payload?.serverTime)return;const receivedAt=Date.now(),serverAt=Date.parse(payload.serverTime);if(!Number.isFinite(serverAt))return;serverClockOffset=serverAt-((sentAt+receivedAt)/2)}).catch(()=>{})}
+const initialCalendarDate=appNow();
 function loadUiState(){try{return JSON.parse(sessionStorage.getItem('proelium-ui-state'))||{}}catch{return {}}}
 const savedUiState=loadUiState();
 const validViews=new Set([...navItems.map(item=>item[0]),'clientDetail','quoteDetail']);
@@ -399,7 +402,7 @@ $('#undoButton').addEventListener('click',restoreUndo);
 const seasons=[['summer','☀ Verão'],['autumn','◒ Outono'],['winter','❄ Inverno'],['spring','✿ Primavera']];let themeRotationTimer=null;
 function currentSeason(){const month=new Date().getMonth()+1;return month<=2||month===12?'summer':month<=5?'autumn':month<=8?'winter':'spring'}
 function applySeason(name){const season=seasons.find(([id])=>id===name)||seasons.find(([id])=>id===currentSeason());document.documentElement.dataset.season=season[0]}
-function setupHeader(){const updateClock=()=>{const now=new Date(),date=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(now),time=new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'}).format(now),mobileDate=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short'}).format(now).replace('.','');$('#headerDate').textContent=`${date} · ${time}`;$('#headerDateMobile').textContent=`${mobileDate.toUpperCase()} · ${time}`};const choice=localStorage.getItem('proelium-season-choice')||'auto';updateClock();setInterval(updateClock,30000);applySeason(choice==='auto'?currentSeason():choice);$('#seasonSelector').value=choice;setupThemeRotation()}
+function setupHeader(){const updateClock=()=>{const now=appNow(),date=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(now),time=new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'}).format(now),mobileDate=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short'}).format(now).replace('.','');$('#headerDate').textContent=`${date} · ${time}`;$('#headerDateMobile').textContent=`${mobileDate.toUpperCase()} · ${time}`};const choice=localStorage.getItem('proelium-season-choice')||'auto';updateClock();setInterval(updateClock,30000);applySeason(choice==='auto'?currentSeason():choice);$('#seasonSelector').value=choice;setupThemeRotation()}
 function setupThemeRotation(){if(themeRotationTimer)clearInterval(themeRotationTimer);const minutes=Number(localStorage.getItem('proelium-theme-rotation')||0);$('#themeRotation').value=minutes;if(!minutes)return;themeRotationTimer=setInterval(()=>{const active=seasons.findIndex(([id])=>id===document.documentElement.dataset.season),next=seasons[(active+1+seasons.length)%seasons.length];applySeason(next[0]);toast(`Tema ${next[1]} aplicado.`)},minutes*60000)}
 const readingScales=[100,115,130];
 function applyAccessibility(){const scale=Number(localStorage.getItem('proelium-font-scale')||100),contrast=localStorage.getItem('proelium-high-contrast')==='true',presence=Math.min(150,Number(localStorage.getItem('proelium-background-presence')||55)),privacy=localStorage.getItem('proelium-privacy-mode')==='true',effectivePresence=privacy?150:presence;document.body.dataset.fontScale=scale;document.body.classList.toggle('high-contrast',contrast);document.body.classList.toggle('privacy-mode',privacy);document.body.style.setProperty('--background-wash',String(Math.max(.12,(100-effectivePresence)/100)));document.body.style.setProperty('--art-overlay-opacity',String(Math.min(.82,.08+Math.min(effectivePresence,100)/135+(Math.max(0,effectivePresence-100)/700))));document.body.style.setProperty('--art-cover-opacity',String(Math.max(0,(effectivePresence-100)/80)));$('#fontValue').textContent=`${scale}%`;$('#fontDown').disabled=scale===readingScales[0];$('#fontUp').disabled=scale===readingScales[readingScales.length-1];$('#contrastButton').textContent=contrast?'Desativar alto contraste':'Ativar alto contraste';$('#contrastButton').setAttribute('aria-pressed',contrast);$('#backgroundPresence').value=presence;$('#backgroundValue').textContent=privacy?'Protegido':presence>100?`Cobrir ${presence-100}%`:`${presence}%`;$('#privacyModeButton').textContent=privacy?'Desproteger':'Privacidade';$('#privacyModeButton').setAttribute('aria-pressed',privacy)}
@@ -420,6 +423,8 @@ function handleBack(){addBackGuard();if($('#sidebar').classList.contains('open')
 if(location.protocol!=='file:'){addBackGuard();window.addEventListener('popstate',handleBack);window.addEventListener('pageshow',()=>addBackGuard())}
 const originalMarketDetail=marketDetail;marketDetail=project=>originalMarketDetail(project).replaceAll('Hernani','Ernani');
 setupHeader();
+synchronizeClock();
+setInterval(synchronizeClock,300000);
 setupAccessibility();
 // A primeira renderização ocorre ao final, depois dos módulos complementares.
 
