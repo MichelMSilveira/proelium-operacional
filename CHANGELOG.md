@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Levantamento tÃ©cnico: corrigido o botÃ£o de novo registro da tela para abrir o formulÃ¡rio de novo levantamento tÃ©cnico.
+
 - PresenÃ§a por dispositivo: a lista de participantes identifica se cada usuÃ¡rio estÃ¡ usando Android, iPhone/iPad, Windows, macOS, Linux ou navegador.
 
 - Atualização em tempo real: o app verifica novas versões enquanto permanece aberto, ao voltar ao foco e periodicamente, garantindo que a tela dedicada de atualização seja exibida sem exigir reinstalação.
