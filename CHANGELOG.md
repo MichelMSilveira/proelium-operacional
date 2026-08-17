@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Identidade visual: o cliente Windows passa a usar o `icon.svg` oficial na instalação e no executável; o APK Android foi versionado para distribuir a mesma marca vetorial já configurada no launcher.
 - Dados: PostgreSQL passou a armazenar transacionalmente o estado operacional, usuários e histórico de revisões, mantendo um espelho JSON temporário para contingência e serializando inclusive a primeira gravação concorrente.
 - Segurança e operação: adicionados backup diário com retenção, verificação semanal de restauração, endpoint de saúde do armazenamento e bloqueio de arquivos internos no servidor web.
 - Implantação: a verificação automática do VPS agora aguarda a inicialização do serviço e repete o teste HTTP antes de declarar falha.

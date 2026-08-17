@@ -1,6 +1,6 @@
 {
   "name": "proelium-operacional-desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Cliente desktop do Proelium Operacional conectado à VPS.",
   "main": "main.js",
@@ -17,7 +17,7 @@
     "productName": "Proelium Operacional",
     "directories": { "output": "dist-release" },
     "files": ["main.js", "preload.js", "config.json"],
-    "win": { "target": ["nsis", "portable"], "artifactName": "Proelium-Operacional-${version}-${arch}.${ext}" },
+    "win": { "target": ["nsis", "portable"], "icon": "../icon.svg", "artifactName": "Proelium-Operacional-${version}-${arch}.${ext}" },
     "nsis": { "artifactName": "Proelium-Operacional-Setup-${version}-${arch}.${ext}", "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
     "portable": { "artifactName": "Proelium-Operacional-Portable-${version}-${arch}.${ext}" }
   }

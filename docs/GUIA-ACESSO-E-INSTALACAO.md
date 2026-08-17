@@ -21,6 +21,8 @@ Somente administradores podem gerenciar usuários. Para redefinir o administrado
 
 Há duas versões no diretório principal do projeto:
 
+Os pacotes atuais são a versão `0.1.1` e já usam o ícone oficial da Proelium.
+
 - `Proelium-Operacional-Setup.exe`: instalador tradicional.
 - `Proelium-Operacional-Portable.exe`: roda sem instalação.
 
@@ -53,6 +55,8 @@ O ícone aparecerá junto dos demais aplicativos e continuará sincronizado com 
 ## APK e IPA nativos
 
 O PWA já funciona no Android e iOS sem loja. Para gerar um APK assinado ou um IPA para a App Store, será necessário configurar Android SDK/Android Studio e, para iOS, macOS com Xcode e uma conta Apple Developer.
+
+O APK de validação atual é a versão `1.2` (`versionCode 3`) e usa a marca vetorial da Proelium no launcher.
 
 ## Atualização remota
 
