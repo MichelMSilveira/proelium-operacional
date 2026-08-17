@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- PresenÃ§a detalhada: ao lado do participante aparecem os tipos de aparelho em uso e a quantidade de acessos simultÃ¢neos.
+
 - Status no menu: o app mostra a versÃ£o instalada e a Ãºltima sincronizaÃ§Ã£o com o servidor.
 
 - AtualizaÃ§Ã£o no celular: o salvamento prÃ©vio da atualizaÃ§Ã£o agora possui limite de espera, evitando que a tela fique presa quando a conexÃ£o estiver instÃ¡vel.

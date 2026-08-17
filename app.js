@@ -553,6 +553,9 @@ render();
 const updateSharedStatusWithVersion=updateSharedStatus;
 updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v198 · sincronizado ${sync} · servidor atualizado ${server}`};
 updateSharedStatus();
+const updatePresencePanelWithDevices=updatePresencePanel;
+updatePresencePanel=users=>{presenceUsers=Array.isArray(users)?users:[];const list=$('#presenceList');if(!list)return;list.innerHTML=presenceUsers.map(user=>{const devices=Array.isArray(user.devices)&&user.devices.length?user.devices:[user.device||'Navegador'],count=Math.max(1,Number(user.sessions||1)),deviceLabel=devices.join(' + ');return `<span class="presence-person ${user.available===false?'presence-person-off':''}"><i></i><span>${escapeUserText(user.name||user.username)}<small class="presence-device">${escapeUserText(deviceLabel)}${count>1?` · ${count} acessos`:''}</small></span>${user.username===authenticatedUser?.username?'<small>vocÃª</small>':user.available===false?'<small>ocupado</small>':''}</span>`}).join('')||'<small>Nenhum participante online.</small>';const me=presenceUsers.find(user=>user.username===authenticatedUser?.username),availability=$('#availabilityButton');if(availability){availability.textContent=me?.available===false?'IndisponÃ­vel para auxiliar':'DisponÃ­vel para auxiliar';availability.classList.toggle('presence-off',me?.available===false)}};
+updatePresencePanel(presenceUsers);
 
 // Salvamento automático de segurança: cobre alterações de telas novas ou
 // campos que mudem o estado sem passar por um botão específico.

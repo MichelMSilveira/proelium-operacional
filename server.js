@@ -98,7 +98,7 @@ function broadcastUpdate(saved) {
 function broadcastEvent(name, payload) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) client.write(message); }
 function normalizeDevice(value) { const device = String(value || '').trim().slice(0, 32); return ['Android', 'iPhone/iPad', 'Windows', 'macOS', 'Linux', 'Navegador'].includes(device) ? device : 'Navegador'; }
 function deviceFromUserAgent(value) { const ua=String(value||''); return /Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone/iPad':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Navegador'; }
-function presencePayload() { return [...presence.values()].filter(item => Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => ({ username, name, role, device: normalizeDevice(device), available: available !== false })); }
+function presencePayload() { return [...presence.values()].filter(item => Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => { const sessions=[...eventClients].filter(client=>client.username===username),devices=[...new Set([...sessions.map(client=>normalizeDevice(client.device)),normalizeDevice(device)])]; return { username, name, role, device: devices[0], devices, sessions: Math.max(1,sessions.length), available: available !== false }; }); }
 function announcePresence() { broadcastEvent('presence-updated', { users: presencePayload(), at: new Date().toISOString() }); }
 function touchPresence(user, req) { const previous=presence.get(user.username); presence.set(user.username, { username: user.username, name: user.name || user.username, role: user.role || 'operador', device: deviceFromUserAgent(req?.headers?.['user-agent']) || previous?.device || 'Navegador', available: previous?.available !== false, lastSeen: Date.now() }); announcePresence(); }
 
@@ -233,6 +233,7 @@ async function handleRequest(req, res) {
     eventClients.add(res);
     res.username = authenticatedUser.username;
     res.userRole = normalizeRole(authenticatedUser.role);
+    res.device = deviceFromUserAgent(req.headers['user-agent']);
     res.available = presence.get(authenticatedUser.username)?.available !== false;
     touchPresence(authenticatedUser, req);
     res.write(`event: presence-updated\ndata: ${JSON.stringify({ users: presencePayload() })}\n\n`);
