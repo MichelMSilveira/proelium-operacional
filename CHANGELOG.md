@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Presença e colaboração: o app mostra participantes online em tempo real, registra entrada/saída pelo canal compartilhado e adiciona o botão “Quero colaborar”, que envia o pedido aos administradores com notificação do navegador quando autorizada.
+
 - Atualizações seguras: antes de aplicar uma nova versão no cliente, o app aguarda sincronizações em andamento e salva o estado compartilhado; depois aplica a atualização do shell.
 
 - Atualizações do app: quando uma nova versão web é detectada, o usuário recebe uma tela dedicada com a ação explícita de atualizar; a sessão e os dados locais são preservados durante o recarregamento.

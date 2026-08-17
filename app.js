@@ -111,6 +111,10 @@ const roleNames={admin:'Administrador',comercial:'Comercial',operacao:'Operaçã
 const roleViews={admin:['*'],comercial:['dashboard','clients','commercial','quotes','products','survey'],operacao:['dashboard','projects','processes','tasks','agenda','installations','operations','quality','collaborators','equipment','knowledge'],operador:['dashboard','projects','processes','tasks','agenda','installations','operations','quality','collaborators','equipment','knowledge'],financeiro:['dashboard','clients','projects','commercial','finance','bi','biMarket','knowledge'],leitura:['dashboard','projects','installations','knowledge','bi','biMarket']};
 const canViewRole=(view,role=authenticatedUser?.role)=>{const allowed=roleViews[role]||roleViews.operador;return allowed.includes('*')||allowed.includes(view)};
 function setAuthenticatedUser(user){authenticatedUser=user;document.body.classList.remove('auth-pending');const badge=$('#authUserBadge'),logout=$('#authLogout');if(badge){badge.textContent=`${user.name||user.username} · ${user.roleLabel||roleNames[user.role]||'Operação'}`;badge.hidden=false}if(logout){logout.hidden=false;logout.onclick=async()=>{await fetch('./api/auth/logout',{method:'POST'}).catch(()=>{});location.reload()}}localStorage.setItem('proelium-current-actor',user.name||user.username)}
+let presenceUsers=[];
+function updatePresencePanel(users=presenceUsers){presenceUsers=Array.isArray(users)?users:[];const list=$('#presenceList'),count=$('#presenceCount');if(count)count.textContent=String(presenceUsers.length);if(list)list.innerHTML=presenceUsers.map(user=>`<span class="presence-person"><i></i><span>${escapeUserText(user.name||user.username)}</span>${user.username===authenticatedUser?.username?'<small>você</small>':''}</span>`).join('')||'<small>Nenhum participante online.</small>'}
+async function sendCollaborationRequest(){const message=window.prompt('Como você deseja colaborar com a Proelium?');if(!message?.trim())return;const response=await fetch('./api/collaboration-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:message.trim()})});const payload=await response.json().catch(()=>({}));toast(response.ok?'Pedido enviado aos administradores.':(payload.error||'Não foi possível enviar o pedido.'))}
+function startPresence(){fetch('./api/presence',{cache:'no-store'}).then(response=>response.ok?response.json():null).then(payload=>payload&&updatePresencePanel(payload.users)).catch(()=>{});setInterval(()=>fetch('./api/presence/heartbeat',{method:'POST'}).then(response=>response.ok?response.json():null).then(payload=>payload&&updatePresencePanel(payload.users)).catch(()=>{}),30000);$('#collaborationButton')?.addEventListener('click',sendCollaborationRequest)}
 function authenticate(){
   if(location.protocol==='file:')return Promise.resolve(true);
   if(authenticationPromise)return authenticationPromise;
@@ -220,6 +224,10 @@ async function connectSharedData(){
     const quoteTotalsChanged=(state.data.quotes||[]).some(quote=>Math.abs(Number(quote.value||0)-Number(quoteTotals(quote.id).price||0))>.005);
     if(quoteTotalsChanged||!payload.data||!payload.data.collaborators?.length||!payload.data.evaluations?.length||payload.data.collaborators.some(person=>person.name==='Hernani'||person.name==='Hernani Queiroz')||embraceCatalogSyncNeeded){await persist();embraceCatalogSyncNeeded=false}
     const events=new EventSource('./api/events');
+    events.addEventListener('presence-updated',event=>{try{updatePresencePanel(JSON.parse(event.data).users)}catch{}});
+    events.addEventListener('collaboration-request',event=>{try{const request=JSON.parse(event.data),message=`${request.from?.name||'Alguém'} quer colaborar: ${request.message}`;toast(message);if('Notification' in window&&Notification.permission==='granted')new Notification('Pedido de colaboração Proelium',{body:message})}catch{}});
+    if('Notification' in window&&Notification.permission==='default'&&authenticatedUser?.role==='admin')Notification.requestPermission().catch(()=>{});
+    startPresence();
     events.addEventListener('data-updated',async event=>{
       const update=JSON.parse(event.data);
       if(Number(update.revision)>state.revision&&!state.syncing){

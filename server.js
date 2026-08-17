@@ -13,6 +13,7 @@ const storage = createStorage({ dataFile, usersFile });
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
+const presence = new Map();
 // Keep the authenticated session across app/browser restarts without storing passwords.
 const sessionTtl = 30 * 24 * 60 * 60 * 1000;
 const sessionSecret = process.env.SESSION_SECRET || 'proelium-development-session-secret-change-me';
@@ -94,6 +95,10 @@ function broadcastUpdate(saved) {
   const message = `event: data-updated\ndata: ${JSON.stringify({ revision: saved.revision, updatedAt: saved.updatedAt })}\n\n`;
   for (const client of eventClients) client.write(message);
 }
+function broadcastEvent(name, payload) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) client.write(message); }
+function presencePayload() { return [...presence.values()].filter(item => Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role }) => ({ username, name, role })); }
+function announcePresence() { broadcastEvent('presence-updated', { users: presencePayload(), at: new Date().toISOString() }); }
+function touchPresence(user) { presence.set(user.username, { username: user.username, name: user.name || user.username, role: user.role || 'operador', lastSeen: Date.now() }); announcePresence(); }
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -135,6 +140,7 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/auth/logout' && req.method === 'POST') {
+    const user = currentUser(req); if (user) { presence.delete(user.username); announcePresence(); }
     setSessionCookie(res, '', 0, secureCookie);
     return sendJson(res, 200, { ok: true });
   }
@@ -177,6 +183,20 @@ async function handleRequest(req, res) {
   if (pathname.startsWith('/api/')) {
     authenticatedUser = requireUser(req, res);
     if (!authenticatedUser) return;
+    touchPresence(authenticatedUser);
+  }
+
+  if (pathname === '/api/presence' && req.method === 'GET') return sendJson(res, 200, { users: presencePayload() });
+  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') return sendJson(res, 200, { ok: true, users: presencePayload() });
+  if (pathname === '/api/collaboration-requests' && req.method === 'POST') {
+    try {
+      const payload = JSON.parse(await readBody(req));
+      const message = String(payload.message || '').trim().slice(0, 500);
+      if (!message) return sendJson(res, 400, { error: 'Descreva como deseja colaborar.' });
+      const request = { id: crypto.randomUUID(), from: publicUser(authenticatedUser), message, at: new Date().toISOString() };
+      for (const client of eventClients) if (client.userRole === 'admin') client.write(`event: collaboration-request\ndata: ${JSON.stringify(request)}\n\n`);
+      return sendJson(res, 202, { ok: true });
+    } catch { return sendJson(res, 400, { error: 'Pedido de colaboração inválido.' }); }
   }
 
   if (pathname === '/api/data' && req.method === 'GET') {
@@ -196,7 +216,11 @@ async function handleRequest(req, res) {
     });
     res.write('retry: 3000\n\n');
     eventClients.add(res);
-    req.on('close', () => eventClients.delete(res));
+    res.username = authenticatedUser.username;
+    res.userRole = normalizeRole(authenticatedUser.role);
+    touchPresence(authenticatedUser);
+    res.write(`event: presence-updated\ndata: ${JSON.stringify({ users: presencePayload() })}\n\n`);
+    req.on('close', () => { eventClients.delete(res); if (![...eventClients].some(client => client.username === authenticatedUser.username)) { presence.delete(authenticatedUser.username); announcePresence(); } });
     return;
   }
 
