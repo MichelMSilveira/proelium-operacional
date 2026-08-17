@@ -38,6 +38,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Encerramento da Etapa 0](docs/STATUS-2026-08-14.md)
 - [Plano de retomada e divisão de trabalho](docs/PLANO-AMANHA.md)
 - [Fluxo de desenvolvimento e Git](docs/GIT-WORKFLOW.md)
+- [Processo contínuo de entrega multiplataforma](docs/RELEASE-PROCESS.md)
 - [Contrato futuro da API](docs/API.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [BI, qualidade e reconhecimento](docs/BI-E-QUALIDADE.md)
@@ -45,7 +46,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 
 ## Publicar atualizações
 
-Execute `Publicar-GitHub.ps1`. O assistente mostra os arquivos alterados, solicita confirmação, valida o JavaScript, cria o commit e envia a branch atual ao GitHub. O arquivo `data/shared-data.json` permanece fora do Git.
+Execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"`. O comando valida o JavaScript, exige o registro no histórico, cria o commit e envia a branch atual ao GitHub. Em `main`, o GitHub Actions implanta a versão no VPS; PWA, Android e Windows passam a carregar a mesma interface publicada. O arquivo `data/shared-data.json` permanece fora do Git.
 
 ## Atenção
 

@@ -2711,3 +2711,45 @@ if(!navItems.some(item=>item[0]==='productConnections')){
   navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
 }
 render();
+
+// Visão geral interativa: indicadores, projetos e alertas funcionam como atalhos.
+views.dashboard=()=>{
+  const active=state.data.projects.filter(project=>project.status!=='Concluído').length;
+  const blocked=state.data.projects.filter(project=>project.status==='Bloqueado').length;
+  const overdue=state.data.tasks.filter(task=>task.due==='Atrasada').length;
+  const approved=state.data.projects.reduce((total,project)=>total+Number(project.budget||0),0);
+  const cost=state.data.projects.reduce((total,project)=>total+Number(project.cost||0),0);
+  const projects=state.data.projects.slice(0,4).map(project=>`<tr class="dashboard-project-row" data-dashboard-project="${project.id}" tabindex="0" role="button" aria-label="Abrir projeto ${project.name}"><td><div class="entity">${project.name}</div><div class="subtext">${project.code} · ${clientName(project.clientId)}</div></td><td>${badge(project.status)}</td><td><strong>${project.progress}%</strong><div class="progress"><span style="width:${project.progress}%"></span></div></td><td>${project.due}<span class="dashboard-row-arrow" aria-hidden="true">→</span></td></tr>`).join('');
+  const attention=state.data.tasks.filter(task=>task.priority==='Urgente'||task.due==='Atrasada').map(task=>`<button type="button" class="attention-item dashboard-attention" data-dashboard-task="${task.id}" aria-label="Abrir tarefa ${task.title}"><span class="attention-dot ${task.due==='Atrasada'?'red':''}"></span><span><strong>${task.title}</strong><small>${projectName(task.projectId)} · ${task.assignee}</small></span><time>${task.due}</time></button>`).join('');
+  const kpis=[
+    ['projects','Projetos ativos','◇',active,`${blocked} bloqueado${blocked===1?'':'s'}`],
+    ['tasks','Tarefas abertas','✓',state.data.tasks.length,`${overdue} em atraso`],
+    ['projects','Carteira aprovada','＄',money(approved),'Projetos cadastrados'],
+    ['finance','Margem estimada','↗',`${approved?Math.round((approved-cost)/approved*100):0}%`,`${money(approved-cost)} projetados`]
+  ];
+  return `<div class="kpi-grid">${kpis.map(([target,label,icon,value,note],index)=>`<button type="button" class="kpi dashboard-kpi" data-dashboard-target="${target}" aria-label="${label}: ${value}. Abrir ${target==='tasks'?'tarefas':target==='finance'?'financeiro':'projetos'}"><span class="kpi-top"><span>${label}</span><span class="kpi-icon">${icon}</span></span><span class="kpi-value">${value}</span><span class="kpi-note ${(index===0&&blocked)||(index===1&&overdue)?'attention':''}">${note}</span><span class="dashboard-kpi-action">Abrir detalhes →</span></button>`).join('')}</div><div class="dashboard-grid"><section class="card"><div class="card-head"><div><h3>Projetos em andamento</h3><p class="subtext">Selecione um projeto para abrir a execução.</p></div><button data-view="projects">Ver todos →</button></div><div class="table-wrap"><table><thead><tr><th>Projeto</th><th>Status</th><th>Progresso</th><th>Prazo</th></tr></thead><tbody>${projects||'<tr><td colspan="4" class="empty">Nenhum projeto cadastrado.</td></tr>'}</tbody></table></div></section><section class="card"><div class="card-head"><div><h3>Precisa de atenção</h3><p class="subtext">Selecione um aviso para abrir as tarefas.</p></div><button data-view="tasks">Abrir tarefas →</button></div><div class="attention-list">${attention||'<div class="empty">Tudo em ordem.</div>'}</div></section></div>`;
+};
+
+function openDashboardProject(projectId){
+  state.selectedProject=projectId;
+  state.view='projectDetail';
+  render();
+}
+
+document.addEventListener('click',event=>{
+  const shortcut=event.target.closest('[data-dashboard-target]');
+  const project=event.target.closest('[data-dashboard-project]');
+  const task=event.target.closest('[data-dashboard-task]');
+  if(shortcut){go(shortcut.dataset.dashboardTarget);return}
+  if(project){openDashboardProject(project.dataset.dashboardProject);return}
+  if(task)go('tasks');
+});
+
+document.addEventListener('keydown',event=>{
+  const project=event.target.closest('[data-dashboard-project]');
+  if(!project||!['Enter',' '].includes(event.key))return;
+  event.preventDefault();
+  openDashboardProject(project.dataset.dashboardProject);
+});
+
+render();

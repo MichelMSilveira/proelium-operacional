@@ -1,0 +1,52 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: proelium-vps-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check server.js
+
+      - name: Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Trust VPS host key
+        run: |
+          mkdir -p ~/.ssh
+          if [ -n "${{ secrets.VPS_KNOWN_HOSTS }}" ]; then
+            printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Sync runtime files
+        run: |
+          runtime_files=(
+            server.js app.js index.html styles.css quotes.css bi.css crm.css
+            danger.css sw.js manifest.webmanifest icon.svg
+          )
+          rsync -az "${runtime_files[@]}" \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/"
+          rsync -az assets/ \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/assets/"
+
+      - name: Restart service
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'chown -R root:root /opt/proelium-operacional && systemctl restart proelium && systemctl is-active --quiet proelium && curl --fail --silent http://127.0.0.1:4173/ > /dev/null'

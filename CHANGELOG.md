@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Visão Geral: indicadores, projetos em andamento e alertas passaram a funcionar como atalhos para os respectivos módulos e detalhes, com resposta visual, suporte a teclado e adaptação móvel.
+- Entrega contínua: formalizado o fluxo de documentação, validação, Git, GitHub e implantação no VPS. O app web permanece como fonte única para PWA, Android e Windows; pacotes nativos só ganham nova versão quando seus próprios arquivos mudam.
 - Entrega: atualizada a identificação do service worker para que aparelhos presos em uma cópia antiga do menu recebam o shell atual, sem limpar os dados locais do aplicativo.
 - Menu: criada a entrada **Conexões de produtos**, ao lado de Produtos e Serviços. Ela abre diretamente a ficha de entradas, saídas, portas, cabos e modelo de cada equipamento, sem exigir procura dentro do catálogo.
 - Catálogo: o botão **Consultar** agora aparece ao lado de cada produto e abre a **Ficha técnica de conexões**, onde ficam entradas, saídas, portas e cabo. A versão do aplicativo foi atualizada para os aparelhos receberem esse ajuste.
