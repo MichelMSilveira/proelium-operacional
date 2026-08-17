@@ -205,3 +205,4 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 .presence-person>span{display:inline-flex;flex-direction:column;gap:1px}.presence-person .presence-device{margin-left:0;color:#8eaa9c;font-size:7px}
 .app-version-status{position:fixed;left:14px;bottom:10px;z-index:40;padding:6px 8px;border:1px solid rgba(151,190,169,.24);border-radius:6px;background:rgba(12,43,32,.86);color:#a9c2b5;font-size:8px;letter-spacing:.02em}
 .shared-item-field,[data-add-general-quote-item],.rateio-switch,.quote-item-rateio{display:none!important}
+[data-bulk-replace-morel]{display:none!important}

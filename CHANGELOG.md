@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- OrÃ§amentos: removido o botÃ£o de substituiÃ§Ã£o das caixas Morel ao lado da aprovaÃ§Ã£o do cliente e projeto.
+
 - OrÃ§amentos: removidos da interface os controles de item geral e rateio pelo projeto; registros existentes permanecem preservados.
 
 - RelÃ³gio sincronizado: o cabeÃ§alho usa o horÃ¡rio do servidor, mantendo PC e celular alinhados mesmo com diferenÃ§as no relÃ³gio local.
