@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Sincronização: corrigida a validação de gravações por perfil para comparar corretamente o estado dentro do envelope PostgreSQL; usuários autorizados voltam a sincronizar alterações normalmente.
+
 - Salvamento automático: o app verifica alterações de estado a cada poucos segundos e sincroniza automaticamente com o PostgreSQL, além dos salvamentos imediatos das ações existentes.
 
 - Relatórios: criada a aba de Emissão de relatórios, com emissão por obra, histórico de serviços e impressão da lista consolidada.

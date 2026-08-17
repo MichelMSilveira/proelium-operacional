@@ -248,7 +248,7 @@ async function handleRequest(req, res) {
         const current = await storage.readSharedData();
         const changedDomains = Object.keys(dataDomains).filter(view => {
           const key = dataDomains[view];
-          return JSON.stringify(current[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
+          return JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
         });
         const denied = changedDomains.filter(view => !allowed.has(view));
         if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
