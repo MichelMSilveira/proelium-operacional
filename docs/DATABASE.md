@@ -12,6 +12,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
 - `app_users`: usuários, funções e hashes de senha;
 - `schema_migrations`: migrações já aplicadas.
+- A migração `002_user_roles.sql` amplia os papéis de acesso sem invalidar contas legadas `operador`.
 
 Essa primeira etapa prioriza transações, histórico e recuperação sem exigir mudanças simultâneas em todas as telas. O modelo normalizado de `database/schema.sql` permanece como evolução posterior.
 

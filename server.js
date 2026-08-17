@@ -17,6 +17,19 @@ const eventClients = new Set();
 const sessionTtl = 30 * 24 * 60 * 60 * 1000;
 const sessionSecret = process.env.SESSION_SECRET || 'proelium-development-session-secret-change-me';
 
+const roleLabels = { admin: 'Administrador', comercial: 'Comercial', operacao: 'Operação', financeiro: 'Financeiro', leitura: 'Leitura', operador: 'Operação' };
+const rolePermissions = {
+  admin: ['*'],
+  comercial: ['dashboard', 'clients', 'commercial', 'quotes', 'products', 'survey'],
+  operacao: ['dashboard', 'projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'quality', 'collaborators', 'equipment', 'knowledge'],
+  financeiro: ['dashboard', 'clients', 'projects', 'commercial', 'finance', 'bi', 'biMarket', 'knowledge'],
+  leitura: ['dashboard', 'projects', 'installations', 'knowledge', 'bi', 'biMarket']
+};
+const normalizeRole = role => role === 'operador' ? 'operacao' : (rolePermissions[role] ? role : 'operacao');
+const permissionsFor = role => rolePermissions[normalizeRole(role)] || rolePermissions.operacao;
+const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
+const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries' };
+
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map(item => item.trim().split('='))
     .filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
@@ -64,7 +77,8 @@ function passwordRecord(password) {
 }
 
 function publicUser(user) {
-  return { username: user.username, name: user.name || user.username, role: user.role || 'operador', active: user.active !== false };
+  const role = normalizeRole(user.role);
+  return { username: user.username, name: user.name || user.username, role: user.role || 'operador', roleLabel: roleLabels[role], permissions: permissionsFor(role), active: user.active !== false };
 }
 
 function requireUser(req, res) {
@@ -103,7 +117,7 @@ async function handleRequest(req, res) {
 
   if (pathname === '/api/auth/me' && req.method === 'GET') {
     const user = currentUser(req);
-    return user ? sendJson(res, 200, { authenticated: true, user: { username: user.username, role: user.role, name: user.name || user.username } })
+    return user ? sendJson(res, 200, { authenticated: true, user: publicUser(user) })
       : sendJson(res, 401, { authenticated: false });
   }
 
@@ -116,7 +130,7 @@ async function handleRequest(req, res) {
       if (!user || !passwordMatches(password, user)) return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
       const token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
       setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
-      return sendJson(res, 200, { ok: true, user: { username: user.username, role: user.role || 'operador', name: user.name || user.username } });
+      return sendJson(res, 200, { ok: true, user: publicUser(user) });
     } catch { return sendJson(res, 400, { error: 'Solicitação de login inválida.' }); }
   }
 
@@ -149,7 +163,7 @@ async function handleRequest(req, res) {
       }
       const password = String(payload.password || '');
       if (index < 0 && password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' });
-      if (payload.role && !['admin', 'operador'].includes(payload.role)) return sendJson(res, 400, { error: 'Papel inválido.' });
+      if (payload.role && !Object.keys(rolePermissions).includes(payload.role)) return sendJson(res, 400, { error: 'Papel inválido.' });
       const existing = index >= 0 ? users[index] : { username, createdAt: new Date().toISOString() };
       const next = { ...existing, username, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false };
       if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
@@ -190,6 +204,17 @@ async function handleRequest(req, res) {
     try {
       const payload = JSON.parse(await readBody(req));
       if (!payload || typeof payload.data !== 'object') return sendJson(res, 400, { error: 'Dados inválidos.' });
+      const role = normalizeRole(authenticatedUser.role);
+      const allowed = writableRoles[role];
+      if (allowed) {
+        const current = await storage.readSharedData();
+        const changedDomains = Object.keys(dataDomains).filter(view => {
+          const key = dataDomains[view];
+          return JSON.stringify(current[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
+        });
+        const denied = changedDomains.filter(view => !allowed.has(view));
+        if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
+      }
       const baseRevision = Number(payload.baseRevision || 0);
       const result = await storage.writeSharedData(payload.data, baseRevision, authenticatedUser.username);
       if (result.conflict) {

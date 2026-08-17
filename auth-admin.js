@@ -6,7 +6,8 @@ const readline = require('readline');
 const dataDirectory = path.join(__dirname, 'data');
 const usersFile = path.join(dataDirectory, 'users.json');
 const username = String(process.argv[2] || '').trim().toLowerCase();
-const role = process.argv[3] === 'admin' ? 'admin' : 'operador';
+const roles = new Set(['admin', 'comercial', 'operacao', 'financeiro', 'leitura', 'operador']);
+const role = roles.has(process.argv[3]) ? process.argv[3] : 'operador';
 
 if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)) {
   console.error('Uso: node auth-admin.js <usuario> [admin|operador]');

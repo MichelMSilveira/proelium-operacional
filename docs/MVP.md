@@ -7,6 +7,7 @@ Dar à equipe uma fonte única para saber quem é o cliente, qual é o projeto, 
 ## Perfis iniciais
 
 - **Administrador:** configura usuários, processos e permissões.
+- A primeira matriz também inclui **Financeiro** e mantém o papel legado `operador` compatível com **Operação**.
 - **Comercial:** clientes, oportunidades, orçamentos e aprovações.
 - **Operação:** projetos, ordens de serviço, tarefas, checklists e equipamentos.
 - **Financeiro:** receitas, despesas, compras, pagamentos e margem.

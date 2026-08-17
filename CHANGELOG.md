@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Permissões: usuários agora podem usar os perfis Administrador, Comercial, Operação, Financeiro e Leitura. O menu e a navegação respeitam o perfil, o cadastro de usuários permite escolher o papel e o servidor bloqueia gravações fora do domínio autorizado; `operador` permanece compatível como Operação.
+
 - Identidade visual: o cliente Windows passa a usar o `icon.svg` oficial na instalação e no executável; o APK Android foi versionado para distribuir a mesma marca vetorial já configurada no launcher.
 - Dados: PostgreSQL passou a armazenar transacionalmente o estado operacional, usuários e histórico de revisões, mantendo um espelho JSON temporário para contingência e serializando inclusive a primeira gravação concorrente.
 - Segurança e operação: adicionados backup diário com retenção, verificação semanal de restauração, endpoint de saúde do armazenamento e bloqueio de arquivos internos no servidor web.
