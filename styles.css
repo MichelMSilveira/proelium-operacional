@@ -206,3 +206,5 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 .app-version-status{position:fixed;left:14px;bottom:10px;z-index:40;padding:6px 8px;border:1px solid rgba(151,190,169,.24);border-radius:6px;background:rgba(12,43,32,.86);color:#a9c2b5;font-size:8px;letter-spacing:.02em}
 .shared-item-field,[data-add-general-quote-item],.rateio-switch,.quote-item-rateio{display:none!important}
 [data-bulk-replace-morel]{display:none!important}
+.zoom-lock-button{position:fixed;right:82px;bottom:22px;z-index:30;width:50px;height:50px;border:2px solid #fff;border-radius:50%;background:var(--forest);box-shadow:0 8px 25px rgba(15,35,25,.25);font-size:21px;cursor:pointer}@media(max-width:720px){.zoom-lock-button{right:80px;bottom:15px;width:54px;height:54px}}
+body.auth-pending>.zoom-lock-button,body.auth-pending>#appVersionStatus{display:none}

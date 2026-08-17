@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Zoom no celular: adicionado cadeado para alternar entre zoom bloqueado e zoom por pinÃ§a na tela mÃ³vel.
+
 - OrÃ§amentos: removido o botÃ£o de substituiÃ§Ã£o das caixas Morel ao lado da aprovaÃ§Ã£o do cliente e projeto.
 
 - OrÃ§amentos: removidos da interface os controles de item geral e rateio pelo projeto; registros existentes permanecem preservados.
