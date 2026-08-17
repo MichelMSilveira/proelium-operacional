@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Relatórios: criada a aba de Emissão de relatórios, com emissão por obra, histórico de serviços e impressão da lista consolidada.
+
 - Auxílio operacional: participantes podem marcar disponibilidade, pedir auxílio e notificar automaticamente quem está online e disponível para atender.
 
 - Presença e colaboração: o app mostra participantes online em tempo real, registra entrada/saída pelo canal compartilhado e adiciona o botão “Quero colaborar”, que envia o pedido aos administradores com notificação do navegador quando autorizada.
