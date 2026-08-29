@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.proeliumoperacional"
         minSdk = 23
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 5
+        versionName = "1.4"
     }
 
     buildTypes {

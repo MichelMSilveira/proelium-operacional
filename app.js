@@ -1,6 +1,6 @@
 const navItems = [
   ['dashboard','◫','Visão geral'],['clients','♙','Clientes'],['projects','◇','Projetos'],['processes','⇢','Processos'],
-  ['tasks','✓','Tarefas'],['agenda','◷','Agenda'],['commercial','◎','Comercial'],['products','▦','Produtos e serviços'],['installations','⌂','Acompanhamento'],['operations','⚒','Operação'],['finance','＄','Financeiro'],
+  ['tasks','✓','Tarefas'],['agenda','◷','Agenda'],['commercial','◎','Oportunidades'],['products','▦','Produtos e serviços'],['installations','⌂','Acompanhamento'],['operations','⚒','Operação'],['finance','＄','Financeiro'],
   ['bi','▥','BI Intelligence'],['biMarket','⌁','BI Desempenho'],['quality','★','Qualidade e compromisso'],['collaborators','♧','Colaboradores e parceiros'],
   ['equipment','▣','Equipamentos'],['knowledge','▤','Conhecimento']
 ];
@@ -175,8 +175,23 @@ const embraceCatalogRows=[
   ['AC-VKTCL-SEM-PINTURA','Kit de teclas Virtue - branco/preto',90,'AC-VKTCL-XX'],['AC-VKTCL-COM-PINTURA','Kit de teclas Virtue - prata/champagne',130,'AC-VKTCL-XX'],['AC-TCL-GRAV','Tecla Virtue gravada a laser',12],['AC-VTCL-M-XX','Tecla Virtue avulsa',6],['AC-VCME2-1-SEM-PINTURA','Moldura e espelho keypad 4x2 com 1 abertura - branco/preto',56,'AC-VCME2-1-XX'],['AC-VCME4-1-SEM-PINTURA','Moldura e espelho keypad 4x4 com 1 abertura - branco/preto',56,'AC-VCME4-1-XX'],['AC-VCME4-2-SEM-PINTURA','Moldura e espelho keypad 4x4 com 2 aberturas - branco/preto',56,'AC-VCME4-2-XX'],['AC-VCME2-1-COM-PINTURA','Moldura e espelho keypad 4x2 com 1 abertura - prata/champagne',90,'AC-VCME2-1-XX'],['AC-VCME4-1-COM-PINTURA','Moldura e espelho keypad 4x4 com 1 abertura - prata/champagne',90,'AC-VCME4-1-XX'],['AC-VCME4-2-COM-PINTURA','Moldura e espelho keypad 4x4 com 2 aberturas - prata/champagne',90,'AC-VCME4-2-XX'],['AC-VPA2-0-SEM-PINTURA','Placa de acabamento 4x2 cega - branco/preto',30,'AC-VPA2-0-XX'],['AC-VPA2-1-SEM-PINTURA','Placa de acabamento 4x2 para 1 módulo - branco/preto',30,'AC-VPA2-1-XX'],['AC-VPA2-3-SEM-PINTURA','Placa de acabamento 4x2 para 3 módulos - branco/preto',30,'AC-VPA2-3-XX'],['AC-VPA4-2-SEM-PINTURA','Placa de acabamento 4x4 para 2 módulos - branco/preto',30,'AC-VPA4-2-XX'],['AC-VPA4-6-SEM-PINTURA','Placa de acabamento 4x4 para 6 módulos - branco/preto',30,'AC-VPA4-6-XX'],['AC-VPA2-0-COM-PINTURA','Placa de acabamento 4x2 cega - prata/champagne',80,'AC-VPA2-0-XX'],['AC-VPA2-1-COM-PINTURA','Placa de acabamento 4x2 para 1 módulo - prata/champagne',80,'AC-VPA2-1-XX'],['AC-VPA2-3-COM-PINTURA','Placa de acabamento 4x2 para 3 módulos - prata/champagne',80,'AC-VPA2-3-XX'],['AC-VPA4-2-COM-PINTURA','Placa de acabamento 4x4 para 2 módulos - prata/champagne',80,'AC-VPA4-2-XX'],['AC-VPA4-6-COM-PINTURA','Placa de acabamento 4x4 para 6 módulos - prata/champagne',80,'AC-VPA4-6-XX'],['AC-LT5','Kit lente limitadora para sensor',60],['AC-CF','Caixa de embutir para módulos integrados',90],['AC-PS12-1','Fonte de alimentação 12V / 1A',80,'AC-PS12/1'],['AC-QA6M-EM','Quadro de automação 6 módulos - embutir',1280],['AC-QA12M-EM','Quadro de automação 12 módulos - embutir',1710],['AC-QA6M-SP','Quadro de automação 6 módulos - sobrepor',1280],['AC-QA12M-SP','Quadro de automação 12 módulos - sobrepor',1710],['AC-DP-KP6M','Display promocional com keypad 6 teclas e sensor',170,'AC-DP-KP6M-W-XX'],['AC-DP-KP12FLEX','Display promocional com keypad 12 teclas',170,'AC-DP-KP12FLEX-W-XX']
 ];
 const embraceCatalogProducts=embraceCatalogRows.map(([sku,name,price,model=sku])=>({id:`prd-embrace-${sku.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}`,sku,name,brand:'Scenario Embrace',model,category:'Automação',supplier:'Scenario Embrace',mode:'Venda ou disponibilização',unit:'un',cost:0,price,priceReference:embracePriceReference,status:'Ativo',active:true}));
+const officialCatalogProduct=(sku,name,brand,model,category,price,source,input,output,cable,capacity,inputPorts=[],outputPorts=[],requirements=[],constraints=[])=>({id:`prd-${sku.toLowerCase()}`,sku,name,brand,model,category,supplier:brand,mode:'Venda ou disponibilização',unit:'un',cost:0,price,priceReference:'Referência comercial inicial Proelium, posicionada acima da média de mercado. Confirmar fornecedor, impostos, disponibilidade e margem antes de enviar proposta.',status:'A validar',active:true,technicalIdentity:{version:1,brand,model,sku,source,verification:'Pendente de validação'},technicalDefinition:{input,output,cable,capacity,inputPorts,outputPorts,status:'Cadastro técnico — validar'},connectionModel:{version:1,officialSource:source,verification:'Pendente de validação',compatibleInterfaces:[cable],requirements,constraints,updatedAt:'2026-08-29T00:00:00.000Z'}});
+const initialOfficialCatalogProducts=[
+  officialCatalogProduct('UBNT-UDM-PRO','Gateway UniFi Dream Machine Pro','Ubiquiti / UniFi','UDM-Pro','Rede',7900,'https://techspecs.ui.com/unifi/cloud-gateways/udm-pro?s=mx','WAN RJ45 ou SFP+','LAN RJ45 e SFP+','Cat6 / SFP+', '8 LAN GbE + 2 SFP+',['WAN RJ45','WAN SFP+'],['LAN 1','LAN 2','LAN 3','LAN 4','LAN 5','LAN 6','LAN 7','LAN 8','LAN SFP+'],['Link de internet','Rack e energia'],['Não fornece PoE nas portas LAN']),
+  officialCatalogProduct('UBNT-USW-PRO-MAX-24-POE','Switch UniFi Pro Max 24 PoE','Ubiquiti / UniFi','Pro Max 24 PoE','Rede',14900,'https://www.ui.com/switching/professional-max','Uplink Ethernet / SFP+','Portas Ethernet com PoE','Cat6 / SFP+', '24 portas Ethernet + uplinks SFP+',['Uplink SFP+'],Array.from({length:24},(_,i)=>`Porta ${i+1} / PoE`),['Uplink de rede','Rack e energia'],['Validar orçamento de PoE antes de alimentar dispositivos']),
+  officialCatalogProduct('UBNT-U7-PRO','Access Point UniFi U7 Pro','Ubiquiti / UniFi','U7 Pro','Rede Wi-Fi',2500,'https://store.ui.com/us/en/products/u7-pro','Ethernet 2.5 GbE / PoE+','Wi‑Fi','Cat6 / PoE+', '1 porta 2.5 GbE',['Ethernet 2.5 GbE / PoE+'],['Wi‑Fi'],['Switch ou injetor PoE+','Cabo Cat6'],['Não usar sem validar alimentação PoE']),
+  officialCatalogProduct('JBL-CONTROL-28-1','Caixa acústica JBL Control 28-1','JBL','Control 28-1','Áudio',4500,'https://jblpro.com/en-US/products/control-28-1.html','Entrada de áudio por borne','Saída passiva para reprodução','Cabo de áudio 2 vias', '8 Ω / 120 W',['Borne de alto-falante'],['Reprodução acústica'],['Amplificador compatível','Cabo de áudio até 2,5 mm²'],['Não ligar diretamente a rede ou saída de linha']),
+  officialCatalogProduct('DENON-AVR-X2800H','Receiver Denon AVR-X2800H','Denon','AVR-X2800H','Áudio e vídeo',12000,'https://www.denon.com/en/product/av-receivers/avr-x2800h/AVRX2800H.html','HDMI, rede, óptico e analógico','HDMI, caixas acústicas e subwoofer','HDMI / Cat6 / áudio', '6 HDMI IN / 2 HDMI OUT / 7 canais',['HDMI IN 1','HDMI IN 2','HDMI IN 3','HDMI IN 4','HDMI IN 5','HDMI IN 6','Rede Ethernet','Optical 1','Optical 2'],['HDMI OUT Main','HDMI OUT Zone 2','7 saídas de caixas','2 subwoofers'],['Rack ventilado','Cabos HDMI','Cabos de áudio'],['Confirmar impedância e potência das caixas']),
+  officialCatalogProduct('OPTOMA-UHZ55','Projetor Optoma UHZ55','Optoma','UHZ55','Vídeo',29900,'https://www.optoma.com/offerings','HDMI e rede','Projeção de vídeo','HDMI / Cat6', 'Projetor laser 4K',['HDMI 1','HDMI 2','Rede'],['Projeção'],['Ponto elétrico','Cabo HDMI ou extensão compatível'],['Confirmar distância de projeção e tela']),
+  officialCatalogProduct('SONOS-AMP','Amplificador Sonos Amp','Sonos','Amp','Áudio',9500,'https://www.sonos.com/en-us/shop/amp','Ethernet, Wi‑Fi e HDMI ARC','Caixas acústicas e subwoofer','Cat6 / HDMI ARC / áudio', '2 canais',['Ethernet','HDMI ARC'],['Bornes de caixas','Subwoofer'],['Rede','Cabo de áudio para caixas'],['Confirmar carga das caixas e ventilação']),
+  officialCatalogProduct('SOHO-CAT6-305','Cabo Soho Plus Categoria 6','Soho Plus','Cat6 305 m — validar part number','Cabeamento de rede',2600,'https://www.sohoplus.com.br/','RJ45 / infraestrutura','RJ45 / infraestrutura','Cat6', '305 m',['Terminação RJ45'],['Terminação RJ45'],['Conectores e infraestrutura'],['Validar construção, condutor e certificação do lote']),
+  officialCatalogProduct('SA-CAB-SPEAKER-2X15','Cabo de áudio Santo Angelo 2 x 1,5 mm²','Santo Angelo','Linha para alto-falantes — validar part number','Cabeamento de áudio',3200,'https://www.santoangelo.com.br/','Borne de amplificador','Borne de caixa acústica','Cabo de áudio 2 vias', 'Rolo / metragem a confirmar',['Borne de amplificador'],['Borne de caixa'],['Amplificador e caixa acústica'],['Confirmar bitola pela distância e potência']),
+  officialCatalogProduct('BW-CCM665','Caixa de embutir Bowers & Wilkins CCM665','Bowers & Wilkins (B&W)','CCM665','Áudio',4950,'https://www.bowerswilkins.com/product/in-wall-in-ceiling-speakers/performance-series/ccm665/150095.html','Entrada de áudio por borne','Reprodução acústica','Cabo de áudio 2 vias', '8 Ω / amplificador 25–130 W',['Borne de alto-falante'],['Reprodução acústica'],['Amplificador compatível','Cabo de áudio'],['Confirmar recorte, profundidade e potência do amplificador']),
+  officialCatalogProduct('FOCAL-100-ICW6','Caixa de embutir Focal 100 ICW6','Focal','100 ICW6','Áudio',3500,'https://www.focal.com/products/100-icw6','Entrada de áudio por borne','Reprodução acústica','Cabo de áudio 2 vias', '8 Ω / amplificador 25–100 W',['Borne de alto-falante'],['Reprodução acústica'],['Amplificador compatível','Cabo de áudio'],['Confirmar recorte, profundidade e potência do amplificador']),
+  officialCatalogProduct('REVEL-INWALL','Caixa acústica Revel para embutir','Revel','Modelo a definir','Áudio',6000,'https://www.revelspeakers.com/','Entrada de áudio por borne','Reprodução acústica','Cabo de áudio 2 vias', 'A confirmar',['Borne de alto-falante'],['Reprodução acústica'],['Amplificador compatível','Cabo de áudio'],['Selecionar modelo e ficha oficial antes de automatizar'])
+];
 let embraceCatalogSyncNeeded=false;
-function ensureEmbraceCatalog(data){if(!Array.isArray(data.products))data.products=[];const catalogCurrent=data.embraceCatalogVersion===embraceCatalogVersion,known=new Set(data.products.map(product=>product.sku)),missing=[...embraceCatalogProducts,...cableCatalogProducts,...operationalCatalogProducts].filter(product=>!known.has(product.sku));if(missing.length)data.products.push(...structuredClone(missing));if(!catalogCurrent||missing.length){data.embraceCatalogVersion=embraceCatalogVersion;embraceCatalogSyncNeeded=true}return data}
+function ensureEmbraceCatalog(data){if(!Array.isArray(data.products))data.products=[];const catalogCurrent=data.embraceCatalogVersion===embraceCatalogVersion,known=new Set(data.products.map(product=>product.sku)),missing=[...embraceCatalogProducts,...cableCatalogProducts,...operationalCatalogProducts,...initialOfficialCatalogProducts].filter(product=>!known.has(product.sku));if(missing.length)data.products.push(...structuredClone(missing));if(!catalogCurrent||missing.length){data.embraceCatalogVersion=embraceCatalogVersion;embraceCatalogSyncNeeded=true}return data}
 function loadData(){try{const saved=JSON.parse(localStorage.getItem('proelium-data'));if(!saved)return ensureEmbraceCatalog(structuredClone(seed));const resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||structuredClone(seed.installations),activities:saved.activities||structuredClone(seed.activities),quotes:saved.quotes||structuredClone(seed.quotes),opportunities:saved.opportunities||[],appointments:saved.appointments||[],products:resetCatalog?structuredClone(seed.products):(saved.products||structuredClone(seed.products)),quoteRooms:resetCatalog?(saved.quoteRooms||structuredClone(seed.quoteRooms)).map(r=>({...r,items:[]})):(saved.quoteRooms||structuredClone(seed.quoteRooms))};merged.clients=merged.clients.map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=merged.projects.map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return ensureEmbraceCatalog(merged)}catch{return ensureEmbraceCatalog(structuredClone(seed))}}
 state.data=loadData();
 async function persist(){
@@ -562,6 +577,7 @@ render=()=>{finalRender();redactLegacyIdentity()};
 render();
 const updateSharedStatusWithVersion=updateSharedStatus;
 updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v206 · sincronizado ${sync} · servidor atualizado ${server}`};
+updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v225 · sincronizado ${sync} · servidor atualizado ${server}`};
 updateSharedStatus();
 const updatePresencePanelWithDevices=updatePresencePanel;
 updatePresencePanel=users=>{presenceUsers=Array.isArray(users)?users:[];const list=$('#presenceList');if(!list)return;list.innerHTML=presenceUsers.map(user=>{const devices=Array.isArray(user.devices)&&user.devices.length?user.devices:[user.device||'Navegador'],count=Math.max(1,Number(user.sessions||1)),deviceLabel=devices.join(' + ');return `<span class="presence-person ${user.available===false?'presence-person-off':''}"><i></i><span>${escapeUserText(user.name||user.username)}<small class="presence-device">${escapeUserText(deviceLabel)}${count>1?` · ${count} acessos`:''}</small></span>${user.username===authenticatedUser?.username?'<small>você</small>':user.available===false?'<small>ocupado</small>':''}</span>`}).join('')||'<small>Nenhum participante online.</small>';const me=presenceUsers.find(user=>user.username===authenticatedUser?.username),availability=$('#availabilityButton');if(availability){availability.textContent=me?.available===false?'Indisponível para auxiliar':'Disponível para auxiliar';availability.classList.toggle('presence-off',me?.available===false)}};
@@ -1217,7 +1233,7 @@ const clientListDeleteView=views.clients;views.clients=()=>clientListDeleteView(
 document.addEventListener('click',event=>{const button=event.target.closest('[data-delete-client]');if(!button)return;event.preventDefault();event.stopPropagation();deleteClient(button.dataset.deleteClient)},true);
 
 // Menu orientado pelo caminho da informação. Os grupos serão a base dos futuros acessos por licença e perfil.
-const menuFlowOrder=['dashboard','commercial','clients','products','projects','processes','purchases','diagram','installations','agenda','tasks','operations','reports','equipment','execution','collaborators','quality','knowledge','finance','bi','biMarket','audit','users'];
+const menuFlowOrder=['dashboard','commercial','survey','quotes','clients','products','projects','processes','purchases','diagram','installations','agenda','tasks','operations','reports','equipment','execution','collaborators','quality','knowledge','finance','bi','biMarket','audit','users'];
 const menuFlowGroup={dashboard:'Comercial',commercial:'Comercial',clients:'Comercial',products:'Comercial',projects:'Projeto e orçamento',processes:'Projeto e orçamento',purchases:'Projeto e orçamento',diagram:'Projeto e orçamento',installations:'Operação e pós-venda',agenda:'Operação e pós-venda',tasks:'Operação e pós-venda',operations:'Operação e pós-venda',reports:'Operação e pós-venda',equipment:'Operação e pós-venda',execution:'Operação e pós-venda',collaborators:'Pessoas e padrões',quality:'Pessoas e padrões',knowledge:'Pessoas e padrões',finance:'Gestão',bi:'Gestão',biMarket:'Gestão',audit:'Gestão'};
  menuFlowGroup.users='Gestão';
  if(!navItems.some(item=>item[0]==='users'))navItems.push(['users','♙','Usuários']);
@@ -1233,8 +1249,8 @@ document.addEventListener('click',event=>{const button=event.target.closest('[da
 // Recuperação comercial: a exclusão guarda somente a oportunidade e seus rascunhos vinculados.
 // Assim, restaurar pela Auditoria não apaga mudanças posteriores de outros aparelhos.
 if(!Array.isArray(state.data.recoveryLog))state.data.recoveryLog=[];
-function saveOpportunityRecovery(opportunity,quotes,quoteIds){state.data.recoveryLog.unshift({id:uid('recovery'),type:'opportunity',label:opportunity.company,createdAt:new Date().toISOString(),actor:auditActor(),data:{opportunity:structuredClone(opportunity),quotes:structuredClone(quotes),rooms:structuredClone(state.data.quoteRooms.filter(item=>quoteIds.includes(item.quoteId))),procurement:structuredClone((state.data.procurementRequests||[]).filter(item=>quoteIds.includes(item.quoteId)))}});state.data.recoveryLog=state.data.recoveryLog.slice(0,50)}
-function deleteOpportunity(id){const opportunity=state.data.opportunities.find(item=>item.id===id);if(!opportunity)return;const quotes=state.data.quotes.filter(item=>item.opportunityId===id),approved=quotes.some(item=>quoteStatus(item)==='Aprovado');if(approved){toast('Esta oportunidade já gerou um orçamento aprovado. Preserve o histórico pelo cliente e projeto vinculados.');return}const quoteIds=quotes.map(item=>item.id),detail=quotes.length?`\n\nTambém será removido ${quotes.length===1?'o orçamento em elaboração vinculado':'os '+quotes.length+' orçamentos em elaboração vinculados'}, incluindo os ambientes.`:'';if(!confirm(`Excluir a oportunidade “${opportunity.company}”?${detail}`))return;saveOpportunityRecovery(opportunity,quotes,quoteIds);state.data.quoteRooms=state.data.quoteRooms.filter(item=>!quoteIds.includes(item.quoteId));state.data.procurementRequests=(state.data.procurementRequests||[]).filter(item=>!quoteIds.includes(item.quoteId));state.data.quotes=state.data.quotes.filter(item=>item.opportunityId!==id);state.data.opportunities=state.data.opportunities.filter(item=>item.id!==id);logAudit('Excluiu','Oportunidade',`${opportunity.company} · recuperação disponível na Auditoria`);persist();render();toast(`Oportunidade ${opportunity.company} excluída. A recuperação está na Auditoria.`)}
+function saveOpportunityRecovery(opportunity,quotes,quoteIds){if(!Array.isArray(state.data.recoveryLog))state.data.recoveryLog=[];state.data.recoveryLog.unshift({id:uid('recovery'),type:'opportunity',label:opportunity.company,createdAt:new Date().toISOString(),actor:auditActor(),data:{opportunity:structuredClone(opportunity),quotes:structuredClone(quotes),rooms:structuredClone(state.data.quoteRooms.filter(item=>quoteIds.includes(item.quoteId))),procurement:structuredClone((state.data.procurementRequests||[]).filter(item=>quoteIds.includes(item.quoteId)))}});state.data.recoveryLog=state.data.recoveryLog.slice(0,50)}
+function deleteOpportunity(id){const opportunity=state.data.opportunities.find(item=>item.id===id);if(!opportunity)return;const quotes=state.data.quotes.filter(item=>item.opportunityId===id),draftQuotes=quotes.filter(item=>quoteStatus(item)!=='Aprovado'),quoteIds=draftQuotes.map(item=>item.id),approvedCount=quotes.length-draftQuotes.length,detail=`${draftQuotes.length?`\n\nTambém será removido ${draftQuotes.length===1?'o orçamento em elaboração vinculado':'os '+draftQuotes.length+' orçamentos em elaboração vinculados'}, incluindo os ambientes.`:''}${approvedCount?`\n\n${approvedCount} orçamento(s) aprovado(s), cliente(s) e projeto(s) vinculados serão preservados.`:''}`;if(!confirm(`Excluir a oportunidade “${opportunity.company}”?${detail}`))return;saveOpportunityRecovery(opportunity,quotes,quoteIds);state.data.quoteRooms=state.data.quoteRooms.filter(item=>!quoteIds.includes(item.quoteId));state.data.procurementRequests=(state.data.procurementRequests||[]).filter(item=>!quoteIds.includes(item.quoteId));state.data.quotes=state.data.quotes.filter(item=>!quoteIds.includes(item.id));state.data.opportunities=state.data.opportunities.filter(item=>item.id!==id);logAudit('Excluiu','Oportunidade',`${opportunity.company} · recuperação disponível na Auditoria`);persist();render();toast(`Oportunidade ${opportunity.company} excluída. A recuperação está na Auditoria.`)}
 function restoreOpportunityRecovery(id){const recovery=(state.data.recoveryLog||[]).find(item=>item.id===id&&item.type==='opportunity');if(!recovery)return;if(state.data.opportunities.some(item=>item.id===recovery.data.opportunity.id)){toast('Não foi possível restaurar: já existe uma oportunidade com este identificador.');return}if(!confirm(`Restaurar a oportunidade “${recovery.label}” e os rascunhos vinculados?`))return;state.data.opportunities.unshift(structuredClone(recovery.data.opportunity));(recovery.data.quotes||[]).forEach(item=>{if(!state.data.quotes.some(current=>current.id===item.id))state.data.quotes.push(structuredClone(item))});(recovery.data.rooms||[]).forEach(item=>{if(!state.data.quoteRooms.some(current=>current.id===item.id))state.data.quoteRooms.push(structuredClone(item))});(recovery.data.procurement||[]).forEach(item=>{if(!state.data.procurementRequests.some(current=>current.id===item.id))state.data.procurementRequests.push(structuredClone(item))});state.data.recoveryLog=state.data.recoveryLog.filter(item=>item.id!==id);logAudit('Restaurou','Oportunidade',recovery.label);persist();render();toast(`Oportunidade ${recovery.label} foi restaurada.`)}
 const auditRecoveryView=views.audit;views.audit=()=>{const recoveries=(state.data.recoveryLog||[]).filter(item=>item.type==='opportunity'),section=`<section class="card"><div class="card-head"><div><h3>Recuperação de oportunidades</h3><p class="subtext">Itens excluídos que podem ser restaurados sem desfazer alterações posteriores.</p></div></div>${recoveries.length?table(['Oportunidade','Excluída em','Por','Ação'],recoveries.map(item=>`<tr><td><strong>${item.label}</strong></td><td>${new Date(item.createdAt).toLocaleString('pt-BR')}</td><td>${item.actor||'Usuário do dispositivo'}</td><td><button class="button secondary" data-recover-opportunity="${item.id}">Restaurar</button></td></tr>`)):'<div class="empty">Nenhuma oportunidade aguardando recuperação.</div>'}</section>`;return auditRecoveryView()+section};
 document.addEventListener('click',event=>{const button=event.target.closest('[data-recover-opportunity]');if(!button)return;event.preventDefault();event.stopPropagation();restoreOpportunityRecovery(button.dataset.recoverOpportunity)},true);
@@ -1251,7 +1267,7 @@ const commercialSourceDetailEdit=saveEditedRecord;saveEditedRecord=(kind,data,id
 
 // Acesso unitário a cada orçamento, sem depender da página Comercial.
 function quotes(){const items=state.data.quotes||[],rows=items.map(quote=>{const rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id),totals=quoteTotals(quote.id);return `<tr class="clickable-row" data-quote="${quote.id}"><td><div class="entity">${quote.title}</div><div class="subtext">${quote.id} · versão ${quote.version||1}</div></td><td>${quotePartyName(quote)}</td><td>${rooms.length}</td><td>${money(totals.price||quote.value||0)}</td><td>${badge(quoteStatus(quote))}</td><td>→</td></tr>`});return heading('Orçamentos','Acesse, acompanhe e revise cada proposta comercial de forma individual.')+`<div class="module-toolbar"><button class="button primary" data-add="quote">+ Novo orçamento</button><span class="subtext">${items.length} orçamento(s) registrado(s)</span></div>`+table(['Orçamento','Cliente / oportunidade','Ambientes','Total líquido','Situação',''],rows)}
-views.quotes=quotes;validViews.add('quotes');if(!navItems.some(item=>item[0]==='quotes')){menuFlowOrder.splice(menuFlowOrder.indexOf('clients'),0,'quotes');menuFlowGroup.quotes='Comercial';navItems.push(['quotes','▤','Orçamentos']);navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]))}
+views.quotes=quotes;validViews.add('quotes');if(!navItems.some(item=>item[0]==='quotes')){menuFlowGroup.quotes='Comercial';navItems.push(['quotes','▤','Orçamentos']);navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]))}
 const directQuoteDetailView=views.quoteDetail;views.quoteDetail=()=>directQuoteDetailView().replace('data-view="commercial">← Voltar para orçamentos','data-view="quotes">← Voltar para orçamentos');
 
 // Movimentação de ativos: troca de local sem perder série, histórico ou vínculo técnico.
@@ -2123,43 +2139,92 @@ async function migrateExistingAccessPointInfrastructure(){
 setTimeout(()=>migrateExistingAccessPointInfrastructure().catch(()=>{}),3200);
 // Levantamento técnico é a ponte entre a necessidade comercial e a composição do orçamento.
 // Recebe visita, entrada manual e futuramente leitura de planta/PDF, sempre antes de gerar itens comerciais.
-if(!navItems.some(item=>item[0]==='survey'))navItems.splice(navItems.findIndex(item=>item[0]==='commercial')+1,0,['survey','⌖','Levantamento']);
+if(!navItems.some(item=>item[0]==='survey'))navItems.push(['survey','⌖','Levantamento']);
 validViews.add('survey');
 menuFlowGroup.survey='Comercial';
+navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
 state.data.surveys=Array.isArray(state.data.surveys)?state.data.surveys:[];
 state.data.surveyPoints=Array.isArray(state.data.surveyPoints)?state.data.surveyPoints:[];
 const surveyNormalize=normalizeSharedData;
 normalizeSharedData=shared=>{const data=surveyNormalize(shared);data.surveys=Array.isArray(data.surveys)?data.surveys:[];data.surveyPoints=Array.isArray(data.surveyPoints)?data.surveyPoints:[];return data};
 function surveyOpportunityLabel(id){const opportunity=(state.data.opportunities||[]).find(item=>item.id===id);return opportunity?opportunity.company:'Sem vínculo comercial'}
-function openTechnicalSurvey(id=''){
-  const survey=id?(state.data.surveys||[]).find(item=>item.id===id):null,value=(key,fallback='')=>survey?.[key]??fallback;
+function openTechnicalSurvey(id='',prefill={}){
+  const survey=id?(state.data.surveys||[]).find(item=>item.id===id):null,value=(key,fallback='')=>prefill[key]??survey?.[key]??fallback;
   $('#dialogTitle').textContent=survey?'Editar levantamento':'Novo levantamento técnico';$('#recordForm').dataset.kind='technicalSurvey';$('#recordForm').dataset.editId=id;$('#saveButton').textContent=survey?'Salvar levantamento':'Criar levantamento';
   $('#formFields').innerHTML=`<div class="field full"><label>Oportunidade comercial</label><select name="opportunityId"><option value="">Sem vínculo por enquanto</option>${(state.data.opportunities||[]).filter(item=>!['Perdido'].includes(item.stage)).map(item=>`<option value="${item.id}" ${item.id===value('opportunityId')?'selected':''}>${item.company} · ${item.stage}</option>`).join('')}</select><small class="subtext">O levantamento pode começar antes do cliente existir. Quando houver orçamento, os ambientes poderão ser enviados para ele.</small></div><div class="field full"><label>Nome do levantamento *</label><input name="title" value="${value('title')}" placeholder="Ex.: Visita técnica — residência Michel" required></div><div class="field"><label>Local / obra</label><input name="site" value="${value('site')}" placeholder="Endereço ou identificação da obra"></div><div class="field"><label>Origem</label><select name="source">${['Visita técnica','Preenchimento manual','Planta/PDF','Importação futura'].map(source=>`<option ${source===value('source','Visita técnica')?'selected':''}>${source}</option>`).join('')}</select></div><div class="field"><label>Situação</label><select name="status">${['Em levantamento','Aguardando validação','Validado','Enviado ao orçamento'].map(status=>`<option ${status===value('status','Em levantamento')?'selected':''}>${status}</option>`).join('')}</select></div><div class="field full"><label>Premissas e observações</label><textarea name="notes" placeholder="Necessidades, restrições, decisões da visita, observações de planta ou pendências.">${value('notes')}</textarea></div>`;
   $('#recordDialog').showModal();
 }
+const surveyPointCatalog=[
+  ['Rede e conectividade',['Link de internet / modem','Roteador / firewall','Switch de rede','Patch panel','Rack técnico','Ponto de rede Cat6','Access point Wi‑Fi','Antena / bridge sem fio','Hub USB / rede']],
+  ['Automação e controle',['Central de automação','Painel touch','Tablet de controle','Keypad','Gateway de automação','Módulo sem fio','Módulo RF','Módulo IR','Módulo relé','Módulo dimmer','Fonte / interface de automação','Sensor de presença / abertura']],
+  ['Iluminação',['Circuito de iluminação / retorno','Circuito dimerizável','Circuito RGB / RGBW','Fita de LED','Driver / fonte de LED','Controlador PWM']],
+  ['Áudio e vídeo',['TV / display','Projetor','Tela de projeção','Receiver / amplificador','Caixa de som','Subwoofer','Player / console','Câmera de videoconferência','Ponto HDMI / vídeo']],
+  ['Segurança e acesso',['Câmera IP','Vídeo porteiro','Controle de acesso','Fechadura inteligente','Sensor de alarme','Sirene / central de alarme']],
+  ['Motorização e mecanismos',['Cortina / persiana motorizada','Lift / suporte motorizado','Flap / abertura motorizada','Motor de portão','Tela / mecanismo motorizado']],
+  ['Infraestrutura',['Cabo de rede Cat6','Cabo de áudio','Cabo HDMI / vídeo','Eletroduto / conduíte','Caixa de passagem','Pré-infraestrutura','Outro']]
+];
+function surveyPointTypeOptions(selected){return surveyPointCatalog.map(([group,types])=>`<optgroup label="${group}">${types.map(type=>`<option ${type===selected?'selected':''}>${type}</option>`).join('')}</optgroup>`).join('')}
+const surveyTechnologyCatalog=[
+  ['Rede',['Wi‑Fi / rede sem fio','Rede cabeada Cat6','Rede PoE','Internet / firewall','Distribuição de rede']],
+  ['Automação',['Automação cabeada','Automação sem fio','Automação RF','Automação IR','Controle por touch / tablet']],
+  ['Iluminação',['Iluminação liga/desliga','Iluminação dimerizável','Iluminação RGB / RGBW','Iluminação circadiana']],
+  ['Áudio e vídeo',['Áudio ambiente','Áudio multizona','Vídeo HDMI','Home cinema / projeção','Mídia e entretenimento']],
+  ['Segurança e mecanismos',['CFTV IP','Controle de acesso','Alarme / sensores','Motorização','Integração a definir']]
+];
+function surveyTechnologyOptions(selected){return `<option value="">Definir depois</option>${surveyTechnologyCatalog.map(([group,types])=>`<optgroup label="${group}">${types.map(type=>`<option ${type===selected?'selected':''}>${type}</option>`).join('')}</optgroup>`).join('')}`}
 function openSurveyPoint(id=''){
   const surveyId=state.selectedSurvey,point=id?(state.data.surveyPoints||[]).find(item=>item.id===id):null,survey=(state.data.surveys||[]).find(item=>item.id===(point?.surveyId||surveyId)),value=(key,fallback='')=>point?.[key]??fallback;
   if(!survey){toast('Abra um levantamento antes de adicionar pontos.');return}
   $('#dialogTitle').textContent=point?'Editar item levantado':'Adicionar item ao levantamento';$('#recordForm').dataset.kind='surveyPoint';$('#recordForm').dataset.editId=id;$('#saveButton').textContent=point?'Salvar item':'Adicionar item';
-  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${survey.id}"><div class="field full"><label>Levantamento</label><input value="${survey.title}" disabled></div><div class="field"><label>Ambiente *</label><input name="room" value="${value('room')}" placeholder="Ex.: Sala, quarto, rack" required></div><div class="field"><label>Tipo *</label><select name="type">${['Ponto de rede','Access point','Câmera','TV / mídia','Keypad','Circuito de iluminação','Caixa de som','Cabo / pré-infraestrutura','Outro'].map(type=>`<option ${type===value('type','Ponto de rede')?'selected':''}>${type}</option>`).join('')}</select></div><div class="field"><label>Quantidade *</label><input name="quantity" type="number" min="1" step="1" value="${value('quantity',1)}" required></div><div class="field"><label>Situação</label><select name="status">${['Previsto','Conferido em visita','Validado','Enviado ao orçamento'].map(status=>`<option ${status===value('status','Previsto')?'selected':''}>${status}</option>`).join('')}</select></div><div class="field full"><label>Descrição / critério</label><textarea name="notes" placeholder="Modelo desejado, posição, medida, necessidade técnica ou observação para a validação.">${value('notes')}</textarea></div>`;
+  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${survey.id}"><div class="field full"><label>Levantamento</label><input value="${survey.title}" disabled></div><div class="field"><label>Ambiente *</label><input name="room" value="${value('room')}" placeholder="Ex.: Sala, quarto, rack" required></div><div class="field"><label>Função / objeto a levantar *</label><select name="type">${surveyPointTypeOptions(value('type','Ponto de rede Cat6'))}</select></div><div class="field"><label>Tecnologia a orçar</label><select name="technology">${surveyTechnologyOptions(value('technology'))}</select></div><div class="field"><label>Quantidade *</label><input name="quantity" type="number" min="1" step="1" value="${value('quantity',1)}" required></div><div class="field"><label>Situação</label><select name="status">${['Previsto','Conferido em visita','Validado','Enviado ao orçamento'].map(status=>`<option ${status===value('status','Previsto')?'selected':''}>${status}</option>`).join('')}</select></div><div class="field full"><label>Descrição / critério</label><textarea name="notes" placeholder="Uso esperado, posição, medida, modelo desejado ou observação para validar depois.">${value('notes')}</textarea><small class="subtext">A tecnologia direciona o futuro orçamento. Marca, modelo, portas e conexões serão definidos posteriormente em Produtos e Serviços.</small></div>`;
   $('#recordDialog').showModal();
+}
+function deleteTechnicalSurvey(id){
+  const survey=(state.data.surveys||[]).find(item=>item.id===id);
+  if(!survey)return;
+  const pointCount=(state.data.surveyPoints||[]).filter(item=>item.surveyId===id).length;
+  const detail=pointCount?`\n\nOs ${pointCount} ponto(s) e quantitativo(s) vinculados também serão excluídos.`:'';
+  if(!confirm(`Excluir o levantamento “${survey.title}”?${detail}\n\nOrçamentos e ambientes já enviados não serão alterados.`))return;
+  state.data.surveys=state.data.surveys.filter(item=>item.id!==id);
+  state.data.surveyPoints=state.data.surveyPoints.filter(item=>item.surveyId!==id);
+  if(state.selectedSurvey===id)state.selectedSurvey=null;
+  logAudit('Excluiu','Levantamento técnico',`${survey.title} · ${pointCount} ponto(s) vinculado(s) removido(s)`);
+  persist();render();toast('Levantamento excluído. O registro da ação está na Auditoria.');
+}
+function sendSurveyRoomsToQuote(survey,quote){
+  const rooms=[...new Set((state.data.surveyPoints||[]).filter(item=>item.surveyId===survey.id&&item.room).map(item=>item.room.trim()).filter(Boolean))];
+  const existing=(state.data.quoteRooms||[]).filter(item=>item.quoteId===quote.id).map(item=>item.name);
+  const missing=rooms.filter(room=>!existing.includes(room));
+  missing.forEach(name=>state.data.quoteRooms.push({id:uid('amb'),quoteId:quote.id,name,items:[]}));
+  survey.status='Enviado ao orçamento';
+  logAudit('Enviou ambientes ao orçamento','Levantamento técnico',`${survey.title} · ${missing.length} ambiente(s) criados em ${quote.title}`);
+  return missing.length;
+}
+function startQuoteFromSurvey(id){
+  const survey=(state.data.surveys||[]).find(item=>item.id===id);
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===survey?.opportunityId);
+  if(!survey||!opportunity){toast('Vincule este levantamento a uma oportunidade comercial antes de criar o orçamento.');return}
+  let quote=(state.data.quotes||[]).find(item=>item.opportunityId===opportunity.id&&item.status!=='Aprovado');
+  if(!quote){quote={id:uid('orc'),opportunityId:opportunity.id,clientId:'',title:`Proposta — ${opportunity.company}`,value:0,status:'Em elaboração'};state.data.quotes.unshift(quote);opportunity.stage='Orçamento';logAudit('Criou orçamento a partir do levantamento','Levantamento técnico',`${survey.title} → ${quote.title}`)}
+  const count=sendSurveyRoomsToQuote(survey,quote);
+  persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`Orçamento aberto com ${count} ambiente(s) do levantamento.`);
 }
 function survey(){
   const surveys=state.data.surveys||[],selected=surveys.find(item=>item.id===state.selectedSurvey);
-  if(!selected){const awaiting=surveys.filter(item=>item.status!=='Validado'&&item.status!=='Enviado ao orçamento').length,points=(state.data.surveyPoints||[]).length;return heading('Levantamento técnico','Etapa entre Comercial e Orçamentos: consolide ambientes, pontos e quantitativos antes de precificar.','survey')+`<div class="module-toolbar"><button class="button primary" data-add-survey>+ Novo levantamento</button><span class="subtext">Manual, visita técnica ou futura leitura de planta/PDF.</span></div><div class="kpi-grid"><div class="kpi"><div class="kpi-top">Levantamentos</div><div class="kpi-value">${surveys.length}</div><div class="kpi-note">registros técnicos</div></div><div class="kpi"><div class="kpi-top">A validar</div><div class="kpi-value">${awaiting}</div><div class="kpi-note">antes do orçamento</div></div><div class="kpi"><div class="kpi-top">Pontos e quantitativos</div><div class="kpi-value">${points}</div><div class="kpi-note">itens levantados</div></div></div>${surveys.length?`<section class="card">${table(['Levantamento','Comercial','Origem','Situação','Itens',''],surveys.map(item=>{const count=(state.data.surveyPoints||[]).filter(point=>point.surveyId===item.id).length;return `<tr><td><div class="entity">${item.title}</div><div class="subtext">${item.site||'Local não informado'}</div></td><td>${surveyOpportunityLabel(item.opportunityId)}</td><td>${item.source}</td><td>${badge(item.status)}</td><td>${count}</td><td><button class="link-button" data-open-survey="${item.id}">Abrir</button></td></tr>`}))}</section>`:'<div class="empty">Crie o primeiro levantamento antes de montar o orçamento.</div>'}`;}
+  if(!selected){const awaiting=surveys.filter(item=>item.status!=='Validado'&&item.status!=='Enviado ao orçamento').length,points=(state.data.surveyPoints||[]).length;return heading('Levantamento técnico','Etapa entre Comercial e Orçamentos: consolide ambientes, pontos e quantitativos antes de precificar.','survey')+`<div class="module-toolbar"><button class="button primary" data-add-survey>+ Novo levantamento</button><span class="subtext">Manual, visita técnica ou futura leitura de planta/PDF.</span></div><div class="kpi-grid"><div class="kpi"><div class="kpi-top">Levantamentos</div><div class="kpi-value">${surveys.length}</div><div class="kpi-note">registros técnicos</div></div><div class="kpi"><div class="kpi-top">A validar</div><div class="kpi-value">${awaiting}</div><div class="kpi-note">antes do orçamento</div></div><div class="kpi"><div class="kpi-top">Pontos e quantitativos</div><div class="kpi-value">${points}</div><div class="kpi-note">itens levantados</div></div></div>${surveys.length?`<section class="card">${table(['Levantamento','Comercial','Origem','Situação','Itens',''],surveys.map(item=>{const count=(state.data.surveyPoints||[]).filter(point=>point.surveyId===item.id).length;return `<tr><td><div class="entity">${item.title}</div><div class="subtext">${item.site||'Local não informado'}</div></td><td>${surveyOpportunityLabel(item.opportunityId)}</td><td>${item.source}</td><td>${badge(item.status)}</td><td>${count}</td><td><button class="link-button" data-open-survey="${item.id}">Abrir</button> <button class="delete-icon" data-delete-survey="${item.id}" aria-label="Excluir ${item.title}" title="Excluir levantamento">×</button></td></tr>`}))}</section>`:'<div class="empty">Crie o primeiro levantamento antes de montar o orçamento.</div>'}`;}
   const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===selected.id),byRoom={};points.forEach(point=>{(byRoom[point.room]??=[]).push(point)});const quote=(state.data.quotes||[]).find(item=>item.opportunityId===selected.opportunityId&&item.status!=='Aprovado');
-  return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-point>+ Adicionar ponto / quantitativo</button>${quote?`<button class="button primary" data-survey-create-rooms="${selected.id}">Enviar ambientes ao orçamento</button>`:'<span class="subtext">Crie um orçamento na aba Comercial para enviar os ambientes validados.</span>'}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p></div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
+  return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-point>+ Adicionar ponto / quantitativo</button><button class="button secondary" data-delete-survey="${selected.id}">Excluir levantamento</button>${quote?`<button class="button primary" data-survey-create-rooms="${selected.id}">Enviar ambientes ao orçamento</button>`:`<button class="button primary" data-survey-start-quote="${selected.id}">Criar orçamento e enviar ambientes</button>`}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p></div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
 }
 views.survey=survey;
 const surveySaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{
   if(kind==='technicalSurvey'){const record={opportunityId:data.opportunityId,title:data.title,site:data.site,source:data.source,status:data.status,notes:data.notes,updatedAt:new Date().toISOString()};if(editId){const index=state.data.surveys.findIndex(item=>item.id===editId);if(index>=0)state.data.surveys[index]={...state.data.surveys[index],...record}}else{const created={id:uid('lev'),...record};state.data.surveys.unshift(created);state.selectedSurvey=created.id}logAudit(editId?'Atualizou levantamento':'Criou levantamento','Levantamento técnico',record.title);persist();render();toast('Levantamento técnico salvo.');return}
-  if(kind==='surveyPoint'){const record={surveyId:data.surveyId,room:data.room,type:data.type,quantity:Number(data.quantity||1),status:data.status,notes:data.notes};if(editId){const index=state.data.surveyPoints.findIndex(item=>item.id===editId);if(index>=0)state.data.surveyPoints[index]={...state.data.surveyPoints[index],...record}}else state.data.surveyPoints.push({id:uid('ptl'),...record});logAudit(editId?'Atualizou item levantado':'Adicionou item levantado','Levantamento técnico',`${record.room} · ${record.type} · ${record.quantity}`);persist();render();toast('Item do levantamento salvo.');return}
+  if(kind==='surveyPoint'){const record={surveyId:data.surveyId,room:data.room,type:data.type,technology:data.technology||'',quantity:Number(data.quantity||1),status:data.status,notes:data.notes};if(editId){const index=state.data.surveyPoints.findIndex(item=>item.id===editId);if(index>=0)state.data.surveyPoints[index]={...state.data.surveyPoints[index],...record}}else state.data.surveyPoints.push({id:uid('ptl'),...record});logAudit(editId?'Atualizou item levantado':'Adicionou item levantado','Levantamento técnico',`${record.room} · ${record.type}${record.technology?` · ${record.technology}`:''} · ${record.quantity}`);persist();render();toast('Item do levantamento salvo.');return}
   return surveySaveRecord(kind,data,editId);
 };
 document.addEventListener('click',event=>{
-  const add=event.target.closest('[data-add-survey]'),open=event.target.closest('[data-open-survey]'),back=event.target.closest('[data-survey-back]'),edit=event.target.closest('[data-edit-survey]'),point=event.target.closest('[data-add-survey-point]'),editPoint=event.target.closest('[data-edit-survey-point]'),send=event.target.closest('[data-survey-create-rooms]');
-  if(add){event.preventDefault();openTechnicalSurvey();return}if(open){event.preventDefault();state.selectedSurvey=open.dataset.openSurvey;state.view='survey';render();return}if(back){event.preventDefault();state.selectedSurvey=null;render();return}if(edit){event.preventDefault();openTechnicalSurvey(edit.dataset.editSurvey);return}if(point){event.preventDefault();openSurveyPoint();return}if(editPoint){event.preventDefault();openSurveyPoint(editPoint.dataset.editSurveyPoint);return}if(send){event.preventDefault();const current=(state.data.surveys||[]).find(item=>item.id===send.dataset.surveyCreateRooms),quote=(state.data.quotes||[]).find(item=>item.opportunityId===current?.opportunityId&&item.status!=='Aprovado');if(!current||!quote)return;const rooms=[...new Set((state.data.surveyPoints||[]).filter(item=>item.surveyId===current.id&&item.room).map(item=>item.room.trim()))],existing=(state.data.quoteRooms||[]).filter(item=>item.quoteId===quote.id).map(item=>item.name),missing=rooms.filter(room=>!existing.includes(room));missing.forEach(name=>state.data.quoteRooms.push({id:uid('amb'),quoteId:quote.id,name,items:[]}));current.status='Enviado ao orçamento';logAudit('Enviou ambientes ao orçamento','Levantamento técnico',`${current.title} · ${missing.length} ambiente(s) criados em ${quote.title}`);persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`${missing.length} ambiente(s) enviados ao orçamento. Os itens continuam aguardando validação comercial.`)}
+  const add=event.target.closest('[data-add-survey]'),open=event.target.closest('[data-open-survey]'),back=event.target.closest('[data-survey-back]'),edit=event.target.closest('[data-edit-survey]'),remove=event.target.closest('[data-delete-survey]'),point=event.target.closest('[data-add-survey-point]'),editPoint=event.target.closest('[data-edit-survey-point]'),startQuote=event.target.closest('[data-survey-start-quote]'),send=event.target.closest('[data-survey-create-rooms]');
+  if(add){event.preventDefault();openTechnicalSurvey();return}if(open){event.preventDefault();state.selectedSurvey=open.dataset.openSurvey;state.view='survey';render();return}if(back){event.preventDefault();state.selectedSurvey=null;render();return}if(edit){event.preventDefault();openTechnicalSurvey(edit.dataset.editSurvey);return}if(remove){event.preventDefault();deleteTechnicalSurvey(remove.dataset.deleteSurvey);return}if(point){event.preventDefault();openSurveyPoint();return}if(editPoint){event.preventDefault();openSurveyPoint(editPoint.dataset.editSurveyPoint);return}if(startQuote){event.preventDefault();startQuoteFromSurvey(startQuote.dataset.surveyStartQuote);return}if(send){event.preventDefault();const current=(state.data.surveys||[]).find(item=>item.id===send.dataset.surveyCreateRooms),quote=(state.data.quotes||[]).find(item=>item.opportunityId===current?.opportunityId&&item.status!=='Aprovado');if(!current||!quote)return;const count=sendSurveyRoomsToQuote(current,quote);persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`${count} ambiente(s) enviados ao orçamento. Os itens continuam aguardando validação comercial.`)}
 },true);
 document.addEventListener('click',event=>{const add=event.target.closest('[data-add="survey"]');if(!add)return;event.preventDefault();event.stopImmediatePropagation();openTechnicalSurvey()},true);
 render();
@@ -2814,4 +2879,310 @@ document.addEventListener('keydown',event=>{
   openDashboardProject(project.dataset.dashboardProject);
 });
 
+// Registros concluídos continuam gerenciáveis: perdas podem voltar ao funil e
+// qualquer oportunidade elegível pode ser excluída com recuperação na Auditoria.
+function reopenLostOpportunity(id){
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id);
+  if(!opportunity||opportunity.stage!=='Perdido')return;
+  if(!confirm(`Retomar a oportunidade “${opportunity.company}” no fluxo comercial?\n\nEla voltará para Qualificação, com uma nova ação de contato.`))return;
+  const reason=opportunity.lossReason||'não informado';
+  opportunity.stage='Qualificação';
+  opportunity.lossReason='';
+  opportunity.nextAction='Retomar contato com a oportunidade';
+  opportunity.nextDue=todayInput();
+  logAudit('Recuperou oportunidade','Comercial',`${opportunity.company} · motivo anterior: ${reason}`);
+  persist();render();toast(`${opportunity.company} voltou para Qualificação no Comercial.`);
+}
+function enhanceConcludedOpportunities(){
+  if(state.view!=='commercial')return;
+  const sections=[...document.querySelectorAll('.commercial-history')].filter(section=>section.querySelector('h3')?.textContent.trim()==='Oportunidades concluídas');
+  const section=sections.at(-1),finished=(state.data.opportunities||[]).filter(item=>['Ganho','Perdido'].includes(item.stage));
+  if(!section)return;
+  const headers=section.querySelectorAll('thead th');
+  if(headers[3])headers[3].textContent='Gerenciar';
+  headers[4]?.remove();
+  section.querySelectorAll('tbody tr').forEach((row,index)=>{
+    const opportunity=finished[index],cell=row.cells[3];
+    row.cells[4]?.remove();
+    if(!opportunity||!cell)return;
+    const client=(state.data.clients||[]).find(item=>item.name.toLowerCase()===opportunity.company.toLowerCase());
+    if(opportunity.stage==='Perdido'){
+      cell.innerHTML=`<div class="subtext">${opportunity.lossReason||'Sem motivo registrado'}</div><div class="deal-actions"><button type="button" class="button secondary" data-reopen-opportunity="${opportunity.id}">Retomar no comercial</button><button type="button" class="button danger-outline" data-commercial-remove-opportunity="${opportunity.id}">Excluir</button></div>`;
+    }else if(client){
+      cell.innerHTML=`<div class="deal-actions"><button class="button secondary" data-open-client-from-opportunity="${client.id}">Abrir cliente</button></div>`;
+    }else{
+      cell.innerHTML=`<div class="deal-actions"><button type="button" class="button secondary" data-convert-opportunity="${opportunity.id}">Criar cliente</button><button type="button" class="button danger-outline" data-commercial-remove-opportunity="${opportunity.id}">Excluir</button></div>`;
+    }
+  });
+}
+const concludedOpportunitiesRender=render;
+render=()=>{concludedOpportunitiesRender();enhanceConcludedOpportunities();};
+document.addEventListener('click',event=>{
+  const reopen=event.target.closest('[data-reopen-opportunity]'),remove=event.target.closest('[data-commercial-remove-opportunity]'),openClientButton=event.target.closest('[data-open-client-from-opportunity]'),convert=event.target.closest('[data-convert-opportunity]');
+  if(reopen){event.preventDefault();event.stopImmediatePropagation();reopenLostOpportunity(reopen.dataset.reopenOpportunity);return}
+  if(remove){event.preventDefault();event.stopImmediatePropagation();deleteOpportunity(remove.dataset.commercialRemoveOpportunity);return}
+  if(openClientButton){event.preventDefault();event.stopImmediatePropagation();openClient(openClientButton.dataset.openClientFromOpportunity);return}
+  if(convert){event.preventDefault();event.stopImmediatePropagation();convertOpportunity(convert.dataset.convertOpportunity)}
+},true);
+
+// Fluxo comercial: a oportunidade registra o contato; o cliente só nasce após a aprovação do orçamento.
+const opportunitiesFlowView=views.commercial;
+views.commercial=()=>opportunitiesFlowView()
+  .replace('Comercial e contatos','Oportunidades')
+  .replace('Oportunidade → orçamento por ambientes → aprovação → cliente e projeto.','Oportunidade → levantamento → orçamento → aprovação → cliente e projeto.')
+  .replace(/data-quote-opportunity="([^"]+)">Montar orçamento/g,'data-start-survey-opportunity="$1">Iniciar levantamento');
+const createQuoteFromLinkedSurvey=createQuoteFromOpportunity;
+createQuoteFromOpportunity=id=>{
+  const survey=(state.data.surveys||[]).find(item=>item.opportunityId===id);
+  if(!survey){toast('Crie e valide o levantamento desta oportunidade antes de iniciar o orçamento.');return}
+  createQuoteFromLinkedSurvey(id);
+};
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-start-survey-opportunity]');
+  if(!button)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===button.dataset.startSurveyOpportunity);
+  if(!opportunity)return;
+  openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Levantamento técnico — ${opportunity.company}`,site:'',source:'Visita técnica',status:'Em levantamento',notes:''});
+},true);
+
+// Edição da proposta preserva os itens, ambientes e cálculos já feitos.
+function openQuoteEdit(id){
+  const quote=(state.data.quotes||[]).find(item=>item.id===id);
+  if(!quote)return;
+  $('#dialogTitle').textContent='Editar orçamento';
+  $('#recordForm').dataset.kind='quoteEdit';
+  $('#recordForm').dataset.editId=id;
+  $('#saveButton').textContent='Salvar orçamento';
+  $('#formFields').innerHTML=`<div class="field full"><label>Proposta</label><input name="title" value="${quote.title||''}" required></div><div class="field"><label>Validade</label><input name="validUntil" type="date" value="${quote.validUntil||''}"></div><div class="field"><label>Situação</label><input value="${quoteStatus(quote)}" disabled></div><div class="field full"><label>Observações comerciais</label><textarea name="notes" placeholder="Escopo, condições, pendências ou decisões da negociação.">${quote.notes||''}</textarea><small class="subtext">Para alterar ambientes, itens, quantidade ou desconto, use os controles do próprio orçamento.</small></div>`;
+  $('#recordDialog').showModal();
+}
+const quoteEditSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='quoteEdit'){
+    const quote=(state.data.quotes||[]).find(item=>item.id===editId);
+    if(!quote)return;
+    quote.title=String(data.title||'').trim();
+    quote.validUntil=data.validUntil||'';
+    quote.notes=data.notes||'';
+    logAudit('Editou','Orçamento',quote.title);
+    persist();closeRecordDialog();render();toast('Orçamento atualizado.');
+    return;
+  }
+  return quoteEditSaveRecord(kind,data,editId);
+};
+const quoteEditView=views.quoteDetail;
+views.quoteDetail=()=>quoteEditView()
+  .replace('<div class="quote-actions">','<div class="quote-actions"><button class="button secondary" data-edit-quote="'+state.selectedQuote+'">Editar orçamento</button>')
+  .replace(/<button class="link-button" data-edit-quote-item="([^"]+)">Ajustar<\/button>/g,'<button class="link-button" data-edit-quote-item="$1">Ajustar</button> <button class="link-button" data-delete-quote-item="$1">Excluir</button>');
+document.addEventListener('click',event=>{
+  const edit=event.target.closest('[data-edit-quote]');
+  if(edit){event.preventDefault();event.stopImmediatePropagation();openQuoteEdit(edit.dataset.editQuote);return}
+},true);
+
+// O levantamento mantém ambientes como agrupamentos dos pontos, permitindo renomeá-los sem perder os itens internos.
+function openSurveyRoomEdit(surveyId,room){
+  $('#dialogTitle').textContent='Editar ambiente do levantamento';
+  $('#recordForm').dataset.kind='surveyRoomEdit';
+  $('#recordForm').dataset.editId='';
+  $('#saveButton').textContent='Salvar ambiente';
+  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${surveyId}"><input type="hidden" name="previousRoom" value="${room}"><div class="field full"><label>Nome do ambiente *</label><input name="room" value="${room}" required><small class="subtext">Todos os itens deste ambiente serão mantidos e passarão a usar o novo nome.</small></div>`;
+  $('#recordDialog').showModal();
+}
+function deleteSurveyPoint(id){
+  const point=(state.data.surveyPoints||[]).find(item=>item.id===id);
+  if(!point)return;
+  if(!confirm(`Excluir “${point.type}” do ambiente ${point.room}?`))return;
+  state.data.surveyPoints=state.data.surveyPoints.filter(item=>item.id!==id);
+  logAudit('Excluiu item','Levantamento técnico',`${point.room} · ${point.type}`);
+  persist();render();toast('Item removido do levantamento.');
+}
+const surveyStructureSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='surveyRoomEdit'){
+    const nextRoom=String(data.room||'').trim(),previousRoom=String(data.previousRoom||'').trim();
+    if(!nextRoom){toast('Informe o nome do ambiente.');return}
+    const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===data.surveyId&&item.room===previousRoom);
+    points.forEach(point=>point.room=nextRoom);
+    logAudit('Editou ambiente','Levantamento técnico',`${previousRoom} → ${nextRoom} · ${points.length} item(ns)`);
+    persist();closeRecordDialog();render();toast('Ambiente atualizado com seus itens.');
+    return;
+  }
+  return surveyStructureSaveRecord(kind,data,editId);
+};
+const surveyStructureRender=render;
+render=()=>{
+  surveyStructureRender();
+  if(state.view!=='survey'||!state.selectedSurvey)return;
+  document.querySelectorAll('.room-grid .room-card').forEach(card=>{
+    const room=card.querySelector('.card-head h3')?.textContent?.trim(),head=card.querySelector('.card-head');
+    if(!room||!head||head.querySelector('[data-edit-survey-room]'))return;
+    head.insertAdjacentHTML('beforeend',`<button type="button" class="button secondary" data-edit-survey-room="${state.selectedSurvey}:${room}">Editar ambiente</button>`);
+  });
+  document.querySelectorAll('[data-edit-survey-point]').forEach(button=>{
+    button.textContent='Editar item';
+    if(!button.parentElement?.querySelector('[data-delete-survey-point]'))button.insertAdjacentHTML('afterend',` <button type="button" class="link-button" data-delete-survey-point="${button.dataset.editSurveyPoint}">Excluir</button>`);
+  });
+};
+document.addEventListener('click',event=>{
+  const room=event.target.closest('[data-edit-survey-room]'),point=event.target.closest('[data-delete-survey-point]');
+  if(room){event.preventDefault();event.stopImmediatePropagation();const [surveyId,...parts]=room.dataset.editSurveyRoom.split(':');openSurveyRoomEdit(surveyId,parts.join(':'));return}
+  if(point){event.preventDefault();event.stopImmediatePropagation();deleteSurveyPoint(point.dataset.deleteSurveyPoint);}
+},true);
+
+// Propostas não aprovadas podem ser removidas e recuperadas; as aprovadas preservam cliente, projeto e histórico.
+function deleteQuote(id){
+  const quote=(state.data.quotes||[]).find(item=>item.id===id);
+  if(!quote)return;
+  if(quoteStatus(quote)==='Aprovado'){
+    toast('Este orçamento aprovado é parte do histórico do cliente e do projeto. Use uma revisão para alterações posteriores.');
+    return;
+  }
+  const rooms=(state.data.quoteRooms||[]).filter(item=>item.quoteId===id),procurement=(state.data.procurementRequests||[]).filter(item=>item.quoteId===id);
+  if(!confirm(`Excluir o orçamento “${quote.title}”?\n\nSerão removidos ${rooms.length} ambiente(s) e ${procurement.length} item(ns) pendente(s) de cotação. Você poderá restaurá-lo pela Auditoria.`))return;
+  if(!Array.isArray(state.data.recoveryLog))state.data.recoveryLog=[];
+  state.data.recoveryLog.unshift({id:uid('recovery'),type:'quote',label:quote.title,createdAt:new Date().toISOString(),actor:auditActor(),data:{quote:structuredClone(quote),rooms:structuredClone(rooms),procurement:structuredClone(procurement)}});
+  state.data.recoveryLog=state.data.recoveryLog.slice(0,50);
+  state.data.quoteRooms=state.data.quoteRooms.filter(item=>item.quoteId!==id);
+  state.data.procurementRequests=(state.data.procurementRequests||[]).filter(item=>item.quoteId!==id);
+  state.data.quotes=state.data.quotes.filter(item=>item.id!==id);
+  state.selectedQuote=null;state.view='quotes';
+  logAudit('Excluiu','Orçamento',`${quote.title} · recuperação disponível na Auditoria`);
+  persist();render();toast('Orçamento excluído. A recuperação está na Auditoria.');
+}
+function restoreQuoteRecovery(id){
+  const recovery=(state.data.recoveryLog||[]).find(item=>item.id===id&&item.type==='quote');
+  if(!recovery||state.data.quotes.some(item=>item.id===recovery.data.quote.id))return;
+  if(!confirm(`Restaurar o orçamento “${recovery.label}” com seus ambientes e itens pendentes?`))return;
+  state.data.quotes.unshift(structuredClone(recovery.data.quote));
+  (recovery.data.rooms||[]).forEach(room=>state.data.quoteRooms.push(structuredClone(room)));
+  (recovery.data.procurement||[]).forEach(item=>state.data.procurementRequests.push(structuredClone(item)));
+  state.data.recoveryLog=state.data.recoveryLog.filter(item=>item.id!==id);
+  logAudit('Restaurou','Orçamento',recovery.label);
+  persist();state.selectedQuote=recovery.data.quote.id;state.view='quoteDetail';render();toast('Orçamento restaurado.');
+}
+const quoteDeleteRender=render;
+render=()=>{
+  quoteDeleteRender();
+  if(state.view!=='quoteDetail')return;
+  const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote),actions=document.querySelector('.quote-actions');
+  if(!quote||!actions||actions.querySelector('[data-delete-quote]'))return;
+  if(quoteStatus(quote)!=='Aprovado')actions.insertAdjacentHTML('beforeend',`<button type="button" class="button danger-outline" data-delete-quote="${quote.id}">Excluir orçamento</button>`);
+};
+const quoteRecoveryAuditView=views.audit;
+views.audit=()=>{
+  const recoveries=(state.data.recoveryLog||[]).filter(item=>item.type==='quote');
+  const section=`<section class="card"><div class="card-head"><div><h3>Recuperação de orçamentos</h3><p class="subtext">Propostas excluídas que ainda podem ser restauradas com seus ambientes.</p></div></div>${recoveries.length?table(['Orçamento','Excluído em','Por','Ação'],recoveries.map(item=>`<tr><td><strong>${item.label}</strong></td><td>${new Date(item.createdAt).toLocaleString('pt-BR')}</td><td>${item.actor||'Usuário do dispositivo'}</td><td><button class="button secondary" data-recover-quote="${item.id}">Restaurar</button></td></tr>`)):'<div class="empty">Nenhum orçamento aguardando recuperação.</div>'}</section>`;
+  return quoteRecoveryAuditView()+section;
+};
+document.addEventListener('click',event=>{
+  const remove=event.target.closest('[data-delete-quote]'),restore=event.target.closest('[data-recover-quote]');
+  if(remove){event.preventDefault();event.stopImmediatePropagation();deleteQuote(remove.dataset.deleteQuote);return}
+  if(restore){event.preventDefault();event.stopImmediatePropagation();restoreQuoteRecovery(restore.dataset.recoverQuote);}
+},true);
+
+const surveyTechnologyRender=render;
+render=()=>{
+  surveyTechnologyRender();
+  if(state.view!=='survey'||!state.selectedSurvey)return;
+  document.querySelectorAll('[data-edit-survey-point]').forEach(button=>{
+    const point=(state.data.surveyPoints||[]).find(item=>item.id===button.dataset.editSurveyPoint),cell=button.closest('tr')?.cells[0];
+    if(point?.technology&&cell&&!cell.querySelector('.survey-technology'))cell.insertAdjacentHTML('beforeend',`<div class="subtext survey-technology">Tecnologia: ${point.technology}</div>`);
+  });
+};
+
+render();
+
+// Biblioteca de fabricantes: catálogo organizador; modelos continuam editáveis em Produtos e Serviços.
+const manufacturerLibrarySeed=[
+  {id:'mfr-unifi',name:'Ubiquiti / UniFi',areas:'Rede, Wi‑Fi, switching, segurança e acesso',source:'https://ui.com/us/en',status:'Fonte oficial a consultar'},
+  {id:'mfr-jbl',name:'JBL',areas:'Áudio instalado, caixas acústicas e amplificação',source:'https://jblpro.com/en-US/product_families.html',status:'Fonte oficial a consultar'},
+  {id:'mfr-denon',name:'Denon',areas:'Receivers e áudio e vídeo residencial',source:'https://www.denon.com/',status:'Fonte oficial a consultar'},
+  {id:'mfr-optoma',name:'Optoma',areas:'Projetores, telas e vídeo profissional',source:'https://www.optoma.com/offerings',status:'Fonte oficial a consultar'},
+  {id:'mfr-revel',name:'Revel',areas:'Caixas acústicas hi-fi e instalação',source:'https://www.revelspeakers.com/',status:'Fonte oficial a consultar'},
+  {id:'mfr-sonos',name:'Sonos',areas:'Áudio distribuído e streaming',source:'https://www.sonos.com/',status:'Fonte oficial a consultar'},
+  {id:'mfr-soho-plus',name:'Soho Plus',areas:'Cabeamento estruturado e infraestrutura de rede',source:'https://www.sohoplus.com.br/',status:'Fonte oficial a consultar'},
+  {id:'mfr-santo-angelo',name:'Santo Angelo',areas:'Cabos, conectores e acessórios de áudio',source:'https://www.santoangelo.com.br/',status:'Fonte oficial a consultar'},
+  {id:'mfr-bw',name:'Bowers & Wilkins (B&W)',areas:'Caixas acústicas residenciais e custom installation',source:'https://www.bowerswilkins.com/',status:'Fonte oficial a consultar'},
+  {id:'mfr-focal',name:'Focal',areas:'Áudio hi-fi, home theater e instalação',source:'https://www.focal.com/',status:'Fonte oficial a consultar'}
+];
+if(!Array.isArray(state.data.manufacturerLibrary))state.data.manufacturerLibrary=[];
+manufacturerLibrarySeed.forEach(entry=>{if(!state.data.manufacturerLibrary.some(item=>item.name===entry.name))state.data.manufacturerLibrary.push(structuredClone(entry))});
+function manufacturerLibrary(){
+  const entries=(state.data.manufacturerLibrary||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  const cards=entries.map(entry=>`<article class="card"><div class="card-head"><div><p class="eyebrow">FABRICANTE</p><h3>${entry.name}</h3></div><span class="subtext">${entry.status||'Pendente'}</span></div><p>${entry.areas||'Áreas a definir'}</p><p class="subtext">Fonte: ${entry.source||'Ainda não informada'}</p><div class="module-toolbar"><button class="button secondary" data-library-add-product="${entry.id}">Adicionar modelo</button><button class="button secondary" data-library-edit="${entry.id}">Editar fabricante</button></div></article>`).join('');
+  return heading('Biblioteca técnica','Organize fabricantes e inclua modelos oficiais antes de usá-los no levantamento, orçamento ou diagrama.')+`<div class="module-toolbar"><button class="button primary" data-add="manufacturerLibrary">+ Adicionar fabricante</button><span class="subtext">${entries.length} fabricantes cadastrados</span></div><div class="room-grid">${cards}</div>`;
+}
+views.productLibrary=manufacturerLibrary;validViews.add('productLibrary');
+if(!navItems.some(item=>item[0]==='productLibrary')){const at=menuFlowOrder.indexOf('productConnections');menuFlowOrder.splice(at<0?menuFlowOrder.indexOf('products')+1:at+1,0,'productLibrary');menuFlowGroup.productLibrary='Comercial';navItems.push(['productLibrary','▤','Biblioteca técnica']);navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));}
+const manufacturerLibraryOpenForm=openForm;
+openForm=(kind,editId='',prefill={})=>{
+  if(kind!=='manufacturerLibrary')return manufacturerLibraryOpenForm(kind,editId,prefill);
+  const current=(state.data.manufacturerLibrary||[]).find(item=>item.id===editId)||{};
+  $('#dialogTitle').textContent=editId?'Editar fabricante':'Novo fabricante';$('#recordForm').dataset.kind=kind;$('#recordForm').dataset.editId=editId;$('#saveButton').textContent=editId?'Salvar ajustes':'Cadastrar fabricante';
+  $('#formFields').innerHTML=`<div class="field"><label>Fabricante *</label><input name="name" value="${current.name||''}" required></div><div class="field"><label>Situação</label><select name="status">${['Fonte oficial a consultar','Fonte oficial validada','Confirmado em campo'].map(option=>`<option ${option===(current.status||'Fonte oficial a consultar')?'selected':''}>${option}</option>`).join('')}</select></div><div class="field full"><label>Áreas / linhas de equipamento</label><input name="areas" value="${current.areas||''}" placeholder="Ex.: rede, áudio, automação"></div><div class="field full"><label>Fonte oficial</label><input name="source" value="${current.source||''}" placeholder="Site, catálogo ou URL oficial"></div>`;
+  $('#recordDialog').showModal();
+};
+const manufacturerLibrarySave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind!=='manufacturerLibrary')return manufacturerLibrarySave(kind,data,editId);
+  const index=(state.data.manufacturerLibrary||[]).findIndex(item=>item.id===editId),record={id:editId||uid('mfr'),name:data.name.trim(),areas:data.areas.trim(),source:data.source.trim(),status:data.status||'Fonte oficial a consultar'};
+  if(index>=0)state.data.manufacturerLibrary[index]={...state.data.manufacturerLibrary[index],...record};else state.data.manufacturerLibrary.push(record);
+  persist();render();toast('Fabricante salvo na biblioteca técnica.');
+};
+document.addEventListener('click',event=>{
+  const edit=event.target.closest('[data-library-edit]'),add=event.target.closest('[data-library-add-product]');
+  if(edit){event.preventDefault();openForm('manufacturerLibrary',edit.dataset.libraryEdit);}
+  if(add){event.preventDefault();const entry=(state.data.manufacturerLibrary||[]).find(item=>item.id===add.dataset.libraryAddProduct);if(entry)openForm('product','',{brand:entry.name,category:entry.areas?.split(',')[0]?.trim()||'',mode:'Venda ou disponibilização',unit:'un'});}
+},true);
+render();
+
+// Modelo editável de conexões: fonte oficial, validação e regras ainda não automatizadas.
+const officialConnectionModelOpenForm=openForm;
+openForm=(kind,editId='',prefill={})=>{
+  officialConnectionModelOpenForm(kind,editId,prefill);
+  if(kind!=='product')return;
+  const product=editId?(state.data.products||[]).find(item=>item.id===editId):null,identity=product?.technicalIdentity||{},model=product?.connectionModel||{},legacySource=identity.source==='Cadastro técnico Proelium'?'':identity.source,value=list=>Array.isArray(list)?list.join(', '):(list||''),anchor=$('#productPortIdentity')||$('[name="technicalNotes"]')?.closest('.field');
+  if(!anchor||$('#officialConnectionModel'))return;
+  const verification=prefill.connectionVerification??model.verification??identity.verification??'Pendente de validação';
+  anchor.insertAdjacentHTML('afterend',`<div id="officialConnectionModel" class="field full"><h3 class="form-subtitle">Fonte e compatibilidade do modelo</h3><p class="subtext">Registre a referência do fabricante e as regras do equipamento. Enquanto estiver pendente, o sistema não cria conexões nem itens automaticamente.</p></div><div class="field"><label>Fonte oficial / ficha técnica</label><input name="officialSource" value="${prefill.officialSource??model.officialSource??legacySource??''}" placeholder="Fabricante, URL ou referência da ficha"></div><div class="field"><label>Validação técnica</label><select name="connectionVerification">${['Pendente de validação','Validado na ficha oficial','Confirmado em campo'].map(option=>`<option ${option===verification?'selected':''}>${option}</option>`).join('')}</select></div><div class="field full"><label>Interfaces compatíveis</label><input name="compatibleInterfaces" value="${value(prefill.compatibleInterfaces??model.compatibleInterfaces)}" placeholder="Ex.: Cat6, PoE 802.3at, HDMI 2.1"></div><div class="field full"><label>Demandas / itens obrigatórios</label><input name="connectionRequirements" value="${value(prefill.connectionRequirements??model.requirements)}" placeholder="Ex.: 1 porta PoE, cabo Cat6, central de automação"></div><div class="field full"><label>Incompatibilidades e limites</label><input name="connectionConstraints" value="${value(prefill.connectionConstraints??model.constraints)}" placeholder="Ex.: não alimentar por PoE; máximo de 5 módulos"></div>`);
+};
+const officialConnectionModelSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  const result=officialConnectionModelSave(kind,data,editId);
+  if(kind!=='product'||result===false)return result;
+  const product=editId?(state.data.products||[]).find(item=>item.id===editId):(state.data.products||[]).find(item=>item.sku===data.sku&&item.name===data.name);
+  if(!product)return result;
+  const list=value=>String(value||'').split(/[,;\n]/).map(item=>item.trim()).filter(Boolean),verification=data.connectionVerification||'Pendente de validação',source=data.officialSource||'';
+  product.technicalIdentity={...(product.technicalIdentity||{}),version:1,brand:product.brand||'Marca a confirmar',model:product.model||'Modelo a confirmar',sku:product.sku||'Código a confirmar',source:source||'Fonte oficial não informada',verification};
+  product.connectionModel={version:1,officialSource:source,verification,compatibleInterfaces:list(data.compatibleInterfaces),requirements:list(data.connectionRequirements),constraints:list(data.connectionConstraints),updatedAt:new Date().toISOString()};
+  product.technicalDefinition={...(product.technicalDefinition||{}),status:verification==='Validado na ficha oficial'?'Validado na ficha oficial':verification==='Confirmado em campo'?'Confirmado em campo':'Cadastro técnico — validar'};
+  persist();render();toast('Fonte e compatibilidade do modelo salvas.');
+  return result;
+};
+const officialConnectionModelView=views.productConnections;
+views.productConnections=()=>{
+  const products=(state.data.products||[]),product=products.find(item=>item.id===state.productTechnicalConsultId)||products[0],model=product?.connectionModel||{},show=list=>Array.isArray(list)&&list.length?list.join(' · '):'Não informado';
+  const section=product?`<section class="card product-connection-model"><div class="card-head"><div><p class="eyebrow">MODELO DE CONEXÕES EDITÁVEL</p><h3>${product.name||'Produto'}${product.model?` · ${product.model}`:''}</h3><p class="subtext">Base para futuras sugestões de cabos, portas e compatibilidades. Só regras validadas devem ser automatizadas.</p></div><button type="button" class="button secondary" data-edit-consulted-product="${product.id}">Editar modelo</button></div><div class="product-quick-details"><div><small>VALIDAÇÃO</small><strong>${model.verification||product.technicalIdentity?.verification||'Pendente de validação'}</strong><span>${model.officialSource||product.technicalIdentity?.source||'Fonte oficial não informada'}</span></div><div><small>COMPATÍVEL COM</small><strong>${show(model.compatibleInterfaces)}</strong><span>Interfaces e padrões aceitos</span></div><div><small>EXIGE</small><strong>${show(model.requirements)}</strong><span>Demandas para instalar ou operar</span></div></div><div class="product-port-summary"><div><small>LIMITES / INCOMPATIBILIDADES</small><p>${show(model.constraints)}</p></div></div></section>`:'';
+  return officialConnectionModelView()+section;
+};
+render();
+
+// Exemplos descartáveis: permitem validar o funil sem transformar contatos fictícios em clientes reais.
+function createCommercialTestOpportunities(){
+  const examples=[
+    ['TESTE · Residência Horizonte','Marina Duarte','(11) 90000-1010','marina.teste@exemplo.com','Indicação — teste','Michel','Novo contato','Agendar visita técnica','2026-09-03',85000],
+    ['TESTE · Clínica Vitta','Rafael Nunes','(11) 90000-1020','rafael.teste@exemplo.com','Site — teste','Natalia','Qualificação','Confirmar escopo de rede e automação','2026-09-04',145000],
+    ['TESTE · Casa das Árvores','Carolina Moraes','(11) 90000-1030','carolina.teste@exemplo.com','Arquiteto parceiro — teste','Michel','Visita','Registrar levantamento por ambientes','2026-09-05',210000],
+    ['TESTE · Loja Mares','Diego Alves','(11) 90000-1040','diego.teste@exemplo.com','Prospecção — teste','Natalia','Orçamento','Revisar proposta técnica','2026-09-06',120000]
+  ];
+  const existing=new Set((state.data.opportunities||[]).map(item=>item.company));
+  const missing=examples.filter(([company])=>!existing.has(company));
+  if(!missing.length){toast('Os exemplos de teste já estão no funil.');return}
+  missing.forEach(([company,contact,phone,email,source,owner,stage,nextAction,nextDue,estimatedValue])=>state.data.opportunities.unshift({id:uid('opp'),company,contact,phone,email,source,owner,stage,nextAction,nextDue,estimatedValue,lossReason:''}));
+  logAudit('Criou','Oportunidades de teste',`${missing.length} exemplo(s) para validar o fluxo comercial`);persist();render();toast(`${missing.length} oportunidade(s) de teste adicionada(s).`);
+}
+const commercialTestExamplesView=views.commercial;
+views.commercial=()=>commercialTestExamplesView().replace('<div class="module-toolbar">','<div class="module-toolbar"><button type="button" class="button secondary" data-create-commercial-tests>+ Criar exemplos de teste</button>');
+document.addEventListener('click',event=>{const button=event.target.closest('[data-create-commercial-tests]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();createCommercialTestOpportunities()},true);
 render();

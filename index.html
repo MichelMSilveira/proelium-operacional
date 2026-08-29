@@ -1,140 +1,473 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#12251e">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Proelium Operacional</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="crm.css">
-  <link rel="stylesheet" href="bi.css">
-  <link rel="stylesheet" href="quotes.css">
-  <link rel="stylesheet" href="danger.css">
-</head>
-<body class="auth-pending">
-  <button id="zoomLockButton" class="zoom-lock-button" type="button" aria-pressed="false" aria-label="Bloquear zoom" title="Permitir zoom no celular">🔓</button>
-  <div id="appVersionStatus" class="app-version-status">App v206 · verificando atualização</div>
-  <div id="splash" class="splash-screen" aria-label="Proelium Operacional">
-    <div class="proelium-wordmark splash-logo" aria-hidden="true">PROELIUM</div>
-    <strong>EXPERIÊNCIAS QUE ATRAVESSAM GERAÇÕES</strong>
-    <p>Mais de 30 anos de tradição, confiança e excelência.</p>
-    <small>PROELIUM OPERACIONAL</small>
-  </div>
-  <section id="authGate" class="auth-gate" aria-labelledby="authTitle">
-    <form id="authForm" class="auth-card">
-      <div class="proelium-wordmark auth-logo" aria-hidden="true">PROELIUM</div>
-      <p class="eyebrow">PROELIUM OPERACIONAL</p>
-      <h1 id="authTitle">Entrar no sistema</h1>
-      <p class="auth-description">Use seu usuário e senha para acessar a operação compartilhada.</p>
-      <label class="auth-field">Usuário<input id="authUsername" name="username" autocomplete="username" required></label>
-      <label class="auth-field">Senha<input id="authPassword" name="password" type="password" autocomplete="current-password" required></label>
-      <p id="authError" class="auth-error" role="alert" hidden></p>
-      <button class="button primary auth-submit" type="submit">Entrar</button>
-    </form>
-  </section>
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand"><span class="brand-mark">P</span><div><strong>PROELIUM</strong><small>Serviços</small></div></div>
-      <nav id="navigation" aria-label="Navegação principal"></nav>
-      <section class="presence-panel" aria-labelledby="presenceTitle">
-        <div class="presence-head"><strong id="presenceTitle">Participantes online</strong><span id="presenceCount">0</span></div>
-        <div id="presenceList" class="presence-list"><small>Nenhum participante online.</small></div>
-        <button id="availabilityButton" class="presence-collaborate" type="button">Disponível para auxiliar</button>
-        <button id="assistanceButton" class="presence-collaborate presence-help" type="button">Pedir auxílio</button>
-        <button id="collaborationButton" class="presence-collaborate" type="button">Quero colaborar</button>
-      </section>
-      <div class="sidebar-foot"><span class="status-dot"></span><div><strong id="sharedStatusTitle">Servidor compartilhado</strong><small id="sharedStatusDetail">Sincronização automática ativa</small></div></div>
-    </aside>
-    <button id="menuBackdrop" class="menu-backdrop" type="button" aria-label="Fechar menu"></button>
-    <main>
-      <header class="topbar">
-        <button class="icon-button menu-button" id="menuButton" aria-label="Abrir menu">☰</button>
-        <div><p class="eyebrow">CENTRAL OPERACIONAL</p><h1 id="pageTitle">Visão geral</h1></div>
-        <div class="header-company" aria-label="Proelium Operacional, data e hora atuais">
-          <div class="top-brand">
-            <strong>PROELIUM</strong><small>Serviços</small>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#12251e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Proelium Operacional</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="crm.css" />
+    <link rel="stylesheet" href="bi.css" />
+    <link rel="stylesheet" href="quotes.css" />
+    <link rel="stylesheet" href="danger.css" />
+  </head>
+  <body class="auth-pending">
+    <button
+      id="zoomLockButton"
+      class="zoom-lock-button"
+      type="button"
+      aria-pressed="false"
+      aria-label="Bloquear zoom"
+      title="Permitir zoom no celular"
+    >
+      🔓
+    </button>
+    <div id="appVersionStatus" class="app-version-status">
+      App v225 · verificando atualização
+    </div>
+    <div id="splash" class="splash-screen" aria-label="Proelium Operacional">
+      <img
+        class="proelium-logo splash-proelium-logo"
+        src="assets/proelium-servicos-oficial.png"
+        alt="Proelium Serviços"
+      />
+      <p>Central operacional</p>
+    </div>
+    <section id="authGate" class="auth-gate" aria-labelledby="authTitle">
+      <form id="authForm" class="auth-card">
+        <img
+          class="proelium-logo auth-proelium-logo"
+          src="assets/proelium-servicos-oficial.png"
+          alt="Proelium Serviços"
+        />
+        <p class="eyebrow">PROELIUM OPERACIONAL</p>
+        <h1 id="authTitle">Entrar no sistema</h1>
+        <p class="auth-description">
+          Use seu usuário e senha para acessar a operação compartilhada.
+        </p>
+        <label class="auth-field"
+          >Usuário<input
+            id="authUsername"
+            name="username"
+            autocomplete="username"
+            required
+        /></label>
+        <label class="auth-field"
+          >Senha<input
+            id="authPassword"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+        /></label>
+        <p id="authError" class="auth-error" role="alert" hidden></p>
+        <button class="button primary auth-submit" type="submit">Entrar</button>
+      </form>
+    </section>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <img
+            class="proelium-symbol"
+            src="assets/proelium-simbolo-oficial.png"
+            alt=""
+          />
+          <div><strong>PROELIUM</strong><small>Serviços</small></div>
+        </div>
+        <nav id="navigation" aria-label="Navegação principal"></nav>
+        <section class="presence-panel" aria-labelledby="presenceTitle">
+          <div class="presence-head">
+            <strong id="presenceTitle">Participantes online</strong
+            ><span id="presenceCount">0</span>
           </div>
-          <div class="header-context">
+          <div id="presenceList" class="presence-list">
+            <small>Nenhum participante online.</small>
+          </div>
+          <button
+            id="availabilityButton"
+            class="presence-collaborate"
+            type="button"
+          >
+            Disponível para auxiliar
+          </button>
+          <button
+            id="assistanceButton"
+            class="presence-collaborate presence-help"
+            type="button"
+          >
+            Pedir auxílio
+          </button>
+          <button
+            id="collaborationButton"
+            class="presence-collaborate"
+            type="button"
+          >
+            Quero colaborar
+          </button>
+        </section>
+        <div class="sidebar-foot">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="sharedStatusTitle">Servidor compartilhado</strong
+            ><small id="sharedStatusDetail"
+              >Sincronização automática ativa</small
+            >
+          </div>
+        </div>
+      </aside>
+      <button
+        id="menuBackdrop"
+        class="menu-backdrop"
+        type="button"
+        aria-label="Fechar menu"
+      ></button>
+      <main>
+        <header class="topbar">
+          <button
+            class="icon-button menu-button"
+            id="menuButton"
+            aria-label="Abrir menu"
+          >
+            ☰
+          </button>
+          <div>
+            <p class="eyebrow">CENTRAL OPERACIONAL</p>
+            <h1 id="pageTitle">Visão geral</h1>
+          </div>
+          <img
+            class="proelium-logo header-proelium-logo"
+            src="assets/proelium-servicos-oficial.png"
+            alt="Proelium Serviços"
+          />
+          <div class="header-context" aria-label="Data e hora atuais">
             <time id="headerDate"></time>
             <time id="headerDateMobile"></time>
           </div>
-        </div>
-        <div class="top-actions">
-          <label class="search"><span>⌕</span><input id="globalSearch" placeholder="Buscar neste módulo"></label>
-          <span id="authUserBadge" class="auth-user-badge" hidden></span>
-          <button id="authLogout" class="button secondary auth-logout" type="button" hidden>Sair</button>
-        </div>
-      </header>
-      <section id="content" class="content"></section>
-    </main>
-  </div>
-  <aside class="proelium-footer-brand" aria-label="Proelium Serviços"><span>P</span><div><strong>PROELIUM</strong><small>Serviços</small></div></aside>
-  <dialog id="recordDialog">
-    <form id="recordForm">
-      <div class="dialog-head"><div><p class="eyebrow">NOVO REGISTRO</p><h2 id="dialogTitle">Adicionar</h2></div><button type="button" id="recordCloseX" class="icon-button" aria-label="Fechar">×</button></div>
-      <div id="formFields" class="form-grid"></div>
-      <div class="dialog-actions"><button type="button" id="recordCancel" class="button secondary">Cancelar</button><button type="button" id="recordDelete" class="button danger-outline" hidden>Excluir compromisso</button><button type="submit" id="saveButton" class="button primary">Salvar registro</button></div>
-    </form>
-  </dialog>
-  <dialog id="agendaQuickDialog" class="agenda-quick-dialog">
-    <div class="agenda-quick-head"><div><p class="eyebrow">CONSULTA RÁPIDA</p><div class="quick-day-nav"><button type="button" class="icon-button" id="agendaQuickPrev" aria-label="Dia anterior">‹</button><h2 id="agendaQuickTitle">Compromissos do dia</h2><button type="button" class="icon-button" id="agendaQuickNext" aria-label="Próximo dia">›</button></div></div><button type="button" class="icon-button" id="agendaQuickClose" aria-label="Fechar">×</button></div>
-    <div id="agendaQuickContent"></div>
-  </dialog>
-  <dialog id="agendaItemDialog" class="agenda-quick-dialog">
-    <div class="agenda-quick-head"><div><p class="eyebrow" id="agendaItemType">ITEM DA AGENDA</p><h2 id="agendaItemTitle">Detalhes</h2></div><button class="icon-button" id="agendaItemClose" aria-label="Fechar">×</button></div>
-    <div id="agendaItemContent"></div>
-  </dialog>
-  <button id="accessibilityButton" class="accessibility-fab" type="button" aria-label="Abrir opções de leitura" title="Opções de leitura">⌕</button>
-  <button id="privacyQuickButton" class="privacy-quick-button" type="button" aria-pressed="false" aria-label="Ativar modo privacidade">◉ Privacidade</button>
-  <dialog id="accessibilityDialog" class="accessibility-dialog" aria-labelledby="accessibilityTitle">
-    <div class="accessibility-head"><div><p class="eyebrow">ACESSIBILIDADE</p><h2 id="accessibilityTitle">Leitura confortável</h2></div><button type="button" id="accessibilityClose" class="icon-button" aria-label="Fechar">×</button></div>
-    <p>Escolha um tamanho de letra, contraste e intensidade da arte que fiquem confortáveis para você. Essas preferências são salvas neste aparelho.</p>
-    <div class="font-controls"><button type="button" id="fontDown" class="button secondary" aria-label="Diminuir letras">A−</button><strong id="fontValue">100%</strong><button type="button" id="fontUp" class="button primary" aria-label="Aumentar letras">A+</button></div>
-    <div class="season-controls"><div><strong>Tema da ilustração</strong><small>Por padrão, acompanha a estação atual. Escolha uma estação apenas para fixá-la neste aparelho.</small></div><select id="seasonSelector" aria-label="Escolher estação"><option value="auto">✦ Automática</option><option value="summer">☀ Verão</option><option value="autumn">◒ Outono</option><option value="winter">❄ Inverno</option><option value="spring">✿ Primavera</option></select></div>
-    <div class="rotation-controls"><div><strong>Tema rotativo</strong><small>Alterne as artes sazonais automaticamente neste aparelho.</small></div><select id="themeRotation" aria-label="Intervalo do tema rotativo"><option value="0">Desligado</option><option value="1">A cada 1 minuto</option><option value="5">A cada 5 minutos</option><option value="15">A cada 15 minutos</option></select></div>
-    <div class="art-intensity-dock" role="group" aria-label="Controle da intensidade da arte"><span>Arte</span><input id="backgroundPresence" type="range" min="10" max="150" step="1" value="55" aria-label="Intensidade da ilustração"><button id="privacyModeButton" type="button" aria-pressed="false">Privacidade</button><output id="backgroundValue">55%</output></div>
-    <button type="button" id="contrastButton" class="contrast-button" aria-pressed="false">Ativar alto contraste</button>
-  </dialog>
-  <section class="privacy-screen" aria-label="Modo privacidade ativo"><div class="privacy-proelium-wordmark top-brand" aria-label="Proelium Operacional"><strong>PROELIUM</strong><small>Serviços</small></div><p>Modo privacidade ativo</p></section>
-  <aside class="privacy-proelium brand" aria-label="Proelium Serviços"><span class="brand-mark">P</span><div><strong>PROELIUM</strong><small>Serviços</small></div></aside>
-  <div id="toast" class="toast" role="status" aria-live="polite">
-    <span id="toastText"></span>
-    <button id="undoButton" type="button" hidden>Desfazer</button>
-  </div>
-  <section id="appUpdateScreen" class="app-update-screen" hidden aria-labelledby="appUpdateTitle">
-    <div class="app-update-card">
-      <span class="app-update-mark">↗</span>
-      <p class="eyebrow">NOVA VERSÃO DISPONÍVEL</p>
-      <h2 id="appUpdateTitle">O Proelium foi atualizado</h2>
-      <p>A versão mais recente está pronta. Atualize agora para continuar usando o app com segurança.</p>
-      <button id="appUpdateButton" class="button primary" type="button">Salvar e atualizar aplicativo</button>
+          <div class="top-actions">
+            <label class="search"
+              ><span>⌕</span
+              ><input id="globalSearch" placeholder="Buscar neste módulo"
+            /></label>
+            <span id="authUserBadge" class="auth-user-badge" hidden></span>
+            <button
+              id="authLogout"
+              class="button secondary auth-logout"
+              type="button"
+              hidden
+            >
+              Sair
+            </button>
+          </div>
+        </header>
+        <section id="content" class="content"></section>
+      </main>
     </div>
-  </section>
-  <script src="app.js"></script>
-  <script>
-    // Proteção: mesmo que um módulo opcional falhe, a dedicatória não bloqueia o acesso ao app.
-    setTimeout(() => document.getElementById('splash')?.classList.add('hide'), 4500);
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-      // A versão na URL garante que aparelhos que ficaram presos em um shell
-      // anterior recebam o trabalhador atual sem apagar os dados locais.
-      navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
-      navigator.serviceWorker.addEventListener('message', event => { if (event.data?.type === 'UPDATE_READY') window.__showAppUpdate?.(event.data.registration); });
-      navigator.serviceWorker.register('./sw.js?release=20260829-proelium').then(registration => {
-        const showUpdate = registration => { if (!navigator.serviceWorker.controller || !registration.waiting) return; const screen=document.getElementById('appUpdateScreen'),button=document.getElementById('appUpdateButton'); if(!screen||!button)return; screen.hidden=false; button.onclick=async()=>{button.disabled=true;button.textContent='Salvando alterações…';await window.proeliumPrepareForUpdate?.();button.textContent='Atualizando…';registration.waiting.postMessage({type:'SKIP_WAITING'})}; };
-        window.__showAppUpdate=showUpdate;
-        if (registration.waiting) showUpdate(registration);
-        const checkForUpdate=()=>registration.update().catch(()=>{});
-        document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForUpdate()});
-        window.addEventListener('focus',checkForUpdate);
-        setInterval(checkForUpdate,60000);
-        registration.addEventListener('updatefound', () => { const worker=registration.installing; worker?.addEventListener('statechange', () => { if(worker.state==='installed' && navigator.serviceWorker.controller) showUpdate(registration); }); });
-      });
-    }
-  </script>
-</body>
+    <aside class="proelium-footer-brand" aria-label="Proelium Serviços">
+      <img
+        class="proelium-symbol"
+        src="assets/proelium-simbolo-oficial.png"
+        alt=""
+      />
+      <div><strong>PROELIUM</strong><small>Serviços</small></div>
+    </aside>
+    <dialog id="recordDialog">
+      <form id="recordForm">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">NOVO REGISTRO</p>
+            <h2 id="dialogTitle">Adicionar</h2>
+          </div>
+          <button
+            type="button"
+            id="recordCloseX"
+            class="icon-button"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+        </div>
+        <div id="formFields" class="form-grid"></div>
+        <div class="dialog-actions">
+          <button type="button" id="recordCancel" class="button secondary">
+            Cancelar</button
+          ><button
+            type="button"
+            id="recordDelete"
+            class="button danger-outline"
+            hidden
+          >
+            Excluir compromisso</button
+          ><button type="submit" id="saveButton" class="button primary">
+            Salvar registro
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="agendaQuickDialog" class="agenda-quick-dialog">
+      <div class="agenda-quick-head">
+        <div>
+          <p class="eyebrow">CONSULTA RÁPIDA</p>
+          <div class="quick-day-nav">
+            <button
+              type="button"
+              class="icon-button"
+              id="agendaQuickPrev"
+              aria-label="Dia anterior"
+            >
+              ‹
+            </button>
+            <h2 id="agendaQuickTitle">Compromissos do dia</h2>
+            <button
+              type="button"
+              class="icon-button"
+              id="agendaQuickNext"
+              aria-label="Próximo dia"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="icon-button"
+          id="agendaQuickClose"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+      </div>
+      <div id="agendaQuickContent"></div>
+    </dialog>
+    <dialog id="agendaItemDialog" class="agenda-quick-dialog">
+      <div class="agenda-quick-head">
+        <div>
+          <p class="eyebrow" id="agendaItemType">ITEM DA AGENDA</p>
+          <h2 id="agendaItemTitle">Detalhes</h2>
+        </div>
+        <button class="icon-button" id="agendaItemClose" aria-label="Fechar">
+          ×
+        </button>
+      </div>
+      <div id="agendaItemContent"></div>
+    </dialog>
+    <button
+      id="accessibilityButton"
+      class="accessibility-fab"
+      type="button"
+      aria-label="Abrir opções de leitura"
+      title="Opções de leitura"
+    >
+      ⌕
+    </button>
+    <button
+      id="privacyQuickButton"
+      class="privacy-quick-button"
+      type="button"
+      aria-pressed="false"
+      aria-label="Ativar modo privacidade"
+    >
+      ◉ Privacidade
+    </button>
+    <dialog
+      id="accessibilityDialog"
+      class="accessibility-dialog"
+      aria-labelledby="accessibilityTitle"
+    >
+      <div class="accessibility-head">
+        <div>
+          <p class="eyebrow">ACESSIBILIDADE</p>
+          <h2 id="accessibilityTitle">Leitura confortável</h2>
+        </div>
+        <button
+          type="button"
+          id="accessibilityClose"
+          class="icon-button"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+      </div>
+      <p>
+        Escolha um tamanho de letra, contraste e intensidade da arte que fiquem
+        confortáveis para você. Essas preferências são salvas neste aparelho.
+      </p>
+      <div class="font-controls">
+        <button
+          type="button"
+          id="fontDown"
+          class="button secondary"
+          aria-label="Diminuir letras"
+        >
+          A−</button
+        ><strong id="fontValue">100%</strong
+        ><button
+          type="button"
+          id="fontUp"
+          class="button primary"
+          aria-label="Aumentar letras"
+        >
+          A+
+        </button>
+      </div>
+      <div class="season-controls">
+        <div>
+          <strong>Tema da ilustração</strong
+          ><small
+            >Por padrão, acompanha a estação atual. Escolha uma estação apenas
+            para fixá-la neste aparelho.</small
+          >
+        </div>
+        <select id="seasonSelector" aria-label="Escolher estação">
+          <option value="auto">✦ Automática</option>
+          <option value="summer">☀ Verão</option>
+          <option value="autumn">◒ Outono</option>
+          <option value="winter">❄ Inverno</option>
+          <option value="spring">✿ Primavera</option>
+        </select>
+      </div>
+      <div class="rotation-controls">
+        <div>
+          <strong>Tema rotativo</strong
+          ><small
+            >Alterne as artes sazonais automaticamente neste aparelho.</small
+          >
+        </div>
+        <select id="themeRotation" aria-label="Intervalo do tema rotativo">
+          <option value="0">Desligado</option>
+          <option value="1">A cada 1 minuto</option>
+          <option value="5">A cada 5 minutos</option>
+          <option value="15">A cada 15 minutos</option>
+        </select>
+      </div>
+      <div
+        class="art-intensity-dock"
+        role="group"
+        aria-label="Controle da intensidade da arte"
+      >
+        <span>Arte</span
+        ><input
+          id="backgroundPresence"
+          type="range"
+          min="10"
+          max="150"
+          step="1"
+          value="55"
+          aria-label="Intensidade da ilustração"
+        /><button id="privacyModeButton" type="button" aria-pressed="false">
+          Privacidade</button
+        ><output id="backgroundValue">55%</output>
+      </div>
+      <button
+        type="button"
+        id="contrastButton"
+        class="contrast-button"
+        aria-pressed="false"
+      >
+        Ativar alto contraste
+      </button>
+    </dialog>
+    <section class="privacy-screen" aria-label="Modo privacidade ativo">
+      <img
+        class="proelium-logo privacy-proelium-logo"
+        src="assets/proelium-servicos-oficial.png"
+        alt="Proelium Serviços"
+      />
+      <p>Modo privacidade ativo</p>
+    </section>
+    <aside class="privacy-proelium brand" aria-label="Proelium Serviços">
+      <img
+        class="proelium-symbol"
+        src="assets/proelium-simbolo-oficial.png"
+        alt=""
+      />
+      <div><strong>PROELIUM</strong><small>Serviços</small></div>
+    </aside>
+    <div id="toast" class="toast" role="status" aria-live="polite">
+      <span id="toastText"></span>
+      <button id="undoButton" type="button" hidden>Desfazer</button>
+    </div>
+    <section
+      id="appUpdateScreen"
+      class="app-update-screen"
+      hidden
+      aria-labelledby="appUpdateTitle"
+    >
+      <div class="app-update-card">
+        <span class="app-update-mark">↗</span>
+        <p class="eyebrow">NOVA VERSÃO DISPONÍVEL</p>
+        <h2 id="appUpdateTitle">O Proelium foi atualizado</h2>
+        <p>
+          A versão mais recente está pronta. Atualize agora para continuar
+          usando o app com segurança.
+        </p>
+        <button id="appUpdateButton" class="button primary" type="button">
+          Salvar e atualizar aplicativo
+        </button>
+      </div>
+    </section>
+    <script src="app.js"></script>
+    <script>
+      // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
+      setTimeout(
+        () => document.getElementById("splash")?.classList.add("hide"),
+        4500,
+      );
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        // A versão na URL garante que aparelhos que ficaram presos em um shell
+        // anterior recebam o trabalhador atual sem apagar os dados locais.
+        navigator.serviceWorker.addEventListener("controllerchange", () =>
+          location.reload(),
+        );
+        navigator.serviceWorker.addEventListener("message", (event) => {
+          if (event.data?.type === "UPDATE_READY")
+            window.__showAppUpdate?.(event.data.registration);
+        });
+        navigator.serviceWorker
+          .register("./sw.js?release=20260829-commercial-test-flow")
+          .then((registration) => {
+            const showUpdate = (registration) => {
+              if (!navigator.serviceWorker.controller || !registration.waiting)
+                return;
+              const screen = document.getElementById("appUpdateScreen"),
+                button = document.getElementById("appUpdateButton");
+              if (!screen || !button) return;
+              screen.hidden = false;
+              button.onclick = async () => {
+                button.disabled = true;
+                button.textContent = "Salvando alterações…";
+                await window.proeliumPrepareForUpdate?.();
+                button.textContent = "Atualizando…";
+                registration.waiting.postMessage({ type: "SKIP_WAITING" });
+              };
+            };
+            window.__showAppUpdate = showUpdate;
+            if (registration.waiting) showUpdate(registration);
+            const checkForUpdate = () => registration.update().catch(() => {});
+            document.addEventListener("visibilitychange", () => {
+              if (!document.hidden) checkForUpdate();
+            });
+            window.addEventListener("focus", checkForUpdate);
+            setInterval(checkForUpdate, 60000);
+            registration.addEventListener("updatefound", () => {
+              const worker = registration.installing;
+              worker?.addEventListener("statechange", () => {
+                if (
+                  worker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                )
+                  showUpdate(registration);
+              });
+            });
+          });
+      }
+    </script>
+  </body>
 </html>
