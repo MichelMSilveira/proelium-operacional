@@ -5,7 +5,7 @@ $hostName = if ($env:PROELIUM_VPS_HOST) { $env:PROELIUM_VPS_HOST } else { '144.2
 $remote = "root@$hostName"
 
 if (-not (Test-Path -LiteralPath $key)) { throw "Chave SSH não encontrada: $key" }
-$files = @('server.js','storage.js','package.json','package-lock.json','app.js','index.html','styles.css','quotes.css','bi.css','crm.css','danger.css','sw.js','manifest.webmanifest','icon.svg')
+$files = @('server.js','storage.js','package.json','package-lock.json','app.js','index.html','styles.css','quotes.css','bi.css','crm.css','danger.css','sw.js','manifest.webmanifest','icon.svg','icon.png')
 foreach ($file in $files) {
   scp -i $key -o StrictHostKeyChecking=no (Join-Path $appDirectory $file) "$remote`:/tmp/proelium-$file"
   if ($LASTEXITCODE -ne 0) { throw "Falha ao enviar $file" }
