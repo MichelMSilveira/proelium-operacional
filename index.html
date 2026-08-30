@@ -18,9 +18,9 @@
 </head>
 <body class="auth-pending">
   <button id="zoomLockButton" class="zoom-lock-button" type="button" aria-pressed="false" aria-label="Bloquear zoom" title="Permitir zoom no celular">🔓</button>
-  <div id="appVersionStatus" class="app-version-status">App v204 · verificando atualização</div>
-  <div id="splash" class="splash-screen" aria-label="EMS Studio">
-    <img class="ems-logo splash-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
+  <div id="appVersionStatus" class="app-version-status">App v206 · verificando atualização</div>
+  <div id="splash" class="splash-screen" aria-label="Proelium Operacional">
+    <div class="proelium-wordmark splash-logo" aria-hidden="true">PROELIUM</div>
     <strong>EXPERIÊNCIAS QUE ATRAVESSAM GERAÇÕES</strong>
     <p>Mais de 30 anos de tradição, confiança e excelência.</p>
     <div class="splash-tribute"><span></span><small>COM CARINHO E RESPEITO A</small><b>Ernani Queiroz Andrade</b><em>Presença, experiência e inspiração em cada novo projeto.</em><span></span></div>
@@ -28,7 +28,7 @@
   </div>
   <section id="authGate" class="auth-gate" aria-labelledby="authTitle">
     <form id="authForm" class="auth-card">
-      <img class="ems-logo auth-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
+      <div class="proelium-wordmark auth-logo" aria-hidden="true">PROELIUM</div>
       <p class="eyebrow">PROELIUM OPERACIONAL</p>
       <h1 id="authTitle">Entrar no sistema</h1>
       <p class="auth-description">Use seu usuário e senha para acessar a operação compartilhada.</p>
@@ -56,9 +56,9 @@
       <header class="topbar">
         <button class="icon-button menu-button" id="menuButton" aria-label="Abrir menu">☰</button>
         <div><p class="eyebrow">CENTRAL OPERACIONAL</p><h1 id="pageTitle">Visão geral</h1></div>
-        <div class="header-company" aria-label="EMS Studio, data e hora atuais">
+        <div class="header-company" aria-label="Proelium Operacional, data e hora atuais">
           <div class="top-brand">
-            <img class="ems-logo header-logo" src="assets/ems-studio-logo.png" alt="EMS Studio">
+            <strong>PROELIUM</strong><small>Serviços</small>
           </div>
           <div class="header-context">
             <time id="headerDate"></time>
@@ -101,7 +101,7 @@
     <div class="art-intensity-dock" role="group" aria-label="Controle da intensidade da arte"><span>Arte</span><input id="backgroundPresence" type="range" min="10" max="150" step="1" value="55" aria-label="Intensidade da ilustração"><button id="privacyModeButton" type="button" aria-pressed="false">Privacidade</button><output id="backgroundValue">55%</output></div>
     <button type="button" id="contrastButton" class="contrast-button" aria-pressed="false">Ativar alto contraste</button>
   </dialog>
-  <section class="privacy-screen" aria-label="Modo privacidade ativo"><div class="privacy-ems-logo top-brand" aria-label="EMS Studio"><img class="ems-logo privacy-logo" src="assets/ems-studio-logo.png" alt="EMS Studio"></div><p>Modo privacidade ativo</p></section>
+  <section class="privacy-screen" aria-label="Modo privacidade ativo"><div class="privacy-proelium-wordmark top-brand" aria-label="Proelium Operacional"><strong>PROELIUM</strong><small>Serviços</small></div><p>Modo privacidade ativo</p></section>
   <aside class="privacy-proelium brand" aria-label="Proelium Serviços"><span class="brand-mark">P</span><div><strong>PROELIUM</strong><small>Serviços</small></div></aside>
   <div id="toast" class="toast" role="status" aria-live="polite">
     <span id="toastText"></span>
@@ -125,7 +125,7 @@
       // anterior recebam o trabalhador atual sem apagar os dados locais.
       navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
       navigator.serviceWorker.addEventListener('message', event => { if (event.data?.type === 'UPDATE_READY') window.__showAppUpdate?.(event.data.registration); });
-      navigator.serviceWorker.register('./sw.js?release=20260816-menu').then(registration => {
+      navigator.serviceWorker.register('./sw.js?release=20260829-proelium').then(registration => {
         const showUpdate = registration => { if (!navigator.serviceWorker.controller || !registration.waiting) return; const screen=document.getElementById('appUpdateScreen'),button=document.getElementById('appUpdateButton'); if(!screen||!button)return; screen.hidden=false; button.onclick=async()=>{button.disabled=true;button.textContent='Salvando alterações…';await window.proeliumPrepareForUpdate?.();button.textContent='Atualizando…';registration.waiting.postMessage({type:'SKIP_WAITING'})}; };
         window.__showAppUpdate=showUpdate;
         if (registration.waiting) showUpdate(registration);
