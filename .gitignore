@@ -11,6 +11,7 @@ desktop/dist-release
 /*.apk
 *.dump
 *.dump.sha256
+reports/test-bot-latest.md
 
 # Runtime data (users, sessions and shared records)
 data/*.json

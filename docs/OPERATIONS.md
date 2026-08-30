@@ -49,3 +49,9 @@ Com o app em execução, rode `npm run test:bot`. O bot faz verificações somen
 Para testar outro endereço, acrescente a URL: `npm run test:bot -- https://endereco-do-app`. Para também validar login, sessão e leitura sincronizada, defina `PROELIUM_TEST_USER` e `PROELIUM_TEST_PASSWORD` antes de executar. As credenciais não devem ser gravadas em arquivos nem incluídas no Git.
 
 O deploy da `main` envia o bot ao VPS e o executa depois da reinicialização do serviço. Qualquer verificação reprovada encerra o workflow com erro e impede que uma implantação defeituosa seja declarada concluída.
+
+Para executar o cenário funcional completo, use `npm run test:functional`. Ele abre outro servidor em uma porta aleatória, força armazenamento JSON em uma pasta temporária e simula contato, proposta, venda, projeto, operação, pós-venda, financeiro e permissões. Ao terminar, encerra o servidor, apaga a pasta temporária e grava `reports/test-bot-latest.md` com as correções recomendadas.
+
+Para inspecionar manualmente a interface já preenchida pelo bot, use `npm run test:functional -- --keep-open --no-report`. O endereço temporário aparece no terminal; pressione `Ctrl+C` para destruir o ambiente. O servidor recusa `PROELIUM_TEST_DATA_DIR` fora de `NODE_ENV=test`, evitando uso acidental dessa configuração na operação real.
+
+O relatório validado desta entrega está em [TEST-BOT-REPORT.md](TEST-BOT-REPORT.md).

@@ -174,4 +174,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runSmokeBot };
+module.exports = { request, runSmokeBot };

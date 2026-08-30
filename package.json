@@ -6,6 +6,7 @@
     "start": "node server.js",
     "check": "node --check app.js && node --check server.js && node --check storage.js && node --test",
     "test:bot": "node scripts/smoke-bot.js",
+    "test:functional": "node scripts/functional-test-bot.js",
     "db:migrate": "node database/migrate.js",
     "db:import": "node database/import-json.js",
     "db:verify": "node database/verify.js"
