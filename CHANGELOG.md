@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Bot funcional completo: o cenário isolado agora simula contato, proposta, venda, cliente, projeto, operação, pós-venda, compras, financeiro, qualidade, equipamentos, diagramas, permissões e conflitos sem acessar o PostgreSQL ou os dados reais; gera relatório de correções e é executado após o deploy.
+
+- Presença e textos do servidor: corrigidas mensagens com codificação UTF-8 quebrada e adicionado teste de regressão; o cache do shell foi atualizado para distribuir a correção.
+
 - Qualidade operacional: criado um bot de smoke test somente leitura para conferir saúde, armazenamento, shell PWA, proteção da API e, opcionalmente, autenticação e leitura sincronizada; o deploy no VPS agora só conclui após a aprovação automática do bot.
 
 - Status de aprovaÃ§Ã£o: a aprovaÃ§Ã£o de cliente e projeto agora Ã© registrada na auditoria e aparece no status do menu apÃ³s a sincronizaÃ§Ã£o.

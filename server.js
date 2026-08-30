@@ -6,7 +6,11 @@ const { createStorage } = require('./storage');
 
 const port = Number(process.env.PORT || 4173);
 const root = __dirname;
-const dataDirectory = path.join(root, 'data');
+const isolatedTestDirectory = String(process.env.PROELIUM_TEST_DATA_DIR || '').trim();
+if (isolatedTestDirectory && process.env.NODE_ENV !== 'test') {
+  throw new Error('PROELIUM_TEST_DATA_DIR só pode ser usado com NODE_ENV=test.');
+}
+const dataDirectory = isolatedTestDirectory ? path.resolve(isolatedTestDirectory) : path.join(root, 'data');
 const dataFile = path.join(dataDirectory, 'shared-data.json');
 const usersFile = path.join(dataDirectory, 'users.json');
 const storage = createStorage({ dataFile, usersFile });
@@ -119,7 +123,7 @@ async function handleRequest(req, res) {
   const secureCookie = req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
 
   if (pathname === '/api/health' && req.method === 'GET') {
-    return sendJson(res, 200, { ok: true, storage: storage.backend, serverTime: new Date().toISOString() });
+    return sendJson(res, 200, { ok: true, storage: storage.backend, isolatedTestMode: Boolean(isolatedTestDirectory), serverTime: new Date().toISOString() });
   }
 
   if (pathname === '/api/auth/me' && req.method === 'GET') {
@@ -189,7 +193,7 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/presence' && req.method === 'GET') return sendJson(res, 200, { users: presencePayload() });
-  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') { try { const payload=JSON.parse(await readBody(req)||'{}'), current=presence.get(authenticatedUser.username); if(current&&payload.device) current.device=normalizeDevice(payload.device); announcePresence(); return sendJson(res, 200, { ok: true, users: presencePayload() }); } catch { return sendJson(res, 400, { error: 'Heartbeat invÃ¡lido.' }); } }
+  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') { try { const payload=JSON.parse(await readBody(req)||'{}'), current=presence.get(authenticatedUser.username); if(current&&payload.device) current.device=normalizeDevice(payload.device); announcePresence(); return sendJson(res, 200, { ok: true, users: presencePayload() }); } catch { return sendJson(res, 400, { error: 'Heartbeat inválido.' }); } }
   if (pathname === '/api/presence/availability' && req.method === 'POST') {
     try { const payload=JSON.parse(await readBody(req)), current=presence.get(authenticatedUser.username); if(current) { current.available=payload.available!==false; for(const client of eventClients)if(client.username===authenticatedUser.username)client.available=current.available; } announcePresence(); return sendJson(res,200,{ok:true,users:presencePayload()}); }
     catch { return sendJson(res,400,{error:'Disponibilidade inválida.'}); }
