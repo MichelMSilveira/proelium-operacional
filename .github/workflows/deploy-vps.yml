@@ -48,8 +48,17 @@ jobs:
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/assets/"
           rsync -az database/ \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/database/"
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'mkdir -p /opt/proelium-operacional/scripts'
+          rsync -az scripts/smoke-bot.js \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/scripts/"
 
       - name: Install, migrate and restart
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             'cd /opt/proelium-operacional && npm ci --omit=dev --no-audit --no-fund && set -a && . /etc/proelium/database.env && set +a && npm run db:migrate && chown -R root:root /opt/proelium-operacional && systemctl restart proelium && systemctl is-active --quiet proelium && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4173/api/health | grep -q postgresql'
+
+      - name: Run operational test bot
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'cd /opt/proelium-operacional && node scripts/smoke-bot.js http://127.0.0.1:4173'
