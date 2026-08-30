@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Privacidade de identidade: removidos textos, dedicatórias e referências nominais antigas da interface e dos cenários demonstrativos; registros operacionais continuam preservados.
+
 - Identidade visual: removidas referências à marca anterior, a logo correspondente e os textos históricos associados; dados operacionais permanecem preservados. Cache do shell atualizado para v206.
 
 - Bot funcional completo: o cenário isolado agora simula contato, proposta, venda, cliente, projeto, operação, pós-venda, compras, financeiro, qualidade, equipamentos, diagramas, permissões e conflitos sem acessar o PostgreSQL ou os dados reais; gera relatório de correções e é executado após o deploy.
@@ -225,12 +227,11 @@
 - Correção do atalho de Privacidade no computador: o botão agora trata o clique diretamente, inclusive sobre a tela de proteção;
 - Botão fixo de Privacidade deslocado para a esquerda, evitando sobreposição com a lupa;
 - Botão fixo de Privacidade adicionado: ativa e fecha a tela de proteção sem depender do painel da lupa;
-- Tela de abertura: dedicatória reformulada como celebração de presença, experiência e inspiração de Ernani Queiroz Andrade;
 - Controle de intensidade da arte movido para o painel da lupa, junto das preferências de leitura, tema e contraste; no celular, ficou menor e mais abaixo no painel;
 - Relatório de campo padronizado: execução, testes, pendências, próxima ação e até três fotos comprimidas, exibidas no histórico técnico do projeto e da OS;
 - Cenário demo ampliado: novos clientes, obras, tarefas, OS, relatórios, lançamentos financeiros, avaliações e oportunidades para testar os painéis com maior movimentação;
 - Controle de arte refinado: a intensidade agora reforça a ilustração diretamente sobre o tema, sem aplicar véu branco na tela;
-- BI Desempenho: novo quadro de time operacional e liderança, incluindo Ernani Queiroz, com evidências de avaliações, tarefas, OS e projetos vinculados;
+- BI Desempenho: novo quadro de time operacional e liderança, com evidências de avaliações, tarefas, OS e projetos vinculados;
 - Nomenclatura padronizada: BI Intelligence para a visão geral do negócio e BI Desempenho para a leitura por obra;
 - Bloco 7 ampliado: margem por produto e serviço, prazo médio baseado em registros reais de execução/entrega, visão por responsável e etapa, e fila de pendências vencidas;
 - Correção móvel: botão do menu e barra lateral passam a ficar acima do modo privacidade, mantendo a navegação acessível;
