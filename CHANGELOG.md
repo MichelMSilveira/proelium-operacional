@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Financeiro: criada a base de contas financeiras, com instituição, tipo, saldo inicial e saldo projetado a partir dos lançamentos vinculados.
+
+## Em desenvolvimento
+
 - Menu: removido o módulo BI Desempenho da interface e das permissões de navegação; a visão BI Intelligence permanece disponível. Cache do shell atualizado para v207.
 
 - Bot de uso real: criado o comando `npm run test:real-use`, que avalia o shell publicado e os módulos essenciais em modo somente leitura, separando a validação do uso real dos cenários artificiais do bot funcional.
