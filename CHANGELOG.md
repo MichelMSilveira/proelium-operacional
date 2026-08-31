@@ -11,6 +11,8 @@
 - Presença e textos do servidor: corrigidas mensagens com codificação UTF-8 quebrada e adicionado teste de regressão; o cache do shell foi atualizado para distribuir a correção.
 
 - Qualidade operacional: criado um bot de smoke test somente leitura para conferir saúde, armazenamento, shell PWA, proteção da API e, opcionalmente, autenticação e leitura sincronizada; o deploy no VPS agora só conclui após a aprovação automática do bot.
+- Identidade visual: padronizado o nome da logo completa oficial para `assets/proelium-logo-oficial.png`, com referências atualizadas no shell web e cache do PWA renovado.
+- Identidade visual: aplicada a paleta oficial Proelium no login, cabeçalho, navegação, botões, cards e estados ativos, com tema do PWA atualizado para verde escuro e fundo claro oficiais.
 
 - Android: adicionado o gerador local `Gerar-APK-Android.ps1`, que usa o Java 17 baixado em Downloads e entrega o APK instalável 1.4 com a logo oficial.
 
@@ -60,7 +62,6 @@
 
 - Identidade visual: aplicada a marca Proelium fornecida pela empresa, com o símbolo de conexões nos espaços compactos e a assinatura completa em abertura, login, cabeçalho e modo privacidade.
 
-- Identidade: removidas as referências visuais à EMS Studio e a dedicatória de abertura; abertura, autenticação, cabeçalho e modo privacidade agora utilizam somente a marca Proelium.
 
 - Status de aprovaÃ§Ã£o: a aprovaÃ§Ã£o de cliente e projeto agora Ã© registrada na auditoria e aparece no status do menu apÃ³s a sincronizaÃ§Ã£o.
 
@@ -258,7 +259,6 @@
 - Exclusão de cliente reforçada: agora remove todos os registros técnicos, operacionais, financeiros, de compras e avaliações ligados aos projetos do cliente;
 - Novo registro comercial revisado: exige cliente, contato, telefone, e-mail e responsável; os demais campos são opcionais e contam com sugestões de origem, etapa e próxima ação;
 - A análise de orçamento agora deixa explícito o resumo por ambientes dentro do próprio orçamento e permite filtrar a visualização de um cômodo específico;
-- Ajustado o cabeçalho móvel: data e hora sobem para ficar mais próximas da logo EMS Studio e não disputar espaço com o título da Central Operacional;
 - Fluxo de entrada de clientes reforçado: Clientes não permite inclusão direta; oportunidades passam pelo Comercial e só viram cliente quando concluídas como Ganho ou aprovadas no orçamento;
 - Adicionadas as áreas Diagrama técnico e Auditoria: o diagrama organiza os itens do orçamento por ambiente a partir de um ponto técnico central; a auditoria registra data, hora, usuário atual, ação e área alterada;
 - Nova Lista de obra e compras: gera materiais de projetos a partir de orçamentos aprovados, permite inclusão manual e acompanha a sequência Planejado, A cotar, Comprado, Recebido e Conferido;
@@ -288,28 +288,17 @@
 - Correção móvel: botão do menu e barra lateral passam a ficar acima do modo privacidade, mantendo a navegação acessível;
 - Modo privacidade: marca central elevada de forma mais acentuada, com deslocamento maior no celular;
 - Modo privacidade: removida a assinatura interna da Proelium com fundo claro; permanece somente a marca discreta no canto;
-- Modo privacidade: assinatura EMS Studio elevada em computador e celular, com deslocamento maior no celular;
-- Modo privacidade no celular: marca EMS Studio elevada para alinhar visualmente à assinatura da abertura;
 - Correção móvel: isolada a marca do modo privacidade das regras do cabeçalho; menu e controle de privacidade voltam a permanecer acessíveis;
-- Modo privacidade: escala da assinatura EMS Studio unificada à da tela de carregamento em computador e celular;
 - Modo privacidade no celular: posição da logo central equilibrada após a composição com a ilustração;
-- Modo privacidade no celular: ilustração sazonal agora atravessa sutilmente a área clara da marca EMS Studio, preservando sua leitura;
-- Modo privacidade no celular: marca EMS Studio movida mais abaixo conforme ajuste visual;
-- Modo privacidade no celular: posição vertical da marca EMS Studio refinada novamente;
-- Modo privacidade no celular: logo central da EMS Studio deslocada mais abaixo para melhorar o equilíbrio visual;
 - BI de desempenho remodelado: terminal de obras com mini-curvas por projeto, filtros e análise detalhada de execução, custo, prazo, margem e discrepâncias ao selecionar uma obra;
-- Marca EMS Studio ampliada no cabeçalho de desktop, tablet e celular, com espaço vertical adicional para preservar a leitura de data e hora;
 - Bloco 6 concluído como MVP: ativos instalados vinculados a cliente/projeto, ordens de serviço sincronizadas à agenda, chamados de pós-venda e histórico técnico do cliente;
 - OS integrada como centro de rastreabilidade: vincula cliente, projeto, orçamento aprovado, checklist, ativo técnico, relatório de campo e entrega/aceite;
 - Bloco 7 iniciado: lançamentos financeiros de receita, despesa, pagamento e recebimento; comparação previsto × realizado e BI com filtros por período, cliente, responsável e categoria.
 - Bloco 7 validado: correção no cálculo dos lançamentos; teste de custo realizado e reflexo no BI executado e removido do banco compartilhado.
 - Bloco 5 iniciado: ficha de execução por projeto com avanço de etapas, checklist, tarefas, relatórios de serviço e conexão com a instalação vinculada;
 - Bloco 5 concluído como MVP: checklist padrão aplicável aos projetos, atualização automática para novos projetos e entrega formal com aceite do cliente;
-- Cabeçalho reorganizado: logotipo da EMS Studio centralizado na parte superior, com data e hora posicionadas logo abaixo da marca em desktop e celular;
 - Assinatura da Proelium no rodapé do computador movida para a área clara, após o menu lateral;
-- No modo privacidade do celular, a marca EMS Studio foi deslocada para o centro visual da tela;
 - Proteção de inicialização adicionada: a tela de dedicatória é fechada automaticamente mesmo se algum módulo complementar falhar; cache do aplicativo atualizado;
-- Cabeçalho do celular ajustado com áreas separadas para a marca EMS Studio e para data/hora, evitando sobreposição;
 - Título “Central Operacional” deslocado levemente à esquerda no cabeçalho móvel para preservar a leitura da data;
 - Revisões de orçamento agora exigem solicitação com motivo obrigatório; rascunhos são ajustados diretamente, propostas aprovadas não podem ser revisadas, e o histórico da família registra versão, situação, data e motivo;
 - Situações do orçamento receberam feedback visual por cor; inserção de pacote agora orienta quando ainda faltam pacote ou cômodo, e revisões preservam a numeração correta da família do orçamento;
@@ -321,14 +310,9 @@
 - assinatura Proelium Serviços adicionada ao canto inferior esquerdo em desktop e celular;
 - Bloco 3 iniciado: catálogo agora possui fornecedor, edição e status ativo/descontinuado; pacotes reutilizáveis podem reunir produtos, serviços e mão de obra e ser inseridos em orçamentos;
 - edição do catálogo ampliada com campo de modelo; Equipamentos e ativos agora permitem cadastrar e editar cada unidade física com marca, modelo, número de série, local e status;
-- logo oficial fornecida da EMS Studio aplicada à abertura, ao cabeçalho e ao modo privacidade;
-- marca EMS Studio ampliada com escala própria para desktop e celular;
-- cabeçalho desktop recebeu mais espaço para a marca EMS Studio, com data deslocada à esquerda;
-- logo EMS Studio ampliada novamente nas versões desktop e celular;
 - logo do cabeçalho móvel recebeu ampliação adicional;
 - cabeçalho móvel reorganizado com data e relógio mais baixos para dar maior presença à marca;
 - controle de intensidade da arte no celular reorganizado em duas linhas para evitar sobreposição;
-- marca EMS Studio no cabeçalho móvel movida para baixo e à esquerda, com ampliação adicional;
 - cabeçalho móvel alinhado: marca deslocada à direita e menu/título posicionados na mesma faixa visual;
 - desfazer protegido por 15 segundos após exclusões de cliente/produto e ajustes de agenda ou execução; a restauração exige confirmação para evitar acionamento acidental;
 - exclusão de compromisso disponível diretamente na consulta rápida da agenda, com confirmação e opção protegida de desfazer;
@@ -344,14 +328,12 @@
 - política editorial da base de conhecimento: somente procedimentos Proelium, registros futuros do N.E.M.O. ou fontes técnicas, científicas e normativas verificáveis; sem propaganda de marcas;
 - trilha visual de aprendizagem em quatro níveis: Fundamentos, Operacional, Avançado e Específico;
 - Carta de Conduta Proelium posicionada como primeira leitura da base, com princípios de relacionamento, segurança, privacidade, registro, acabamento e cooperação;
-- modo privacidade reorganizado: EMS Studio ao centro e Proelium no canto inferior esquerdo;
 - corrigido o cadastro compartilhado de Waldemir.
 
 > Os dados vivos do catálogo, colaboradores e demais cadastros ficam no servidor compartilhado (`data/shared-data.json`) e não são enviados ao Git por conterem informações operacionais. O Git registra o código, a documentação e a estrutura padrão.
 
 ## 0.4.0 — 2026-08-15
 
-- marca EMS Studio ampliada e adaptada para telas grandes e celulares;
 - data e temas visuais por estação, configuráveis por aparelho;
 - menu móvel fecha ao tocar fora dele;
 - atalho de leitura com ampliação de letras e alto contraste, salvo individualmente;
@@ -386,7 +368,6 @@
 - reforçada a etapa de confirmação após chegar à Visão geral, evitando saída no primeiro toque de voltar.
 - proteção de saída adaptada para navegadores móveis que não disparam o histórico normal ao usar Voltar.
 - Voltar na Visão geral agora mantém o aplicativo aberto; a saída é feita fechando o navegador ou aplicativo.
-- tela inicial com a identidade EMS Studio ao abrir ou atualizar o aplicativo.
 
 ## 0.2.0 — 2026-08-14
 
