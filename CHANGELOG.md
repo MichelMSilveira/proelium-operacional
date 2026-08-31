@@ -408,4 +408,5 @@
 - Documentação: criado documento separado para o projeto interno de bots e testes automatizados.
 - Organização: scripts e testes específicos do bot foram movidos para `bot-testes/`, fora das pastas do software principal.
 - Identidade visual: tela de login passou a usar o arquivo de logo derivado da referência fornecida.
+- Deploy: workflow ajustado para sincronizar os bots a partir da nova pasta `bot-testes/`.
 - Identidade visual: logo da tela de login ampliada e cache atualizado para v210.
