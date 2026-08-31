@@ -224,3 +224,4 @@ body.auth-pending>.zoom-lock-button,body.auth-pending>#appVersionStatus{display:
  .badge.green{background:#dfe8dc;color:var(--proelium-olive)}
  .badge.amber{background:#f4dfd7;color:#91452f}
  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid rgba(200,100,69,.28);border-color:var(--proelium-orange)}
+ .financial-accounts{margin-top:18px}.financial-accounts .card-head button{font-family:inherit;font-size:12px}
