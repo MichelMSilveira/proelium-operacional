@@ -26,7 +26,8 @@ create table if not exists financial_external_transactions (
   direction text not null check (direction in ('credit', 'debit')),
   raw_category text,
   reconciliation_status text not null default 'pending' check (reconciliation_status in ('pending', 'matched', 'ignored')),
-  matched_transaction_id uuid references financial_transactions(id),
+  -- Mantido como UUID sem FK enquanto o runtime usa o estado JSON; a FK entra na migração relacional completa.
+  matched_transaction_id uuid,
   imported_at timestamptz not null default now(),
   unique (financial_account_id, external_transaction_id)
 );
