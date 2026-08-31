@@ -411,4 +411,5 @@
 - Deploy: workflow ajustado para sincronizar os bots a partir da nova pasta `bot-testes/`.
 - Deploy: migração de contas financeiras ajustada para funcionar no armazenamento runtime atual.
 - Deploy: bots passaram a ser publicados e executados em `bot-testes/scripts`, respeitando a separação do projeto de testes.
+- Deploy: criação automática da pasta remota dos bots antes da sincronização.
 - Identidade visual: logo da tela de login ampliada e cache atualizado para v210.
