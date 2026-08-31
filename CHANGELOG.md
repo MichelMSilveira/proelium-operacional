@@ -409,4 +409,5 @@
 - Organização: scripts e testes específicos do bot foram movidos para `bot-testes/`, fora das pastas do software principal.
 - Identidade visual: tela de login passou a usar o arquivo de logo derivado da referência fornecida.
 - Deploy: workflow ajustado para sincronizar os bots a partir da nova pasta `bot-testes/`.
+- Deploy: migração de contas financeiras ajustada para funcionar no armazenamento runtime atual.
 - Identidade visual: logo da tela de login ampliada e cache atualizado para v210.
