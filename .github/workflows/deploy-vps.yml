@@ -48,10 +48,8 @@ jobs:
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/assets/"
           rsync -az database/ \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/database/"
-          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'mkdir -p /opt/proelium-operacional/scripts'
-          rsync -az bot-testes/scripts/smoke-bot.js bot-testes/scripts/functional-test-bot.js \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/scripts/"
+          rsync -az bot-testes/scripts/ \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/bot-testes/scripts/"
 
       - name: Install, migrate and restart
         run: |
@@ -61,9 +59,9 @@ jobs:
       - name: Run operational test bot
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'cd /opt/proelium-operacional && node scripts/smoke-bot.js http://127.0.0.1:4173'
+            'cd /opt/proelium-operacional && node bot-testes/scripts/smoke-bot.js http://127.0.0.1:4173'
 
       - name: Run isolated functional test bot
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'cd /opt/proelium-operacional && node scripts/functional-test-bot.js --report /tmp/proelium-functional-test-report.md'
+            'cd /opt/proelium-operacional && node bot-testes/scripts/functional-test-bot.js --report /tmp/proelium-functional-test-report.md'
