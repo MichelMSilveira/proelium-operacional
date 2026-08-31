@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Financeiro: lançamentos agora podem ser vinculados às contas cadastradas, alimentando o saldo projetado de cada conta.
 - Financeiro: criada a base de contas financeiras, com instituição, tipo, saldo inicial e saldo projetado a partir dos lançamentos vinculados.
 
 ## Em desenvolvimento
