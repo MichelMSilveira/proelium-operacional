@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Menu: removido o módulo BI Desempenho da interface e das permissões de navegação; a visão BI Intelligence permanece disponível. Cache do shell atualizado para v207.
+
+- Bot de uso real: criado o comando `npm run test:real-use`, que avalia o shell publicado e os módulos essenciais em modo somente leitura, separando a validação do uso real dos cenários artificiais do bot funcional.
+
 - Privacidade de identidade: removidos textos, dedicatórias e referências nominais antigas da interface e dos cenários demonstrativos; registros operacionais continuam preservados.
 
 - Identidade visual: removidas referências à marca anterior, a logo correspondente e os textos históricos associados; dados operacionais permanecem preservados. Cache do shell atualizado para v206.
@@ -391,3 +395,17 @@
 - sem mesclagem automática quando duas pessoas alteram a mesma versão;
 - sem banco de dados transacional;
 - sem backup automático.
+# Próxima entrega
+
+- Adicionado relatório consolidado de desempenho na execução de cada projeto, reunindo andamento, checklist, pendências, custos reais, registros de campo, instalação e entrega.
+- Identidade visual: splash e login passaram a usar o logotipo vetorial Proelium Serviços e a paleta das telas oficiais de referência.
+- Identidade visual: ícone do PWA, favicon e indicador de versão alinhados à nova marca e ao cache v208.
+- Segurança: o servidor agora recusa iniciar em produção sem `SESSION_SECRET` forte configurado.
+- Segurança: mutações autenticadas da API agora validam a origem da solicitação quando o navegador envia o cabeçalho `Origin`.
+- Segurança: respostas da API, arquivos públicos e eventos em tempo real passaram a enviar cabeçalhos HTTP básicos de proteção.
+- Segurança: login protegido contra tentativas repetidas, com bloqueio temporário após cinco falhas.
+- Financeiro: criada a base relacional para contas e transações externas, separada dos lançamentos manuais e sem armazenamento de credenciais bancárias.
+- Documentação: criado documento separado para o projeto interno de bots e testes automatizados.
+- Organização: scripts e testes específicos do bot foram movidos para `bot-testes/`, fora das pastas do software principal.
+- Identidade visual: tela de login passou a usar o arquivo de logo derivado da referência fornecida.
+- Identidade visual: logo da tela de login ampliada e cache atualizado para v210.

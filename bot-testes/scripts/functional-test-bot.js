@@ -11,7 +11,7 @@ const TEST_USER = 'bot.teste';
 const TEST_PASSWORD = 'Proelium-Bot-2026!';
 
 function currentCatalogVersion() {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'app.js'), 'utf8');
   const match = source.match(/catalogVersion:\s*(\d+)/);
   if (!match) throw new Error('Versão do catálogo não encontrada em app.js.');
   return Number(match[1]);
@@ -116,8 +116,8 @@ async function runFunctionalTestBot(options = {}) {
   fs.writeFileSync(usersFile, JSON.stringify([{ username: TEST_USER, name: 'Bot de teste', role: 'admin', active: true, ...passwordRecord(TEST_PASSWORD) }], null, 2));
   const port = await getFreePort();
   const baseUrl = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    cwd: path.join(__dirname, '..'),
+  const child = spawn(process.execPath, [path.join(__dirname, '..', '..', 'server.js')], {
+    cwd: path.join(__dirname, '..', '..'),
     env: { ...process.env, PORT: String(port), NODE_ENV: 'test', DATABASE_URL: '', PROELIUM_TEST_DATA_DIR: temporaryDirectory, SESSION_SECRET: crypto.randomBytes(32).toString('hex') },
     stdio: ['ignore', 'ignore', 'pipe'],
     windowsHide: true
@@ -142,7 +142,7 @@ async function runFunctionalTestBot(options = {}) {
       const health = parseJson(await request(baseUrl, '/api/health'), '/api/health');
       expect(health.storage === 'json', `Backend inesperado: ${health.storage}.`);
       expect(health.isolatedTestMode === true, 'Servidor não confirmou o modo isolado.');
-      expect(path.resolve(temporaryDirectory) !== path.resolve(path.join(__dirname, '..', 'data')), 'Pasta real foi selecionada.');
+      expect(path.resolve(temporaryDirectory) !== path.resolve(path.join(__dirname, '..', '..', 'data')), 'Pasta real foi selecionada.');
       return 'JSON temporário confirmado; PostgreSQL não acessado';
     });
 

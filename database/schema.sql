@@ -200,6 +200,39 @@ create table financial_transactions (
   created_at timestamptz not null default now()
 );
 
+-- Contas e transações externas ficam separadas dos lançamentos manuais para permitir conciliação segura.
+create table financial_accounts (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid references organizations(id),
+  name text not null,
+  institution_name text,
+  account_type text not null default 'checking',
+  currency char(3) not null default 'BRL',
+  provider text,
+  external_account_id text,
+  connection_status text not null default 'manual',
+  last_synced_at timestamptz,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (organization_id, provider, external_account_id)
+);
+
+create table financial_external_transactions (
+  id uuid primary key default gen_random_uuid(),
+  financial_account_id uuid not null references financial_accounts(id),
+  external_transaction_id text not null,
+  occurred_at timestamptz not null,
+  description text not null,
+  amount_cents bigint not null,
+  direction text not null check (direction in ('credit', 'debit')),
+  raw_category text,
+  reconciliation_status text not null default 'pending',
+  matched_transaction_id uuid references financial_transactions(id),
+  imported_at timestamptz not null default now(),
+  unique (financial_account_id, external_transaction_id)
+);
+
 create table equipment (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references organizations(id),
