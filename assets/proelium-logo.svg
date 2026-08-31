@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 300" role="img" aria-labelledby="title desc">
+  <title id="title">Proelium Serviços</title><desc id="desc">Logotipo Proelium Serviços</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="10">
+    <path d="M310 24 220 82M310 24l90 58M220 82v86M400 82v86M220 168l90 58M400 168l-90 58" stroke="#415735"/>
+    <path d="M220 82v86M220 168l90 58" stroke="#00658a"/>
+    <path d="M400 82v86M400 168l-90 58" stroke="#f15a29"/>
+    <path d="M310 74v110" stroke="#415735"/>
+  </g>
+  <g fill="#415735"><circle cx="310" cy="24" r="12"/><circle cx="220" cy="82" r="12"/><circle cx="400" cy="82" r="12"/><circle cx="220" cy="168" r="12"/><circle cx="400" cy="168" r="12"/><circle cx="310" cy="184" r="12"/></g>
+  <text x="310" y="252" text-anchor="middle" fill="#071522" font-family="Arial, sans-serif" font-size="55" font-weight="700" letter-spacing="5">PROELIUM</text>
+  <path d="M105 279h105M410 279h105" stroke="#f15a29" stroke-width="4"/>
+  <text x="310" y="285" text-anchor="middle" fill="#f15a29" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="8">SERVIÇOS</text>
+</svg>

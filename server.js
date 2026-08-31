@@ -18,9 +18,14 @@ const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=
 const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
 const presence = new Map();
+const loginAttempts = new Map();
 // Keep the authenticated session across app/browser restarts without storing passwords.
 const sessionTtl = 30 * 24 * 60 * 60 * 1000;
-const sessionSecret = process.env.SESSION_SECRET || 'proelium-development-session-secret-change-me';
+const configuredSessionSecret = String(process.env.SESSION_SECRET || '').trim();
+if (process.env.NODE_ENV === 'production' && (!configuredSessionSecret || configuredSessionSecret.length < 32)) {
+  throw new Error('SESSION_SECRET deve ser configurado em produção com pelo menos 32 caracteres.');
+}
+const sessionSecret = configuredSessionSecret || 'proelium-development-session-secret-change-me';
 
 const roleLabels = { admin: 'Administrador', comercial: 'Comercial', operacao: 'Operação', financeiro: 'Financeiro', leitura: 'Leitura', operador: 'Operação' };
 const rolePermissions = {
@@ -38,6 +43,13 @@ const dataDomains = { clients: 'clients', projects: 'projects', processes: 'proc
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map(item => item.trim().split('='))
     .filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
+}
+function rejectsCrossOriginMutation(req) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return false;
+  const origin = req.headers.origin;
+  if (!origin) return false;
+  const protocol = req.headers['x-forwarded-proto'] || 'http';
+  return origin !== `${protocol}://${req.headers.host}`;
 }
 
 function signedSession(payload) {
@@ -59,8 +71,9 @@ function currentUser(req) {
   } catch { return null; }
 }
 
+const securityHeaders = { 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' };
 function sendJson(res, status, value, extraHeaders = {}) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders });
+  res.writeHead(status, { ...securityHeaders, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders });
   res.end(JSON.stringify(value));
 }
 
@@ -137,8 +150,18 @@ async function handleRequest(req, res) {
       const payload = JSON.parse(await readBody(req));
       const username = String(payload.username || '').trim().toLowerCase();
       const password = String(payload.password || '');
+      const attemptKey = `${req.socket.remoteAddress || 'unknown'}:${username}`;
+      const attempt = loginAttempts.get(attemptKey);
+      if (attempt && attempt.lockedUntil > Date.now()) return sendJson(res, 429, { error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' });
       const user = (await storage.readUsers()).find(item => item.username === username && item.active !== false);
-      if (!user || !passwordMatches(password, user)) return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
+      if (!user || !passwordMatches(password, user)) {
+        const next = attempt && attempt.lockedUntil <= Date.now() ? { failures: 0 } : (attempt || { failures: 0 });
+        next.failures += 1;
+        next.lockedUntil = next.failures >= 5 ? Date.now() + 5 * 60 * 1000 : 0;
+        loginAttempts.set(attemptKey, next);
+        return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
+      }
+      loginAttempts.delete(attemptKey);
       const token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
       setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
       return sendJson(res, 200, { ok: true, user: publicUser(user) });
@@ -189,6 +212,7 @@ async function handleRequest(req, res) {
   if (pathname.startsWith('/api/')) {
     authenticatedUser = requireUser(req, res);
     if (!authenticatedUser) return;
+    if (rejectsCrossOriginMutation(req)) return sendJson(res, 403, { error: 'Origem da solicitação não autorizada.' });
     touchPresence(authenticatedUser, req);
   }
 
@@ -228,6 +252,7 @@ async function handleRequest(req, res) {
 
   if (pathname === '/api/events' && req.method === 'GET') {
     res.writeHead(200, {
+      ...securityHeaders,
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
@@ -289,6 +314,7 @@ async function handleRequest(req, res) {
     res.writeHead(404); res.end('Not found'); return;
   }
   res.writeHead(200, {
+    ...securityHeaders,
     'Content-Type': types[path.extname(file)] || 'application/octet-stream',
     'Cache-Control': path.extname(file) === '.html' || path.extname(file) === '.js' || path.extname(file) === '.css' ? 'no-cache' : 'public, max-age=3600'
   });

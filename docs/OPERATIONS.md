@@ -44,6 +44,10 @@ A recuperação normal usa um dump PostgreSQL validado. A volta temporária ao e
 
 ## Bot de teste operacional
 
+Para avaliar o app publicado sem criar ou alterar registros, rode `npm run test:real-use`. Esse modo somente leitura confere o shell, os módulos essenciais, a saúde do servidor, a proteção da API e, quando informadas, a sessão e a leitura sincronizada.
+
+Para percorrer as telas como um usuário, defina `PROELIUM_TEST_USER` e `PROELIUM_TEST_PASSWORD` e rode `npm run test:ui-use`. O navegador automatizado abre o app, faz login, clica nos módulos visíveis e confirma que cada conteúdo renderiza, sem salvar registros.
+
 Com o app em execução, rode `npm run test:bot`. O bot faz verificações somente de leitura em `http://127.0.0.1:4173`: saúde e horário do servidor, backend de armazenamento, interface principal, manifesto PWA, service worker e proteção da API.
 
 Para testar outro endereço, acrescente a URL: `npm run test:bot -- https://endereco-do-app`. Para também validar login, sessão e leitura sincronizada, defina `PROELIUM_TEST_USER` e `PROELIUM_TEST_PASSWORD` antes de executar. As credenciais não devem ser gravadas em arquivos nem incluídas no Git.
@@ -55,3 +59,4 @@ Para executar o cenário funcional completo, use `npm run test:functional`. Ele 
 Para inspecionar manualmente a interface já preenchida pelo bot, use `npm run test:functional -- --keep-open --no-report`. O endereço temporário aparece no terminal; pressione `Ctrl+C` para destruir o ambiente. O servidor recusa `PROELIUM_TEST_DATA_DIR` fora de `NODE_ENV=test`, evitando uso acidental dessa configuração na operação real.
 
 O relatório validado desta entrega está em [TEST-BOT-REPORT.md](TEST-BOT-REPORT.md).
+Em produção, configure `SESSION_SECRET` no ambiente do serviço com um valor aleatório de pelo menos 32 caracteres. O servidor recusa iniciar com o segredo padrão de desenvolvimento; nunca registre esse valor em arquivos versionados.
