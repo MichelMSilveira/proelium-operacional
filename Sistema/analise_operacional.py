@@ -41,14 +41,14 @@ def tarefas_atrasadas(data: Mapping[str, Any], em: date | str | None = None) -> 
 
 
 def oportunidades_paradas(data: Mapping[str, Any], em: date | str | None = None) -> list[dict[str, Any]]:
-    """Return active opportunities with an overdue next action."""
+    """Return active opportunities without a next action or with one overdue."""
     reference = _reference(em)
     result = []
     for opportunity in data.get("opportunities", []) or []:
         if _completed(opportunity):
             continue
         due = _as_date(opportunity.get("nextDue", opportunity.get("nextActionDate")))
-        if due and due < reference:
+        if not str(opportunity.get("nextAction", "")).strip() or not due or due < reference:
             result.append(dict(opportunity))
     return result
 
@@ -56,7 +56,7 @@ def oportunidades_paradas(data: Mapping[str, Any], em: date | str | None = None)
 def compromissos_do_dia(data: Mapping[str, Any], em: date | str | None = None) -> list[dict[str, Any]]:
     """Return appointments scheduled for *em*, ordered by time then title."""
     target = _reference(em).isoformat()
-    result = [dict(item) for item in (data.get("appointments", []) or []) if str(item.get("date", ""))[:10] == target]
+    result = [dict(item) for item in (data.get("appointments", []) or []) if str(item.get("date", ""))[:10] == target and not _completed(item)]
     return sorted(result, key=lambda item: (str(item.get("time", "")), str(item.get("title", ""))))
 
 
