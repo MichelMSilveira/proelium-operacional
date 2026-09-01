@@ -3192,3 +3192,4 @@ const commercialTestExamplesView=views.commercial;
 views.commercial=()=>commercialTestExamplesView().replace('<div class="module-toolbar">','<div class="module-toolbar"><button type="button" class="button secondary" data-create-commercial-tests>+ Criar exemplos de teste</button>');
 document.addEventListener('click',event=>{const button=event.target.closest('[data-create-commercial-tests]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();createCommercialTestOpportunities()},true);
 render();
+setMenu(false);
