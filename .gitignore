@@ -16,3 +16,25 @@ reports/test-bot-latest.md
 # Runtime data (users, sessions and shared records)
 data/*.json
 data/*.tmp
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Databases, exports and backups
+*.db
+*.sqlite
+*.sqlite3
+*.sql.gz
+*.tar.gz
+backups/
+exports/
+
+# Private operational material
+private/
+secrets/
+*.pem
+*.key
+*.p12

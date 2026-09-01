@@ -1,11 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const http = require('http');
 const { runSmokeBot } = require('../scripts/smoke-bot');
 
 const shell = '<!doctype html><title>Proelium Operacional</title><script src="app.js"></script>';
 const manifest = JSON.stringify({ name: 'Proelium Operacional', start_url: './' });
 const serviceWorker = "const CACHE = 'proelium-shell-v204'; self.addEventListener('fetch', () => {});";
+const TEST_PASSWORD = crypto.randomBytes(24).toString('base64url');
 
 async function withServer(handler, action) {
   const server = http.createServer(handler);
@@ -36,7 +38,7 @@ test('smoke bot validates the public shell, API protection and authenticated rea
     if (req.url === '/api/auth/logout' && authenticated) return json(200, { ok: true });
     return json(404, { error: 'Não encontrado.' });
   }, async baseUrl => {
-    const report = await runSmokeBot({ baseUrl, username: 'bot', password: 'senha-segura', log: () => {} });
+    const report = await runSmokeBot({ baseUrl, username: 'bot', password: TEST_PASSWORD, log: () => {} });
     assert.equal(report.ok, true);
     assert.equal(report.results.length, 9);
     assert.equal(report.results.every(result => result.ok), true);
