@@ -468,6 +468,7 @@
 - Apresentação: README revisado para funcionar como vitrine pública do projeto, com proposta de valor, stack, segurança, acesso, limites conhecidos e documentação de referência.
 # 2026-09-01
 
+- Menu mobile: botão começa oculto durante o carregamento e só é exibido após a interface estar pronta; ao abrir, é removido imediatamente.
 - Menu mobile: o estado oculto do botão agora força `display:none`, evitando que a regra visual do botão atrase ou impeça seu desaparecimento ao abrir o menu.
 - Menu mobile: removida a regra que deixava o botão flutuante circular; o controle permanece semiquadrado, com cantos arredondados.
 - Menu mobile: o botão flutuante agora é ocultado diretamente enquanto a navegação estiver aberta, evitando que ele apareça sobre o primeiro item do menu.
