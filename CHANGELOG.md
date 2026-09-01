@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Clientes nativos: Windows 0.1.4 e Android 1.5 passam a usar o domínio HTTPS público `app.proeliumservicos.com.br`, compartilhando presença e sincronização com o navegador.
+
 - N.E.M.O.: ciclo somente leitura finalizado com fixture sanitizada, recomendações fundamentadas e testes para dados inválidos e compromissos cancelados.
 
 - N.E.M.O.: contrato operacional oficial incorporado e análise somente leitura alinhada para oportunidades sem próxima ação, tarefas vencidas e compromissos não cancelados.
