@@ -23,7 +23,7 @@ class MainActivity : Activity() {
         webView.settings.allowFileAccess = false
         webView.webViewClient = WebViewClient()
         webView.webChromeClient = WebChromeClient()
-        webView.loadUrl("https://144.202.29.121")
+        webView.loadUrl("https://app.proeliumservicos.com.br")
         setContentView(webView)
         checkForUpdate()
     }
@@ -31,7 +31,7 @@ class MainActivity : Activity() {
     private fun checkForUpdate() {
         Thread {
             try {
-                val connection = java.net.URL("https://144.202.29.121/downloads/version.json").openConnection()
+                val connection = java.net.URL("https://app.proeliumservicos.com.br/downloads/version.json").openConnection()
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
                 val payload = connection.getInputStream().bufferedReader().use { it.readText() }

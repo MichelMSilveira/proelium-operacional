@@ -49,7 +49,7 @@ try {
 }
 
 $apkSource = Join-Path $androidRoot "app\build\outputs\apk\debug\app-debug.apk"
-$apkTarget = Join-Path $releaseDir "Proelium-Operacional-1.4.apk"
+$apkTarget = Join-Path $releaseDir "Proelium-Operacional-1.5.apk"
 if (-not (Test-Path $apkSource)) { throw "O APK não foi encontrado após a compilação." }
 Copy-Item -LiteralPath $apkSource -Destination $apkTarget -Force
 
