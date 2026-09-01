@@ -31,7 +31,7 @@
       🔓
     </button>
     <div id="appVersionStatus" class="app-version-status">
-      App v226 · verificando atualização
+      App v233 · verificando atualização
     </div>
     <div id="splash" class="splash-screen" aria-label="Proelium Operacional">
       <img
@@ -462,8 +462,10 @@
                 if (
                   worker.state === "installed" &&
                   navigator.serviceWorker.controller
-                )
+                ) {
                   showUpdate(registration);
+                  worker.postMessage({ type: "SKIP_WAITING" });
+                }
               });
             });
           });
