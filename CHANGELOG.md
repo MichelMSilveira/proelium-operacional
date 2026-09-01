@@ -6,6 +6,8 @@
 
 - N.E.M.O.: contrato operacional oficial incorporado e análise somente leitura alinhada para oportunidades sem próxima ação, tarefas vencidas e compromissos não cancelados.
 
+- PWA/iOS: cache do shell renovado para forçar o Safari a descartar a interface antiga e carregar a identidade atual do Proelium.
+
 - Privacidade: criada estrutura para separar código público de dados operacionais futuros, com modelo de ambiente, regras de exclusão e checklist de publicação.
 
 - Testes: removidas senhas fixas dos cenários; o bot funcional gera uma credencial efêmera ou usa `PROELIUM_TEST_PASSWORD` quando fornecida.
