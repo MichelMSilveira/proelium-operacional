@@ -14,6 +14,7 @@
 - Menu: removido o módulo BI Desempenho da interface e das permissões de navegação; a visão BI Intelligence permanece disponível. Cache do shell atualizado para v207.
 
 - Bot de uso real: criado o comando `npm run test:real-use`, que avalia o shell publicado e os módulos essenciais em modo somente leitura, separando a validação do uso real dos cenários artificiais do bot funcional.
+- N.E.M.O.: criado analisador operacional Python isolado, com testes unitários para tarefas atrasadas, oportunidades paradas e compromissos do dia; sem integração com o Proelium Operacional.
 
 - Privacidade de identidade: removidos textos, dedicatórias e referências nominais antigas da interface e dos cenários demonstrativos; registros operacionais continuam preservados.
 
