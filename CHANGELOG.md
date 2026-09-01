@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Menu: padronizado botão flutuante superior para telas compactas em iOS, Android, PWA e Windows, com área de toque ampliada e resposta tátil consistente.
+
 - Menu mobile: botão reposicionado como controle flutuante circular, com área de toque maior e posição livre de conflitos com cabeçalho e rodapé.
 
 - Desktop: reorganizado o dock inferior para separar marca, status, privacidade, acessibilidade e bloqueio de zoom, evitando sobreposição com o rodapé do sistema.
