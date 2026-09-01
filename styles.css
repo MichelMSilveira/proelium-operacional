@@ -123,6 +123,8 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 
 @media(max-width:720px){
   #menuButton.menu-button{position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 12px)!important;left:12px!important;bottom:auto!important;z-index:1000!important;pointer-events:auto!important}
+  .topbar>div:first-of-type{min-width:0;padding-left:66px}
+  .topbar>div:first-of-type .eyebrow,.topbar>div:first-of-type h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 
 @media(min-width:721px) and (max-width:1100px){
