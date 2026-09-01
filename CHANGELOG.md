@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Privacidade: criada estrutura para separar código público de dados operacionais futuros, com modelo de ambiente, regras de exclusão e checklist de publicação.
+
+- Testes: removidas senhas fixas dos cenários; o bot funcional gera uma credencial efêmera ou usa `PROELIUM_TEST_PASSWORD` quando fornecida.
+
 - Financeiro: lançamentos agora podem ser vinculados às contas cadastradas, alimentando o saldo projetado de cada conta.
 - Financeiro: criada a base de contas financeiras, com instituição, tipo, saldo inicial e saldo projetado a partir dos lançamentos vinculados.
 

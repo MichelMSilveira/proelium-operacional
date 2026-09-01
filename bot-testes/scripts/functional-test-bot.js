@@ -8,7 +8,7 @@ const { once } = require('events');
 const { request, runSmokeBot } = require('./smoke-bot');
 
 const TEST_USER = 'bot.teste';
-const TEST_PASSWORD = 'Proelium-Bot-2026!';
+const TEST_PASSWORD = process.env.PROELIUM_TEST_PASSWORD || crypto.randomBytes(24).toString('base64url');
 
 function currentCatalogVersion() {
   const source = fs.readFileSync(path.join(__dirname, '..', '..', 'app.js'), 'utf8');
