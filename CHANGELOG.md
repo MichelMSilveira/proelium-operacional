@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Menu mobile: botão removido da hierarquia do cabeçalho e transformado em controle flutuante independente, evitando que cards ou camadas do conteúdo o cubram.
+
 - Menu mobile: botão superior convertido para formato semiquadrado com cantos arredondados e camada elevada para permanecer acima dos cards durante a rolagem.
 
 - Menu: padronizado botão flutuante superior para telas compactas em iOS, Android, PWA e Windows, com área de toque ampliada e resposta tátil consistente.
