@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Atualização contínua: restaurada a tela de atualização, que permite salvar e aplicar conscientemente cada nova versão do PWA.
+
 - Atualização contínua: o novo service worker assume automaticamente o controle quando uma versão nova é instalada, eliminando a dependência de fechar abas ou atualizar manualmente.
 
 - Presença: contador e lista são reaplicados após cada renderização da interface, evitando que uma troca de tela sobrescreva a atualização online.

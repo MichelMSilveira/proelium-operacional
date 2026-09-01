@@ -464,7 +464,6 @@
                   navigator.serviceWorker.controller
                 ) {
                   showUpdate(registration);
-                  worker.postMessage({ type: "SKIP_WAITING" });
                 }
               });
             });
