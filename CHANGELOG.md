@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Atualização contínua: o novo service worker assume automaticamente o controle quando uma versão nova é instalada, eliminando a dependência de fechar abas ou atualizar manualmente.
+
 - Presença: contador e lista são reaplicados após cada renderização da interface, evitando que uma troca de tela sobrescreva a atualização online.
 
 - Presença: painel online agora faz atualização de contingência a cada 10 segundos, além do canal contínuo, garantindo que usuários apareçam mesmo com interrupções temporárias do SSE.
