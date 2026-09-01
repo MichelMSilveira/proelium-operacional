@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Presença: badge passa a usar o conjunto de nomes de usuário distintos, sem contar sessões ou dispositivos.
+
 - Presença: contador passa a ser calculado a partir dos participantes efetivamente renderizados na lista, evitando divergência entre nomes exibidos e número mostrado.
 
 - Atualização contínua: restaurada a tela de atualização, que permite salvar e aplicar conscientemente cada nova versão do PWA.
