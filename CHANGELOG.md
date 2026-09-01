@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- N.E.M.O.: ciclo somente leitura finalizado com fixture sanitizada, recomendações fundamentadas e testes para dados inválidos e compromissos cancelados.
+
 - N.E.M.O.: contrato operacional oficial incorporado e análise somente leitura alinhada para oportunidades sem próxima ação, tarefas vencidas e compromissos não cancelados.
 
 - Privacidade: criada estrutura para separar código público de dados operacionais futuros, com modelo de ambiente, regras de exclusão e checklist de publicação.

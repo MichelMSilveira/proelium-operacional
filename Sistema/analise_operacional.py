@@ -60,10 +60,21 @@ def compromissos_do_dia(data: Mapping[str, Any], em: date | str | None = None) -
     return sorted(result, key=lambda item: (str(item.get("time", "")), str(item.get("title", ""))))
 
 
+def _recomendacoes(data: Mapping[str, Any], reference: date) -> list[dict[str, Any]]:
+    recommendations = []
+    for task in tarefas_atrasadas(data, reference):
+        recommendations.append({"tipo": "tarefa_atrasada", "fato": task.get("title", task.get("id")), "responsavel": task.get("assignee", task.get("owner")), "prazo": task.get("dueDate", task.get("deadline", task.get("date"))), "consequencia": "A pendência pode continuar afetando o prazo operacional.", "acao_sugerida": "Revisar a tarefa e definir o próximo passo.", "incerteza": "A consequência depende do vínculo da tarefa com o projeto."})
+    for opportunity in oportunidades_paradas(data, reference):
+        recommendations.append({"tipo": "oportunidade_parada", "fato": opportunity.get("company", opportunity.get("id")), "responsavel": opportunity.get("owner"), "prazo": opportunity.get("nextDue"), "consequencia": "A oportunidade pode perder continuidade comercial.", "acao_sugerida": "Definir ou revisar a próxima ação.", "incerteza": "O impacto financeiro não é calculado sem valor estimado."})
+    return recommendations
+
+
 def analisar_operacao(data: Mapping[str, Any], em: date | str | None = None) -> dict[str, list[dict[str, Any]]]:
-    """Build the three read-only sections exposed to the future assistant."""
+    """Build the read-only sections and grounded recommendations."""
+    reference = _reference(em)
     return {
         "tarefas_atrasadas": tarefas_atrasadas(data, em),
         "oportunidades_paradas": oportunidades_paradas(data, em),
-        "compromissos_do_dia": compromissos_do_dia(data, em),
+        "compromissos_do_dia": compromissos_do_dia(data, reference),
+        "recomendacoes": _recomendacoes(data, reference),
     }
