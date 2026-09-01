@@ -123,6 +123,7 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 
 @media(max-width:720px){
   #menuButton.menu-button{position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 12px)!important;left:12px!important;bottom:auto!important;z-index:1000!important;pointer-events:auto!important}
+  #menuButton.menu-button[hidden]{display:none!important;visibility:hidden!important}
   #menuButton.menu-button{background:rgba(255,255,255,.98);color:#3b4a3a;border-color:rgba(59,74,58,.72);transition:opacity .2s ease,transform .2s ease,background .2s ease}
   body.menu-open #menuButton.menu-button{opacity:0;pointer-events:none;transform:scale(.86)}
   .topbar>div:first-of-type{min-width:0;padding-left:66px}
