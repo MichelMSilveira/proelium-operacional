@@ -422,3 +422,6 @@
 - Deploy: bots passaram a ser publicados e executados em `bot-testes/scripts`, respeitando a separação do projeto de testes.
 - Deploy: criação automática da pasta remota dos bots antes da sincronização.
 - Identidade visual: logo da tela de login ampliada e cache atualizado para v210.
+# Próxima entrega
+
+- Apresentação: README revisado para funcionar como vitrine pública do projeto, com proposta de valor, stack, segurança, acesso, limites conhecidos e documentação de referência.

@@ -1,6 +1,12 @@
 # Proelium Operacional
 
-Protótipo experimental de CRM, orçamentos e operação da Proelium, preparado para testes privados e futura integração com o N.E.M.O.
+Plataforma operacional web para conectar CRM, orçamento, projetos, execução em campo, financeiro e indicadores em um único fluxo.
+
+Este repositório é uma demonstração de produto e engenharia: uma aplicação full-stack construída de forma incremental, com frontend sem framework, API Node.js, persistência PostgreSQL e cliente PWA/desktop compartilhando a mesma interface.
+
+## Por que este projeto existe
+
+O Proelium transforma o caminho entre primeiro contato, levantamento técnico, orçamento, aprovação, instalação e pós-venda em uma operação rastreável. O foco é reduzir informação espalhada, preservar histórico e tornar decisões comerciais e técnicas visíveis para toda a equipe.
 
 ## Estado atual
 
@@ -20,6 +26,17 @@ Protótipo experimental de CRM, orçamentos e operação da Proelium, preparado 
 - dados compartilhados em PostgreSQL, com histórico de revisões e espelho JSON temporário;
 - sincronização automática entre os aparelhos conectados ao mesmo servidor;
 - controle de revisão para impedir que uma tela antiga sobrescreva alterações recentes.
+
+## Segurança e acesso
+
+- login por usuário e senha;
+- senhas armazenadas somente como hash `scrypt` com salt individual;
+- sessão assinada em cookie `HttpOnly`, com `SameSite=Lax` e `Secure` em produção;
+- bloqueio temporário após tentativas repetidas de login;
+- autorização por papel (`admin`, `comercial`, `operacao`, `financeiro` e `leitura`);
+- dados de produção, usuários e segredos excluídos do Git.
+
+O fluxo completo está descrito em [Autenticação e acesso](docs/GUIA-ACESSO-E-INSTALACAO.md) e no [contrato da API](docs/API.md).
 
 ## Executar
 
@@ -49,9 +66,12 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 
 Execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"`. O comando valida o JavaScript, exige o registro no histórico, cria o commit e envia a branch atual ao GitHub. Em `main`, o GitHub Actions implanta a versão no VPS; PWA, Android e Windows passam a carregar a mesma interface publicada. O arquivo `data/shared-data.json` permanece fora do Git.
 
-## Atenção
+## Limites conhecidos
 
-Esta é uma base experimental. Há proteção básica contra sobrescrita simultânea, mas ainda não há permissões detalhadas por módulo nem banco transacional. Use dados de teste e faça backup do arquivo compartilhado.
+- a interface ainda usa o contrato agregado `/api/data`; a API versionada por recurso está documentada como evolução;
+- sessões emitidas permanecem válidas até expirar ou receber logout, mesmo que o usuário seja desativado;
+- o modo `file:` existe para demonstrações locais e não deve ser usado como ambiente de produção;
+- a implantação exige configurar os secrets do VPS no GitHub Actions.
 
 ## Usuários
 
