@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Menu mobile: ocultação do botão agora acompanha diretamente o estado real do menu aberto, evitando que ele reapareça sobre o painel.
+
 - Menu mobile: botão desaparece enquanto o menu está aberto e recebeu visual mais claro, com transição suave e contraste adequado.
 
 - Cabeçalho mobile: reservado espaço para o botão flutuante, impedindo que o nome da área/aba fique sob o controle de menu.
