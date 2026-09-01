@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Menu mobile: botão desaparece enquanto o menu está aberto e recebeu visual mais claro, com transição suave e contraste adequado.
+
 - Cabeçalho mobile: reservado espaço para o botão flutuante, impedindo que o nome da área/aba fique sob o controle de menu.
 
 - Menu mobile: botão removido da hierarquia do cabeçalho e transformado em controle flutuante independente, evitando que cards ou camadas do conteúdo o cubram.
