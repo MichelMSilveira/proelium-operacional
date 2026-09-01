@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Presença: contador passa a ser calculado a partir dos participantes efetivamente renderizados na lista, evitando divergência entre nomes exibidos e número mostrado.
+
 - Atualização contínua: restaurada a tela de atualização, que permite salvar e aplicar conscientemente cada nova versão do PWA.
 
 - Atualização contínua: o novo service worker assume automaticamente o controle quando uma versão nova é instalada, eliminando a dependência de fechar abas ou atualizar manualmente.
