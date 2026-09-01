@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Desktop: reorganizado o dock inferior para separar marca, status, privacidade, acessibilidade e bloqueio de zoom, evitando sobreposição com o rodapé do sistema.
+
 - Mobile: ajustados menu, cabeçalho, rodapé de status e botões flutuantes para evitar sobreposição em telas estreitas e respeitar a área segura do iOS.
 
 - Presença: corrigida a rotina final de renderização para atualizar o contador de usuários distintos junto com a lista de dispositivos.
