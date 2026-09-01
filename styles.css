@@ -116,7 +116,8 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 }
 
 @media(max-width:720px){
-  #menuButton.menu-button{top:calc(env(safe-area-inset-top,0px) + 12px);bottom:auto;left:12px;width:54px;height:54px;border:2px solid var(--forest);border-radius:50%;font-size:25px;box-shadow:0 10px 26px rgba(18,42,33,.3);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .topbar{z-index:50}
+  #menuButton.menu-button{top:calc(env(safe-area-inset-top,0px) + 12px);bottom:auto;left:12px;width:52px;height:46px;border:2px solid var(--forest);border-radius:14px;font-size:24px;box-shadow:0 10px 26px rgba(18,42,33,.3);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   #menuButton.menu-button:active{transform:scale(.94)}
 }
 
