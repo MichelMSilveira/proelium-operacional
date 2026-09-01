@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Presença: painel online agora faz atualização de contingência a cada 10 segundos, além do canal contínuo, garantindo que usuários apareçam mesmo com interrupções temporárias do SSE.
+
 - Clientes nativos: Windows 0.1.4 e Android 1.5 passam a usar o domínio HTTPS público `app.proeliumservicos.com.br`, compartilhando presença e sincronização com o navegador.
 
 - N.E.M.O.: ciclo somente leitura finalizado com fixture sanitizada, recomendações fundamentadas e testes para dados inválidos e compromissos cancelados.
