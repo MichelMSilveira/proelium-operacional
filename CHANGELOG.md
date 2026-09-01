@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Mobile: ajustados menu, cabeçalho, rodapé de status e botões flutuantes para evitar sobreposição em telas estreitas e respeitar a área segura do iOS.
+
 - Presença: corrigida a rotina final de renderização para atualizar o contador de usuários distintos junto com a lista de dispositivos.
 
 - Presença: badge passa a usar o conjunto de nomes de usuário distintos, sem contar sessões ou dispositivos.

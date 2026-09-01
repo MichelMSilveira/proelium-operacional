@@ -225,3 +225,18 @@ body.auth-pending>.zoom-lock-button,body.auth-pending>#appVersionStatus{display:
  .badge.amber{background:#f4dfd7;color:#91452f}
  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid rgba(200,100,69,.28);border-color:var(--proelium-orange)}
  .financial-accounts{margin-top:18px}.financial-accounts .card-head button{font-family:inherit;font-size:12px}
+
+/* Mobile layout: reserve space for fixed controls and keep the navigation scrollable. */
+@media(max-width:720px){
+  body{overflow-x:hidden;padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+  .app-shell{min-height:100dvh}
+  .sidebar{height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;padding:16px 12px calc(88px + env(safe-area-inset-bottom));}
+  .sidebar-foot{margin-top:18px;padding-bottom:12px}
+  main{min-width:0;overflow:hidden}
+  .topbar{position:sticky;top:0;z-index:10}
+  .content{padding-bottom:92px}
+  .app-version-status{left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));width:auto;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:25}
+  .privacy-quick-button{bottom:calc(58px + env(safe-area-inset-bottom));right:64px;z-index:26}
+  .accessibility-fab{bottom:calc(54px + env(safe-area-inset-bottom));right:10px;z-index:27}
+  .zoom-lock-button{bottom:calc(112px + env(safe-area-inset-bottom));right:10px;z-index:27}
+}
