@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Menu mobile: botão reposicionado como controle flutuante circular, com área de toque maior e posição livre de conflitos com cabeçalho e rodapé.
+
 - Desktop: reorganizado o dock inferior para separar marca, status, privacidade, acessibilidade e bloqueio de zoom, evitando sobreposição com o rodapé do sistema.
 
 - Mobile: ajustados menu, cabeçalho, rodapé de status e botões flutuantes para evitar sobreposição em telas estreitas e respeitar a área segura do iOS.

@@ -115,6 +115,11 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
   .menu-backdrop{z-index:50}
 }
 
+@media(max-width:720px){
+  #menuButton.menu-button{top:auto;bottom:calc(126px + env(safe-area-inset-bottom));left:14px;width:54px;height:54px;border:2px solid var(--forest);border-radius:50%;font-size:25px;box-shadow:0 10px 26px rgba(18,42,33,.3);touch-action:manipulation}
+  #menuButton.menu-button:active{transform:scale(.94)}
+}
+
 /* A navegação por cômodos acompanha a análise do orçamento no telefone. */
 @media(max-width:720px){
   .quote-room-filter{position:relative;z-index:1;margin-bottom:14px;overflow:visible}
