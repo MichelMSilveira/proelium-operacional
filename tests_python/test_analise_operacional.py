@@ -19,6 +19,9 @@ class AnaliseOperacionalTest(unittest.TestCase):
     def test_compromissos_do_dia_ordena_por_horario(self):
         self.assertEqual(["a1", "a2"], [item["id"] for item in compromissos_do_dia(self.DATA, "2026-09-01")])
 
+    def test_oportunidade_sem_proxima_acao_esta_parada(self):
+        self.assertIn("o2", [item["id"] for item in oportunidades_paradas(self.DATA, "2026-09-01")])
+
     def test_resumo_tem_as_tres_secoes(self):
         self.assertEqual({"tarefas_atrasadas", "oportunidades_paradas", "compromissos_do_dia"}, set(analisar_operacao(self.DATA, "2026-09-01")))
 
