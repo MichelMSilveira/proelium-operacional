@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    {"id": "task-demo-1", "title": "Validar medidas da obra", "assignee": "Equipe técnica", "dueDate": "2026-08-31", "status": "Aberta"}
+  ],
+  "opportunities": [
+    {"id": "opp-demo-1", "company": "Cliente demonstrativo", "owner": "Atendimento", "stage": "Qualificação", "nextAction": "Retornar contato", "nextDue": "2026-08-29"},
+    {"id": "opp-demo-2", "company": "Oportunidade sem ação", "owner": "Atendimento", "stage": "Visita"}
+  ],
+  "appointments": [
+    {"id": "appointment-demo-1", "title": "Reunião técnica", "date": "2026-09-01", "time": "09:00", "assignee": "Equipe técnica", "status": "Agendado"},
+    {"id": "appointment-demo-2", "title": "Compromisso cancelado", "date": "2026-09-01", "status": "Cancelado"}
+  ]
+}

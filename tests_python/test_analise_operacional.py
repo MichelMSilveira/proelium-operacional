@@ -1,4 +1,6 @@
+import json
 import unittest
+from pathlib import Path
 
 from Sistema.analise_operacional import analisar_operacao, compromissos_do_dia, oportunidades_paradas, tarefas_atrasadas
 
@@ -23,7 +25,19 @@ class AnaliseOperacionalTest(unittest.TestCase):
         self.assertIn("o2", [item["id"] for item in oportunidades_paradas(self.DATA, "2026-09-01")])
 
     def test_resumo_tem_as_tres_secoes(self):
-        self.assertEqual({"tarefas_atrasadas", "oportunidades_paradas", "compromissos_do_dia"}, set(analisar_operacao(self.DATA, "2026-09-01")))
+        self.assertEqual({"tarefas_atrasadas", "oportunidades_paradas", "compromissos_do_dia", "recomendacoes"}, set(analisar_operacao(self.DATA, "2026-09-01")))
+
+    def test_recomendacoes_sao_fundamentadas_e_nao_executam_acoes(self):
+        recommendations = analisar_operacao(self.DATA, "2026-09-01")["recomendacoes"]
+        self.assertTrue(all({"fato", "consequencia", "acao_sugerida", "incerteza"} <= set(item) for item in recommendations))
+
+    def test_fixture_sanitizada_tem_formato_aceito(self):
+        fixture = json.loads((Path(__file__).with_name("fixture_data.json")).read_text(encoding="utf-8"))
+        summary = analisar_operacao(fixture, "2026-09-01")
+        self.assertEqual(["appointment-demo-1"], [item["id"] for item in summary["compromissos_do_dia"]])
+
+    def test_data_invalida_nao_cria_alerta(self):
+        self.assertEqual([], tarefas_atrasadas({"tasks": [{"id": "x", "dueDate": "sem-data"}]}, "2026-09-01"))
 
 
 if __name__ == "__main__":
