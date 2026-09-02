@@ -2,8 +2,12 @@ create table if not exists companies (
   id text primary key,
   name text not null,
   document text not null default '',
+  responsible text not null default '',
+  phone text not null default '',
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
   created_at timestamptz not null default now()
 );
+create unique index if not exists companies_document_idx on companies(document) where document <> '';
 
 alter table app_users add column if not exists company_id text references companies(id);
 alter table app_users add column if not exists email text;
