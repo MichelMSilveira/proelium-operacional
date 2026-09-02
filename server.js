@@ -13,7 +13,9 @@ if (isolatedTestDirectory && process.env.NODE_ENV !== 'test') {
 const dataDirectory = isolatedTestDirectory ? path.resolve(isolatedTestDirectory) : path.join(root, 'data');
 const dataFile = path.join(dataDirectory, 'shared-data.json');
 const usersFile = path.join(dataDirectory, 'users.json');
-const storage = createStorage({ dataFile, usersFile });
+const companiesFile = path.join(dataDirectory, 'companies.json');
+const routinesFile = path.join(dataDirectory, 'routines.json');
+const storage = createStorage({ dataFile, usersFile, companiesFile, routinesFile });
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
@@ -96,7 +98,7 @@ function passwordRecord(password) {
 
 function publicUser(user) {
   const role = normalizeRole(user.role);
-  return { username: user.username, name: user.name || user.username, role: user.role || 'operador', roleLabel: roleLabels[role], permissions: permissionsFor(role), active: user.active !== false };
+  return { username: user.username, name: user.name || user.username, role: user.role || 'operador', roleLabel: roleLabels[role], permissions: permissionsFor(role), active: user.active !== false, companyId: user.companyId || 'legacy' };
 }
 
 function requireUser(req, res) {
@@ -145,6 +147,23 @@ async function handleRequest(req, res) {
       : sendJson(res, 401, { authenticated: false });
   }
 
+  if (pathname === '/api/auth/register-company' && req.method === 'POST') {
+    try {
+      const payload=JSON.parse(await readBody(req));
+      const companyName=String(payload.companyName||'').trim().slice(0,120), document=String(payload.document||'').trim().slice(0,32);
+      const username=String(payload.username||'').trim().toLowerCase(), name=String(payload.name||'').trim().slice(0,80), password=String(payload.password||'');
+      if(!companyName||!name||!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)||password.length<10)return sendJson(res,400,{error:'Informe empresa, nome, usuário válido e senha com pelo menos 10 caracteres.'});
+      const companies=await storage.readCompanies(), users=await storage.readUsers();
+      if(users.some(user=>user.username===username))return sendJson(res,409,{error:'Esse usuário já está cadastrado.'});
+      const company={id:`emp-${crypto.randomUUID()}`,name:companyName,document,createdAt:new Date().toISOString()};
+      await storage.writeCompanies([...companies,company]);
+      const user={username,name,role:'admin',active:true,companyId:company.id,createdAt:new Date().toISOString(),...passwordRecord(password)};
+      await storage.writeUsers([...users,user]);
+      const token=signedSession({username,role:'admin',name,companyId:company.id,expiresAt:Date.now()+sessionTtl}); setSessionCookie(res,token,sessionTtl/1000,secureCookie);
+      return sendJson(res,201,{ok:true,user:publicUser(user),company});
+    } catch(error) { console.error('Falha no cadastro de empresa:',error.message); return sendJson(res,400,{error:'Não foi possível concluir o cadastro.'}); }
+  }
+
   if (pathname === '/api/auth/login' && req.method === 'POST') {
     try {
       const payload = JSON.parse(await readBody(req));
@@ -162,7 +181,7 @@ async function handleRequest(req, res) {
         return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
       }
       loginAttempts.delete(attemptKey);
-      const token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, expiresAt: Date.now() + sessionTtl });
+      const token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, companyId: user.companyId || 'legacy', expiresAt: Date.now() + sessionTtl });
       setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
       return sendJson(res, 200, { ok: true, user: publicUser(user) });
     } catch { return sendJson(res, 400, { error: 'Solicitação de login inválida.' }); }
@@ -172,6 +191,13 @@ async function handleRequest(req, res) {
     const user = currentUser(req); if (user) { presence.delete(user.username); announcePresence(); }
     setSessionCookie(res, '', 0, secureCookie);
     return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/company/routines' && ['GET','PUT'].includes(req.method)) {
+    const actor=requireUser(req,res); if(!actor)return;
+    const companyId=actor.companyId||'legacy';
+    if(req.method==='GET')return sendJson(res,200,{routines:await storage.readRoutines(companyId)});
+    try { const payload=JSON.parse(await readBody(req)), routines=Array.isArray(payload.routines)?payload.routines.slice(0,200).map(item=>({id:String(item.id||crypto.randomUUID()).slice(0,80),name:String(item.name||'').trim().slice(0,120),description:String(item.description||'').trim().slice(0,500),periodicity:String(item.periodicity||'Sem periodicidade').slice(0,40),steps:Array.isArray(item.steps)?item.steps.slice(0,100).map(step=>String(step).trim().slice(0,200)).filter(Boolean):[]})).filter(item=>item.name):[]; await storage.writeRoutines(companyId,routines); return sendJson(res,200,{ok:true,routines}); } catch { return sendJson(res,400,{error:'Rotinas inválidas.'}); }
   }
 
   if (pathname === '/api/auth/users' && ['GET', 'POST', 'DELETE'].includes(req.method)) {

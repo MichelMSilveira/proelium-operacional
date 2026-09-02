@@ -20,9 +20,11 @@ function atomicWriteJson(file, value, mode) {
 }
 
 class JsonStorage {
-  constructor({ dataFile, usersFile }) {
+  constructor({ dataFile, usersFile, companiesFile, routinesFile }) {
     this.dataFile = dataFile;
     this.usersFile = usersFile;
+    this.companiesFile = companiesFile;
+    this.routinesFile = routinesFile;
     this.backend = 'json';
   }
 
@@ -53,11 +55,16 @@ class JsonStorage {
     atomicWriteJson(this.usersFile, users, 0o600);
   }
 
+  async readCompanies() { try { return JSON.parse(fs.readFileSync(this.companiesFile, 'utf8')); } catch { return []; } }
+  async writeCompanies(companies) { atomicWriteJson(this.companiesFile, companies, 0o600); }
+  async readRoutines(companyId) { try { const all=JSON.parse(fs.readFileSync(this.routinesFile, 'utf8')); return Array.isArray(all[companyId])?all[companyId]:[]; } catch { return []; } }
+  async writeRoutines(companyId, routines) { let all={}; try { all=JSON.parse(fs.readFileSync(this.routinesFile, 'utf8')); } catch {} all[companyId]=routines; atomicWriteJson(this.routinesFile, all, 0o600); }
+
   async close() {}
 }
 
 class PostgresStorage {
-  constructor({ connectionString, dataFile, usersFile, mirrorJson }) {
+  constructor({ connectionString, dataFile, usersFile, companiesFile, routinesFile, mirrorJson }) {
     const { Pool } = require('pg');
     this.pool = new Pool({ connectionString, max: Number(process.env.PGPOOL_MAX || 10), connectionTimeoutMillis: 5000 });
     this.dataFile = dataFile;
@@ -117,7 +124,7 @@ class PostgresStorage {
 
   async readUsers() {
     const result = await this.pool.query(
-      `select username, name, role, active, salt, password_hash as hash,
+      `select username, name, role, active, company_id as "companyId", salt, password_hash as hash,
               created_at as "createdAt", updated_at as "updatedAt"
        from app_users order by username`
     );
@@ -133,11 +140,11 @@ class PostgresStorage {
       for (const user of users) {
         usernames.push(user.username);
         await client.query(
-          `insert into app_users (username, name, role, active, salt, password_hash, created_at, updated_at)
-           values ($1, $2, $3, $4, $5, $6, coalesce($7::timestamptz, now()), now())
+          `insert into app_users (username, name, role, active, company_id, salt, password_hash, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, coalesce($8::timestamptz, now()), now())
            on conflict (username) do update set name = excluded.name, role = excluded.role,
-             active = excluded.active, salt = excluded.salt, password_hash = excluded.password_hash, updated_at = now()`,
-          [user.username, user.name || user.username, user.role || 'operador', user.active !== false, user.salt, user.hash, user.createdAt || null]
+             active = excluded.active, company_id = excluded.company_id, salt = excluded.salt, password_hash = excluded.password_hash, updated_at = now()`,
+          [user.username, user.name || user.username, user.role || 'operador', user.active !== false, user.companyId || null, user.salt, user.hash, user.createdAt || null]
         );
       }
       if (usernames.length) await client.query('delete from app_users where not (username = any($1::text[]))', [usernames]);
@@ -154,6 +161,11 @@ class PostgresStorage {
       client.release();
     }
   }
+
+  async readCompanies() { return (await this.pool.query('select id, name, document, created_at as "createdAt" from companies order by name')).rows; }
+  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document) values ($1,$2,$3) on conflict (id) do update set name=excluded.name, document=excluded.document`, [company.id,company.name,company.document||'']); }
+  async readRoutines(companyId) { return (await this.pool.query('select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt" from routines where company_id=$1 order by created_at desc',[companyId])).rows.map(row=>({...row,steps:row.steps||[]})); }
+  async writeRoutines(companyId, routines) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from routines where company_id=$1',[companyId]); for(const routine of routines) await client.query('insert into routines (id,company_id,name,description,periodicity,steps) values ($1,$2,$3,$4,$5,$6::jsonb)',[routine.id,companyId,routine.name,routine.description||'',routine.periodicity||'Sem periodicidade',JSON.stringify(routine.steps||[])]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
 
   async close() {
     await this.pool.end();

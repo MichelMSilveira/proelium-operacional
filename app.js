@@ -5,6 +5,7 @@ const navItems = [
   ['equipment','▣','Equipamentos'],['knowledge','▤','Conhecimento']
 ];
 navItems.push(['reports','▤','Relatórios']);
+navItems.push(['routines','↻','Minhas rotinas']);
 
 const seed = {
   catalogVersion:2,
@@ -133,11 +134,14 @@ function authenticate(){
       if(response.status!==401)showAuthError('O serviço de autenticação ainda não está configurado.');
     }catch{showAuthError('Não foi possível conectar ao servidor.')}
     if(gate)gate.hidden=false;
-    if(form)form.addEventListener('submit',async event=>{
+    if(form){
+      $('#authRegisterToggle')?.addEventListener('click',()=>{const registering=form.dataset.registering==='true';form.dataset.registering=registering?'false':'true';$('#authTitle').textContent=registering?'Entrar no sistema':'Cadastrar empresa';$('.auth-description').textContent=registering?'Use seu usuário e senha para acessar a operação compartilhada.':'Crie a empresa e o primeiro usuário administrador.';['companyName','document','name'].forEach(name=>form[name]?.closest('label')?.remove());if(!registering)form.username.closest('label').insertAdjacentHTML('beforebegin','<label class="auth-field">Empresa<input name="companyName" required></label><label class="auth-field">CNPJ / documento<input name="document"></label><label class="auth-field">Seu nome<input name="name" required></label>');form.querySelector('button[type="submit"]').textContent=registering?'Entrar':'Criar empresa';$('#authRegisterToggle').textContent=registering?'Cadastrar minha empresa':'Já tenho acesso'});
+    form.addEventListener('submit',async event=>{
       event.preventDefault();
       const button=form.querySelector('button[type="submit"]');button.disabled=true;showAuthError('');
-      try{const response=await fetch('./api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:form.username.value,password:form.password.value})}),payload=await response.json();if(!response.ok)throw new Error(payload.error||'Usuário ou senha inválidos.');setAuthenticatedUser(payload.user);form.reset();authenticationPromise=null;await connectSharedData()}catch(error){showAuthError(error.message)}finally{button.disabled=false}
+      try{const registering=form.dataset.registering==='true',body=registering?{companyName:form.companyName.value,document:form.document.value,name:form.name.value,username:form.username.value,password:form.password.value}:{username:form.username.value,password:form.password.value},response=await fetch(registering?'./api/auth/register-company':'./api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),payload=await response.json();if(!response.ok)throw new Error(payload.error||'Não foi possível concluir.');setAuthenticatedUser(payload.user);form.reset();authenticationPromise=null;await connectSharedData()}catch(error){showAuthError(error.message)}finally{button.disabled=false}
     },{once:true});
+    }
     return false;
   })();
   return authenticationPromise;
@@ -255,6 +259,7 @@ async function connectSharedData(){
     events.addEventListener('assistance-request',event=>{try{const request=JSON.parse(event.data),message=`${request.from?.name||'Alguém'} pediu auxílio: ${request.message}`;toast(message);if('Notification' in window&&Notification.permission==='granted')new Notification('Pedido de auxílio Proelium',{body:message})}catch{}});
     if('Notification' in window&&Notification.permission==='default'&&authenticatedUser?.role==='admin')Notification.requestPermission().catch(()=>{});
     startPresence();
+    loadCompanyRoutines().catch(()=>{});
     events.addEventListener('data-updated',async event=>{
       const update=JSON.parse(event.data);
       if(Number(update.revision)>state.revision&&!state.syncing){
@@ -371,6 +376,12 @@ function usersView(){
   return `<div class="section-heading"><div><h2>Usuários e acessos</h2><p>Cadastre quem pode entrar no Proelium e defina o papel de cada pessoa.</p></div><button class="button primary" data-user-new>+ Novo usuário</button></div><section class="card table-wrap"><table><thead><tr><th>Usuário</th><th>Papel</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="empty">Nenhum usuário cadastrado.</td></tr>'}</tbody></table></section><p class="subtext user-password-note">As senhas nunca são exibidas e são armazenadas somente como hash no servidor.</p>`;
 }
 views.users=usersView;validViews.add('users');
+let companyRoutines=[];
+function routinesView(){const rows=companyRoutines.map(r=>`<article class="card"><div class="card-head"><div><h3>${escapeUserText(r.name)}</h3><small>${escapeUserText(r.periodicity||'Sem periodicidade')}</small></div><button class="button danger-outline" data-routine-delete="${r.id}">Excluir</button></div><p>${escapeUserText(r.description||'')}</p><ol>${(r.steps||[]).map(step=>`<li>${escapeUserText(step)}</li>`).join('')||'<li>Sem etapas cadastradas.</li>'}</ol></article>`).join('');return `<div class="section-heading"><div><h2>Minhas rotinas</h2><p>Procedimentos próprios da sua empresa, organizados em etapas para repetir com qualidade.</p></div><button class="button primary" data-routine-new>+ Nova rotina</button></div><div class="routine-grid">${rows||'<div class="empty">Nenhuma rotina criada ainda.</div>'}</div>`}
+views.routines=routinesView;validViews.add('routines');
+async function loadCompanyRoutines(){const response=await fetch('./api/company/routines',{cache:'no-store'});if(response.ok){companyRoutines=(await response.json()).routines||[];if(state.view==='routines')render()}}
+async function saveCompanyRoutines(){const response=await fetch('./api/company/routines',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({routines:companyRoutines})});if(!response.ok){const payload=await response.json().catch(()=>({}));throw new Error(payload.error||'Não foi possível salvar as rotinas.')}}
+document.addEventListener('click',event=>{if(event.target.closest('[data-routine-new]')){const name=prompt('Nome da rotina:');if(!name?.trim())return;const description=prompt('Descrição curta (opcional):')||'';const periodicity=prompt('Periodicidade (ex.: diária, semanal):')||'Sem periodicidade';const steps=(prompt('Etapas, separadas por ponto e vírgula:')||'').split(';').map(step=>step.trim()).filter(Boolean);companyRoutines.unshift({id:`rot-${Date.now()}`,name:name.trim(),description,periodicity,steps});saveCompanyRoutines().then(()=>{render();toast('Rotina criada.')}).catch(error=>toast(error.message));}const remove=event.target.closest('[data-routine-delete]');if(remove&&confirm('Excluir esta rotina?')){companyRoutines=companyRoutines.filter(r=>r.id!==remove.dataset.routineDelete);saveCompanyRoutines().then(()=>{render();toast('Rotina excluída.')}).catch(error=>toast(error.message));}},true);
 function loadDirectoryUsers(){if(directoryUsers!==null||state.view!=='users'||authenticatedUser?.role!=='admin')return;directoryUsers=[];fetch('./api/auth/users',{cache:'no-store'}).then(response=>response.ok?response.json():Promise.reject(new Error('Não foi possível carregar os usuários.'))).then(payload=>{directoryUsers=payload.users||[];render()}).catch(error=>{directoryUsers=[];toast(error.message);render()})}
 function openUserEditor(username=''){
   const user=directoryUsers?.find(item=>item.username===username);$('#dialogTitle').textContent=user?'Editar usuário':'Novo usuário';$('#recordForm').dataset.kind='user';$('#recordForm').dataset.editId=username;$('#saveButton').textContent=user?'Salvar alterações':'Criar usuário';$('#formFields').innerHTML=`<div class="field"><label>Usuário *</label><input name="username" value="${escapeUserText(user?.username||'')}" ${user?'readonly':''} required pattern="[a-z0-9][a-z0-9._-]{1,31}"></div><div class="field"><label>Nome de exibição *</label><input name="name" value="${escapeUserText(user?.name||'')}" required></div><div class="field"><label>Papel</label><select name="role"><option value="operador" ${user?.role!=='admin'?'selected':''}>Operador</option><option value="admin" ${user?.role==='admin'?'selected':''}>Administrador</option></select></div><div class="field"><label>Senha ${user?'(deixe em branco para manter)':'*'}</label><input name="password" type="password" minlength="10" autocomplete="new-password" ${user?'':'required'}></div><div class="field full"><small class="subtext">Use pelo menos 10 caracteres. Administradores podem cadastrar e desativar usuários.</small></div>`;$('#recordDialog').showModal();
@@ -2155,9 +2166,12 @@ menuFlowGroup.survey='Comercial';
 navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
 state.data.surveys=Array.isArray(state.data.surveys)?state.data.surveys:[];
 state.data.surveyPoints=Array.isArray(state.data.surveyPoints)?state.data.surveyPoints:[];
+state.data.surveyRooms=Array.isArray(state.data.surveyRooms)?state.data.surveyRooms:[];
 const surveyNormalize=normalizeSharedData;
-normalizeSharedData=shared=>{const data=surveyNormalize(shared);data.surveys=Array.isArray(data.surveys)?data.surveys:[];data.surveyPoints=Array.isArray(data.surveyPoints)?data.surveyPoints:[];return data};
+normalizeSharedData=shared=>{const data=surveyNormalize(shared);data.surveys=Array.isArray(data.surveys)?data.surveys:[];data.surveyPoints=Array.isArray(data.surveyPoints)?data.surveyPoints:[];data.surveyRooms=Array.isArray(data.surveyRooms)?data.surveyRooms:[];return data};
 function surveyOpportunityLabel(id){const opportunity=(state.data.opportunities||[]).find(item=>item.id===id);return opportunity?opportunity.company:'Sem vínculo comercial'}
+function surveyRoomNames(surveyId){const saved=(state.data.surveyRooms||[]).filter(room=>room.surveyId===surveyId).map(room=>String(room.name||'').trim()),legacy=(state.data.surveyPoints||[]).filter(point=>point.surveyId===surveyId).map(point=>String(point.room||'').trim());return [...new Set([...saved,...legacy].filter(Boolean))]}
+function ensureSurveyRoom(surveyId,name){const room=String(name||'').trim();if(!room)return false;if(!Array.isArray(state.data.surveyRooms))state.data.surveyRooms=[];if(!state.data.surveyRooms.some(item=>item.surveyId===surveyId&&item.name===room))state.data.surveyRooms.push({id:uid('srm'),surveyId,name:room});return true}
 function openTechnicalSurvey(id='',prefill={}){
   const survey=id?(state.data.surveys||[]).find(item=>item.id===id):null,value=(key,fallback='')=>prefill[key]??survey?.[key]??fallback;
   $('#dialogTitle').textContent=survey?'Editar levantamento':'Novo levantamento técnico';$('#recordForm').dataset.kind='technicalSurvey';$('#recordForm').dataset.editId=id;$('#saveButton').textContent=survey?'Salvar levantamento':'Criar levantamento';
@@ -2182,6 +2196,23 @@ const surveyTechnologyCatalog=[
   ['Segurança e mecanismos',['CFTV IP','Controle de acesso','Alarme / sensores','Motorização','Integração a definir']]
 ];
 function surveyTechnologyOptions(selected){return `<option value="">Definir depois</option>${surveyTechnologyCatalog.map(([group,types])=>`<optgroup label="${group}">${types.map(type=>`<option ${type===selected?'selected':''}>${type}</option>`).join('')}</optgroup>`).join('')}`}
+const residentialSurveyChecklist=[
+  {area:'Conectividade',group:'Rede & Wi‑Fi',items:['Mapear mapa de calor do Wi‑Fi (heat-map)','Passar cabos Cat6 para os access points (AP)','Configurar VLANs separadas (IoT / visitas / interna)','Fixar o rack de telecomunicação','Crimpar e testar os pontos de rede nos quartos']},
+  {area:'Segurança',group:'Câmeras (CFTV)',items:['Definir posicionamento estratégico dos pontos','Fixar câmeras externas IP PoE','Configurar NVR e disco rígido de gravação','Configurar acesso remoto criptografado no celular','Integrar feed das câmeras nas telas da casa']},
+  {area:'Inteligência',group:'Automação',items:['Passar cabo de rede para a central de automação','Integrar interruptores inteligentes na rede IoT','Configurar sensores de presença e iluminação','Criar rotinas de voz (Alexa / Google Home / HomeKit)']},
+  {area:'Entretenimento',group:'Áudio, vídeo & cinema',items:['Passar tubulação dedicada para os cabos de caixa (2×4 mm²)','Passar cabos HDMI 2.1 de alta velocidade para a TV/projetor','Embutir caixas de som de gesso da zona 2 (espaço gourmet)','Instalar o receiver e subwoofers no home theater','Calibrar áudio Dolby Atmos do cinema']}
+];
+function surveyChecklistPanel(surveyId,points){
+  const room=state.selectedSurveyRoom||surveyRoomNames(surveyId)[0]||'Ambiente sem nome',roomPoints=points.filter(point=>point.room===room),checked=new Map(roomPoints.filter(point=>point.checklistId).map(point=>[point.checklistId,point]));
+  return `<section class="card survey-checklist" data-checklist-room="${room}"><div class="card-head"><div><h3>${room}</h3><p class="subtext">Selecione as necessidades deste ambiente e ajuste o quantitativo de cada item.</p></div><span class="subtext">${checked.size} selecionado(s)</span></div>${residentialSurveyChecklist.map(section=>`<div class="survey-checklist-area"><div class="survey-checklist-area-head"><strong>📂 ${section.area}</strong><span>📁 ${section.group}</span></div>${section.items.map((label,index)=>{const id=`${section.area.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${index}`,point=checked.get(id);return `<div class="survey-checklist-row" data-checklist-row><label><input type="checkbox" data-survey-checklist="${id}" data-survey-checklist-room="${room}" ${point?'checked':''}><span>${label}</span></label><label class="survey-checklist-quantity"><span>Qtd.</span><input type="number" min="1" step="1" value="${point?.quantity||1}" data-survey-checklist-qty="${id}" data-survey-checklist-room="${room}" ${point?'':'disabled'} aria-label="Quantidade: ${label}"></label></div>`}).join('')}</div>`).join('')}</section>`;
+}
+function updateSurveyChecklist(surveyId,control){
+  const id=control.dataset.surveyChecklist||control.dataset.surveyChecklistQty,roomName=control.dataset.surveyChecklistRoom||state.selectedSurveyRoom||'Ambiente sem nome',row=control.closest('[data-checklist-row]'),checkbox=row?.querySelector('[data-survey-checklist]'),quantity=Math.max(1,Number(row?.querySelector('[data-survey-checklist-qty]')?.value||1)),points=state.data.surveyPoints||[],index=points.findIndex(point=>point.surveyId===surveyId&&point.room===roomName&&point.checklistId===id),checklistItem=residentialSurveyChecklist.flatMap(section=>section.items.map((label,itemIndex)=>({id:`${section.area.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${itemIndex}`,label}))).find(item=>item.id===id);
+  ensureSurveyRoom(surveyId,roomName);
+  if(checkbox?.checked){const record={surveyId,checklistId:id,room:roomName,type:checklistItem?.label||row.querySelector('span')?.textContent||'Item de infraestrutura',technology:'Infraestrutura residencial',technicalType:'Infraestrutura residencial',technicalFunction:'Checklist técnico',quantity,status:'Previsto',notes:'Selecionado no checklist residencial.'};if(index>=0)points[index]={...points[index],...record};else points.push({id:uid('ptl'),...record});
+  }else if(index>=0)points.splice(index,1);
+  persist();render();
+}
 function openSurveyPoint(id=''){
   const surveyId=state.selectedSurvey,point=id?(state.data.surveyPoints||[]).find(item=>item.id===id):null,survey=(state.data.surveys||[]).find(item=>item.id===(point?.surveyId||surveyId)),value=(key,fallback='')=>point?.[key]??fallback;
   if(!survey){toast('Abra um levantamento antes de adicionar pontos.');return}
@@ -2223,7 +2254,7 @@ function survey(){
   const surveys=state.data.surveys||[],selected=surveys.find(item=>item.id===state.selectedSurvey);
   if(!selected){const awaiting=surveys.filter(item=>item.status!=='Validado'&&item.status!=='Enviado ao orçamento').length,points=(state.data.surveyPoints||[]).length;return heading('Levantamento técnico','Etapa entre Comercial e Orçamentos: consolide ambientes, pontos e quantitativos antes de precificar.','survey')+`<div class="module-toolbar"><button class="button primary" data-add-survey>+ Novo levantamento</button><span class="subtext">Manual, visita técnica ou futura leitura de planta/PDF.</span></div><div class="kpi-grid"><div class="kpi"><div class="kpi-top">Levantamentos</div><div class="kpi-value">${surveys.length}</div><div class="kpi-note">registros técnicos</div></div><div class="kpi"><div class="kpi-top">A validar</div><div class="kpi-value">${awaiting}</div><div class="kpi-note">antes do orçamento</div></div><div class="kpi"><div class="kpi-top">Pontos e quantitativos</div><div class="kpi-value">${points}</div><div class="kpi-note">itens levantados</div></div></div>${surveys.length?`<section class="card">${table(['Levantamento','Comercial','Origem','Situação','Itens',''],surveys.map(item=>{const count=(state.data.surveyPoints||[]).filter(point=>point.surveyId===item.id).length;return `<tr><td><div class="entity">${item.title}</div><div class="subtext">${item.site||'Local não informado'}</div></td><td>${surveyOpportunityLabel(item.opportunityId)}</td><td>${item.source}</td><td>${badge(item.status)}</td><td>${count}</td><td><button class="link-button" data-open-survey="${item.id}">Abrir</button> <button class="delete-icon" data-delete-survey="${item.id}" aria-label="Excluir ${item.title}" title="Excluir levantamento">×</button></td></tr>`}))}</section>`:'<div class="empty">Crie o primeiro levantamento antes de montar o orçamento.</div>'}`;}
   const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===selected.id),byRoom={};points.forEach(point=>{(byRoom[point.room]??=[]).push(point)});const quote=(state.data.quotes||[]).find(item=>item.opportunityId===selected.opportunityId&&item.status!=='Aprovado');
-  return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-point>+ Adicionar ponto / quantitativo</button><button class="button secondary" data-delete-survey="${selected.id}">Excluir levantamento</button>${quote?`<button class="button primary" data-survey-create-rooms="${selected.id}">Enviar ambientes ao orçamento</button>`:`<button class="button primary" data-survey-start-quote="${selected.id}">Criar orçamento e enviar ambientes</button>`}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p></div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
+  return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-room="${selected.id}">+ Adicionar ambiente</button><button class="button secondary" data-add-survey-point>+ Adicionar ponto / quantitativo</button><button class="button secondary" data-delete-survey="${selected.id}">Excluir levantamento</button>${quote?`<button class="button primary" data-survey-create-rooms="${selected.id}">Enviar ambientes ao orçamento</button>`:`<button class="button primary" data-survey-start-quote="${selected.id}">Criar orçamento e enviar ambientes</button>`}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p></div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
 }
 views.survey=survey;
 const surveySaveRecord=saveRecord;
@@ -2233,8 +2264,8 @@ saveRecord=(kind,data,editId='')=>{
   return surveySaveRecord(kind,data,editId);
 };
 document.addEventListener('click',event=>{
-  const add=event.target.closest('[data-add-survey]'),open=event.target.closest('[data-open-survey]'),back=event.target.closest('[data-survey-back]'),edit=event.target.closest('[data-edit-survey]'),remove=event.target.closest('[data-delete-survey]'),point=event.target.closest('[data-add-survey-point]'),editPoint=event.target.closest('[data-edit-survey-point]'),startQuote=event.target.closest('[data-survey-start-quote]'),send=event.target.closest('[data-survey-create-rooms]');
-  if(add){event.preventDefault();openTechnicalSurvey();return}if(open){event.preventDefault();state.selectedSurvey=open.dataset.openSurvey;state.view='survey';render();return}if(back){event.preventDefault();state.selectedSurvey=null;render();return}if(edit){event.preventDefault();openTechnicalSurvey(edit.dataset.editSurvey);return}if(remove){event.preventDefault();deleteTechnicalSurvey(remove.dataset.deleteSurvey);return}if(point){event.preventDefault();openSurveyPoint();return}if(editPoint){event.preventDefault();openSurveyPoint(editPoint.dataset.editSurveyPoint);return}if(startQuote){event.preventDefault();startQuoteFromSurvey(startQuote.dataset.surveyStartQuote);return}if(send){event.preventDefault();const current=(state.data.surveys||[]).find(item=>item.id===send.dataset.surveyCreateRooms),quote=(state.data.quotes||[]).find(item=>item.opportunityId===current?.opportunityId&&item.status!=='Aprovado');if(!current||!quote)return;const count=sendSurveyRoomsToQuote(current,quote);persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`${count} ambiente(s) enviados ao orçamento. Os itens continuam aguardando validação comercial.`)}
+  const add=event.target.closest('[data-add-survey]'),open=event.target.closest('[data-open-survey]'),back=event.target.closest('[data-survey-back]'),edit=event.target.closest('[data-edit-survey]'),remove=event.target.closest('[data-delete-survey]'),point=event.target.closest('[data-add-survey-point]'),editPoint=event.target.closest('[data-edit-survey-point]'),startQuote=event.target.closest('[data-survey-start-quote]'),send=event.target.closest('[data-survey-create-rooms]'),addRoom=event.target.closest('[data-add-survey-room]'),selectRoom=event.target.closest('[data-select-survey-room]');
+  if(add){event.preventDefault();openTechnicalSurvey();return}if(open){event.preventDefault();state.selectedSurvey=open.dataset.openSurvey;state.selectedSurveyRoom='';state.view='survey';render();return}if(back){event.preventDefault();state.selectedSurvey=null;state.selectedSurveyRoom='';render();return}if(edit){event.preventDefault();openTechnicalSurvey(edit.dataset.editSurvey);return}if(remove){event.preventDefault();deleteTechnicalSurvey(remove.dataset.deleteSurvey);return}if(addRoom){event.preventDefault();openSurveyRoomEdit(addRoom.dataset.addSurveyRoom,'');return}if(selectRoom){event.preventDefault();state.selectedSurveyRoom=selectRoom.dataset.selectSurveyRoom;render();return}if(point){event.preventDefault();openSurveyPoint();return}if(editPoint){event.preventDefault();openSurveyPoint(editPoint.dataset.editSurveyPoint);return}if(startQuote){event.preventDefault();startQuoteFromSurvey(startQuote.dataset.surveyStartQuote);return}if(send){event.preventDefault();const current=(state.data.surveys||[]).find(item=>item.id===send.dataset.surveyCreateRooms),quote=(state.data.quotes||[]).find(item=>item.opportunityId===current?.opportunityId&&item.status!=='Aprovado');if(!current||!quote)return;const count=sendSurveyRoomsToQuote(current,quote);persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`${count} ambiente(s) enviados ao orçamento. Os itens continuam aguardando validação comercial.`)}
 },true);
 document.addEventListener('click',event=>{const add=event.target.closest('[data-add="survey"]');if(!add)return;event.preventDefault();event.stopImmediatePropagation();openTechnicalSurvey()},true);
 render();
@@ -2277,7 +2308,7 @@ function quoteScopeQuantities(quoteId){
 }
 function scopeQuantityPanel(items,title='Visão geral de quantitativos',note='Antes da distribuição por ambiente: itens e capacidades a conferir no projeto.'){
   if(!items.length)return '';
-  return `<section class="card scope-quantities"><div class="card-head"><div><h3>${title}</h3><p class="subtext">${note}</p></div><span class="subtext">${items.length} tipo(s) de item</span></div>${table(['Tipo e função','Item','Quantitativo','Conferência'],items.map(entry=>{const product=entry.product||{},type=entry.technicalType||product.technicalType||entry.type||'Item técnico',purpose=entry.technicalFunction||product.technicalFunction||entry.notes||'Função a definir';return `<tr><td><strong>${type}</strong><div class="subtext">${purpose}</div></td><td>${product.name||entry.label||entry.type||'Item levantado'}</td><td><strong>${quantityLabel(entry.quantity,product.unit||entry.unit||'un')}</strong></td><td>${badge(entry.status||'A conferir')}</td></tr>`}))}</section>`;
+  return `<section class="card scope-quantities"><div class="card-head"><div><h3>${title}</h3><p class="subtext">${note}</p></div><span class="subtext">${items.length} tipo(s) de item</span></div>${table(['Tipo e função','Item','Quantitativo','Conferência'],items.map(entry=>{const product=entry.product||{},type=entry.technicalType||product.technicalType||entry.type||'Item técnico',purpose=[entry.technicalFunction||product.technicalFunction||entry.notes||'Função a definir',entry.rooms?.length?entry.rooms.join(', '):''].filter(Boolean).join(' · ');return `<tr><td><strong>${type}</strong><div class="subtext">${purpose}</div></td><td>${product.name||entry.label||entry.type||'Item levantado'}</td><td><strong>${quantityLabel(entry.quantity,product.unit||entry.unit||'un')}</strong></td><td>${badge(entry.status||'A conferir')}</td></tr>`}))}</section>`;
 }
 const scopeQuoteDetailView=views.quoteDetail;
 views.quoteDetail=()=>{
@@ -2288,10 +2319,20 @@ views.quoteDetail=()=>{
 const scopeSurveyView=views.survey;
 views.survey=()=>{
   const selected=(state.data.surveys||[]).find(item=>item.id===state.selectedSurvey),points=selected?(state.data.surveyPoints||[]).filter(point=>point.surveyId===selected.id):[];
-  const grouped=Object.values(points.reduce((all,point)=>{const key=`${point.technicalType||point.type}|||${point.technicalFunction||point.notes||''}`;(all[key]??={type:point.type,technicalType:point.technicalType||point.type,technicalFunction:point.technicalFunction||'Função a validar',quantity:0,unit:'un',status:point.status||'Previsto',label:'Pontos levantados'}).quantity+=Number(point.quantity||0);return all;},{}));
+  const grouped=Object.values(points.reduce((all,point)=>{const key=`${point.checklistId||point.type}|||${point.technicalFunction||point.notes||''}`;(all[key]??={type:point.type,technicalType:point.technicalType||point.type,technicalFunction:point.technicalFunction||'Função a validar',quantity:0,unit:'un',status:point.status||'Previsto',label:point.type,rooms:[]});all[key].quantity+=Number(point.quantity||0);if(point.room&&!all[key].rooms.includes(point.room))all[key].rooms.push(point.room);return all;},{}));
   const panel=selected?scopeQuantityPanel(grouped,'Resumo geral do levantamento','Quantitativos consolidados antes da separação por ambiente. Origem atual: '+selected.source+'.'):'';
-  return scopeSurveyView().replace('<div class="room-grid">',panel+'<div class="room-grid">');
+  if(!selected)return scopeSurveyView().replace('<div class="room-grid">',panel+'<div class="room-grid">');
+  const rooms=surveyRoomNames(selected.id),activeRoom=rooms.includes(state.selectedSurveyRoom)?state.selectedSurveyRoom:(rooms[0]||'');
+  state.selectedSurveyRoom=activeRoom;
+  const roomTabs=`<section class="card survey-room-switcher"><div class="card-head"><div><h3>Ambientes do levantamento</h3><p class="subtext">Cada ambiente possui o checklist completo. A lista geral soma todos os ambientes.</p></div><span class="subtext">${rooms.length} ambiente(s)</span></div><div class="survey-room-tabs">${rooms.map(room=>`<button type="button" class="survey-room-tab ${room===activeRoom?'active':''}" data-select-survey-room="${room}">${room}<small>${points.filter(point=>point.room===room).length} item(ns)</small></button>`).join('')||'<span class="subtext">Adicione o primeiro ambiente para começar.</span>'}</div></section>`;
+  const checklist=activeRoom?surveyChecklistPanel(selected.id,points):'';
+  return scopeSurveyView().replace('<div class="room-grid">',panel+roomTabs+checklist+'<div class="room-grid">');
 };
+document.addEventListener('change',event=>{
+  const control=event.target.closest('[data-survey-checklist],[data-survey-checklist-qty]');
+  if(!control||state.view!=='survey'||!state.selectedSurvey)return;
+  updateSurveyChecklist(state.selectedSurvey,control);
+},true);
 
 // Valores exclusivamente para teste do fluxo comercial. Não são tabela de fabricante nem
 // compromisso de venda: ficam identificados no catálogo para revisão posterior pela equipe.
@@ -2986,10 +3027,10 @@ document.addEventListener('click',event=>{
 
 // O levantamento mantém ambientes como agrupamentos dos pontos, permitindo renomeá-los sem perder os itens internos.
 function openSurveyRoomEdit(surveyId,room){
-  $('#dialogTitle').textContent='Editar ambiente do levantamento';
-  $('#recordForm').dataset.kind='surveyRoomEdit';
+  $('#dialogTitle').textContent=room?'Editar ambiente do levantamento':'Adicionar ambiente ao levantamento';
+  $('#recordForm').dataset.kind=room?'surveyRoomEdit':'surveyRoomCreate';
   $('#recordForm').dataset.editId='';
-  $('#saveButton').textContent='Salvar ambiente';
+  $('#saveButton').textContent=room?'Salvar ambiente':'Adicionar ambiente';
   $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${surveyId}"><input type="hidden" name="previousRoom" value="${room}"><div class="field full"><label>Nome do ambiente *</label><input name="room" value="${room}" required><small class="subtext">Todos os itens deste ambiente serão mantidos e passarão a usar o novo nome.</small></div>`;
   $('#recordDialog').showModal();
 }
@@ -3003,11 +3044,21 @@ function deleteSurveyPoint(id){
 }
 const surveyStructureSaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{
+  if(kind==='surveyRoomCreate'){
+    const room=String(data.room||'').trim();
+    if(!room){toast('Informe o nome do ambiente.');return}
+    if(surveyRoomNames(data.surveyId).includes(room)){toast('Esse ambiente já existe neste levantamento.');return}
+    ensureSurveyRoom(data.surveyId,room);state.selectedSurveyRoom=room;
+    logAudit('Adicionou ambiente','Levantamento técnico',`${room} · ${data.surveyId}`);
+    persist();closeRecordDialog();render();toast('Ambiente adicionado ao levantamento.');return;
+  }
   if(kind==='surveyRoomEdit'){
     const nextRoom=String(data.room||'').trim(),previousRoom=String(data.previousRoom||'').trim();
     if(!nextRoom){toast('Informe o nome do ambiente.');return}
     const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===data.surveyId&&item.room===previousRoom);
     points.forEach(point=>point.room=nextRoom);
+    (state.data.surveyRooms||[]).filter(item=>item.surveyId===data.surveyId&&item.name===previousRoom).forEach(item=>item.name=nextRoom);
+    if(state.selectedSurveyRoom===previousRoom)state.selectedSurveyRoom=nextRoom;
     logAudit('Editou ambiente','Levantamento técnico',`${previousRoom} → ${nextRoom} · ${points.length} item(ns)`);
     persist();closeRecordDialog();render();toast('Ambiente atualizado com seus itens.');
     return;
