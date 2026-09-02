@@ -192,8 +192,11 @@ const initialOfficialCatalogProducts=[
 ];
 let embraceCatalogSyncNeeded=false;
 function ensureEmbraceCatalog(data){if(!Array.isArray(data.products))data.products=[];const catalogCurrent=data.embraceCatalogVersion===embraceCatalogVersion,known=new Set(data.products.map(product=>product.sku)),missing=[...embraceCatalogProducts,...cableCatalogProducts,...operationalCatalogProducts,...initialOfficialCatalogProducts].filter(product=>!known.has(product.sku));if(missing.length)data.products.push(...structuredClone(missing));if(!catalogCurrent||missing.length){data.embraceCatalogVersion=embraceCatalogVersion;embraceCatalogSyncNeeded=true}return data}
+const scenarioResaleMarkup=0.2;
+function applyScenarioResalePricing(data){const baseBySku=new Map(embraceCatalogRows.map(([sku,,price])=>[sku,Number(price)]));let adjusted=0;(data.products||[]).forEach(product=>{const base=baseBySku.get(product.sku);if(base===undefined)return;const suggested=Math.round(base*(1+scenarioResaleMarkup)*100)/100;if(product.catalogPrice!==base||Number(product.cost)!==base||Number(product.price)!==suggested){product.catalogPrice=base;product.cost=base;product.price=suggested;product.markupPct=scenarioResaleMarkup*100;product.priceReference='Catálogo Scenario Embrace · junho/2021 + 20% de acréscimo comercial provisório; confirmar impostos, frete, fornecedor e regime tributário.';adjusted++}});return adjusted}
 function loadData(){try{const saved=JSON.parse(localStorage.getItem('proelium-data'));if(!saved)return ensureEmbraceCatalog(structuredClone(seed));const resetCatalog=saved.catalogVersion!==seed.catalogVersion;const merged={...structuredClone(seed),...saved,catalogVersion:seed.catalogVersion,installations:saved.installations||structuredClone(seed.installations),activities:saved.activities||structuredClone(seed.activities),quotes:saved.quotes||structuredClone(seed.quotes),opportunities:saved.opportunities||[],appointments:saved.appointments||[],products:resetCatalog?structuredClone(seed.products):(saved.products||structuredClone(seed.products)),quoteRooms:resetCatalog?(saved.quoteRooms||structuredClone(seed.quoteRooms)).map(r=>({...r,items:[]})):(saved.quoteRooms||structuredClone(seed.quoteRooms))};merged.clients=merged.clients.map(c=>({...c,document:c.document||'',email:c.email||'',address:c.address||'',notes:c.notes||''}));merged.projects=merged.projects.map(p=>({...p,technicalStage:p.technicalStage||'Projeto técnico'}));return ensureEmbraceCatalog(merged)}catch{return ensureEmbraceCatalog(structuredClone(seed))}}
 state.data=loadData();
+applyScenarioResalePricing(state.data);
 async function persist(){
   // Keep the denormalized quote value synchronized with its current rooms/items.
   // This prevents BI and project views from showing a stale total after edits.
@@ -225,6 +228,7 @@ async function refreshSharedData(force=false){
   const changedByDate=Boolean(payload.updatedAt&&payload.updatedAt!==state.updatedAt);
   if(payload.data&&(force||changedByRevision||changedByDate)){
     state.data=normalizeTeamNames(normalizeSharedData(payload.data));
+    if(applyScenarioResalePricing(state.data))embraceCatalogSyncNeeded=true;
     state.revision=remoteRevision;
     state.updatedAt=payload.updatedAt||null;
     localStorage.setItem('proelium-data',JSON.stringify(state.data));
@@ -2332,12 +2336,6 @@ function applyTestBudgetPricing(){
   if(adjusted)logAudit('Aplicou valores de teste','Orçamento',`${adjusted} referência(s) de custo e venda adicionadas ao catálogo para validar o fluxo comercial.`);
   return Boolean(adjusted);
 }
-setTimeout(()=>{
-  if(!applyTestBudgetPricing())return;
-  persist();
-  render();
-  toast('Valores de teste aplicados ao catálogo e ao orçamento-modelo.');
-},6200);
 render();
 
 // Regras de infraestrutura: o item principal permanece escolhido pelo orçamentista; ao adicioná-lo,
@@ -3188,14 +3186,27 @@ function createCommercialTestOpportunities(){
     ['TESTE · Restaurante Jardim','Fernanda Alves','(11) 90000-1090','fernanda.teste@exemplo.com','Indicação — teste','Michel','Ganho','Registrar início do projeto','2026-09-11',64000],
     ['TESTE · Loja Horizonte','Gustavo Nunes','(11) 90000-1100','gustavo.teste@exemplo.com','Parceria — teste','Natalia','Perdido','Registrar motivo da perda','2026-09-12',45000]
   ];
-  const existing=new Set((state.data.opportunities||[]).map(item=>item.company));
-  const missing=examples.filter(([company])=>!existing.has(company));
-  if(!missing.length){toast('Os exemplos de teste já estão no funil.');return}
-  missing.forEach(([company,contact,phone,email,source,owner,stage,nextAction,nextDue,estimatedValue])=>state.data.opportunities.unshift({id:uid('opp'),company,contact,phone,email,source,owner,stage,nextAction,nextDue,estimatedValue,lossReason:''}));
-  logAudit('Criou','Oportunidades de teste',`${missing.length} exemplo(s) para validar o fluxo comercial`);persist();render();toast(`${missing.length} oportunidade(s) de teste adicionada(s).`);
+  const testOpportunities=(state.data.opportunities||[]).filter(item=>String(item.company||'').startsWith('TESTE · '));
+  const testOpportunityIds=new Set(testOpportunities.map(item=>item.id));
+  state.data.opportunities=(state.data.opportunities||[]).filter(item=>!testOpportunityIds.has(item.id));
+  const testQuotes=(state.data.quotes||[]).filter(item=>testOpportunityIds.has(item.opportunityId));
+  const testQuoteIds=new Set(testQuotes.map(item=>item.id));
+  state.data.quotes=(state.data.quotes||[]).filter(item=>!testQuoteIds.has(item.id));
+  state.data.quoteRooms=(state.data.quoteRooms||[]).filter(item=>!testQuoteIds.has(item.quoteId));
+  const products=state.data.products||[],pick=patterns=>products.find(product=>product.active!==false&&patterns.some(pattern=>pattern.test(`${product.name||''} ${product.category||''} ${product.technicalType||''}`))),add=(room,product,qty)=>{if(product&&qty>0)room.items.push({productId:product.id,qty,discount:0})};
+  const central=pick([/controladora|central.*automa|embrace|scenario/i]),gateway=pick([/gateway|roteador|router|dream machine/i]),light=pick([/dimmer|módulo.*ilumina|modulo.*ilumina|pwm/i]),control=pick([/rel[eé]|módulo.*controle|modulo.*controle/i]),keypad=pick([/keypad|tecla|pulsador/i]),router=pick([/roteador|router|dream machine|gateway/i]),switchProduct=pick([/switch/i]),cable=pick([/cabo.*rede|cabeamento.*rede|cat\s*6/i]),antenna=pick([/access point|antena|wi-?fi/i]),camera=pick([/câmera|camera/i]);
+  examples.forEach(([company,contact,phone,email,source,owner,stage,nextAction,nextDue,estimatedValue],index)=>{
+    const opportunity={id:uid('opp'),company,contact,phone,email,source,owner,stage,nextAction,nextDue,estimatedValue,lossReason:''};
+    state.data.opportunities.unshift(opportunity);
+    const quote={id:uid('orc'),opportunityId:opportunity.id,clientId:'',title:`${index%2?'Rede e segurança':'Automação residencial'} — ${company.replace('TESTE · ','')}`,value:0,status:'Em elaboração',version:1,createdAt:new Date().toISOString(),validUntil:nextDue,testScenario:true};
+    state.data.quotes.unshift(quote);
+    const firstRoom={id:uid('amb'),quoteId:quote.id,name:index%2?'Rack e central de rede':'Central de automação',items:[]};
+    const secondRoom={id:uid('amb'),quoteId:quote.id,name:index%2?'Câmeras e pontos Wi-Fi':'Comandos e iluminação',items:[]};
+    if(index%2){add(firstRoom,router,1);add(firstRoom,gateway,index%3===0?1:0);add(firstRoom,switchProduct,1);add(firstRoom,cable,Math.max(30,12+index*4));add(secondRoom,camera,2+(index%3));add(secondRoom,antenna,1+(index%2));add(secondRoom,cable,30)}else{add(firstRoom,central,1);add(firstRoom,gateway,index%3===0?1:0);add(firstRoom,light,2+(index%3));add(firstRoom,control,1+(index%2));add(secondRoom,keypad,2+(index%3));add(secondRoom,light,1);add(secondRoom,cable,20+index*3)}
+    state.data.quoteRooms.push(firstRoom,secondRoom);
+    quote.value=quoteTotals(quote.id).price;
+  });
+  logAudit('Recriou','Oportunidades e orçamentos de teste','10 cenários técnicos de automação residencial ou rede/segurança, com materiais separados e itens sem preço mantidos para cotação.');persist();render();toast('10 cenários técnicos recriados com a composição básica do projeto.');
 }
-const commercialTestExamplesView=views.commercial;
-views.commercial=()=>commercialTestExamplesView().replace('<div class="module-toolbar">','<div class="module-toolbar"><button type="button" class="button secondary" data-create-commercial-tests>+ Criar exemplos de teste</button>');
-document.addEventListener('click',event=>{const button=event.target.closest('[data-create-commercial-tests]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();createCommercialTestOpportunities()},true);
 render();
 setMenu(false);
