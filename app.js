@@ -3180,7 +3180,13 @@ function createCommercialTestOpportunities(){
     ['TESTE · Residência Horizonte','Marina Duarte','(11) 90000-1010','marina.teste@exemplo.com','Indicação — teste','Michel','Novo contato','Agendar visita técnica','2026-09-03',85000],
     ['TESTE · Clínica Vitta','Rafael Nunes','(11) 90000-1020','rafael.teste@exemplo.com','Site — teste','Natalia','Qualificação','Confirmar escopo de rede e automação','2026-09-04',145000],
     ['TESTE · Casa das Árvores','Carolina Moraes','(11) 90000-1030','carolina.teste@exemplo.com','Arquiteto parceiro — teste','Michel','Visita','Registrar levantamento por ambientes','2026-09-05',210000],
-    ['TESTE · Loja Mares','Diego Alves','(11) 90000-1040','diego.teste@exemplo.com','Prospecção — teste','Natalia','Orçamento','Revisar proposta técnica','2026-09-06',120000]
+    ['TESTE · Loja Mares','Diego Alves','(11) 90000-1040','diego.teste@exemplo.com','Prospecção — teste','Natalia','Orçamento','Revisar proposta técnica','2026-09-06',120000],
+    ['TESTE · Hotel Serra Azul','Beatriz Lima','(11) 90000-1050','beatriz.teste@exemplo.com','Parceria — teste','Michel','Novo contato','Mapear necessidades de conectividade','2026-09-07',98000],
+    ['TESTE · Escritório Central','André Costa','(11) 90000-1060','andre.teste@exemplo.com','Indicação — teste','Natalia','Qualificação','Confirmar visita ao escritório','2026-09-08',76000],
+    ['TESTE · Condomínio Ipê','Juliana Rocha','(11) 90000-1070','juliana.teste@exemplo.com','Site — teste','Michel','Visita','Consolidar levantamento técnico','2026-09-09',185000],
+    ['TESTE · Clínica Sorriso','Lucas Martins','(11) 90000-1080','lucas.teste@exemplo.com','Prospecção — teste','Natalia','Orçamento','Enviar proposta revisada','2026-09-10',132000],
+    ['TESTE · Restaurante Jardim','Fernanda Alves','(11) 90000-1090','fernanda.teste@exemplo.com','Indicação — teste','Michel','Ganho','Registrar início do projeto','2026-09-11',64000],
+    ['TESTE · Loja Horizonte','Gustavo Nunes','(11) 90000-1100','gustavo.teste@exemplo.com','Parceria — teste','Natalia','Perdido','Registrar motivo da perda','2026-09-12',45000]
   ];
   const existing=new Set((state.data.opportunities||[]).map(item=>item.company));
   const missing=examples.filter(([company])=>!existing.has(company));
