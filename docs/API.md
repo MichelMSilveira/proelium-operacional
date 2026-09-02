@@ -60,3 +60,6 @@ Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a
 ## Segurança para o N.E.M.O.
 
 O N.E.M.O. recebe credencial de serviço com escopos explícitos, por exemplo `projects:read`, `tasks:read` e, numa fase posterior, `tasks:write`. Toda escrita aceita `Idempotency-Key`, registra autor/origem e retorna o evento de auditoria criado.
+# Multiempresa
+
+`POST /api/auth/register-company` cria uma empresa e seu primeiro usuário administrador. Após o login, `GET /api/company/routines` lista as rotinas da empresa e `PUT /api/company/routines` substitui sua coleção de rotinas.
