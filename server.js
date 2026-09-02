@@ -52,6 +52,7 @@ const normalizeRole = role => role === 'operador' ? 'operacao' : (rolePermission
 const permissionsFor = role => rolePermissions[normalizeRole(role)] || rolePermissions.operacao;
 const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
 const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries' };
+const platformAdmins = new Set(String(process.env.PROELIUM_PLATFORM_ADMINS || 'admin').split(',').map(value => value.trim().toLowerCase()).filter(Boolean));
 
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map(item => item.trim().split('='))
@@ -232,6 +233,11 @@ async function handleRequest(req, res) {
     const companyId=actor.companyId||'legacy';
     if(req.method==='GET')return sendJson(res,200,{routines:await storage.readRoutines(companyId)});
     try { const payload=JSON.parse(await readBody(req)), routines=Array.isArray(payload.routines)?payload.routines.slice(0,200).map(item=>({id:String(item.id||crypto.randomUUID()).slice(0,80),name:String(item.name||'').trim().slice(0,120),description:String(item.description||'').trim().slice(0,500),periodicity:String(item.periodicity||'Sem periodicidade').slice(0,40),steps:Array.isArray(item.steps)?item.steps.slice(0,100).map(step=>String(step).trim().slice(0,200)).filter(Boolean):[]})).filter(item=>item.name):[]; await storage.writeRoutines(companyId,routines); return sendJson(res,200,{ok:true,routines}); } catch { return sendJson(res,400,{error:'Rotinas inválidas.'}); }
+  }
+  if (pathname === '/api/admin/companies' && ['GET','PUT'].includes(req.method)) {
+    const actor=requireUser(req,res); if(!actor)return; if(actor.role!=='admin'||!platformAdmins.has(String(actor.username||'').toLowerCase()))return sendJson(res,403,{error:'Apenas administradores da plataforma podem analisar empresas.'});
+    const companies=await storage.readCompanies(); if(req.method==='GET')return sendJson(res,200,{companies});
+    try { const payload=JSON.parse(await readBody(req)),id=String(payload.id||''),status=String(payload.status||'');if(!id||!['pending','approved','rejected'].includes(status))return sendJson(res,400,{error:'Atualização inválida.'});const index=companies.findIndex(company=>company.id===id);if(index<0)return sendJson(res,404,{error:'Empresa não encontrada.'});companies[index]={...companies[index],status};await storage.writeCompanies(companies);return sendJson(res,200,{ok:true,companies}); } catch { return sendJson(res,400,{error:'Não foi possível atualizar o cadastro.'}); }
   }
 
   if (pathname === '/api/auth/users' && ['GET', 'POST', 'DELETE'].includes(req.method)) {
