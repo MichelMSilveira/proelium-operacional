@@ -161,6 +161,10 @@ async function handleRequest(req, res) {
     return user ? sendJson(res, 200, { authenticated: true, user: publicUser(user) })
       : sendJson(res, 401, { authenticated: false });
   }
+  if (pathname === '/api/auth/google/pending' && req.method === 'GET') {
+    const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});
+    return pending?.email ? sendJson(res,200,{email:pending.email,name:pending.name||''}) : sendJson(res,401,{error:'Identificação Google expirada.'});
+  }
 
   if (pathname === '/api/auth/google' && req.method === 'GET') {
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return sendJson(res,503,{error:'Login Google ainda não configurado no servidor.'});
