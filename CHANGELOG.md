@@ -538,3 +538,7 @@
 - Rotinas próprias por empresa, com descrição, periodicidade e checklist.
 - Separação inicial de rotinas por empresa no armazenamento JSON e PostgreSQL.
 - Corrigida a compatibilidade do schema PostgreSQL para instalações antigas que não tinham a coluna de e-mail dos usuários Google.
+## Próxima entrega
+
+- Corrigida a persistência PostgreSQL do tipo de perfil, mensagem preliminar e status da licença.
+- O acesso limitado e a licença pendente agora ficam sinalizados na sessão do usuário.
