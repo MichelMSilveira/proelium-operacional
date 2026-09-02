@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Painel administrativo agora exibe e alterna a licença de uso separadamente do acesso limitado.
+
 - Conclusão do cadastro Google corrigida: ficha salva e redirecionamento limpo para o app com acesso limitado.
 
 - Após o cadastro Google, a empresa recebe acesso limitado imediato; a licença de uso permanece pendente para aprovação administrativa.
