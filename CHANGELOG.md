@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Catálogo Scenario Embrace: preços-base do catálogo de São Paulo (junho/2021) preservados como custo e preço de repasse calculado com acréscimo comercial provisório de 20%, sem preencher automaticamente valores fictícios para itens sem fonte validada.
+
+- Orçamentos de teste: removido o botão de recriação da interface após a validação dos cenários técnicos.
+
 - Menu mobile: ocultação do botão agora acompanha diretamente o estado real do menu aberto, evitando que ele reapareça sobre o painel.
 
 - Menu mobile: botão desaparece enquanto o menu está aberto e recebeu visual mais claro, com transição suave e contraste adequado.

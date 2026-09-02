@@ -48,7 +48,7 @@ O painel cruza clientes, orçamentos, projetos, custos, margem, progresso, etapa
 
 O catálogo central reúne produtos, materiais e serviços com código, categoria, modalidade, unidade, custo e preço. As modalidades são venda, disponibilização, venda ou disponibilização e serviço.
 
-O catálogo inicial está organizado nas linhas UniFi para redes e câmeras, Scenario Embrace para automação, receivers Denon e caixas acústicas STAGE, Morel e B&W. Modelos, custos e preços devem ser preenchidos conforme a tabela comercial vigente. Produtos podem ser excluídos individualmente; a exclusão também retira o item dos ambientes de orçamento em que estiver sendo usado.
+O catálogo inicial está organizado nas linhas UniFi para redes e câmeras, Scenario Embrace para automação, receivers Denon e caixas acústicas STAGE, Morel e B&W. Modelos, custos e preços devem ser preenchidos conforme a tabela comercial vigente. A referência Scenario Embrace importada é a tabela de São Paulo de junho/2021; o preço de repasse pode usar acréscimo comercial provisório de 20%, mas impostos, frete, disponibilidade e regime tributário ainda precisam ser confirmados antes do envio. Produtos sem fonte de preço validada permanecem para cotação, sem estimativa automática. Produtos podem ser excluídos individualmente; a exclusão também retira o item dos ambientes de orçamento em que estiver sendo usado.
 
 Cada orçamento é dividido em cômodos ou ambientes. Os itens são adicionados a um ambiente com quantidade e preservam custo e preço usados na proposta. O sistema calcula valor, custo, resultado e margem por ambiente e no orçamento completo, permitindo revisar a estratégia comercial antes do envio.
 
