@@ -124,7 +124,7 @@ class PostgresStorage {
 
   async readUsers() {
     const result = await this.pool.query(
-      `select username, name, role, active, company_id as "companyId", salt, password_hash as hash,
+      `select username, name, role, active, email, company_id as "companyId", salt, password_hash as hash,
               created_at as "createdAt", updated_at as "updatedAt"
        from app_users order by username`
     );
@@ -140,11 +140,11 @@ class PostgresStorage {
       for (const user of users) {
         usernames.push(user.username);
         await client.query(
-          `insert into app_users (username, name, role, active, company_id, salt, password_hash, created_at, updated_at)
-           values ($1, $2, $3, $4, $5, $6, $7, coalesce($8::timestamptz, now()), now())
+          `insert into app_users (username, name, role, active, email, company_id, salt, password_hash, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, coalesce($9::timestamptz, now()), now())
            on conflict (username) do update set name = excluded.name, role = excluded.role,
              active = excluded.active, company_id = excluded.company_id, salt = excluded.salt, password_hash = excluded.password_hash, updated_at = now()`,
-          [user.username, user.name || user.username, user.role || 'operador', user.active !== false, user.companyId || null, user.salt, user.hash, user.createdAt || null]
+          [user.username, user.name || user.username, user.role || 'operador', user.active !== false, user.email || null, user.companyId || null, user.salt, user.hash, user.createdAt || null]
         );
       }
       if (usernames.length) await client.query('delete from app_users where not (username = any($1::text[]))', [usernames]);

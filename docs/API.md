@@ -63,3 +63,5 @@ O N.E.M.O. recebe credencial de serviço com escopos explícitos, por exemplo `p
 # Multiempresa
 
 `POST /api/auth/register-company` cria uma empresa e seu primeiro usuário administrador. Após o login, `GET /api/company/routines` lista as rotinas da empresa e `PUT /api/company/routines` substitui sua coleção de rotinas.
+
+O login Google usa `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI`. O e-mail Google precisa estar previamente cadastrado no usuário.

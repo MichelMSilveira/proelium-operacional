@@ -6,6 +6,8 @@ create table if not exists companies (
 );
 
 alter table app_users add column if not exists company_id text references companies(id);
+alter table app_users add column if not exists email text;
+create unique index if not exists app_users_email_idx on app_users(lower(email)) where email is not null and email <> '';
 create index if not exists app_users_company_idx on app_users(company_id);
 
 create table if not exists routines (

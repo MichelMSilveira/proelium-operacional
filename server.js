@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -21,6 +22,7 @@ const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css',
 const eventClients = new Set();
 const presence = new Map();
 const loginAttempts = new Map();
+const googleStates = new Map();
 // Keep the authenticated session across app/browser restarts without storing passwords.
 const sessionTtl = 30 * 24 * 60 * 60 * 1000;
 const configuredSessionSecret = String(process.env.SESSION_SECRET || '').trim();
@@ -98,8 +100,9 @@ function passwordRecord(password) {
 
 function publicUser(user) {
   const role = normalizeRole(user.role);
-  return { username: user.username, name: user.name || user.username, role: user.role || 'operador', roleLabel: roleLabels[role], permissions: permissionsFor(role), active: user.active !== false, companyId: user.companyId || 'legacy' };
+  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: roleLabels[role], permissions: permissionsFor(role), active: user.active !== false, companyId: user.companyId || 'legacy' };
 }
+function httpsJson(url, options={}, body='') { return new Promise((resolve,reject)=>{ const request=https.request(url,{...options,headers:{'Content-Type':'application/x-www-form-urlencoded',...(options.headers||{})}},response=>{let raw='';response.on('data',chunk=>raw+=chunk);response.on('end',()=>{try{resolve({status:response.statusCode,data:JSON.parse(raw)})}catch{reject(new Error('Resposta OAuth inválida.'))}})});request.on('error',reject);if(body)request.write(body);request.end();}); }
 
 function requireUser(req, res) {
   const user = currentUser(req);
@@ -145,6 +148,17 @@ async function handleRequest(req, res) {
     const user = currentUser(req);
     return user ? sendJson(res, 200, { authenticated: true, user: publicUser(user) })
       : sendJson(res, 401, { authenticated: false });
+  }
+
+  if (pathname === '/api/auth/google' && req.method === 'GET') {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return sendJson(res,503,{error:'Login Google ainda não configurado no servidor.'});
+    const state=crypto.randomBytes(24).toString('hex'); googleStates.set(state,Date.now()+300000);
+    const redirect=process.env.GOOGLE_REDIRECT_URI || `${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}/api/auth/google/callback`;
+    const params=new URLSearchParams({client_id:process.env.GOOGLE_CLIENT_ID,redirect_uri:redirect,response_type:'code',scope:'openid email profile',state});
+    res.writeHead(302,{Location:`https://accounts.google.com/o/oauth2/v2/auth?${params}`});res.end();return;
+  }
+  if (pathname === '/api/auth/google/callback' && req.method === 'GET') {
+    try { const query=new URL(req.url,`http://${req.headers.host}`).searchParams,state=query.get('state'),code=query.get('code');if(!state||googleStates.get(state)<Date.now()||!code)return sendJson(res,400,{error:'Validação Google expirada ou inválida.'});googleStates.delete(state);const redirect=process.env.GOOGLE_REDIRECT_URI || `${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}/api/auth/google/callback`;const token=await httpsJson('https://oauth2.googleapis.com/token',{method:'POST'},new URLSearchParams({code,client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,redirect_uri:redirect,grant_type:'authorization_code'}).toString());if(token.status!==200||!token.data.access_token)return sendJson(res,401,{error:'Não foi possível validar a conta Google.'});const profile=await httpsJson(`https://openidconnect.googleapis.com/v1/userinfo?access_token=${encodeURIComponent(token.data.access_token)}`);const email=String(profile.data.email||'').trim().toLowerCase();if(profile.status!==200||!email||profile.data.email_verified!==true)return sendJson(res,401,{error:'A conta Google precisa ter e-mail verificado.'});const user=(await storage.readUsers()).find(item=>String(item.email||'').toLowerCase()===email&&item.active!==false);if(!user)return sendJson(res,403,{error:'Este e-mail ainda não está vinculado a um usuário do Proelium.'});const session=signedSession({username:user.username,role:user.role||'operador',name:user.name||profile.data.name||user.username,email,companyId:user.companyId||'legacy',expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.writeHead(302,{Location:'/'});res.end();return; } catch(error) { console.error('Falha no OAuth Google:',error.message);return sendJson(res,502,{error:'Não foi possível concluir o login Google.'}); }
   }
 
   if (pathname === '/api/auth/register-company' && req.method === 'POST') {
@@ -226,7 +240,9 @@ async function handleRequest(req, res) {
       if (index < 0 && password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' });
       if (payload.role && !Object.keys(rolePermissions).includes(payload.role)) return sendJson(res, 400, { error: 'Papel inválido.' });
       const existing = index >= 0 ? users[index] : { username, createdAt: new Date().toISOString() };
-      const next = { ...existing, username, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false };
+      const email = String(payload.email || existing.email || '').trim().toLowerCase();
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) return sendJson(res, 400, { error: 'E-mail inválido.' });
+      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false };
       if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
       users[index >= 0 ? index : users.length] = next;
       await storage.writeUsers(users);
