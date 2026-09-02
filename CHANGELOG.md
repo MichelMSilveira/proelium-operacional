@@ -480,6 +480,7 @@
 - Menu mobile: o botão flutuante agora é ocultado diretamente enquanto a navegação estiver aberta, evitando que ele apareça sobre o primeiro item do menu.
 # Próxima entrega
 
+- Selo visual `BETA` no menu para módulos em desenvolvimento.
 - Onboarding empresarial após autenticação Google, com preenchimento automático do responsável.
 - Usuário Google novo direcionado ao cadastro de empresa, com CNPJ único e análise inicial.
 - Acabamento final do botão Google com ícone oficial e estados de foco e interação.

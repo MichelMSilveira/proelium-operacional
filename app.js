@@ -6,6 +6,7 @@ const navItems = [
 ];
 navItems.push(['reports','▤','Relatórios']);
 navItems.push(['routines','↻','Minhas rotinas']);
+const developmentViews = new Set(['routines']);
 
 const seed = {
   catalogVersion:2,
@@ -277,7 +278,7 @@ async function connectSharedData(){
 function badge(value){const low=value.toLowerCase();const color=low.includes('bloq')||low.includes('atras')||low.includes('urg')?'red':low.includes('exec')||low.includes('andamento')||low.includes('instal')?'blue':low.includes('plane')||low.includes('alta')?'amber':'green';return `<span class="badge ${color}">${value}</span>`}
 function matches(...values){return values.join(' ').toLowerCase().includes(state.query.toLowerCase())}
 
-function renderNav(){ $('#navigation').innerHTML=navItems.map(([id,icon,label])=>`<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span>${label}</button>`).join(''); }
+function renderNav(){ $('#navigation').innerHTML=navItems.map(([id,icon,label])=>`<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span><span class="nav-label">${label}</span>${developmentViews.has(id)?'<small class="nav-beta">BETA</small>':''}</button>`).join(''); }
 function heading(title,subtitle,action){const label=action==='opportunity'?'Nova oportunidade':action==='appointment'?'Novo compromisso':action==='evaluation'?'Registrar avaliação':action==='collaborator'?'Adicionar colaborador':'Novo registro';return `<div class="section-heading"><div><h2>${title}</h2><p>${subtitle}</p></div>${action?`<button class="button primary" data-add="${action}">+ ${label}</button>`:''}</div>`}
 function table(headers,rows){const list=Array.isArray(rows)?rows:(rows?[rows]:[]);return `<div class="card table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${list.length?list.join(''):`<tr><td colspan="${headers.length}" class="empty">Nenhum registro encontrado.</td></tr>`}</tbody></table></div>`}
 
