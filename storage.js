@@ -20,11 +20,12 @@ function atomicWriteJson(file, value, mode) {
 }
 
 class JsonStorage {
-  constructor({ dataFile, usersFile, companiesFile, routinesFile }) {
+  constructor({ dataFile, usersFile, companiesFile, routinesFile, invitesFile }) {
     this.dataFile = dataFile;
     this.usersFile = usersFile;
     this.companiesFile = companiesFile;
     this.routinesFile = routinesFile;
+    this.invitesFile = invitesFile;
     this.backend = 'json';
   }
 
@@ -59,17 +60,20 @@ class JsonStorage {
   async writeCompanies(companies) { atomicWriteJson(this.companiesFile, companies, 0o600); }
   async readRoutines(companyId) { try { const all=JSON.parse(fs.readFileSync(this.routinesFile, 'utf8')); return Array.isArray(all[companyId])?all[companyId]:[]; } catch { return []; } }
   async writeRoutines(companyId, routines) { let all={}; try { all=JSON.parse(fs.readFileSync(this.routinesFile, 'utf8')); } catch {} all[companyId]=routines; atomicWriteJson(this.routinesFile, all, 0o600); }
+  async readInvites() { try { const invites=JSON.parse(fs.readFileSync(this.invitesFile,'utf8')); return Array.isArray(invites)?invites:[]; } catch { return []; } }
+  async writeInvites(invites) { atomicWriteJson(this.invitesFile, invites, 0o600); }
 
   async close() {}
 }
 
 class PostgresStorage {
-  constructor({ connectionString, dataFile, usersFile, companiesFile, routinesFile, mirrorJson }) {
+  constructor({ connectionString, dataFile, usersFile, companiesFile, routinesFile, invitesFile, mirrorJson }) {
     const { Pool } = require('pg');
     this.pool = new Pool({ connectionString, max: Number(process.env.PGPOOL_MAX || 10), connectionTimeoutMillis: 5000 });
     this.dataFile = dataFile;
     this.usersFile = usersFile;
     this.mirrorJson = mirrorJson;
+    this.invitesFile = invitesFile;
     this.backend = 'postgresql';
   }
 
@@ -162,8 +166,10 @@ class PostgresStorage {
     }
   }
 
-  async readCompanies() { return (await this.pool.query('select id, name, document, responsible, phone, status, created_at as "createdAt" from companies order by name')).rows; }
-  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document,responsible,phone,status) values ($1,$2,$3,$4,$5,$6) on conflict (id) do update set name=excluded.name, document=excluded.document, responsible=excluded.responsible, phone=excluded.phone, status=excluded.status`, [company.id,company.name,company.document||'',company.responsible||'',company.phone||'',company.status||'pending']); }
+  async readCompanies() { return (await this.pool.query('select id, name, document, responsible, phone, status, access_level as "accessLevel", modules, admin_notes as "adminNotes", reviewed_at as "reviewedAt", created_at as "createdAt" from companies order by name')).rows.map(row=>({...row,modules:row.modules||[]})); }
+  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document,responsible,phone,status,access_level,modules,admin_notes,reviewed_at) values ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10) on conflict (id) do update set name=excluded.name, document=excluded.document, responsible=excluded.responsible, phone=excluded.phone, status=excluded.status, access_level=excluded.access_level, modules=excluded.modules, admin_notes=excluded.admin_notes, reviewed_at=excluded.reviewed_at`, [company.id,company.name,company.document||'',company.responsible||'',company.phone||'',company.status||'pending',company.accessLevel||'limited',JSON.stringify(company.modules||['dashboard','knowledge']),company.adminNotes||'',company.reviewedAt||null]); }
+  async readInvites() { return (await this.pool.query('select id, company_id as "companyId", token_hash as "tokenHash", email, role, modules, expires_at as "expiresAt", used_at as "usedAt", created_at as "createdAt" from company_invites order by created_at desc')).rows.map(row=>({...row,modules:row.modules||[]})); }
+  async writeInvites(invites) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from company_invites'); for(const invite of invites) await client.query('insert into company_invites (id,company_id,token_hash,email,role,modules,expires_at,used_at,created_at) values ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)',[invite.id,invite.companyId,invite.tokenHash,invite.email||null,invite.role||'operacao',JSON.stringify(invite.modules||[]),invite.expiresAt,invite.usedAt||null,invite.createdAt||new Date().toISOString()]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
   async readRoutines(companyId) { return (await this.pool.query('select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt" from routines where company_id=$1 order by created_at desc',[companyId])).rows.map(row=>({...row,steps:row.steps||[]})); }
   async writeRoutines(companyId, routines) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from routines where company_id=$1',[companyId]); for(const routine of routines) await client.query('insert into routines (id,company_id,name,description,periodicity,steps) values ($1,$2,$3,$4,$5,$6::jsonb)',[routine.id,companyId,routine.name,routine.description||'',routine.periodicity||'Sem periodicidade',JSON.stringify(routine.steps||[])]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
 

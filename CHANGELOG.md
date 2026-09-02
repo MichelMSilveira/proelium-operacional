@@ -2,6 +2,50 @@
 
 ## Em desenvolvimento
 
+- Conclusão do cadastro Google corrigida: ficha salva e redirecionamento limpo para o app com acesso limitado.
+
+- Após o cadastro Google, a empresa recebe acesso limitado imediato; a licença de uso permanece pendente para aprovação administrativa.
+
+- Campo redundante “Tipo de entrada” removido; o perfil escolhido nos cartões passa a definir essa informação.
+
+- Cadastro simplificado: somente Google verificado, perfil, nome, documento, responsável e telefone são obrigatórios; detalhes complementares ficam opcionais.
+
+- Prestadores e clientes finais podem informar CPF ou CNPJ; empresas continuam exigindo CNPJ válido.
+
+- Campo da empresa renomeado para mensagem ou dúvida preliminar, com aviso de aprovação administrativa antes do acesso.
+
+- Transição da escolha de perfil para a ficha corrigida, liberando o formulário após o clique.
+
+- Estado inicial do onboarding protegido: cartões visíveis e envio oculto até a escolha do perfil.
+
+- Fichas por perfil com campos específicos para empresa, cliente final e prestador; liberação permanece condicionada à análise.
+
+- Ficha de identificação por perfil agora é obrigatória e informa que a liberação depende de análise.
+
+- Ordem dos perfis ajustada para Prestadores, Empresa e Cliente Final.
+
+- Tela de escolha de perfil protegida para não exibir campos do cadastro antes da seleção.
+
+- Escolha de perfil apresentada como tela independente antes do formulário de cadastro.
+
+- Escolha de perfil movida para antes dos campos do cadastro, com acentos nas três cores da identidade Proelium.
+
+- Campo de contato renomeado para Telefone, sem referência visual a aplicativo específico.
+
+- Cadastro Google inicia com três perfis visuais e coleta informações de contexto específicas para empresa, cliente final ou prestador.
+
+- Seletor de telefone compacto com bandeiras e código internacional ao lado do número.
+
+- Cadastro Google inicia com a escolha do perfil de entrada: residência com sistema Proelium, contratante ou contratado.
+
+- Textos da autenticação alinhados ao centro abaixo da logo.
+
+- Campo de WhatsApp com país e número na mesma linha, mantendo máscara brasileira e padrão internacional no envio.
+
+- Cadastro Google: rascunho local dos dados e telefone com país padrão Brasil e seleção internacional.
+
+- Multiempresa: painel de empresas com níveis de acesso, convites de colaboradores com validade de cinco minutos, vínculo por Google e permissões por módulo; tokens de convite armazenados somente como hash.
+
 - Catálogo Scenario Embrace: preços-base do catálogo de São Paulo (junho/2021) preservados como custo e preço de repasse calculado com acréscimo comercial provisório de 20%, sem preencher automaticamente valores fictícios para itens sem fonte validada.
 
 - Orçamentos de teste: removido o botão de recriação da interface após a validação dos cenários técnicos.
@@ -491,3 +535,4 @@
 - Cadastro de empresas com primeiro administrador.
 - Rotinas próprias por empresa, com descrição, periodicidade e checklist.
 - Separação inicial de rotinas por empresa no armazenamento JSON e PostgreSQL.
+- Corrigida a compatibilidade do schema PostgreSQL para instalações antigas que não tinham a coluna de e-mail dos usuários Google.
