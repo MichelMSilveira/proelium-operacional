@@ -162,8 +162,8 @@ class PostgresStorage {
     }
   }
 
-  async readCompanies() { return (await this.pool.query('select id, name, document, created_at as "createdAt" from companies order by name')).rows; }
-  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document) values ($1,$2,$3) on conflict (id) do update set name=excluded.name, document=excluded.document`, [company.id,company.name,company.document||'']); }
+  async readCompanies() { return (await this.pool.query('select id, name, document, responsible, phone, status, created_at as "createdAt" from companies order by name')).rows; }
+  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document,responsible,phone,status) values ($1,$2,$3,$4,$5,$6) on conflict (id) do update set name=excluded.name, document=excluded.document, responsible=excluded.responsible, phone=excluded.phone, status=excluded.status`, [company.id,company.name,company.document||'',company.responsible||'',company.phone||'',company.status||'pending']); }
   async readRoutines(companyId) { return (await this.pool.query('select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt" from routines where company_id=$1 order by created_at desc',[companyId])).rows.map(row=>({...row,steps:row.steps||[]})); }
   async writeRoutines(companyId, routines) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from routines where company_id=$1',[companyId]); for(const routine of routines) await client.query('insert into routines (id,company_id,name,description,periodicity,steps) values ($1,$2,$3,$4,$5,$6::jsonb)',[routine.id,companyId,routine.name,routine.description||'',routine.periodicity||'Sem periodicidade',JSON.stringify(routine.steps||[])]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
 

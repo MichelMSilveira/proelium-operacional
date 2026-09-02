@@ -5,6 +5,15 @@ const path = require('path');
 const crypto = require('crypto');
 const { createStorage } = require('./storage');
 
+// Carrega configurações locais sem depender de pacote externo; nunca imprime valores sensíveis.
+const envFile = path.join(__dirname, '.env');
+if (fs.existsSync(envFile)) {
+  for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (match && !process.env[match[1]]) process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+}
+
 const port = Number(process.env.PORT || 4173);
 const root = __dirname;
 const isolatedTestDirectory = String(process.env.PROELIUM_TEST_DATA_DIR || '').trim();
@@ -84,6 +93,9 @@ function sendJson(res, status, value, extraHeaders = {}) {
 function setSessionCookie(res, token, maxAge = sessionTtl / 1000, secure = false) {
   res.setHeader('Set-Cookie', `proelium_session=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
 }
+function setGooglePendingCookie(res, token, secure = false) {
+  res.setHeader('Set-Cookie', `proelium_google_pending=${encodeURIComponent(token)}; Path=/; Max-Age=600; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+}
 
 function passwordMatches(password, user) {
   try {
@@ -158,7 +170,11 @@ async function handleRequest(req, res) {
     res.writeHead(302,{Location:`https://accounts.google.com/o/oauth2/v2/auth?${params}`});res.end();return;
   }
   if (pathname === '/api/auth/google/callback' && req.method === 'GET') {
-    try { const query=new URL(req.url,`http://${req.headers.host}`).searchParams,state=query.get('state'),code=query.get('code');if(!state||googleStates.get(state)<Date.now()||!code)return sendJson(res,400,{error:'Validação Google expirada ou inválida.'});googleStates.delete(state);const redirect=process.env.GOOGLE_REDIRECT_URI || `${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}/api/auth/google/callback`;const token=await httpsJson('https://oauth2.googleapis.com/token',{method:'POST'},new URLSearchParams({code,client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,redirect_uri:redirect,grant_type:'authorization_code'}).toString());if(token.status!==200||!token.data.access_token)return sendJson(res,401,{error:'Não foi possível validar a conta Google.'});const profile=await httpsJson(`https://openidconnect.googleapis.com/v1/userinfo?access_token=${encodeURIComponent(token.data.access_token)}`);const email=String(profile.data.email||'').trim().toLowerCase();if(profile.status!==200||!email||profile.data.email_verified!==true)return sendJson(res,401,{error:'A conta Google precisa ter e-mail verificado.'});const user=(await storage.readUsers()).find(item=>String(item.email||'').toLowerCase()===email&&item.active!==false);if(!user)return sendJson(res,403,{error:'Este e-mail ainda não está vinculado a um usuário do Proelium.'});const session=signedSession({username:user.username,role:user.role||'operador',name:user.name||profile.data.name||user.username,email,companyId:user.companyId||'legacy',expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.writeHead(302,{Location:'/'});res.end();return; } catch(error) { console.error('Falha no OAuth Google:',error.message);return sendJson(res,502,{error:'Não foi possível concluir o login Google.'}); }
+    try { const query=new URL(req.url,`http://${req.headers.host}`).searchParams,state=query.get('state'),code=query.get('code');if(!state||googleStates.get(state)<Date.now()||!code)return sendJson(res,400,{error:'Validação Google expirada ou inválida.'});googleStates.delete(state);const redirect=process.env.GOOGLE_REDIRECT_URI || `${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}/api/auth/google/callback`;const token=await httpsJson('https://oauth2.googleapis.com/token',{method:'POST'},new URLSearchParams({code,client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,redirect_uri:redirect,grant_type:'authorization_code'}).toString());if(token.status!==200||!token.data.access_token)return sendJson(res,401,{error:'Não foi possível validar a conta Google.'});const profile=await httpsJson(`https://openidconnect.googleapis.com/v1/userinfo?access_token=${encodeURIComponent(token.data.access_token)}`);const email=String(profile.data.email||'').trim().toLowerCase();if(profile.status!==200||!email||profile.data.email_verified!==true)return sendJson(res,401,{error:'A conta Google precisa ter e-mail verificado.'});const user=(await storage.readUsers()).find(item=>String(item.email||'').toLowerCase()===email&&item.active!==false);if(!user){setGooglePendingCookie(res,signedSession({email,name:String(profile.data.name||'').slice(0,80),expiresAt:Date.now()+600000}),secureCookie);res.writeHead(302,{Location:'/?google_onboarding=1'});res.end();return;}const session=signedSession({username:user.username,role:user.role||'operador',name:user.name||profile.data.name||user.username,email,companyId:user.companyId||'legacy',expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.writeHead(302,{Location:'/'});res.end();return; } catch(error) { console.error('Falha no OAuth Google:',error.message);return sendJson(res,502,{error:'Não foi possível concluir o login Google.'}); }
+  }
+
+  if (pathname === '/api/auth/register-google-company' && req.method === 'POST') {
+    try { const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});if(!pending?.email)return sendJson(res,401,{error:'A identificação Google expirou. Tente novamente.'});const payload=JSON.parse(await readBody(req)),companyName=String(payload.companyName||'').trim().slice(0,120),document=String(payload.document||'').trim().slice(0,32),responsible=String(payload.responsible||pending.name||'').trim().slice(0,80),phone=String(payload.phone||'').trim().slice(0,30);if(!companyName||!document||!responsible||!phone)return sendJson(res,400,{error:'Informe CNPJ, nome da empresa, responsável e telefone.'});const companies=await storage.readCompanies(),users=await storage.readUsers();if(companies.some(company=>company.document&&company.document===document))return sendJson(res,409,{error:'Este CNPJ já possui cadastro no Proelium.'});const company={id:`emp-${crypto.randomUUID()}`,name:companyName,document,responsible,phone,status:'pending',createdAt:new Date().toISOString()};const base=(pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'')||'usuario').slice(0,24),username=users.some(user=>user.username===base)?`${base}-${Date.now().toString().slice(-5)}`:base;const user={username,name:responsible,email:pending.email,role:'admin',active:true,companyId:company.id,createdAt:new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeCompanies([...companies,company]);await storage.writeUsers([...users,user]);const session=signedSession({username,role:'admin',name:responsible,email:pending.email,companyId:company.id,companyStatus:'pending',expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha no cadastro Google da empresa:',error.message);return sendJson(res,400,{error:'Não foi possível concluir o cadastro da empresa.'}); }
   }
 
   if (pathname === '/api/auth/register-company' && req.method === 'POST') {
