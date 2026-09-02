@@ -480,6 +480,7 @@
 - Menu mobile: o botão flutuante agora é ocultado diretamente enquanto a navegação estiver aberta, evitando que ele apareça sobre o primeiro item do menu.
 # Próxima entrega
 
+- Acabamento final do botão Google com ícone oficial e estados de foco e interação.
 - Botão “Entrar com Google” alinhado ao padrão visual atual do Google.
 - Login complementar com Google OAuth, vinculado ao e-mail do usuário Proelium.
 - Cadastro de empresas com primeiro administrador.
