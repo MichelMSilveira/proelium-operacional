@@ -170,7 +170,7 @@ async function runFunctionalTestBot(options = {}) {
       const response = await request(baseUrl, '/api/auth/register-google-company', {
         method: 'POST',
         headers: { Cookie: `proelium_google_pending=${encodeURIComponent(pending)}` },
-        body: { companyType: 'contratante', companyName: 'Empresa Google Bot', document: '12.345.678/0001-15', responsible: 'Google Bot', phone: '+55 11 99999-0000', profileInfo: '{}' }
+        body: { companyType: 'contratante', companyName: 'Empresa Google Bot', document: '12.345.678/0001-90', responsible: 'Google Bot', phone: '+55 11 99999-0000', profileInfo: '{}' }
       });
       expect(response.status === 201, `Cadastro Google retornou HTTP ${response.status}: ${response.text}`);
       const googleCookie = sessionCookie(response);

@@ -549,3 +549,4 @@
 - Adicionado teste de regressão do onboarding Google, cobrindo cadastro da empresa, criação da sessão e entrada na API do app.
 - Removido o bloqueio silencioso de campos complementares no onboarding; somente a identificação crítica impede o envio e qualquer erro passa a ser exibido pelo app.
 - Preservado o tipo de participante como campo oculto após a escolha do perfil, garantindo que o envio use o fluxo correto de cadastro Google.
+- Corrigido o cálculo dos dígitos verificadores do CNPJ; a validação passa a usar os pesos oficiais da Receita Federal.
