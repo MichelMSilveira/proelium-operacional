@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Cronograma: fases e cores agora podem ser configuradas pelo fundador/administrador da empresa, com suporte a novas fases e isolamento por empresa.
+- Cronograma: previsão operacional passou a oferecer sugestão automática e transparente de dias, equipe e horas a partir de ambientes, itens do orçamento e pontos do levantamento, sempre com ajuste manual antes de salvar.
 - Catálogo comercial reorganizado: Produtos e Serviços ganharam entradas separadas no fluxo de Orçamentos; produtos representam equipamentos/materiais e serviços representam mão de obra, com classificação preservada nos itens existentes. A Biblioteca técnica absorveu a área de conexões e passou para Projetos 360°, mantendo as rotas internas antigas para compatibilidade.
 - Regra de licença corrigida: uma empresa já aprovada com licença pendente não recebe mais o pacote de avaliação completo; o acesso passa a seguir os módulos liberados, enquanto o pacote de análise fica reservado ao cadastro ainda pendente.
 - Compatibilidade do ambiente local corrigida: o espelho JSON antigo agora recebe as coleções ausentes em memória sem apagar registros existentes, evitando quebra ao abrir Colaboradores, Financeiro e BI; cache web incrementado para `v316`.

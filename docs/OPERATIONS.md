@@ -1,5 +1,11 @@
 # Operação do ambiente de testes
 
+## Cronograma inteligente e configurável
+
+No módulo **Cronograma e acompanhamento**, o fundador ou administrador da empresa pode usar **Configurar fases** para editar os nomes e as cores das fases e adicionar novas fases. A configuração é compartilhada somente com a empresa autenticada; usuários de outras empresas não recebem esses dados.
+
+Ao abrir ou ajustar a previsão de um projeto, **Aplicar sugestão** calcula uma referência usando os ambientes e itens do orçamento vinculado e os pontos do levantamento quando disponíveis. A sugestão é apenas um ponto de partida: dias, equipe e horas continuam editáveis e o orçamento aprovado não é alterado.
+
 ## Componentes
 
 | Componente | Responsabilidade |
