@@ -20,27 +20,35 @@ function atomicWriteJson(file, value, mode) {
 }
 
 class JsonStorage {
-  constructor({ dataFile, usersFile, companiesFile, routinesFile, invitesFile }) {
+  constructor({ dataFile, usersFile, companiesFile, routinesFile, invitesFile, companyDataDirectory }) {
     this.dataFile = dataFile;
     this.usersFile = usersFile;
     this.companiesFile = companiesFile;
     this.routinesFile = routinesFile;
     this.invitesFile = invitesFile;
+    this.companyDataDirectory = companyDataDirectory || path.join(path.dirname(dataFile), 'company-data');
     this.backend = 'json';
   }
 
   async initialize() {}
 
-  async readSharedData() {
-    if (!fs.existsSync(this.dataFile)) return { ...EMPTY_STATE };
-    return normalizeState(JSON.parse(fs.readFileSync(this.dataFile, 'utf8')));
+  stateFile(companyId='legacy') {
+    if (!companyId || companyId==='legacy') return this.dataFile;
+    const safeId=String(companyId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,100);
+    return path.join(this.companyDataDirectory, `${safeId}.json`);
   }
 
-  async writeSharedData(data, baseRevision) {
-    const current = await this.readSharedData();
+  async readSharedData(companyId='legacy') {
+    const file=this.stateFile(companyId);
+    if (!fs.existsSync(file)) return { ...EMPTY_STATE };
+    return normalizeState(JSON.parse(fs.readFileSync(file, 'utf8')));
+  }
+
+  async writeSharedData(data, baseRevision, actor='unknown', companyId='legacy') {
+    const file=this.stateFile(companyId), current = await this.readSharedData(companyId);
     if (current.revision !== baseRevision) return { conflict: true, current };
     const value = { data, updatedAt: new Date().toISOString(), revision: current.revision + 1 };
-    atomicWriteJson(this.dataFile, value);
+    atomicWriteJson(file, value);
     return { conflict: false, value };
   }
 
@@ -67,13 +75,14 @@ class JsonStorage {
 }
 
 class PostgresStorage {
-  constructor({ connectionString, dataFile, usersFile, companiesFile, routinesFile, invitesFile, mirrorJson }) {
+  constructor({ connectionString, dataFile, usersFile, companiesFile, routinesFile, invitesFile, companyDataDirectory, mirrorJson }) {
     const { Pool } = require('pg');
     this.pool = new Pool({ connectionString, max: Number(process.env.PGPOOL_MAX || 10), connectionTimeoutMillis: 5000 });
     this.dataFile = dataFile;
     this.usersFile = usersFile;
     this.mirrorJson = mirrorJson;
     this.invitesFile = invitesFile;
+    this.companyDataDirectory = companyDataDirectory || path.join(path.dirname(dataFile), 'company-data');
     this.backend = 'postgresql';
   }
 
@@ -81,20 +90,23 @@ class PostgresStorage {
     await this.pool.query('select 1');
   }
 
-  async readSharedData() {
-    const result = await this.pool.query("select data, updated_at, revision from app_state where state_key = 'shared'");
+  stateKey(companyId='legacy') { return !companyId || companyId==='legacy' ? 'shared' : `company:${String(companyId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,100)}`; }
+
+  async readSharedData(companyId='legacy') {
+    const stateKey=this.stateKey(companyId), result = await this.pool.query('select data, updated_at, revision from app_state where state_key = $1',[stateKey]);
     if (!result.rowCount) return { ...EMPTY_STATE };
     return normalizeState(result.rows[0]);
   }
 
-  async writeSharedData(data, baseRevision, actor = 'unknown') {
+  async writeSharedData(data, baseRevision, actor = 'unknown', companyId='legacy') {
+    const stateKey=this.stateKey(companyId);
     const client = await this.pool.connect();
     try {
       await client.query('begin');
       // Serializes writes even before the singleton row exists, so two clients
       // cannot both accept base revision zero during a fresh installation.
-      await client.query("select pg_advisory_xact_lock(hashtext('proelium:app_state:shared'))");
-      const result = await client.query("select data, updated_at, revision from app_state where state_key = 'shared' for update");
+      await client.query('select pg_advisory_xact_lock(hashtext($1))',['proelium:app_state:'+stateKey]);
+      const result = await client.query('select data, updated_at, revision from app_state where state_key = $1 for update',[stateKey]);
       const current = result.rowCount ? normalizeState(result.rows[0]) : { ...EMPTY_STATE };
       if (current.revision !== baseRevision) {
         await client.query('rollback');
@@ -103,18 +115,18 @@ class PostgresStorage {
       const value = { data, updatedAt: new Date().toISOString(), revision: current.revision + 1 };
       await client.query(
         `insert into app_state (state_key, data, revision, updated_at)
-         values ('shared', $1::jsonb, $2, $3)
+         values ($1, $2::jsonb, $3, $4)
          on conflict (state_key) do update set data = excluded.data, revision = excluded.revision, updated_at = excluded.updated_at`,
-        [JSON.stringify(data), value.revision, value.updatedAt]
+        [stateKey, JSON.stringify(data), value.revision, value.updatedAt]
       );
       await client.query(
         `insert into app_state_revisions (state_key, revision, data, updated_at, actor)
-         values ('shared', $1, $2::jsonb, $3, $4)`,
-        [value.revision, JSON.stringify(data), value.updatedAt, actor]
+         values ($1, $2, $3::jsonb, $4, $5)`,
+        [stateKey, value.revision, JSON.stringify(data), value.updatedAt, actor]
       );
       await client.query('commit');
       if (this.mirrorJson) {
-        try { atomicWriteJson(this.dataFile, value); }
+        try { atomicWriteJson(companyId&&companyId!=='legacy'?path.join(this.companyDataDirectory, `${String(companyId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,100)}.json`):this.dataFile, value); }
         catch (error) { console.error('Falha ao atualizar espelho JSON:', error.message); }
       }
       return { conflict: false, value };
