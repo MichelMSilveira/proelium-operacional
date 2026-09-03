@@ -9,6 +9,7 @@
 - Smoke bot ajustado para aceitar o arquivo principal com identificador de cache versionado.
 - Bot de uso da interface passou a validar o menu completo no primeiro quadro autenticado, antes de qualquer clique de navegação.
 - Boot desacoplado da sincronização: a conta entra assim que a autenticação e o shell final estão prontos; a leitura dos dados compartilhados continua em segundo plano e não bloqueia a tela.
+- Cadastro Google destravado: depois que a ficha de identificação é aceita pelo servidor, a sessão libera imediatamente o app e a sincronização posterior não consegue prender o usuário na confirmação Google.
 - Fixture do bot de uso local atualizado para reconhecer o rótulo atual “Pós-venda”, evitando falso negativo durante a validação da interface.
 - Fluxo local-first criado: branches `codex/...` e `Validar-Local.ps1` concentram sintaxe, smoke bot, teste de interface e revisão do diff antes de qualquer merge na `main`; o VPS permanece intacto durante o desenvolvimento.
 - Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.
