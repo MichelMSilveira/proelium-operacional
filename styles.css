@@ -273,8 +273,11 @@ body.auth-pending>.zoom-lock-button,body.auth-pending>#appVersionStatus{display:
 @media(max-width:720px){
   body{overflow-x:hidden;padding-bottom:calc(78px + env(safe-area-inset-bottom))}
   .app-shell{min-height:100dvh}
-  .sidebar{height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;padding:16px 12px calc(88px + env(safe-area-inset-bottom));}
-  .sidebar-foot{margin-top:18px;padding-bottom:12px}
+  .sidebar{width:min(304px,88vw);height:100dvh;max-height:100dvh;overflow:hidden;overscroll-behavior:contain;padding:16px 12px calc(88px + env(safe-area-inset-bottom));}
+  .sidebar>#navigation{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:18px;margin-right:-2px}
+  .sidebar .presence-panel{flex:0 0 auto;margin-top:8px;padding:10px 9px}
+  .sidebar .presence-collaborate{min-height:35px;padding:7px 8px}
+  .sidebar-foot{flex:0 0 auto;margin-top:10px;padding:9px 8px 12px}
   main{min-width:0;overflow:hidden}
   .topbar{position:sticky;top:0;z-index:10}
   .content{padding-bottom:92px}
