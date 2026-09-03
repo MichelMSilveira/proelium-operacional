@@ -546,3 +546,4 @@
 - Corrigido o encerramento do onboarding Google: a sessão e os dados são carregados antes de fechar a tela de cadastro, evitando o loop.
 - Completado o esquema PostgreSQL de empresas com responsável, telefone e status, eliminando a falha que impedia finalizar o cadastro.
 - Mantido o acesso público exclusivamente pelo Google; usuário e senha internos não são exibidos como porta de entrada do produto.
+- Adicionado teste de regressão do onboarding Google, cobrindo cadastro da empresa, criação da sessão e entrada na API do app.

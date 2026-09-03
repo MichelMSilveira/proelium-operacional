@@ -61,6 +61,12 @@ function sessionCookie(response) {
   return String(response.headers['set-cookie'] || '').split(';')[0];
 }
 
+function signedSession(payload, secret) {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', secret).update(encoded).digest('base64url');
+  return `${encoded}.${signature}`;
+}
+
 async function waitForServer(baseUrl, child, timeoutMs = 10_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -116,9 +122,10 @@ async function runFunctionalTestBot(options = {}) {
   fs.writeFileSync(usersFile, JSON.stringify([{ username: TEST_USER, name: 'Bot de teste', role: 'admin', active: true, ...passwordRecord(TEST_PASSWORD) }], null, 2));
   const port = await getFreePort();
   const baseUrl = `http://127.0.0.1:${port}`;
+  const testSessionSecret = crypto.randomBytes(32).toString('hex');
   const child = spawn(process.execPath, [path.join(__dirname, '..', '..', 'server.js')], {
     cwd: path.join(__dirname, '..', '..'),
-    env: { ...process.env, PORT: String(port), NODE_ENV: 'test', DATABASE_URL: '', PROELIUM_TEST_DATA_DIR: temporaryDirectory, SESSION_SECRET: crypto.randomBytes(32).toString('hex') },
+    env: { ...process.env, PORT: String(port), NODE_ENV: 'test', DATABASE_URL: '', PROELIUM_TEST_DATA_DIR: temporaryDirectory, SESSION_SECRET: testSessionSecret },
     stdio: ['ignore', 'ignore', 'pipe'],
     windowsHide: true
   });
@@ -156,6 +163,24 @@ async function runFunctionalTestBot(options = {}) {
       const response = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: TEST_USER, password: 'senha-incorreta' } });
       expect(response.status === 401, `Esperado 401; recebido ${response.status}.`);
       return 'credencial inválida bloqueada';
+    });
+
+    await check('Google', 'Cadastro conclui e libera o app', 'Revisar gravação da empresa, criação do usuário e cookie de sessão do onboarding Google.', async () => {
+      const pending = signedSession({ email: 'google.bot@example.invalid', name: 'Google Bot', expiresAt: Date.now() + 60_000 }, testSessionSecret);
+      const response = await request(baseUrl, '/api/auth/register-google-company', {
+        method: 'POST',
+        headers: { Cookie: `proelium_google_pending=${encodeURIComponent(pending)}` },
+        body: { companyType: 'contratante', companyName: 'Empresa Google Bot', document: '12.345.678/0001-15', responsible: 'Google Bot', phone: '+55 11 99999-0000', profileInfo: '{}' }
+      });
+      expect(response.status === 201, `Cadastro Google retornou HTTP ${response.status}: ${response.text}`);
+      const googleCookie = sessionCookie(response);
+      expect(googleCookie.startsWith('proelium_session='), 'Cadastro não devolveu cookie de sessão.');
+      const authenticated = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCookie } });
+      const payload = parseJson(authenticated, '/api/auth/me');
+      expect(authenticated.status === 200 && payload.authenticated, 'Sessão criada não autenticou o usuário.');
+      const sharedData = await request(baseUrl, '/api/data', { headers: { Cookie: googleCookie } });
+      expect(sharedData.status === 200, `Usuário cadastrado não entrou no app: HTTP ${sharedData.status}.`);
+      return 'empresa salva, sessão criada e API do app liberada';
     });
 
     const login = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: TEST_USER, password: TEST_PASSWORD } });
