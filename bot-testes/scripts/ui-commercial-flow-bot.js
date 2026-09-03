@@ -336,6 +336,18 @@ async function run() {
       return quote?.status === 'Aprovado' && client && project;
     }, 'A aprovação não criou o cliente e o projeto vinculados.');
     const finalClient = finalData.clients.find(item => item.name === 'Casa Aurora · UI Bot');
+    const finalProject = finalData.projects.find(item => item.quoteId === revisedQuote.id);
+    await openView(page, 'projects');
+    await page.locator(`[data-open-project="${finalProject.id}"]`).click();
+    await page.locator(`[data-project-forecast="${finalProject.id}"]`).click();
+    await fillField(page, 'forecastStart', '2026-09-10');
+    await fillField(page, 'forecastDays', '4');
+    await fillField(page, 'forecastTeamSize', '2');
+    await fillField(page, 'forecastHoursPerDay', '8');
+    await fillField(page, 'forecastDailyRate', '500');
+    await saveDialog(page);
+    await assertData(page, data => data.projects?.some(project => project.id === finalProject.id && project.forecastDays === 4 && project.forecastTeamSize === 2 && project.forecastLaborCost === 4000 && project.forecastEnd === '2026-09-13'), 'A previsão operacional não foi persistida no Projeto 360°.');
+    console.log('[OK] UI — previsão de cronograma calculada e salva no Projeto 360°');
     await openView(page, 'clients');
     await page.locator(`[data-client="${finalClient.id}"]`).waitFor({ state: 'visible', timeout: 5_000 });
     if (!finalData.projects.some(project => project.quoteId === revisedQuote.id)) throw new Error('Projeto aprovado não foi vinculado ao orçamento revisado.');
