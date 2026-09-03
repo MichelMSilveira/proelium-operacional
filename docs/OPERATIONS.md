@@ -32,6 +32,8 @@ O PostgreSQL gera backup diário em `/var/backups/proelium` e executa uma restau
 
 A recuperação normal usa um dump PostgreSQL validado. A volta temporária ao espelho JSON exige janela controlada e conferência da revisão; nunca altere o arquivo manualmente enquanto o servidor estiver rodando.
 
+Ao abrir um espelho JSON legado, o app completa em memória as coleções operacionais que não existiam nas versões antigas. Esse ajuste preserva o conteúdo salvo e evita que módulos como Colaboradores, Financeiro e BI quebrem por uma lista ausente; ele não substitui a migração para PostgreSQL.
+
 ## Diagnóstico rápido
 
 - `localhost:4173` não abre: servidor local não está rodando.
