@@ -414,7 +414,7 @@
         </button>
       </div>
     </section>
-    <script src="app.js?release=20260903-menu"></script>
+    <script src="app.js?release=20260903-boot"></script>
     <script>
       // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
       setTimeout(
@@ -431,8 +431,8 @@
           if (event.data?.type === "UPDATE_READY")
             window.__showAppUpdate?.(event.data.registration);
         });
-        navigator.serviceWorker
-          .register("./sw.js?release=20260903-menu")
+          navigator.serviceWorker
+            .register("./sw.js?release=20260903-boot")
           .then((registration) => {
             const showUpdate = (registration) => {
               if (!navigator.serviceWorker.controller || !registration.waiting)

@@ -23,6 +23,13 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
         const message = await page.locator('#authError').innerText().catch(() => '');
         throw new Error(message || 'login não foi concluído; verifique usuário, senha e servidor.');
       });
+      const firstVisibleMenu = await page.locator('#navigation').innerText();
+      for (const group of ['Início', 'Projetos 360°', 'Pós-venda']) {
+        if (!firstVisibleMenu.toLocaleLowerCase().includes(group.toLocaleLowerCase())) {
+          throw new Error(`O primeiro menu visível não contém o grupo final ${group}.`);
+        }
+      }
+      console.log('[OK] Boot — primeiro menu visível já é o menu completo');
     } else {
       console.log('[OK] Tela de autenticação exibida (sem credenciais fornecidas).');
     }

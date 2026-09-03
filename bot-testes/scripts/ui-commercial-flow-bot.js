@@ -180,6 +180,7 @@ async function run() {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  page.on('requestfailed', request => errors.push(`request ${request.url()} — ${request.failure()?.errorText || 'falhou'}`));
   page.on('console', message => {
     if (message.type() === 'error' && !message.text().includes('401 (Unauthorized)')) errors.push(message.text());
   });
@@ -197,7 +198,17 @@ async function run() {
     }, { username: TEST_USER, password: TEST_PASSWORD });
     if (!login.ok) throw new Error(`Login da conta-fundadora de teste rejeitado (HTTP ${login.status}).`);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 10_000 });
-    await page.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10_000 });
+    await page.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10_000 }).catch(async error => {
+      const body = (await page.locator('body').innerText().catch(() => '')).slice(0, 600).replace(/\s+/g, ' ');
+      throw new Error(`${error.message} · auth-pending=${await page.locator('body').evaluate(node => node.classList.contains('auth-pending')).catch(() => 'desconhecido')} · ${body} · page=${errors.join(' | ') || 'sem erro de página'} · server=${serverError.slice(-500) || 'sem erro do servidor'}`);
+    });
+    const firstVisibleMenu = await page.locator('#navigation').innerText();
+    for (const group of ['Início', 'Projetos 360°', 'Pós-venda']) {
+      if (!firstVisibleMenu.toLocaleLowerCase().includes(group.toLocaleLowerCase())) {
+        throw new Error(`O primeiro menu visível não contém o grupo final ${group}.`);
+      }
+    }
+    console.log('[OK] Boot — primeiro menu visível já é o menu completo');
     await page.waitForFunction(() => typeof window.refreshSharedData === 'function', null, { timeout: 10_000 });
     // A sincronização abaixo é apenas preparação da sessão: lê a empresa vazia
     // criada pelo teste. Todas as mutações comerciais seguintes acontecem por
