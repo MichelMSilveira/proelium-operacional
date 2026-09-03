@@ -2,6 +2,9 @@
 
 ## Em desenvolvimento
 
+- Isolamento de empresas corrigido no primeiro acesso: uma empresa sem estado remoto começa sem clientes, projetos, orçamentos, tarefas, equipe ou dados demonstrativos; o catálogo técnico é inicializado separadamente.
+- Menu reorganizado por escopo: a conta mestre vê somente a Central de suporte, Empresas e licenças e Usuários de suporte; os dados operacionais permanecem exclusivamente nos ambientes das empresas.
+- Central de suporte da plataforma criada com indicadores de solicitações, licenças, empresas aprovadas e usuários vinculados, além do roteiro de análise e liberação.
 - Conta mestre da plataforma separada do e-mail empresarial: o usuário `admin` não possui e-mail nem `companyId` e administra empresas, licenças e usuários globais; o e-mail do Michel permanece reservado à administração da própria empresa.
 - Tela de autenticação mantém Google como entrada padrão e oferece acesso administrativo separado para a conta mestre sem e-mail.
 - Administração por empresa: o cargo define o acesso padrão de cada colaborador, e o administrador da própria empresa pode liberar ou retirar uma exceção de acesso total dentro daquele ambiente, sem conceder administração da plataforma.

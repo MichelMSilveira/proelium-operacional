@@ -10,7 +10,7 @@ Se o navegador continuar pedindo login, abra uma janela anônima ou faça uma at
 
 ## Administração da plataforma
 
-Somente o administrador da plataforma vê **Empresas em análise** e **Usuários da plataforma**. Ali ficam a aprovação das empresas, a licença de uso, o nível de acesso e os usuários globais de suporte.
+Somente o administrador da plataforma vê **Central de suporte**, **Empresas em análise** e **Usuários de suporte**. Ali ficam a aprovação das empresas, a licença de uso, o nível de acesso e os usuários globais de suporte. Essa conta não recebe o menu operacional das empresas e não entra nos dados privados de uma empresa.
 
 O acesso mestre é separado dos e-mails das empresas: use o usuário `admin` e a senha entregue pelo responsável do ambiente. Essa conta não possui e-mail nem pertence a uma empresa (`companyId`), portanto administra a plataforma inteira. O e-mail Google do responsável fica livre para entrar como administrador da própria empresa, sem misturar os dois ambientes. A senha mestre não deve ser registrada neste documento, no Git ou em mensagens compartilhadas.
 
