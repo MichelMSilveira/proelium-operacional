@@ -8,8 +8,8 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 
 | Método | Rota | Uso |
 |---|---|---|
-| GET | `/api/data` | carregar a base central e sua revisão |
-| PUT | `/api/data` | salvar a base informando `baseRevision` |
+| GET | `/api/data` | carregar a base da empresa e sua revisão, filtrada pelas permissões do usuário |
+| PUT | `/api/data` | salvar a base informando `baseRevision`; domínios sem permissão não podem ser alterados |
 | GET | `/api/events` | receber avisos de atualização em tempo real (SSE) |
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.
@@ -68,7 +68,7 @@ O acesso público usa Google OAuth com `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET
 
 Cada empresa possui administração própria: `GET/POST/DELETE /api/company/users` lista, ativa/desativa ou remove somente seus participantes; `GET/POST/DELETE /api/company/invites` cria e revoga convites somente da empresa da sessão autenticada. O convite contém um token aleatório com validade de cinco minutos, armazenado no servidor somente como hash. O participante aceita o convite identificando-se com a própria conta Google; a aceitação cria/ativa o vínculo na empresa convidante, emite uma nova sessão com o `companyId` correto e não permite mover uma conta que já pertença a outra empresa. Não há criação duplicada de empresa.
 
-O estado operacional de `/api/data` é separado por `companyId`: sessões da mesma empresa compartilham sua base e sessões de empresas diferentes não leem nem recebem eventos umas das outras. Presença, colaboração e pedidos de auxílio em `/api/events` também são filtrados pelo mesmo vínculo. `DELETE /api/admin/companies?id=...` é exclusivo da administração da plataforma e remove a empresa junto com usuários, convites, rotinas e estado operacional vinculados. O estado legado permanece no espaço `shared` para compatibilidade do administrador técnico. Compartilhamentos futuros de projeto devem ser autorizados explicitamente, nunca inferidos apenas por login.
+O estado operacional de `/api/data` é separado por `companyId`: sessões da mesma empresa compartilham sua base e sessões de empresas diferentes não leem nem recebem eventos umas das outras. Além do isolamento por empresa, a resposta é filtrada pelo escopo licenciado do usuário: `quotes`, `quoteRooms`, `packages` e `procurementRequests` pertencem ao escopo comercial; `projects`, `projectChecklists`, `projectDeliveries` e `supportTickets` pertencem ao escopo de projetos. Assim, a conversão de um orçamento em projeto permite que colaboradores com licença pertinente ao projeto trabalhem nele sem receber o orçamento privado. Presença, colaboração e pedidos de auxílio em `/api/events` também são filtrados pelo mesmo vínculo. `DELETE /api/admin/companies?id=...` é exclusivo da administração da plataforma e remove a empresa junto com usuários, convites, rotinas e estado operacional vinculados. O estado legado permanece no espaço `shared` para compatibilidade do administrador técnico.
 
 ## Sessão e revogação
 

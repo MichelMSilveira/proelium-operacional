@@ -54,6 +54,16 @@ const normalizeRole = role => role === 'operador' ? 'operacao' : (rolePermission
 const permissionsFor = role => rolePermissions[normalizeRole(role)] || rolePermissions.operacao;
 const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
 const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries' };
+const dataAccessScopes = {
+  clients: ['clients', 'activities'], projects: ['projects', 'projectChecklists', 'projectDeliveries', 'supportTickets', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides'],
+  processes: ['processes'], tasks: ['tasks'], agenda: ['appointments'], commercial: ['opportunities'],
+  quotes: ['quotes', 'quoteRooms', 'packages', 'procurementRequests'], products: ['products', 'manufacturerLibrary'],
+  survey: ['surveys', 'surveyPoints', 'surveyRooms'], installations: ['installations'], operations: ['serviceOrders'],
+  reports: ['serviceReports'], quality: ['evaluations'], collaborators: ['collaborators'],
+  equipment: ['equipment', 'equipmentHistory'], finance: ['financialEntries', 'financialAccounts'],
+  knowledge: ['articles'], audit: ['auditLog', 'recoveryLog'], diagram: ['technicalPoints', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides'],
+  purchases: ['purchaseItems'], execution: ['executionEntries', 'executionItems']
+};
 const platformAdmins = new Set(String(process.env.PROELIUM_PLATFORM_ADMINS || 'admin').split(',').map(value => value.trim().toLowerCase()).filter(Boolean));
 function isPlatformAdmin(user) { return Boolean(user && (platformAdmins.has(String(user.username || '').toLowerCase()) || platformAdmins.has(String(user.email || '').toLowerCase()))); }
 function isCompanyAdmin(user) { return Boolean(user?.role === 'admin' && user.companyId && user.companyId !== 'legacy'); }
@@ -120,6 +130,29 @@ function publicUser(user) {
   const rolePermissionList=permissionsFor(role), permissions=Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList;
   const platformAdmin=isPlatformAdmin(user);
   return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: roleLabels[role], scope:platformAdmin?'platform':user.companyId&&user.companyId!=='legacy'?'company':'legacy', platformAdmin, permissions, modules:Array.isArray(user.modules)?user.modules:[], accessLevel:user.accessLevel||'full', licenseStatus:user.licenseStatus||'pending', companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
+}
+function dataViewsForUser(user) {
+  const roleViews = permissionsFor(user?.role);
+  const views = user?.accessLevel === 'limited'
+    ? (Array.isArray(user.modules) && user.modules.length ? user.modules : ['dashboard', 'knowledge'])
+    : roleViews;
+  return new Set(views);
+}
+function visibleDataForUser(data, user) {
+  const allowed = dataViewsForUser(user), full = allowed.has('*'), scopedKeys = new Set(Object.values(dataAccessScopes).flat());
+  return Object.fromEntries(Object.entries(data || {}).map(([key, value]) => {
+    if (!Array.isArray(value)) return [key, value];
+    const scope = Object.entries(dataAccessScopes).find(([, keys]) => keys.includes(key))?.[0];
+    return [key, scopedKeys.has(key) && !full && !allowed.has(scope) ? [] : value];
+  }));
+}
+function mergeWritableData(current, incoming, user) {
+  const allowed = dataViewsForUser(user), full = allowed.has('*'), merged = { ...current, ...Object.fromEntries(Object.entries(incoming || {}).filter(([, value]) => !Array.isArray(value))) };
+  for (const [scope, keys] of Object.entries(dataAccessScopes)) {
+    if (!full && !allowed.has(scope)) continue;
+    for (const key of keys) if (Object.prototype.hasOwnProperty.call(incoming || {}, key)) merged[key] = incoming[key];
+  }
+  return merged;
 }
 function validCnpj(value) { const digits=String(value||'').replace(/\D/g,''); if(digits.length!==14||/^([0-9])\1+$/.test(digits))return false; const calc=(length)=>{let sum=0,factor=5+(length-12);for(let i=0;i<length;i++){sum+=Number(digits[i])*factor--;if(factor===1)factor=9}const digit=(sum%11<2?0:11-sum%11);return digit};return calc(12)===Number(digits[12])&&calc(13)===Number(digits[13]); }
 function validCpf(value) { const digits=String(value||'').replace(/\D/g,''); if(digits.length!==11||/^([0-9])\1+$/.test(digits))return false; const calc=(length)=>{let sum=0;for(let i=0;i<length;i++)sum+=Number(digits[i])*(length+1-i);const rest=(sum*10)%11;return rest===10?0:rest};return calc(9)===Number(digits[9])&&calc(10)===Number(digits[10]); }
@@ -428,7 +461,8 @@ async function handleRequest(req, res) {
 
   if (pathname === '/api/data' && req.method === 'GET') {
     try {
-      return sendJson(res, 200, await storage.readSharedData(authenticatedUser.companyId || 'legacy'));
+      const current = await storage.readSharedData(authenticatedUser.companyId || 'legacy');
+      return sendJson(res, 200, { ...current, data: visibleDataForUser(current.data, authenticatedUser) });
     } catch {
       return sendJson(res, 500, { error: 'Não foi possível ler os dados compartilhados.' });
     }
@@ -459,22 +493,32 @@ async function handleRequest(req, res) {
     try {
       const payload = JSON.parse(await readBody(req));
       if (!payload || typeof payload.data !== 'object') return sendJson(res, 400, { error: 'Dados inválidos.' });
+      const current = await storage.readSharedData(authenticatedUser.companyId || 'legacy');
+      const dataViews = dataViewsForUser(authenticatedUser);
+      const fullDataAccess = dataViews.has('*');
+      const changedScopes = Object.entries(dataAccessScopes)
+        .filter(([, keys]) => keys.some(key => Object.prototype.hasOwnProperty.call(payload.data, key)
+          && JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null)))
+        .map(([view]) => view);
+      const deniedScopes = changedScopes.filter(view => !fullDataAccess && !dataViews.has(view));
+      if (deniedScopes.length) return sendJson(res, 403, { error: `Seu perfil não pode acessar: ${deniedScopes.join(', ')}.` });
       const role = normalizeRole(authenticatedUser.role);
       const roleAllowed = writableRoles[role];
       const allowed = roleAllowed && Array.isArray(authenticatedUser.modules) && authenticatedUser.modules.length
         ? new Set([...roleAllowed].filter(view => authenticatedUser.modules.includes(view)))
         : roleAllowed;
       if (allowed) {
-        const current = await storage.readSharedData(authenticatedUser.companyId || 'legacy');
         const changedDomains = Object.keys(dataDomains).filter(view => {
           const key = dataDomains[view];
-          return JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
+          return Object.prototype.hasOwnProperty.call(payload.data, key)
+            && JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
         });
         const denied = changedDomains.filter(view => !allowed.has(view));
         if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
       }
       const baseRevision = Number(payload.baseRevision || 0);
-      const result = await storage.writeSharedData(payload.data, baseRevision, authenticatedUser.username, authenticatedUser.companyId || 'legacy');
+      const nextData = mergeWritableData(current.data || {}, payload.data, authenticatedUser);
+      const result = await storage.writeSharedData(nextData, baseRevision, authenticatedUser.username, authenticatedUser.companyId || 'legacy');
       if (result.conflict) {
         return sendJson(res, 409, {
           error: 'Os dados foram atualizados por outro aparelho.',
