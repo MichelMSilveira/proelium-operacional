@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Segurança de sessão reforçada: cada requisição protegida agora confirma no armazenamento que o usuário ainda existe e está ativo; exclusões e desativações revogam imediatamente sessões antigas, inclusive no `/api/auth/me` e no acesso aos dados.
 - Separadas as administrações: plataforma controla empresas, licenças e usuários globais; cada empresa controla somente seus próprios participantes.
 - Convites de empresa agora têm tela própria de participantes, vínculo exclusivo por Google, expiração de cinco minutos e compartilhamento direto pelo WhatsApp.
 - Convites para novos e-mails Google agora entram no fluxo correto de adesão à empresa, sem abrir cadastro duplicado de empresa.
