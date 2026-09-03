@@ -64,4 +64,6 @@ O N.E.M.O. recebe credencial de serviço com escopos explícitos, por exemplo `p
 
 `POST /api/auth/register-company` cria uma empresa e seu primeiro usuário administrador. Após o login, `GET /api/company/routines` lista as rotinas da empresa e `PUT /api/company/routines` substitui sua coleção de rotinas.
 
-O login Google usa `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI`. O e-mail Google precisa estar previamente cadastrado no usuário.
+O acesso público usa Google OAuth com `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI`. Um e-mail Google novo cria uma solicitação de empresa; um e-mail já vinculado entra diretamente. A rota `GET/PUT /api/admin/companies` é exclusiva da administração da plataforma.
+
+Cada empresa possui administração própria: `GET/POST/DELETE /api/company/users` lista, ativa/desativa ou remove somente seus participantes; `GET/POST/DELETE /api/company/invites` cria e revoga convites. O convite contém um token aleatório com validade de cinco minutos, armazenado no servidor somente como hash. O participante aceita o convite identificando-se com a própria conta Google; não há criação duplicada de empresa.

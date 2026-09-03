@@ -8,14 +8,15 @@
 
 Se o navegador continuar pedindo login, abra uma janela anônima ou faça uma atualização forçada. A autenticação antiga por Basic Auth foi removida; o sistema usa apenas a tela de login do aplicativo.
 
-## Cadastro e controle de usuários
+## Administração da plataforma
 
-1. Entre como administrador.
-2. Abra **Usuários** no menu do sistema.
-3. Cadastre o nome de usuário, senha e perfil (**Administrador** ou **Operador**).
-4. Use o botão de ativar/desativar para bloquear um usuário sem apagar seus registros.
+Somente o administrador da plataforma vê **Empresas em análise** e **Usuários da plataforma**. Ali ficam a aprovação das empresas, a licença de uso, o nível de acesso e os usuários globais de suporte.
 
-Somente administradores podem gerenciar usuários. Para redefinir o administrador diretamente no servidor, use o comando `node auth-admin.js` dentro da pasta do projeto.
+## Administração da empresa e convites
+
+O responsável da empresa vê **Usuários da empresa** e **Convites da empresa**. Ele consulta somente os participantes vinculados à própria empresa, podendo ativar, desativar ou remover um participante.
+
+Para convidar alguém, abra **Convites da empresa**, informe opcionalmente o e-mail Google e a função, e clique em **WhatsApp**. O link é aleatório, vale cinco minutos, não contém dados pessoais e só pode ser usado uma vez. A pessoa abre o link, confirma a própria conta Google e entra na empresa sem criar uma nova empresa.
 
 ## Windows
 
