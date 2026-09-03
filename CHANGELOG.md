@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.
 - Conta fundadora marcada como acesso ilimitado dentro da própria empresa, mantendo a separação da administração da plataforma.
 - Conta fundadora alinhada ao menu empresarial de referência: Comercial, levantamentos, orçamentos, compras, execução, gestão e pessoas passam a ser visíveis no ambiente da própria empresa, sem liberar administração da plataforma.
 - Smoke bot tornado autônomo no ambiente local: `npm run test:bot` inicia um servidor temporário quando nenhuma URL externa é informada, aguarda o health check e encerra o processo ao finalizar; a documentação de publicação foi alinhada ao domínio HTTPS validado.
