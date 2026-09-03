@@ -4,7 +4,7 @@
 
 - Regra de licença corrigida: uma empresa já aprovada com licença pendente não recebe mais o pacote de avaliação completo; o acesso passa a seguir os módulos liberados, enquanto o pacote de análise fica reservado ao cadastro ainda pendente.
 - Compatibilidade do ambiente local corrigida: o espelho JSON antigo agora recebe as coleções ausentes em memória sem apagar registros existentes, evitando quebra ao abrir Colaboradores, Financeiro e BI; cache web incrementado para `v316`.
-- Inicialização visual corrigida: a autenticação e a sincronização agora começam depois do registro de todos os módulos, evitando mostrar o menu antigo antes do menu completo.
+- Inicialização visual corrigida: a autenticação e a sincronização agora começam depois do registro de todos os módulos, evitando mostrar o menu antigo antes do menu completo; cache web incrementado para `v317`.
 - Fixture do bot de uso local atualizado para reconhecer o rótulo atual “Pós-venda”, evitando falso negativo durante a validação da interface.
 - Fluxo local-first criado: branches `codex/...` e `Validar-Local.ps1` concentram sintaxe, smoke bot, teste de interface e revisão do diff antes de qualquer merge na `main`; o VPS permanece intacto durante o desenvolvimento.
 - Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.
