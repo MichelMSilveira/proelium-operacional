@@ -594,3 +594,5 @@
 
 - Adicionado `npm run test:ui-flow`, um bot Playwright de uso real que executa o ciclo comercial completo pela interface em uma empresa temporária vazia, sem acionar a carga demonstrativa.
 - Removida a carga automática de dados DEMO em empresas vazias; exemplos comerciais só entram quando o administrador aciona o botão de demonstração.
+- Corrigido o primeiro carregamento de empresas: a tela não exibe números provisórios da base de desenvolvimento antes da sincronização.
+- Adicionado `Exportar tabela` ao catálogo de Produtos e serviços; o CSV usa somente os produtos e serviços do ambiente da empresa atual.
