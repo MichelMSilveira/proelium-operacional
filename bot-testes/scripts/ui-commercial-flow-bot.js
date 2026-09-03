@@ -316,6 +316,17 @@ async function run() {
     if (!finalData.projects.some(project => project.quoteId === revisedQuote.id)) throw new Error('Projeto aprovado não foi vinculado ao orçamento revisado.');
     console.log('[OK] UI — aprovação concluiu o ciclo e criou cliente + projeto vinculados');
 
+    await openView(page, 'products');
+    const downloadPromise = page.waitForEvent('download', { timeout: 5_000 });
+    await page.locator('[data-export-catalog]').click();
+    const download = await downloadPromise;
+    const exportedPath = await download.path();
+    const exportedCsv = exportedPath ? fs.readFileSync(exportedPath, 'utf8') : '';
+    if (!download.suggestedFilename().endsWith('.csv') || !exportedCsv.includes('"SKU";') || !exportedCsv.includes('Controladora compacta Embrace Lite')) {
+      throw new Error('A exportação do catálogo não gerou um CSV da empresa atual.');
+    }
+    console.log('[OK] UI — catálogo da empresa exportado em CSV pela interface');
+
     if (errors.length) throw new Error(`Erros do navegador: ${errors.join(' | ')}`);
     console.log('\nBot UI Comercial: ciclo completo validado sem usar carga demonstrativa.');
   } catch (error) {

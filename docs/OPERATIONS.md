@@ -42,6 +42,12 @@ A recuperação normal usa um dump PostgreSQL validado. A volta temporária ao e
 - se duas pessoas alterarem a partir da mesma versão, a segunda gravação é bloqueada; a tela recebe os dados atuais e pede que a última ação seja repetida.
 - `/api/events` retorna `404`: existe uma instância antiga do servidor na porta 4173; execute `Reiniciar-App.ps1`.
 
+## Catálogo por empresa
+
+Ao entrar em uma empresa pelo navegador, o app inicia a tela operacional sem os dados de demonstração enquanto busca o ambiente compartilhado; assim os indicadores não exibem valores provisórios. Dados reais aparecem depois da sincronização e de uma inclusão feita pelo botão ou pelo usuário.
+
+Em `Produtos e serviços`, o botão `Exportar tabela` baixa um CSV com os produtos e serviços visíveis no ambiente atual, incluindo SKU, marca, fornecedor, modalidade, custo, preço e status. A exportação é feita no navegador e não consulta nem inclui dados de outras empresas.
+
 ## Bot de teste operacional
 
 Para avaliar o app publicado sem criar ou alterar registros, rode `npm run test:real-use`. Esse modo somente leitura confere o shell, os módulos essenciais, a saúde do servidor, a proteção da API e, quando informadas, a sessão e a leitura sincronizada.
