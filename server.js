@@ -114,7 +114,7 @@ function passwordRecord(password) {
 
 function publicUser(user) {
   const role = normalizeRole(user.role);
-  const rolePermissionList=permissionsFor(role), permissions=Array.isArray(user.modules)&&user.modules.length&&rolePermissionList[0]!=='*'?rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList;
+  const rolePermissionList=permissionsFor(role), permissions=Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList;
   return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: roleLabels[role], permissions, modules:Array.isArray(user.modules)?user.modules:[], accessLevel:user.accessLevel||'full', licenseStatus:user.licenseStatus||'pending', companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
 }
 function validCnpj(value) { const digits=String(value||'').replace(/\D/g,''); if(digits.length!==14||/^([0-9])\1+$/.test(digits))return false; const calc=(length)=>{let sum=0,factor=length-5;for(let i=0;i<length;i++){sum+=Number(digits[i])*factor--;if(factor===1)factor=9}const digit=(sum%11<2?0:11-sum%11);return digit};return calc(12)===Number(digits[12])&&calc(13)===Number(digits[13]); }
