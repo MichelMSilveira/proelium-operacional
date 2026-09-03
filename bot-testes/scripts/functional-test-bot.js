@@ -196,6 +196,7 @@ async function runFunctionalTestBot(options = {}) {
       const joined = await request(baseUrl, '/api/auth/join-google-company', { method: 'POST', headers: { Cookie: `proelium_google_pending=${encodeURIComponent(invitedPending)}; proelium_invite=${encodeURIComponent(inviteToken)}` } });
       expect(joined.status === 201, `Aceite do convite Google retornou HTTP ${joined.status}: ${joined.text}`);
       const joinedCookie = sessionCookie(joined);
+      const joinedPayload = parseJson(joined, '/api/auth/join-google-company');
       expect(joinedCookie.startsWith('proelium_session='), 'Aceite do convite não devolveu uma sessão nova.');
       const joinedData = await request(baseUrl, '/api/data', { headers: { Cookie: joinedCookie } });
       expect(joinedData.status === 200, `Participante convidado não entrou no app: HTTP ${joinedData.status}.`);
@@ -214,6 +215,10 @@ async function runFunctionalTestBot(options = {}) {
       expect(firstWrite.status===200, `Gravação da primeira empresa retornou HTTP ${firstWrite.status}: ${firstWrite.text}`);
       const projectAccessData=parseJson(await request(baseUrl, '/api/data', { headers:{Cookie:joinedCookie} }), '/api/data colaborador de projetos');
       expect(projectAccessData.data.projects.some(project=>project.id==='prj-convertido-1') && projectAccessData.data.quotes.length===0 && projectAccessData.data.quoteRooms.length===0, 'O colaborador com permissão de projetos não recebeu o projeto ou recebeu o orçamento privado.');
+      const fullAccess=await request(baseUrl, '/api/company/users', { method:'POST', headers:{Cookie:googleCookie}, body:{username:joinedPayload.user.username,companyAccessOverride:'full'} });
+      expect(fullAccess.status===200, `A empresa não conseguiu liberar acesso total ao colaborador: HTTP ${fullAccess.status}.`);
+      const elevatedData=parseJson(await request(baseUrl, '/api/data', { headers:{Cookie:joinedCookie} }), '/api/data colaborador com exceção');
+      expect(elevatedData.data.quotes.some(quote=>quote.id==='orc-projeto-1') && elevatedData.data.projects.some(project=>project.id==='prj-convertido-1'), 'A exceção de acesso total não foi aplicada dentro da empresa.');
       const secondBeforeWrite=await request(baseUrl, '/api/data', { headers:{Cookie:secondCookie} });
       expect(secondBeforeWrite.status===200 && !String(secondBeforeWrite.text).includes('empresa-um'), 'A segunda empresa recebeu dados da primeira.');
       const secondWrite=await request(baseUrl, '/api/data', { method:'PUT', headers:{Cookie:secondFullCookie}, body:{data:secondState,baseRevision:0} });

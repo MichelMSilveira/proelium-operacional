@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Administração por empresa: o cargo define o acesso padrão de cada colaborador, e o administrador da própria empresa pode liberar ou retirar uma exceção de acesso total dentro daquele ambiente, sem conceder administração da plataforma.
 - Visibilidade por licença aplicada na API: orçamentos, salas e dados comerciais continuam restritos ao escopo comercial; quando um orçamento é convertido em projeto, o projeto e seus dados operacionais ficam disponíveis aos colaboradores da mesma empresa com permissão de projetos/operação/financeiro, sem expor dados a outras empresas.
 - Sincronização protegida por escopo: cada usuário recebe somente os domínios de dados compatíveis com suas permissões, gravações parciais preservam os demais domínios da empresa e o cache local passou a ser separado por empresa e usuário.
 - Licença da empresa incorporada à sessão: após a análise da plataforma, o próximo login aplica o nível e os módulos autorizados também ao proprietário do cadastro, sem perder as restrições específicas de um convite.

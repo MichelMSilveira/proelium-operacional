@@ -127,12 +127,13 @@ function passwordRecord(password) {
 
 function publicUser(user) {
   const role = normalizeRole(user.role);
-  const rolePermissionList=permissionsFor(role), permissions=Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList;
   const platformAdmin=isPlatformAdmin(user);
   const companyScoped=Boolean(user.companyId&&user.companyId!=='legacy');
-  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':'legacy', platformAdmin, permissions, modules:Array.isArray(user.modules)?user.modules:[], accessLevel:user.accessLevel||(companyScoped?'limited':'full'), licenseStatus:user.licenseStatus||(companyScoped?'pending':'approved'), companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
+  const companyFullAccess=companyScoped&&user.companyAccessOverride==='full',rolePermissionList=permissionsFor(role), permissions=companyFullAccess?['*']:(Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList);
+  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':'legacy', platformAdmin, permissions, modules:Array.isArray(user.modules)?user.modules:[], companyAccessOverride:companyFullAccess?'full':null, accessLevel:user.accessLevel||(companyScoped?'limited':'full'), licenseStatus:user.licenseStatus||(companyScoped?'pending':'approved'), companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
 }
 function dataViewsForUser(user) {
+  if (user?.companyId && user.companyId !== 'legacy' && user.companyAccessOverride === 'full') return new Set(['*']);
   const roleViews = permissionsFor(user?.role);
   const modules = Array.isArray(user?.modules) ? user.modules : [];
   const views = user?.accessLevel === 'limited'
@@ -182,7 +183,8 @@ async function storedUserFromSession(req) {
     accessLevel: user.accessLevel || session.accessLevel || company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited'),
     licenseStatus: user.licenseStatus || session.licenseStatus || company?.licenseStatus || (companyId === 'legacy' ? 'approved' : 'pending'),
     companyStatus: user.companyStatus || session.companyStatus || company?.status || (companyId === 'legacy' ? 'approved' : 'pending'),
-    modules: userModules
+    modules: userModules,
+    companyAccessOverride: user.companyAccessOverride || session.companyAccessOverride || null
   };
 }
 
@@ -392,6 +394,7 @@ async function handleRequest(req, res) {
       }
       if(target.role==='admin')return sendJson(res,403,{error:'A administração da empresa não pode ser alterada por este painel.'});
       target.active=payload.active!==false;
+      if(Object.prototype.hasOwnProperty.call(payload,'companyAccessOverride'))target.companyAccessOverride=payload.companyAccessOverride==='full'?'full':null;
       await storage.writeUsers(allUsers.map(user=>user.username===username?target:user));
       return sendJson(res,200,{ok:true,user:publicUser(target)});
     } catch { return sendJson(res,400,{error:'Dados de usuário da empresa inválidos.'}); }
