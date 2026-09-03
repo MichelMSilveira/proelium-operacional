@@ -590,3 +590,7 @@
 - Preservado o tipo de participante como campo oculto após a escolha do perfil, garantindo que o envio use o fluxo correto de cadastro Google.
 - Corrigido o cálculo dos dígitos verificadores do CNPJ; a validação passa a usar os pesos oficiais da Receita Federal.
 - Ajustado o CNPJ sintético do teste funcional para um número matematicamente válido, evitando falso negativo no fluxo de cadastro Google.
+## 2026-09-03
+
+- Adicionado `npm run test:ui-flow`, um bot Playwright de uso real que executa o ciclo comercial completo pela interface em uma empresa temporária vazia, sem acionar a carga demonstrativa.
+- Removida a carga automática de dados DEMO em empresas vazias; exemplos comerciais só entram quando o administrador aciona o botão de demonstração.

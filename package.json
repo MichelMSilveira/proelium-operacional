@@ -8,6 +8,7 @@
     "test:bot": "node bot-testes/scripts/smoke-bot.js",
     "test:real-use": "node bot-testes/scripts/real-use-bot.js",
     "test:ui-use": "node bot-testes/scripts/ui-use-bot.js",
+    "test:ui-flow": "node bot-testes/scripts/ui-commercial-flow-bot.js",
     "test:functional": "node bot-testes/scripts/functional-test-bot.js",
     "db:migrate": "node database/migrate.js",
     "db:import": "node database/import-json.js",
