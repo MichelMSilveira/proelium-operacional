@@ -2,6 +2,9 @@
 
 ## Em desenvolvimento
 
+- Administração da empresa ampliada: o administrador empresarial vê as configurações mesmo com licença limitada, edita identificação e contato da própria empresa e acessa equipe e convites sem enxergar a administração da plataforma.
+- Gestão de contas empresariais esclarecida: cada participante é identificado por sua conta Google; a empresa controla função, ativação, remoção e exceção de acesso, enquanto senhas Google permanecem fora do Proelium.
+- Carregamento da equipe corrigido ao abrir o módulo, evitando que o administrador fique preso em uma tela de configuração sem participantes.
 - Isolamento de empresas corrigido no primeiro acesso: uma empresa sem estado remoto começa sem clientes, projetos, orçamentos, tarefas, equipe ou dados demonstrativos; o catálogo técnico é inicializado separadamente.
 - Menu reorganizado por escopo: a conta mestre vê somente a Central de suporte, Empresas e licenças e Usuários de suporte; os dados operacionais permanecem exclusivamente nos ambientes das empresas.
 - Central de suporte da plataforma criada com indicadores de solicitações, licenças, empresas aprovadas e usuários vinculados, além do roteiro de análise e liberação.

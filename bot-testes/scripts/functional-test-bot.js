@@ -186,6 +186,11 @@ async function runFunctionalTestBot(options = {}) {
       expect(sharedData.status === 200, `Usuário cadastrado não entrou no app: HTTP ${sharedData.status}.`);
       const companyUsers = await request(baseUrl, '/api/company/users', { headers: { Cookie: googleCookie } });
       expect(companyUsers.status === 200, `Administração da empresa retornou HTTP ${companyUsers.status}: ${companyUsers.text}`);
+      const companyProfile = await request(baseUrl, '/api/company/profile', { headers: { Cookie: googleCookie } });
+      const companyProfilePayload = parseJson(companyProfile, '/api/company/profile');
+      expect(companyProfile.status === 200 && companyProfilePayload.company?.id === registrationPayload.company.id && companyProfilePayload.company?.document === registrationPayload.company.document, 'O administrador não conseguiu consultar a configuração da própria empresa.');
+      const profileSave = await request(baseUrl, '/api/company/profile', { method: 'PUT', headers: { Cookie: googleCookie }, body: { name: companyProfilePayload.company.name, responsible: companyProfilePayload.company.responsible, phone: companyProfilePayload.company.phone, profileInfo: 'Perfil empresarial atualizado pelo teste.' } });
+      expect(profileSave.status === 200, `Atualização da configuração empresarial retornou HTTP ${profileSave.status}: ${profileSave.text}`);
       const platformCompanies = await request(baseUrl, '/api/admin/companies', { headers: { Cookie: googleCookie } });
       expect(platformCompanies.status === 403, `Administração da plataforma deveria estar bloqueada; recebeu HTTP ${platformCompanies.status}.`);
       const invite = await request(baseUrl, '/api/company/invites', { method: 'POST', headers: { Cookie: googleCookie }, body: { email: 'convidado@example.invalid', role: 'operacao' } });
