@@ -12,6 +12,8 @@ Se o navegador continuar pedindo login, abra uma janela anônima ou faça uma at
 
 Somente o administrador da plataforma vê **Empresas em análise** e **Usuários da plataforma**. Ali ficam a aprovação das empresas, a licença de uso, o nível de acesso e os usuários globais de suporte.
 
+O acesso mestre é separado dos e-mails das empresas: use o usuário `admin` e a senha entregue pelo responsável do ambiente. Essa conta não possui e-mail nem pertence a uma empresa (`companyId`), portanto administra a plataforma inteira. O e-mail Google do responsável fica livre para entrar como administrador da própria empresa, sem misturar os dois ambientes. A senha mestre não deve ser registrada neste documento, no Git ou em mensagens compartilhadas.
+
 ## Administração da empresa e convites
 
 O responsável da empresa vê **Usuários da empresa** e **Convites da empresa**. Ele consulta somente os participantes vinculados à própria empresa, podendo ativar, desativar ou remover um participante.
