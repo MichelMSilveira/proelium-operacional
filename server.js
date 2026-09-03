@@ -84,6 +84,7 @@ function isPortfolioUser(user) { return Boolean(user?.accountType === 'portfolio
 function isSupportUser(user) { return Boolean(user && !isPlatformAdmin(user) && !isPortfolioUser(user) && (!user.companyId || user.companyId === 'legacy') && (user.role === 'suporte' || user.role === 'admin')); }
 function isPlatformStaff(user) { return isPlatformAdmin(user) || isSupportUser(user); }
 function isCompanyAdmin(user) { return Boolean(user?.role === 'admin' && user.companyId && user.companyId !== 'legacy'); }
+function isCompanyFounder(user) { return Boolean(user?.accountType === 'founder' || user?.founder === true); }
 
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').map(item => item.trim().split('='))
@@ -149,7 +150,7 @@ function publicUser(user) {
   const supportUser=isSupportUser(user);
   const companyFullAccess=companyScoped&&user.companyAccessOverride==='full',rolePermissionList=permissionsFor(role), permissions=companyFullAccess?['*']:(Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList);
   const portfolioUser=isPortfolioUser(user);
-  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: supportUser ? 'Suporte da plataforma' : portfolioUser ? 'Perfil pessoal' : roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':supportUser?'support':portfolioUser?'portfolio':'legacy', platformAdmin, supportUser, portfolioUser, accountType:user.accountType||'member', founder:user.accountType==='founder'||user.founder===true, permissions:portfolioUser?[]:permissions, modules:portfolioUser?[]:(Array.isArray(user.modules)?user.modules:[]), companyAccessOverride:companyFullAccess?'full':null, portfolioCount:Array.isArray(user.portfolio)?user.portfolio.length:0, accessLevel:portfolioUser?'full':(user.accessLevel||(companyScoped?'limited':'full')), licenseStatus:portfolioUser?'approved':(user.licenseStatus||(companyScoped?'pending':'approved')), companyStatus:portfolioUser?'approved':(user.companyStatus||'approved'), active: user.active !== false, companyId: portfolioUser ? null : (user.companyId || 'legacy') };
+  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: supportUser ? 'Suporte da plataforma' : portfolioUser ? 'Perfil pessoal' : roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':supportUser?'support':portfolioUser?'portfolio':'legacy', platformAdmin, supportUser, portfolioUser, accountType:user.accountType||'member', founder:isCompanyFounder(user), permissions:portfolioUser?[]:permissions, modules:portfolioUser?[]:(Array.isArray(user.modules)?user.modules:[]), companyAccessOverride:companyFullAccess?'full':null, portfolioCount:Array.isArray(user.portfolio)?user.portfolio.length:0, accessLevel:portfolioUser||isCompanyFounder(user)?'full':(user.accessLevel||(companyScoped?'limited':'full')), licenseStatus:portfolioUser?'approved':(user.licenseStatus||(companyScoped?'pending':'approved')), companyStatus:portfolioUser?'approved':(user.companyStatus||'approved'), active: user.active !== false, companyId: portfolioUser ? null : (user.companyId || 'legacy') };
 }
 function dataViewsForUser(user) {
   if (isPlatformAdmin(user) || isSupportUser(user) || isPortfolioUser(user)) return new Set();
@@ -220,7 +221,7 @@ async function storedUserFromSession(req) {
     name: user.name || session.name || user.username,
     role: user.role || session.role || 'operador',
     companyId,
-    accessLevel: isPortfolioUser(user) ? 'full' : (user.accessLevel || session.accessLevel || company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited')),
+    accessLevel: isPortfolioUser(user) || isCompanyFounder(user) ? 'full' : (user.accessLevel || session.accessLevel || company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited')),
     licenseStatus: isPortfolioUser(user) ? 'approved' : (user.licenseStatus || session.licenseStatus || company?.licenseStatus || (companyId === 'legacy' ? 'approved' : 'pending')),
     companyStatus: isPortfolioUser(user) ? 'approved' : (user.companyStatus || session.companyStatus || company?.status || (companyId === 'legacy' ? 'approved' : 'pending')),
     modules: isPortfolioUser(user) ? [] : userModules,
