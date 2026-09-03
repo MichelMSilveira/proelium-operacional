@@ -596,3 +596,5 @@
 - Removida a carga automática de dados DEMO em empresas vazias; exemplos comerciais só entram quando o administrador aciona o botão de demonstração.
 - Corrigido o primeiro carregamento de empresas: a tela não exibe números provisórios da base de desenvolvimento antes da sincronização.
 - Adicionado `Exportar tabela` ao catálogo de Produtos e serviços; o CSV usa somente os produtos e serviços do ambiente da empresa atual.
+- Reorganizado o menu por áreas: Comercial, Projetos 360°, Pós-venda, Gestão, Pessoas e conta da empresa.
+- Criado o centro Projeto 360° com resumo do orçamento aprovado, cronograma, execução, compras e pós-venda vinculados à mesma obra.

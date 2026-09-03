@@ -1,8 +1,8 @@
 const navItems = [
-  ['dashboard','◫','Visão geral'],['clients','♙','Clientes'],['projects','◇','Projetos'],['processes','⇢','Processos'],
-  ['tasks','✓','Tarefas'],['agenda','◷','Agenda'],['commercial','◎','Oportunidades'],['products','▦','Produtos e serviços'],['installations','⌂','Acompanhamento'],['operations','⚒','Operação'],['finance','＄','Financeiro'],
-  ['bi','▥','BI Intelligence'],['biMarket','⌁','BI Desempenho'],['quality','★','Qualidade e compromisso'],['collaborators','♧','Colaboradores e parceiros'],
-  ['equipment','▣','Equipamentos'],['knowledge','▤','Conhecimento']
+  ['dashboard','◫','Visão geral'],['commercial','◎','Oportunidades'],['clients','♙','Clientes'],['projects','◇','Projetos 360°'],
+  ['tasks','✓','Tarefas'],['agenda','◷','Agenda operacional'],['products','▦','Produtos e serviços'],['installations','⌂','Cronograma e acompanhamento'],['operations','⚒','Pós-venda e ordens'],['finance','＄','Financeiro'],
+  ['bi','▥','BI Intelligence'],['biMarket','⌁','BI Desempenho'],['quality','★','Entrega e qualidade'],['collaborators','♧','Colaboradores e parceiros'],
+  ['equipment','▣','Ativos e garantias'],['knowledge','▤','Conhecimento']
 ];
 navItems.push(['reports','▤','Relatórios']);
 navItems.push(['routines','↻','Minhas rotinas']);
@@ -1371,8 +1371,8 @@ const clientListDeleteView=views.clients;views.clients=()=>clientListDeleteView(
 document.addEventListener('click',event=>{const button=event.target.closest('[data-delete-client]');if(!button)return;event.preventDefault();event.stopPropagation();deleteClient(button.dataset.deleteClient)},true);
 
 // Menu orientado pelo caminho da informação. Os grupos serão a base dos futuros acessos por licença e perfil.
-const menuFlowOrder=['platformDashboard','dashboard','commercial','survey','quotes','clients','products','projects','processes','purchases','diagram','installations','agenda','tasks','operations','reports','equipment','execution','collaborators','quality','knowledge','routines','finance','bi','biMarket','audit','profile','companySettings','companyUsers','companyInvites','companyReview','users'];
-const menuFlowGroup={dashboard:'Comercial',commercial:'Comercial',clients:'Comercial',products:'Comercial',projects:'Projeto e orçamento',processes:'Projeto e orçamento',purchases:'Projeto e orçamento',diagram:'Projeto e orçamento',installations:'Operação e pós-venda',agenda:'Operação e pós-venda',tasks:'Operação e pós-venda',operations:'Operação e pós-venda',reports:'Operação e pós-venda',equipment:'Operação e pós-venda',execution:'Operação e pós-venda',collaborators:'Pessoas e padrões',quality:'Pessoas e padrões',knowledge:'Pessoas e padrões',routines:'Pessoas e padrões',finance:'Gestão',bi:'Gestão',biMarket:'Gestão',audit:'Gestão'};
+const menuFlowOrder=['platformDashboard','dashboard','commercial','survey','quotes','clients','products','productConnections','productLibrary','projects','purchases','diagram','installations','agenda','tasks','execution','quality','operations','equipment','collaborators','knowledge','finance','bi','biMarket','reports','audit','profile','companySettings','companyUsers','companyInvites','companyReview','users'];
+const menuFlowGroup={dashboard:'Início',commercial:'Comercial',clients:'Comercial',products:'Comercial',productConnections:'Comercial',productLibrary:'Comercial',projects:'Projetos 360°',processes:'Projetos 360°',purchases:'Projetos 360°',diagram:'Projetos 360°',installations:'Projetos 360°',agenda:'Projetos 360°',tasks:'Projetos 360°',quality:'Projetos 360°',execution:'Projetos 360°',operations:'Pós-venda',equipment:'Pós-venda',reports:'Gestão',collaborators:'Pessoas e padrões',knowledge:'Pessoas e padrões',routines:'Pessoas e padrões',finance:'Gestão',bi:'Gestão',biMarket:'Gestão',audit:'Gestão'};
  menuFlowGroup.platformDashboard='Administração da plataforma';menuFlowGroup.users='Administração da plataforma';menuFlowGroup.companyReview='Administração da plataforma';menuFlowGroup.profile='Conta pessoal';menuFlowGroup.companySettings='Administração da empresa';menuFlowGroup.companyUsers='Administração da empresa';menuFlowGroup.companyInvites='Administração da empresa';
  if(!navItems.some(item=>item[0]==='platformDashboard'))navItems.push(['platformDashboard','▦','Central de suporte']);
  if(!navItems.some(item=>item[0]==='users'))navItems.push(['users','♙','Usuários de suporte']);
@@ -3457,4 +3457,35 @@ render=()=>{
   document.querySelectorAll('[data-open-commercial-client]').forEach(button=>button.onclick=()=>openClient(button.dataset.openCommercialClient));
   document.querySelectorAll('[data-commercial-demo]').forEach(button=>button.onclick=()=>addCommercialDemoCycles());
 };
+render();
+
+// Projeto 360°: o orçamento aprovado continua sendo a fonte comercial,
+// enquanto o projeto concentra planejamento, execução e pós-venda.
+const project360BaseView=views.projectDetail;
+views.projectDetail=()=>{
+  const project=(state.data.projects||[]).find(item=>item.id===state.selectedProject),html=project360BaseView();
+  if(!project)return html;
+  const quote=project.quoteId?(state.data.quotes||[]).find(item=>item.id===project.quoteId):null,totals=quote?quoteTotals(quote.id):{price:Number(project.budget||0),cost:Number(project.cost||0)},tasks=(state.data.tasks||[]).filter(item=>item.projectId===project.id),orders=(state.data.serviceOrders||[]).filter(item=>item.projectId===project.id),reports=(state.data.serviceReports||[]).filter(item=>item.projectId===project.id),purchases=(state.data.purchaseItems||[]).filter(item=>item.projectId===project.id);
+  const bridge=`<section class="card project360-context"><div class="card-head"><div><p class="eyebrow">CENTRO DO PROJETO</p><h3>Projeto 360°</h3><p class="subtext">O orçamento aprovado, o cronograma, a execução e o pós-venda permanecem ligados a esta obra.</p></div><span class="badge blue">${project.status||'Planejamento'}</span></div><div class="kpi-grid"><div class="kpi"><div class="kpi-top">Orçamento aprovado</div><div class="kpi-value">${money(totals.price||0)}</div><div class="kpi-note">${quote?`v${quote.version||1} · ${quoteStatus(quote)}`:'Sem orçamento vinculado'}</div></div><div class="kpi"><div class="kpi-top">Cronograma</div><div class="kpi-value">${Number(project.progress||0)}%</div><div class="kpi-note">Prazo: ${project.due||'A definir'}</div></div><div class="kpi"><div class="kpi-top">Execução</div><div class="kpi-value">${tasks.length+orders.length}</div><div class="kpi-note">${tasks.length} tarefa(s) · ${orders.length} OS</div></div><div class="kpi"><div class="kpi-top">Pós-venda</div><div class="kpi-value">${reports.length+purchases.length}</div><div class="kpi-note">${reports.length} relatório(s) · ${purchases.length} item(ns) de obra</div></div></div><div class="module-toolbar"><button type="button" class="button secondary" data-project360-action="quote" ${quote?'':'disabled'}>Ver orçamento aprovado</button><button type="button" class="button secondary" data-project360-action="installations">Abrir cronograma</button><button type="button" class="button secondary" data-project360-action="operations">Abrir pós-venda</button><button type="button" class="button secondary" data-project360-action="purchases">Abrir compras</button></div></section>`;
+  return html.replace('<div class="project-flow card">',bridge+'<div class="project-flow card">').replace('EXECUÇÃO DO PROJETO','CENTRO DO PROJETO');
+};
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-project360-action]');
+  if(!button||button.disabled)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(button.dataset.project360Action==='quote'){
+    const project=(state.data.projects||[]).find(item=>item.id===state.selectedProject),quote=project?.quoteId&&(state.data.quotes||[]).find(item=>item.id===project.quoteId);
+    if(quote){state.selectedQuote=quote.id;state.view='quoteDetail';render()}
+    return;
+  }
+  state.view=button.dataset.project360Action;render();
+},true);
+const menuPresentationRender=render;
+render=()=>{
+  menuPresentationRender();
+  if(state.view==='projectDetail')$('#pageTitle').textContent='Projeto 360°';
+};
+views.projects=(()=>{const base=views.projects;return()=>base().replace('Projetos e execução','Projetos 360°').replace(/Abrir execução/g,'Abrir projeto 360°')})();
+views.installations=(()=>{const base=views.installations;return()=>base().replace('Acompanhamento','Cronograma e acompanhamento').replace('Abrir operação','Abrir pós-venda e ordens')})();
+views.operations=(()=>{const base=views.operations;return()=>base().replace('Operação e pós-venda','Pós-venda e ordens')})();
 render();
