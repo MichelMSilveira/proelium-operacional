@@ -1378,6 +1378,10 @@ const menuFlowGroup={dashboard:'Início',commercial:'Comercial',clients:'Comerci
  if(!navItems.some(item=>item[0]==='users'))navItems.push(['users','♙','Usuários de suporte']);
  if(!navItems.some(item=>item[0]==='companyUsers'))navItems.push(['companyUsers','♙','Equipe da empresa']);
  if(!navItems.some(item=>item[0]==='companySettings'))navItems.push(['companySettings','⚙','Configurações da empresa']);
+ if(!navItems.some(item=>item[0]==='survey'))navItems.push(['survey','⌖','Levantamento']);
+ if(!navItems.some(item=>item[0]==='quotes'))navItems.push(['quotes','▤','Orçamentos']);
+ if(!navItems.some(item=>item[0]==='purchases'))navItems.push(['purchases','▣','Compras e materiais']);
+ if(!navItems.some(item=>item[0]==='execution'))navItems.push(['execution','⚙','Execução']);
  const companyInvitesItem=navItems.find(item=>item[0]==='companyInvites');if(companyInvitesItem)companyInvitesItem[2]='Convites';
  navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
 renderNav=()=>{let previousGroup='';const visible=navItems.filter(item=>canViewRole(item[0]));if(!canViewRole(state.view))state.view=authenticatedUser?.scope==='platform'?'platformDashboard':authenticatedUser?.scope==='portfolio'?'profile':'dashboard';$('#navigation').innerHTML=visible.map(([id,icon,label])=>{const group=menuFlowGroup[id]||'Outros',section=group===previousGroup?'':`<p class="nav-section">${group}</p>`;previousGroup=group;return `${section}<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span>${label}</button>`}).join('')};
