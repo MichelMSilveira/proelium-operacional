@@ -431,9 +431,14 @@
           if (event.data?.type === "UPDATE_READY")
             window.__showAppUpdate?.(event.data.registration);
         });
-          navigator.serviceWorker
-            .register("./sw.js?release=20260903-boot")
+        navigator.serviceWorker
+          .register("./sw.js?release=20260903-boot")
           .then((registration) => {
+            const activateWaiting = async (currentRegistration) => {
+              if (!currentRegistration.waiting) return;
+              await window.proeliumPrepareForUpdate?.();
+              currentRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+            };
             const showUpdate = (registration) => {
               if (!navigator.serviceWorker.controller || !registration.waiting)
                 return;
@@ -450,7 +455,9 @@
               };
             };
             window.__showAppUpdate = showUpdate;
-            if (registration.waiting) showUpdate(registration);
+            // O shell do app precisa ser atualizado automaticamente: ficar
+            // esperando uma ação manual mantém o menu antigo em algumas abas.
+            if (registration.waiting) activateWaiting(registration).catch(() => {});
             const checkForUpdate = () => registration.update().catch(() => {});
             document.addEventListener("visibilitychange", () => {
               if (!document.hidden) checkForUpdate();
@@ -464,7 +471,7 @@
                   worker.state === "installed" &&
                   navigator.serviceWorker.controller
                 ) {
-                  showUpdate(registration);
+                  activateWaiting(registration).catch(() => {});
                 }
               });
             });
