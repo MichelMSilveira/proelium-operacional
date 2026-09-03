@@ -42,9 +42,10 @@ if (process.env.NODE_ENV === 'production' && (!configuredSessionSecret || config
 }
 const sessionSecret = configuredSessionSecret || 'proelium-development-session-secret-change-me';
 
-const roleLabels = { admin: 'Administrador', comercial: 'Comercial', operacao: 'Operação', financeiro: 'Financeiro', leitura: 'Leitura', operador: 'Operação' };
+const roleLabels = { admin: 'Administrador', suporte: 'Suporte da plataforma', comercial: 'Comercial', operacao: 'Operação', financeiro: 'Financeiro', leitura: 'Leitura', operador: 'Operação' };
 const rolePermissions = {
   admin: ['*'],
+  suporte: [],
   comercial: ['dashboard', 'clients', 'commercial', 'quotes', 'products', 'survey'],
   operacao: ['dashboard', 'projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'quality', 'collaborators', 'equipment', 'knowledge'],
   financeiro: ['dashboard', 'clients', 'projects', 'commercial', 'finance', 'bi', 'biMarket', 'knowledge'],
@@ -66,6 +67,8 @@ const dataAccessScopes = {
 };
 const platformAdmins = new Set(String(process.env.PROELIUM_PLATFORM_ADMINS || 'admin').split(',').map(value => value.trim().toLowerCase()).filter(Boolean));
 function isPlatformAdmin(user) { return Boolean(user && (platformAdmins.has(String(user.username || '').toLowerCase()) || platformAdmins.has(String(user.email || '').toLowerCase()))); }
+function isSupportUser(user) { return Boolean(user && !isPlatformAdmin(user) && (!user.companyId || user.companyId === 'legacy') && (user.role === 'suporte' || user.role === 'admin')); }
+function isPlatformStaff(user) { return isPlatformAdmin(user) || isSupportUser(user); }
 function isCompanyAdmin(user) { return Boolean(user?.role === 'admin' && user.companyId && user.companyId !== 'legacy'); }
 
 function parseCookies(req) {
@@ -129,10 +132,12 @@ function publicUser(user) {
   const role = normalizeRole(user.role);
   const platformAdmin=isPlatformAdmin(user);
   const companyScoped=Boolean(user.companyId&&user.companyId!=='legacy');
+  const supportUser=isSupportUser(user);
   const companyFullAccess=companyScoped&&user.companyAccessOverride==='full',rolePermissionList=permissionsFor(role), permissions=companyFullAccess?['*']:(Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList);
-  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':'legacy', platformAdmin, permissions, modules:Array.isArray(user.modules)?user.modules:[], companyAccessOverride:companyFullAccess?'full':null, accessLevel:user.accessLevel||(companyScoped?'limited':'full'), licenseStatus:user.licenseStatus||(companyScoped?'pending':'approved'), companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
+  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: supportUser ? 'Suporte da plataforma' : roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':supportUser?'support':'legacy', platformAdmin, supportUser, permissions, modules:Array.isArray(user.modules)?user.modules:[], companyAccessOverride:companyFullAccess?'full':null, accessLevel:user.accessLevel||(companyScoped?'limited':'full'), licenseStatus:user.licenseStatus||(companyScoped?'pending':'approved'), companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
 }
 function dataViewsForUser(user) {
+  if (isSupportUser(user)) return new Set();
   if (user?.companyId && user.companyId !== 'legacy' && user.companyAccessOverride === 'full') return new Set(['*']);
   const roleViews = permissionsFor(user?.role);
   const modules = Array.isArray(user?.modules) ? user.modules : [];
@@ -162,6 +167,10 @@ function validCpf(value) { const digits=String(value||'').replace(/\D/g,''); if(
 function inviteTokenHash(token) { return crypto.createHash('sha256').update(String(token)).digest('hex'); }
 function invitePublic(invite, companies) { const company=companies.find(item=>item.id===invite.companyId); return { id:invite.id, companyId:invite.companyId, companyName:company?.name||'Empresa', email:invite.email||'', role:invite.role||'operacao', modules:invite.modules||[], expiresAt:invite.expiresAt, usedAt:invite.usedAt||null, createdAt:invite.createdAt }; }
 function companyProfilePublic(company) { return { id:company.id, name:company.name||'', document:company.document||'', responsible:company.responsible||'', phone:company.phone||'', companyType:company.companyType||'', profileInfo:company.profileInfo||'', status:company.status||'pending', accessLevel:company.accessLevel||'limited', licenseStatus:company.licenseStatus||'pending', createdAt:company.createdAt||null }; }
+function companyWithAdminContact(company, users) {
+  const admin = users.find(user => user.companyId === company.id && user.role === 'admin' && user.active !== false);
+  return { ...company, adminName: admin?.name || company.responsible || '', adminEmail: admin?.email || '', adminUsername: admin?.username || '' };
+}
 function httpsJson(url, options={}, body='') { return new Promise((resolve,reject)=>{ const request=https.request(url,{...options,headers:{'Content-Type':'application/x-www-form-urlencoded',...(options.headers||{})}},response=>{let raw='';response.on('data',chunk=>raw+=chunk);response.on('end',()=>{try{resolve({status:response.statusCode,data:JSON.parse(raw)})}catch{reject(new Error('Resposta OAuth inválida.'))}})});request.on('error',reject);if(body)request.write(body);request.end();}); }
 
 async function storedUserFromSession(req) {
@@ -384,9 +393,12 @@ async function handleRequest(req, res) {
     } catch(error) { console.error('Falha ao excluir empresa:',error.message);return sendJson(res,500,{error:'Não foi possível excluir a empresa com segurança.'}); }
   }
   if (pathname === '/api/admin/companies' && ['GET','PUT'].includes(req.method)) {
-    const actor=await requireUser(req,res); if(!actor)return; if(!isPlatformAdmin(actor)||actor.role!=='admin')return sendJson(res,403,{error:'Apenas administradores da plataforma podem analisar empresas.'});
-    const companies=await storage.readCompanies(); if(req.method==='GET')return sendJson(res,200,{companies});
-    try { const payload=JSON.parse(await readBody(req)),id=String(payload.id||''),status=String(payload.status||'');if(!id||!['pending','approved','rejected','suspended'].includes(status))return sendJson(res,400,{error:'Atualização inválida.'});const index=companies.findIndex(company=>company.id===id);if(index<0)return sendJson(res,404,{error:'Empresa não encontrada.'});const allowedModules=['dashboard','clients','projects','commercial','quotes','products','survey','routines','reports','finance','knowledge'];const modules=Array.isArray(payload.modules)?[...new Set(payload.modules.filter(item=>allowedModules.includes(item)))].slice(0,20):(companies[index].modules||['dashboard','knowledge']);companies[index]={...companies[index],status,accessLevel:['limited','full'].includes(payload.accessLevel)?payload.accessLevel:(companies[index].accessLevel||'limited'),modules,licenseStatus:['pending','approved','rejected'].includes(payload.licenseStatus)?payload.licenseStatus:(companies[index].licenseStatus||'pending'),adminNotes:String(payload.adminNotes||companies[index].adminNotes||'').slice(0,1000),reviewedAt:new Date().toISOString()};await storage.writeCompanies(companies);return sendJson(res,200,{ok:true,companies}); } catch { return sendJson(res,400,{error:'Não foi possível atualizar o cadastro.'}); }
+    const actor=await requireUser(req,res); if(!actor)return;
+    if(!isPlatformStaff(actor))return sendJson(res,403,{error:'Apenas a equipe da plataforma pode consultar empresas.'});
+    const companies=await storage.readCompanies(),users=await storage.readUsers(),listedCompanies=companies.map(company=>companyWithAdminContact(company,users));
+    if(req.method==='GET')return sendJson(res,200,{companies:listedCompanies});
+    if(!isPlatformAdmin(actor)||actor.role!=='admin')return sendJson(res,403,{error:'Apenas administradores da plataforma podem alterar empresas.'});
+    try { const payload=JSON.parse(await readBody(req)),id=String(payload.id||''),status=String(payload.status||'');if(!id||!['pending','approved','rejected','suspended'].includes(status))return sendJson(res,400,{error:'Atualização inválida.'});const index=companies.findIndex(company=>company.id===id);if(index<0)return sendJson(res,404,{error:'Empresa não encontrada.'});const allowedModules=['dashboard','clients','projects','commercial','quotes','products','survey','routines','reports','finance','knowledge'];const modules=Array.isArray(payload.modules)?[...new Set(payload.modules.filter(item=>allowedModules.includes(item)))].slice(0,20):(companies[index].modules||['dashboard','knowledge']);companies[index]={...companies[index],status,accessLevel:['limited','full'].includes(payload.accessLevel)?payload.accessLevel:(companies[index].accessLevel||'limited'),modules,licenseStatus:['pending','approved','rejected'].includes(payload.licenseStatus)?payload.licenseStatus:(companies[index].licenseStatus||'pending'),adminNotes:String(payload.adminNotes||companies[index].adminNotes||'').slice(0,1000),reviewedAt:new Date().toISOString()};await storage.writeCompanies(companies);return sendJson(res,200,{ok:true,companies:companies.map(company=>companyWithAdminContact(company,users))}); } catch { return sendJson(res,400,{error:'Não foi possível atualizar o cadastro.'}); }
   }
 
   if (pathname === '/api/company/users' && ['GET','POST','DELETE'].includes(req.method)) {
@@ -424,7 +436,7 @@ async function handleRequest(req, res) {
       console.error('Falha ao ler usuários:', error.message);
       return sendJson(res, 503, { error: 'Armazenamento temporariamente indisponível.' });
     }
-    if (req.method === 'GET') return sendJson(res, 200, { users: users.map(publicUser) });
+    if (req.method === 'GET') return sendJson(res, 200, { users: users.filter(user => !user.companyId || user.companyId === 'legacy').map(publicUser) });
     try {
       const payload = req.method === 'DELETE' ? { username: new URL(req.url, `http://${req.headers.host}`).searchParams.get('username') } : JSON.parse(await readBody(req));
       const username = String(payload.username || '').trim().toLowerCase();
@@ -440,9 +452,10 @@ async function handleRequest(req, res) {
       if (index < 0 && password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' });
       if (payload.role && !Object.keys(rolePermissions).includes(payload.role)) return sendJson(res, 400, { error: 'Papel inválido.' });
       const existing = index >= 0 ? users[index] : { username, createdAt: new Date().toISOString() };
+      if (existing.companyId && existing.companyId !== 'legacy') return sendJson(res, 409, { error: 'Usuários de empresas devem ser gerenciados pela própria empresa.' });
       const email = String(payload.email || existing.email || '').trim().toLowerCase();
       if (email && !/^\S+@\S+\.\S+$/.test(email)) return sendJson(res, 400, { error: 'E-mail inválido.' });
-      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false };
+      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false, companyId: null };
       if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
       users[index >= 0 ? index : users.length] = next;
       await storage.writeUsers(users);

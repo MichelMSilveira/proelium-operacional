@@ -251,6 +251,23 @@ async function runFunctionalTestBot(options = {}) {
     const cookie = sessionCookie(login);
     expect(login.status === 200 && cookie, `Não foi possível autenticar o bot: HTTP ${login.status}.`);
     const api = (pathname, config = {}) => request(baseUrl, pathname, { ...config, headers: { Cookie: cookie, ...(config.headers || {}) } });
+    await check('Segurança', 'Suporte separado das empresas', 'Garantir que o painel global liste somente contas sem companyId e não possa editar usuários empresariais.', async () => {
+      const listing = parseJson(await api('/api/auth/users'), '/api/auth/users');
+      expect(listing.users.every(user => !user.companyId || user.companyId === 'legacy'), 'O painel global exibiu uma conta vinculada a empresa.');
+      const attemptedCompanyEdit = await api('/api/auth/users', { method: 'POST', body: { username: 'google.bot', name: 'Tentativa indevida', role: 'suporte', active: true } });
+      expect(attemptedCompanyEdit.status === 409, `A edição de usuário empresarial deveria ser bloqueada; recebeu HTTP ${attemptedCompanyEdit.status}.`);
+      const supportCreate = await api('/api/auth/users', { method: 'POST', body: { username: 'suporte.bot', name: 'Suporte Bot', role: 'suporte', active: true, password: 'Suporte-Bot-2026!' } });
+      expect(supportCreate.status === 201, `Criação do usuário de suporte retornou HTTP ${supportCreate.status}.`);
+      const supportLogin = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: 'suporte.bot', password: 'Suporte-Bot-2026!' } });
+      const supportCookie = sessionCookie(supportLogin),supportMe = parseJson(await request(baseUrl, '/api/auth/me', { headers: { Cookie: supportCookie } }), '/api/auth/me suporte');
+      const supportData = await request(baseUrl, '/api/data', { headers: { Cookie: supportCookie } });
+      const supportCompanies = await request(baseUrl, '/api/admin/companies', { headers: { Cookie: supportCookie } });
+      expect(supportLogin.status === 200 && supportMe.user?.scope === 'support' && supportData.status === 200 && supportCompanies.status === 200, 'A conta de suporte recebeu escopo incorreto ou não conseguiu consultar a central.');
+      const blockedCompanyChange = await request(baseUrl, '/api/admin/companies', { method: 'PUT', headers: { Cookie: supportCookie }, body: { id: 'inexistente', status: 'approved' } });
+      expect(blockedCompanyChange.status === 403, `O suporte deveria ter consulta sem alteração; recebeu HTTP ${blockedCompanyChange.status}.`);
+      await api('/api/auth/users?username=suporte.bot', { method: 'DELETE' });
+      return 'contas empresariais fora do painel, edição cruzada bloqueada e suporte somente consulta';
+    });
     let revision = 0;
     let state = emptyState();
     const save = async nextState => {
