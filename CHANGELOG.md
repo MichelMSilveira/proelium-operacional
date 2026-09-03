@@ -5,7 +5,6 @@
 - Navegação móvel recuperada visualmente: a lateral ganhou largura útil, rolagem exclusiva para as opções e blocos de presença/servidor compactos, mantendo todos os módulos acessíveis.
 - Conta fundadora passa a visualizar todos os módulos do Proelium durante a avaliação, inclusive os módulos que não pertencem ao tipo cadastrado da empresa; o escopo de dados continua limitado à própria empresa.
 - Menu empresarial alinhado ao mapa operacional: levantamentos, orçamentos, biblioteca técnica, execução e compras agora têm entradas próprias; Processos deixa de aparecer como menu isolado e permanece acessível dentro do fluxo do projeto.
-- Projeto 360° ampliado com etapas completas do ciclo da obra e painel explícito de Garantia/Pós-venda, chamados, manutenções, relatórios de campo, entrega, aceite e qualidade vinculados ao projeto.
 - Smoke bot tornado autônomo no ambiente local: `npm run test:bot` inicia um servidor temporário quando nenhuma URL externa é informada, aguarda o health check e encerra o processo ao finalizar; a documentação de publicação foi alinhada ao domínio HTTPS validado.
 
 - Exemplos comerciais demonstrativos adicionados de forma segura e idempotente: carga opcional de cinco ciclos identificados como DEMO, cobrindo oportunidade aberta, levantamento, proposta enviada, aprovação com cliente/projeto e recusa sem conversão. Nenhum registro existente é apagado ou substituído.
