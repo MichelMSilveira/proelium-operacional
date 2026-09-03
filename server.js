@@ -308,6 +308,23 @@ async function handleRequest(req, res) {
     if(req.method==='GET')return sendJson(res,200,{invites:invites.filter(item=>!item.usedAt&&new Date(item.expiresAt)>new Date()).map(item=>invitePublic(item,companies))});
     try { const payload=req.method==='DELETE'?{id:new URL(req.url,`http://${req.headers.host}`).searchParams.get('id')}:JSON.parse(await readBody(req)); if(req.method==='DELETE'){const id=String(payload.id||'');if(!invites.some(item=>item.id===id))return sendJson(res,404,{error:'Convite não encontrado nesta empresa.'});const next=(await storage.readInvites()).map(item=>item.companyId===actor.companyId&&item.id===id?{...item,usedAt:new Date().toISOString()}:item);await storage.writeInvites(next);return sendJson(res,200,{ok:true});} const token=crypto.randomBytes(32).toString('base64url'),allowedModules=['dashboard','projects','tasks','agenda','operations','reports','quality','collaborators','equipment','knowledge','routines'],modules=[...new Set((Array.isArray(payload.modules)?payload.modules:allowedModules).filter(item=>allowedModules.includes(item)))].slice(0,12),invite={id:`inv-${crypto.randomUUID()}`,companyId:actor.companyId,tokenHash:inviteTokenHash(token),email:String(payload.email||'').trim().toLowerCase().slice(0,160),role:['operacao','comercial','financeiro','leitura'].includes(payload.role)?payload.role:'operacao',modules,expiresAt:new Date(Date.now()+300000).toISOString(),createdAt:new Date().toISOString()}; const all=(await storage.readInvites()).filter(item=>item.companyId!==actor.companyId||(!item.usedAt&&new Date(item.expiresAt)>new Date()));await storage.writeInvites([...all,invite]);const base=process.env.BASE_URL||`${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}`;return sendJson(res,201,{ok:true,invite:invitePublic(invite,companies),url:`${base}/?invite=${encodeURIComponent(token)}`}); } catch { return sendJson(res,400,{error:'Convite inválido.'}); }
   }
+  if (pathname === '/api/admin/companies' && req.method === 'DELETE') {
+    const actor=await requireUser(req,res); if(!actor)return;
+    if(!isPlatformAdmin(actor)||actor.role!=='admin')return sendJson(res,403,{error:'Apenas administradores da plataforma podem excluir empresas.'});
+    try {
+      const id=String(new URL(req.url,`http://${req.headers.host}`).searchParams.get('id')||'');
+      if(!id)return sendJson(res,400,{error:'Empresa inválida.'});
+      if(actor.companyId===id)return sendJson(res,400,{error:'O administrador atual não pode excluir a própria empresa.'});
+      const companies=await storage.readCompanies(),company=companies.find(item=>item.id===id);
+      if(!company)return sendJson(res,404,{error:'Empresa não encontrada.'});
+      const companyUsers=(await storage.readUsers()).filter(user=>user.companyId===id);
+      await storage.deleteCompany(id);
+      for(const [username,entry] of presence)if(companyUsers.some(user=>user.username===username))presence.delete(username);
+      for(const client of [...eventClients])if(client.companyId===id){eventClients.delete(client);try{client.end()}catch{}}
+      announcePresence();
+      return sendJson(res,200,{ok:true,companies:await storage.readCompanies()});
+    } catch(error) { console.error('Falha ao excluir empresa:',error.message);return sendJson(res,500,{error:'Não foi possível excluir a empresa com segurança.'}); }
+  }
   if (pathname === '/api/admin/companies' && ['GET','PUT'].includes(req.method)) {
     const actor=await requireUser(req,res); if(!actor)return; if(!isPlatformAdmin(actor)||actor.role!=='admin')return sendJson(res,403,{error:'Apenas administradores da plataforma podem analisar empresas.'});
     const companies=await storage.readCompanies(); if(req.method==='GET')return sendJson(res,200,{companies});
