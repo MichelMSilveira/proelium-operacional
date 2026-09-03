@@ -4,7 +4,7 @@
 
 - Regra de licença corrigida: uma empresa já aprovada com licença pendente não recebe mais o pacote de avaliação completo; o acesso passa a seguir os módulos liberados, enquanto o pacote de análise fica reservado ao cadastro ainda pendente.
 - Compatibilidade do ambiente local corrigida: o espelho JSON antigo agora recebe as coleções ausentes em memória sem apagar registros existentes, evitando quebra ao abrir Colaboradores, Financeiro e BI; cache web incrementado para `v316`.
-- Inicialização visual corrigida na camada de boot: o shell autenticado só é revelado depois do render final e da tentativa de sincronização, evitando mostrar um menu intermediário antes do menu completo; atualização crítica do service worker passou a ativar automaticamente o shell novo e o cache web foi incrementado para `v320`.
+- Inicialização visual corrigida na camada de boot: o shell autenticado só é revelado depois do render final e da tentativa de sincronização, evitando mostrar um menu intermediário antes do menu completo; atualização crítica do service worker passou a ativar automaticamente o shell novo e o cache web foi incrementado para `v321`. No localhost, caches e registros antigos do service worker são removidos automaticamente, sem tocar nos dados locais.
 - Smoke bot ajustado para aceitar o arquivo principal com identificador de cache versionado.
 - Bot de uso da interface passou a validar o menu completo no primeiro quadro autenticado, antes de qualquer clique de navegação.
 - Boot desacoplado da sincronização: a conta entra assim que a autenticação e o shell final estão prontos; a leitura dos dados compartilhados continua em segundo plano e não bloqueia a tela.

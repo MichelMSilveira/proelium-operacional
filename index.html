@@ -422,6 +422,20 @@
         4500,
       );
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        const isLocalDevelopment = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+        const clearLocalShellCache = async () => {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+          const names = await caches.keys();
+          await Promise.all(names.filter((name) => name.startsWith("proelium-shell-")).map((name) => caches.delete(name)));
+        };
+        if (isLocalDevelopment) {
+          // Desenvolvimento local não deve ficar preso a um shell publicado
+          // anteriormente. Os dados ficam em localStorage, fora deste cache.
+          clearLocalShellCache().then(() => {
+            if (navigator.serviceWorker.controller) location.reload();
+          }).catch(() => {});
+        } else {
         // A versão na URL garante que aparelhos que ficaram presos em um shell
         // anterior recebam o trabalhador atual sem apagar os dados locais.
         navigator.serviceWorker.addEventListener("controllerchange", () =>
@@ -476,6 +490,7 @@
               });
             });
           });
+        }
       }
     </script>
   </body>
