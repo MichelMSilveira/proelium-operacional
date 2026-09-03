@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Convites Google agora adicionam automaticamente o participante à empresa convidante, renovam a sessão já com o `companyId` correto e impedem que um usuário vinculado seja movido para outra empresa.
+- Presença, colaboração e pedidos de auxílio em tempo real passaram a ser transmitidos somente entre usuários da mesma empresa; os dados de clientes, orçamentos, projetos e demais módulos continuam separados por empresa.
 - Painel de empresas corrigido para recarregar as solicitações ao ser aberto, evitando que cadastros feitos depois da entrada do administrador permaneçam invisíveis por causa de uma lista antiga.
 - Segurança de sessão reforçada: cada requisição protegida agora confirma no armazenamento que o usuário ainda existe e está ativo; exclusões e desativações revogam imediatamente sessões antigas, inclusive no `/api/auth/me` e no acesso aos dados.
 - Separadas as administrações: plataforma controla empresas, licenças e usuários globais; cada empresa controla somente seus próprios participantes.

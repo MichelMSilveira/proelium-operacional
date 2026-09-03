@@ -163,12 +163,12 @@ function broadcastUpdate(saved, companyId='legacy') {
   const message = `event: data-updated\ndata: ${JSON.stringify({ revision: saved.revision, updatedAt: saved.updatedAt })}\n\n`;
   for (const client of eventClients) if (client.companyId===companyId) client.write(message);
 }
-function broadcastEvent(name, payload) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) client.write(message); }
+function broadcastEvent(name, payload, companyId = null) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) if (companyId === null || client.companyId === companyId) client.write(message); }
 function normalizeDevice(value) { const device = String(value || '').trim().slice(0, 32); return ['Android', 'iPhone/iPad', 'Windows', 'macOS', 'Linux', 'Navegador'].includes(device) ? device : 'Navegador'; }
 function deviceFromUserAgent(value) { const ua=String(value||''); return /Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone/iPad':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Navegador'; }
-function presencePayload() { return [...presence.values()].filter(item => Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => { const sessions=[...eventClients].filter(client=>client.username===username),devices=[...new Set([...sessions.map(client=>normalizeDevice(client.device)),normalizeDevice(device)])]; return { username, name, role, device: devices[0], devices, sessions: Math.max(1,sessions.length), available: available !== false }; }); }
-function announcePresence() { broadcastEvent('presence-updated', { users: presencePayload(), at: new Date().toISOString() }); }
-function touchPresence(user, req) { const previous=presence.get(user.username); presence.set(user.username, { username: user.username, name: user.name || user.username, role: user.role || 'operador', device: deviceFromUserAgent(req?.headers?.['user-agent']) || previous?.device || 'Navegador', available: previous?.available !== false, lastSeen: Date.now() }); announcePresence(); }
+function presencePayload(companyId = 'legacy') { return [...presence.values()].filter(item => item.companyId === companyId && Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => { const sessions=[...eventClients].filter(client=>client.username===username&&client.companyId===companyId),devices=[...new Set([...sessions.map(client=>normalizeDevice(client.device)),normalizeDevice(device)])]; return { username, name, role, device: devices[0], devices, sessions: Math.max(1,sessions.length), available: available !== false }; }); }
+function announcePresence() { for (const companyId of new Set([...eventClients].map(client => client.companyId))) broadcastEvent('presence-updated', { users: presencePayload(companyId), at: new Date().toISOString() }, companyId); }
+function touchPresence(user, req) { const previous=presence.get(user.username); presence.set(user.username, { username: user.username, companyId: user.companyId || 'legacy', name: user.name || user.username, role: user.role || 'operador', device: deviceFromUserAgent(req?.headers?.['user-agent']) || previous?.device || 'Navegador', available: previous?.available !== false, lastSeen: Date.now() }); announcePresence(); }
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -217,7 +217,26 @@ async function handleRequest(req, res) {
     res.writeHead(302,{Location:`https://accounts.google.com/o/oauth2/v2/auth?${params}`});res.end();return;
   }
   if (pathname === '/api/auth/consume-invite' && req.method === 'POST') {
-    try { const actor=await requireUser(req,res);if(!actor)return;const cookies=parseCookies(req),token=String(cookies.proelium_invite||'');if(!actor.email||!token)return sendJson(res,401,{error:'Nenhum convite pendente.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});if(invite.email&&invite.email!==String(actor.email).toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});const users=await storage.readUsers(),index=users.findIndex(item=>item.username===actor.username);if(index<0)return sendJson(res,404,{error:'Usuário não encontrado.'});const user={...users[index],companyId:invite.companyId,role:invite.role||'operacao',active:true};users[index]=user;await storage.writeUsers(users);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));return sendJson(res,200,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao vincular convite:',error.message);return sendJson(res,400,{error:'Não foi possível vincular o convite.'}); }
+    try {
+      const actor=await requireUser(req,res); if(!actor)return;
+      const cookies=parseCookies(req),token=String(cookies.proelium_invite||'');
+      if(!actor.email||!token)return sendJson(res,401,{error:'Nenhum convite pendente.'});
+      const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());
+      if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});
+      if(invite.email&&invite.email!==String(actor.email).toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});
+      const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);
+      if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});
+      const users=await storage.readUsers(),index=users.findIndex(item=>item.username===actor.username);
+      if(index<0)return sendJson(res,404,{error:'Usuário não encontrado.'});
+      if(users[index].companyId&&users[index].companyId!==invite.companyId)return sendJson(res,409,{error:'Este usuário já pertence a outra empresa.'});
+      const user={...users[index],companyId:invite.companyId,role:invite.role||'operacao',active:true};
+      users[index]=user;
+      await storage.writeUsers(users);
+      await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));
+      const session=signedSession({username:user.username,role:user.role,name:user.name,email:user.email,companyId:company.id,companyStatus:company.status,accessLevel:company.accessLevel||'limited',licenseStatus:company.licenseStatus||'pending',modules:invite.modules||[],expiresAt:Date.now()+sessionTtl});
+      res.setHeader('Set-Cookie',[`proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${sessionTtl/1000}; HttpOnly; SameSite=Lax${secureCookie?'; Secure':''}`,'proelium_invite=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax']);
+      return sendJson(res,200,{ok:true,user:publicUser(user),company});
+    } catch(error) { console.error('Falha ao vincular convite:',error.message);return sendJson(res,400,{error:'Não foi possível vincular o convite.'}); }
   }
   if (pathname === '/api/auth/join-google-company' && req.method === 'POST') {
     try { const cookies=parseCookies(req),pending=currentUser({headers:{cookie:`proelium_session=${cookies.proelium_google_pending||''}`}}),token=String(cookies.proelium_invite||'');if(!pending?.email||!token)return sendJson(res,401,{error:'Convite ou identificação Google expirado.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});if(invite.email&&invite.email!==pending.email.toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const users=await storage.readUsers(),existing=users.find(item=>String(item.email||'').toLowerCase()===pending.email.toLowerCase());if(existing&&existing.companyId!==invite.companyId)return sendJson(res,409,{error:'Este e-mail já pertence a outra empresa.'});const username=existing?.username||`${pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'').slice(0,24)||'colaborador'}-${Date.now().toString().slice(-5)}`,user={...(existing||{}),username,name:existing?.name||pending.name||username,email:pending.email,role:invite.role||'operacao',active:true,companyId:invite.companyId,createdAt:existing?.createdAt||new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeUsers(existing?users.map(item=>item.username===existing.username?user:item):[...users,user]);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));const session=signedSession({username,role:user.role,name:user.name,email:user.email,companyId:invite.companyId,companyStatus:company.status,accessLevel:company.accessLevel||'limited',modules:invite.modules||[],expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.setHeader('Set-Cookie',[`proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${sessionTtl/1000}; HttpOnly; SameSite=Lax${secureCookie?' ; Secure':''}`.replace(';  ','; '),'proelium_invite=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax']);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao aceitar convite Google:',error.message);return sendJson(res,400,{error:'Não foi possível aceitar o convite.'}); }
@@ -363,10 +382,11 @@ async function handleRequest(req, res) {
     touchPresence(authenticatedUser, req);
   }
 
-  if (pathname === '/api/presence' && req.method === 'GET') return sendJson(res, 200, { users: presencePayload() });
-  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') { try { const payload=JSON.parse(await readBody(req)||'{}'), current=presence.get(authenticatedUser.username); if(current&&payload.device) current.device=normalizeDevice(payload.device); announcePresence(); return sendJson(res, 200, { ok: true, users: presencePayload() }); } catch { return sendJson(res, 400, { error: 'Heartbeat inválido.' }); } }
+  const authenticatedCompanyId = authenticatedUser?.companyId || 'legacy';
+  if (pathname === '/api/presence' && req.method === 'GET') return sendJson(res, 200, { users: presencePayload(authenticatedCompanyId) });
+  if (pathname === '/api/presence/heartbeat' && req.method === 'POST') { try { const payload=JSON.parse(await readBody(req)||'{}'), current=presence.get(authenticatedUser.username); if(current&&payload.device) current.device=normalizeDevice(payload.device); announcePresence(); return sendJson(res, 200, { ok: true, users: presencePayload(authenticatedCompanyId) }); } catch { return sendJson(res, 400, { error: 'Heartbeat inválido.' }); } }
   if (pathname === '/api/presence/availability' && req.method === 'POST') {
-    try { const payload=JSON.parse(await readBody(req)), current=presence.get(authenticatedUser.username); if(current) { current.available=payload.available!==false; for(const client of eventClients)if(client.username===authenticatedUser.username)client.available=current.available; } announcePresence(); return sendJson(res,200,{ok:true,users:presencePayload()}); }
+    try { const payload=JSON.parse(await readBody(req)), current=presence.get(authenticatedUser.username); if(current) { current.available=payload.available!==false; for(const client of eventClients)if(client.username===authenticatedUser.username&&client.companyId===authenticatedCompanyId)client.available=current.available; } announcePresence(); return sendJson(res,200,{ok:true,users:presencePayload(authenticatedCompanyId)}); }
     catch { return sendJson(res,400,{error:'Disponibilidade inválida.'}); }
   }
   if (pathname === '/api/collaboration-requests' && req.method === 'POST') {
@@ -375,7 +395,7 @@ async function handleRequest(req, res) {
       const message = String(payload.message || '').trim().slice(0, 500);
       if (!message) return sendJson(res, 400, { error: 'Descreva como deseja colaborar.' });
       const request = { id: crypto.randomUUID(), from: publicUser(authenticatedUser), message, at: new Date().toISOString() };
-      for (const client of eventClients) if (client.userRole === 'admin') client.write(`event: collaboration-request\ndata: ${JSON.stringify(request)}\n\n`);
+      for (const client of eventClients) if (client.companyId === authenticatedCompanyId && client.userRole === 'admin') client.write(`event: collaboration-request\ndata: ${JSON.stringify(request)}\n\n`);
       return sendJson(res, 202, { ok: true });
     } catch { return sendJson(res, 400, { error: 'Pedido de colaboração inválido.' }); }
   }
@@ -384,7 +404,7 @@ async function handleRequest(req, res) {
       const payload=JSON.parse(await readBody(req)), message=String(payload.message||'').trim().slice(0,500);
       if(!message)return sendJson(res,400,{error:'Descreva o auxílio necessário.'});
       const request={id:crypto.randomUUID(),from:publicUser(authenticatedUser),message,at:new Date().toISOString()};
-      for(const client of eventClients)if(client.username!==authenticatedUser.username&&client.available!==false)client.write(`event: assistance-request\ndata: ${JSON.stringify(request)}\n\n`);
+      for(const client of eventClients)if(client.companyId===authenticatedCompanyId&&client.username!==authenticatedUser.username&&client.available!==false)client.write(`event: assistance-request\ndata: ${JSON.stringify(request)}\n\n`);
       return sendJson(res,202,{ok:true});
     } catch { return sendJson(res,400,{error:'Pedido de auxílio inválido.'}); }
   }
@@ -413,7 +433,7 @@ async function handleRequest(req, res) {
     res.device = deviceFromUserAgent(req.headers['user-agent']);
     res.available = presence.get(authenticatedUser.username)?.available !== false;
     touchPresence(authenticatedUser, req);
-    res.write(`event: presence-updated\ndata: ${JSON.stringify({ users: presencePayload() })}\n\n`);
+    res.write(`event: presence-updated\ndata: ${JSON.stringify({ users: presencePayload(authenticatedCompanyId) })}\n\n`);
     req.on('close', () => { eventClients.delete(res); if (![...eventClients].some(client => client.username === authenticatedUser.username)) { presence.delete(authenticatedUser.username); announcePresence(); } });
     return;
   }
