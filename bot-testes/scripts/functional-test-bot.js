@@ -103,6 +103,22 @@ function scenarioRecords(state) {
   return { today, product, service, opportunity, quote, room, total, cost, client, project, state };
 }
 
+function quoteTotalsForTest(state, quoteId) {
+  return (state.quoteRooms || []).filter(room => room.quoteId === quoteId).reduce((totals, room) => {
+    (room.items || []).forEach(item => {
+      const product = (state.products || []).find(entry => entry.id === item.productId);
+      if (!product) return;
+      const qty = Number(item.qty || 0), discount = Math.max(0, Math.min(100, Number(item.discount || 0)));
+      const gross = Number(product.price || 0) * qty;
+      totals.cost += Number(product.cost || 0) * qty;
+      totals.gross += gross;
+      totals.discount += gross * discount / 100;
+      totals.price += gross * (1 - discount / 100);
+    });
+    return totals;
+  }, { cost: 0, gross: 0, discount: 0, price: 0 });
+}
+
 function markdownReport(report) {
   const passed = report.checks.filter(check => check.ok).length;
   const failed = report.checks.filter(check => !check.ok);
@@ -337,6 +353,56 @@ async function runFunctionalTestBot(options = {}) {
       expect(records.project.quoteId === records.quote.id && records.project.clientId === records.client.id, 'Projeto não herdou os vínculos da venda.');
       expect(records.project.budget === records.total, 'Projeto não herdou o valor da proposta.');
       return 'venda aprovada e projeto criado';
+    });
+    await check('Comercial', 'Ciclos completos até o fim do orçamento', 'Revisar a passagem de oportunidade, versões, situação, totais e conversão final.', async () => {
+      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Novo contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '' };
+      const draftQuote = { id: 'orc-cycle-approved-v1', opportunityId: approvedOpportunity.id, clientId: '', title: 'Proposta Ciclo Aprovado', value: 0, status: 'Rascunho', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
+      const draftRooms = [
+        { id: 'amb-cycle-approved-1', quoteId: draftQuote.id, name: 'Sala principal', items: [{ productId: records.product.id, qty: 2, discount: 0 }] },
+        { id: 'amb-cycle-approved-2', quoteId: draftQuote.id, name: 'Infraestrutura', items: [{ productId: records.service.id, qty: 4, discount: 0 }] }
+      ];
+      state.opportunities.push(approvedOpportunity);
+      state.quotes.push(draftQuote);
+      state.quoteRooms.push(...draftRooms);
+      for (const [from, to, action] of [['Novo contato', 'Qualificação', 'Qualificar necessidade'], ['Qualificação', 'Visita', 'Agendar visita técnica'], ['Visita', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
+        approvedOpportunity.stage = to;
+        approvedOpportunity.nextAction = action;
+        approvedOpportunity.advanceAuthorizations = [...(approvedOpportunity.advanceAuthorizations || []), { from, to, actor: 'Equipe Comercial', at: new Date().toISOString() }];
+      }
+      const firstTotals = quoteTotalsForTest(state, draftQuote.id);
+      draftQuote.value = Number(firstTotals.price.toFixed(2));
+      draftQuote.status = 'Enviado';
+      const revisedQuote = { ...structuredClone(draftQuote), id: 'orc-cycle-approved-v2', title: 'Proposta Ciclo Aprovado · Rev. 2', status: 'Rascunho', version: 2, parentQuoteId: draftQuote.id, revisedFromId: draftQuote.id, revisionReason: 'Cliente pediu ajuste de quantidade e desconto.', createdAt: new Date().toISOString() };
+      const revisedRooms = draftRooms.map(room => ({ ...structuredClone(room), id: `${room.id}-v2`, quoteId: revisedQuote.id }));
+      revisedRooms[0].items[0].discount = 5;
+      revisedRooms[1].items[0].qty = 5;
+      state.quotes.push(revisedQuote);
+      state.quoteRooms.push(...revisedRooms);
+      const finalTotals = quoteTotalsForTest(state, revisedQuote.id);
+      const approvedClient = { id: 'cli-cycle-approved', name: approvedOpportunity.company, document: 'TESTE-CICLO-APROVADO', contact: approvedOpportunity.contact, email: approvedOpportunity.email, phone: approvedOpportunity.phone, status: 'Ativo', notes: 'Criado na aprovação do ciclo comercial.' };
+      const approvedProject = { id: 'prj-cycle-approved', quoteId: revisedQuote.id, code: 'PRJ-CYCLE-001', name: 'Projeto Cliente Ciclo Aprovado', clientId: approvedClient.id, manager: approvedOpportunity.owner, technicalStage: 'Projeto técnico', budget: Number(finalTotals.price.toFixed(2)), cost: Number(finalTotals.cost.toFixed(2)), status: 'Planejamento', progress: 0, due: 'A definir' };
+      revisedQuote.clientId = approvedClient.id;
+      revisedQuote.value = Number(finalTotals.price.toFixed(2));
+      revisedQuote.status = 'Aprovado';
+      approvedOpportunity.stage = 'Ganho';
+      approvedOpportunity.estimatedValue = revisedQuote.value;
+      state.clients.push(approvedClient);
+      state.projects.push(approvedProject);
+
+      const lostOpportunity = { id: 'opp-cycle-lost', company: 'Cliente Ciclo Recusado', contact: 'Ricardo Bot', phone: '(11) 90000-2002', email: 'ciclo.recusado@example.invalid', source: 'Site — bot', owner: 'Equipe Comercial', stage: 'Orçamento', nextAction: 'Aguardar decisão', nextDue: records.today, estimatedValue: 1800, lossReason: '' };
+      const lostQuote = { id: 'orc-cycle-lost', opportunityId: lostOpportunity.id, clientId: '', title: 'Proposta Ciclo Recusado', value: 1600, status: 'Recusado', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
+      state.opportunities.push(lostOpportunity);
+      state.quotes.push(lostQuote);
+      lostOpportunity.stage = 'Perdido';
+      lostOpportunity.lossReason = 'Cliente recusou a proposta.';
+      await save(state);
+
+      const history = state.quotes.filter(quote => quote.id === draftQuote.id || quote.parentQuoteId === draftQuote.id).sort((left, right) => left.version - right.version);
+      expect(history.length === 2 && history[0].status === 'Enviado' && history[1].status === 'Aprovado', 'O histórico de versões não preservou o orçamento enviado e a revisão aprovada.');
+      expect(firstTotals.price === 4640 && finalTotals.gross === 4800 && finalTotals.discount === 200 && finalTotals.price === 4600, `Totais comerciais inesperados: inicial ${firstTotals.price}, bruto final ${finalTotals.gross}, desconto ${finalTotals.discount}, líquido final ${finalTotals.price}.`);
+      expect(approvedProject.budget === revisedQuote.value && approvedProject.cost === finalTotals.cost && state.clients.some(client => client.id === approvedClient.id), 'A aprovação não converteu o valor líquido em cliente e projeto.');
+      expect(lostQuote.status === 'Recusado' && lostOpportunity.stage === 'Perdido' && !state.clients.some(client => client.name === lostOpportunity.company) && !state.projects.some(project => project.quoteId === lostQuote.id), 'O orçamento recusado criou cliente ou projeto indevidamente.');
+      return '2 ciclos: revisão v2 aprovada em R$ 4.600,00 e proposta recusada encerrada sem conversão';
     });
     await check('CRM', 'Histórico do cliente', 'Revisar o vínculo de atividades ao Cliente 360°.', async () => {
       expect(state.activities.some(item => item.clientId === records.client.id), 'Histórico não vinculado.');
