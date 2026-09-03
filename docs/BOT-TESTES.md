@@ -33,6 +33,8 @@ Na área comercial, o bot percorre dois ciclos completos: uma oportunidade passa
 
 A interface comercial apresenta o mesmo caminho operacional: cada cartão aponta para iniciar ou continuar o levantamento, abrir o orçamento, acompanhar uma proposta, conferir a aprovação ou abrir o cliente. A criação manual de cliente não substitui a aprovação do orçamento.
 
+Na sessão de demonstração, o botão “Carregar exemplos” cria cinco ciclos marcados como `DEMO`: oportunidade aberta, levantamento em andamento, proposta enviada, venda aprovada com cliente/projeto e proposta recusada sem conversão. A carga usa um marcador idempotente, preserva os dados anteriores e não roda automaticamente.
+
 ## Limites
 
 O bot não substitui homologação com usuários reais, revisão de segurança, conferência financeira ou aprovação da direção. Ele é uma camada automatizada de detecção de regressões.
