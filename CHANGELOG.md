@@ -4,8 +4,10 @@
 
 - Regra de licença corrigida: uma empresa já aprovada com licença pendente não recebe mais o pacote de avaliação completo; o acesso passa a seguir os módulos liberados, enquanto o pacote de análise fica reservado ao cadastro ainda pendente.
 - Compatibilidade do ambiente local corrigida: o espelho JSON antigo agora recebe as coleções ausentes em memória sem apagar registros existentes, evitando quebra ao abrir Colaboradores, Financeiro e BI; cache web incrementado para `v316`.
-- Inicialização visual corrigida: a autenticação e a sincronização agora começam depois do registro de todos os módulos, evitando mostrar o menu antigo antes do menu completo; arquivos principais versionados e cache web incrementado para `v318`.
+- Inicialização visual corrigida na camada de boot: o shell autenticado só é revelado depois do render final e da tentativa de sincronização, evitando mostrar um menu intermediário antes do menu completo; arquivos principais versionados e cache web incrementado para `v319`.
 - Smoke bot ajustado para aceitar o arquivo principal com identificador de cache versionado.
+- Bot de uso da interface passou a validar o menu completo no primeiro quadro autenticado, antes de qualquer clique de navegação.
+- Boot desacoplado da sincronização: a conta entra assim que a autenticação e o shell final estão prontos; a leitura dos dados compartilhados continua em segundo plano e não bloqueia a tela.
 - Fixture do bot de uso local atualizado para reconhecer o rótulo atual “Pós-venda”, evitando falso negativo durante a validação da interface.
 - Fluxo local-first criado: branches `codex/...` e `Validar-Local.ps1` concentram sintaxe, smoke bot, teste de interface e revisão do diff antes de qualquer merge na `main`; o VPS permanece intacto durante o desenvolvimento.
 - Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.
