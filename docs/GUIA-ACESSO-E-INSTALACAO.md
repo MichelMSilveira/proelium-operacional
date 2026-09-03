@@ -2,7 +2,7 @@
 
 ## Acesso ao sistema
 
-- URL pública: <https://144.202.29.121>
+- URL pública: <https://app.proeliumservicos.com.br>
 - O sistema roda no VPS e os dados são compartilhados entre os dispositivos.
 - Use o usuário e a senha cadastrados na área **Usuários**. A senha não fica registrada neste documento.
 
@@ -37,7 +37,7 @@ O aplicativo Windows abre uma janela própria e se conecta ao VPS. Ele não mant
 
 O sistema é um PWA (Progressive Web App) e pode ser instalado como aplicativo:
 
-1. Abra `https://144.202.29.121` no Chrome do Android.
+1. Abra `https://app.proeliumservicos.com.br` no Chrome do Android.
 2. Faça login.
 3. Abra o menu ⋮ e toque em **Instalar aplicativo** ou **Adicionar à tela inicial**.
 
@@ -45,7 +45,7 @@ O ícone aparecerá junto dos demais aplicativos e continuará sincronizado com 
 
 ## iPhone/iPad
 
-1. Abra `https://144.202.29.121` no Safari.
+1. Abra `https://app.proeliumservicos.com.br` no Safari.
 2. Toque em **Compartilhar**.
 3. Escolha **Adicionar à Tela de Início**.
 
