@@ -44,6 +44,7 @@ Ao abrir um espelho JSON legado, o app completa em memória as coleções operac
 - exclusão não aparece em outro dispositivo: abra `https://homehell.tail99a9b2.ts.net/api/data`. A resposta deve ser JSON; `Cannot GET /api/data` indica que o Tailscale aponta para o servidor errado.
 - inclusões, edições e exclusões são enviadas automaticamente aos demais aparelhos. Se a conexão cair, o aplicativo tenta reconectar e também confere o servidor a cada 5 segundos.
 - o primeiro quadro autenticado já deve abrir com o menu completo; se aparecer uma versão antiga por um instante, faça uma atualização forçada (`Ctrl+F5`) para substituir o cache local.
+- depois de enviar a ficha Google, a tela deve entrar no app imediatamente; os dados compartilhados podem aparecer logo depois. Se a ficha for reenviada, o servidor informa que a sessão Google expirou ou que o cadastro já existe.
 - se duas pessoas alterarem a partir da mesma versão, a segunda gravação é bloqueada; a tela recebe os dados atuais e pede que a última ação seja repetida.
 - `/api/events` retorna `404`: existe uma instância antiga do servidor na porta 4173; execute `Reiniciar-App.ps1`.
 
