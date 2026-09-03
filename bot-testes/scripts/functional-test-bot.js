@@ -125,7 +125,7 @@ async function runFunctionalTestBot(options = {}) {
   const testSessionSecret = crypto.randomBytes(32).toString('hex');
   const child = spawn(process.execPath, [path.join(__dirname, '..', '..', 'server.js')], {
     cwd: path.join(__dirname, '..', '..'),
-    env: { ...process.env, PORT: String(port), NODE_ENV: 'test', DATABASE_URL: '', PROELIUM_TEST_DATA_DIR: temporaryDirectory, SESSION_SECRET: testSessionSecret },
+    env: { ...process.env, PORT: String(port), NODE_ENV: 'test', DATABASE_URL: '', PROELIUM_TEST_DATA_DIR: temporaryDirectory, SESSION_SECRET: testSessionSecret, PROELIUM_PLATFORM_ADMINS: TEST_USER },
     stdio: ['ignore', 'ignore', 'pipe'],
     windowsHide: true
   });
@@ -180,7 +180,14 @@ async function runFunctionalTestBot(options = {}) {
       expect(authenticated.status === 200 && payload.authenticated, 'Sessão criada não autenticou o usuário.');
       const sharedData = await request(baseUrl, '/api/data', { headers: { Cookie: googleCookie } });
       expect(sharedData.status === 200, `Usuário cadastrado não entrou no app: HTTP ${sharedData.status}.`);
-      return 'empresa salva, sessão criada e API do app liberada';
+      const companyUsers = await request(baseUrl, '/api/company/users', { headers: { Cookie: googleCookie } });
+      expect(companyUsers.status === 200, `Administração da empresa retornou HTTP ${companyUsers.status}: ${companyUsers.text}`);
+      const platformCompanies = await request(baseUrl, '/api/admin/companies', { headers: { Cookie: googleCookie } });
+      expect(platformCompanies.status === 403, `Administração da plataforma deveria estar bloqueada; recebeu HTTP ${platformCompanies.status}.`);
+      const invite = await request(baseUrl, '/api/company/invites', { method: 'POST', headers: { Cookie: googleCookie }, body: { email: 'convidado@example.invalid', role: 'operacao' } });
+      const invitePayload = parseJson(invite, '/api/company/invites');
+      expect(invite.status === 201 && /^http:\/\/127\.0\.0\.1:\d+\/\?invite=/.test(invitePayload.url||''), `Convite temporário inválido: HTTP ${invite.status}: ${invite.text}`);
+      return 'empresa salva, sessão criada, API liberada, escopos separados e convite temporário criado';
     });
 
     const login = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: TEST_USER, password: TEST_PASSWORD } });

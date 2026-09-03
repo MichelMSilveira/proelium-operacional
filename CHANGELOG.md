@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Separadas as administrações: plataforma controla empresas, licenças e usuários globais; cada empresa controla somente seus próprios participantes.
+- Convites de empresa agora têm tela própria de participantes, vínculo exclusivo por Google, expiração de cinco minutos e compartilhamento direto pelo WhatsApp.
+- Convites para novos e-mails Google agora entram no fluxo correto de adesão à empresa, sem abrir cadastro duplicado de empresa.
+
 - Painel administrativo agora exibe e alterna a licença de uso separadamente do acesso limitado.
 
 - Conclusão do cadastro Google corrigida: ficha salva e redirecionamento limpo para o app com acesso limitado.
