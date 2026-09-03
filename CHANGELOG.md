@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Matriz de contas explorada pelo bot: conta mestre e suporte ficam restritos à central, fundador recebe os módulos da própria empresa, colaborador convidado respeita o cargo e perfil pessoal permanece separado dos dados operacionais.
 - Visibilidade do produto para fundadores corrigida: a conta fundadora agora vê todos os módulos pertinentes ao seu perfil de empresa durante a avaliação, mesmo quando a licença ainda está limitada; os colaboradores convidados continuam obedecendo cargo e permissões.
 - Menu reorganizado: “Minhas rotinas” deixou de cair em “Outros” no topo e agora aparece junto de “Pessoas e padrões”, respeitando a ordem comum entre os ambientes empresariais.
 - Conta fundadora e perfil pessoal separados: quem abre uma empresa fica registrado como fundador e administra os usuários daquele `companyId`; ao sair ou ter o vínculo encerrado, a conta Google permanece ativa como perfil pessoal com portfólio, sem carregar clientes, projetos, orçamentos ou outros dados privados da empresa.
