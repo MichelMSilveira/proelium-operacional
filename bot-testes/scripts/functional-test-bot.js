@@ -201,6 +201,10 @@ async function runFunctionalTestBot(options = {}) {
       const secondRegistration=await request(baseUrl, '/api/auth/register-google-company', { method: 'POST', headers: { Cookie: `proelium_google_pending=${encodeURIComponent(secondPending)}` }, body: { companyType: 'contratante', companyName: 'Segunda Empresa Google Bot', document: '98.765.432/0001-98', responsible: 'Google Two', phone: '+55 11 98888-0000', profileInfo: '{}' } });
       expect(secondRegistration.status===201, `Segunda empresa retornou HTTP ${secondRegistration.status}: ${secondRegistration.text}`);
       const secondCookie=sessionCookie(secondRegistration), firstState={companyMarker:'empresa-um',clients:[]}, secondState={companyMarker:'empresa-dois',clients:[]};
+      const foreignInvite=await request(baseUrl, '/api/company/invites', { method:'POST', headers:{Cookie:secondCookie}, body:{email:'outro@example.invalid',role:'leitura'} });
+      const foreignInvitePayload=parseJson(foreignInvite, '/api/company/invites empresa dois');
+      const foreignDelete=await request(baseUrl, `/api/company/invites?id=${encodeURIComponent(foreignInvitePayload.invite.id)}`, { method:'DELETE', headers:{Cookie:googleCookie} });
+      expect(foreignDelete.status===404, `Uma empresa conseguiu alterar convite de outra: HTTP ${foreignDelete.status}.`);
       const firstWrite=await request(baseUrl, '/api/data', { method:'PUT', headers:{Cookie:googleCookie}, body:{data:firstState,baseRevision:0} });
       expect(firstWrite.status===200, `Gravação da primeira empresa retornou HTTP ${firstWrite.status}: ${firstWrite.text}`);
       const secondBeforeWrite=await request(baseUrl, '/api/data', { headers:{Cookie:secondCookie} });
