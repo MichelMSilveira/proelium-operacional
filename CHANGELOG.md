@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Auditoria de isolamento reforçada: o administrador de uma empresa não consegue revogar convites de outra, e as rotas de convite continuam usando exclusivamente o vínculo da sessão autenticada.
 - Convites Google agora adicionam automaticamente o participante à empresa convidante, renovam a sessão já com o `companyId` correto e impedem que um usuário vinculado seja movido para outra empresa.
 - Presença, colaboração e pedidos de auxílio em tempo real passaram a ser transmitidos somente entre usuários da mesma empresa; os dados de clientes, orçamentos, projetos e demais módulos continuam separados por empresa.
 - Painel de empresas corrigido para recarregar as solicitações ao ser aberto, evitando que cadastros feitos depois da entrada do administrador permaneçam invisíveis por causa de uma lista antiga.
