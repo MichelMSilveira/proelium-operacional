@@ -3522,6 +3522,35 @@ render=()=>{
 };
 render();
 
+// Previsão operacional: o valor comercial permanece congelado no orçamento;
+// dias, equipe, horas e custo de mão de obra pertencem ao cronograma do projeto.
+function projectForecast(project){
+  const days=Number(project.forecastDays||0),team=Number(project.forecastTeamSize||0),hours=Number(project.forecastHoursPerDay||0),dailyRate=Number(project.forecastDailyRate||0),labor=days*team*dailyRate,budget=Number(project.budget||0),baseCost=Number(project.cost||0),forecastCost=baseCost+labor,margin=budget?Math.round((budget-forecastCost)/budget*100):0,actual=typeof executionMetrics==='function'?executionMetrics(project.id):{labor:0,total:0};
+  return {days,team,hours,dailyRate,labor,budget,baseCost,forecastCost,margin,actual,configured:days>0&&team>0&&hours>0};
+}
+function forecastEndDate(start,days){
+  if(!start||!days)return '';
+  const date=new Date(`${start}T12:00:00`);if(Number.isNaN(date.getTime()))return '';
+  date.setDate(date.getDate()+Math.max(0,Number(days)-1));
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+function openProjectForecast(id){
+  const project=(state.data.projects||[]).find(item=>item.id===id);if(!project)return;
+  const forecast=projectForecast(project);
+  $('#dialogTitle').textContent=`Previsão do cronograma · ${project.name}`;$('#recordForm').dataset.kind='projectForecast';$('#recordForm').dataset.editId=id;$('#saveButton').textContent='Salvar previsão';
+  $('#formFields').innerHTML=`<input type="hidden" name="projectId" value="${project.id}"><div class="field"><label>Início previsto</label><input name="forecastStart" type="date" value="${project.forecastStart||''}"></div><div class="field"><label>Diárias previstas *</label><input name="forecastDays" type="number" min="1" step="1" value="${forecast.days||1}" required></div><div class="field"><label>Profissionais previstos *</label><input name="forecastTeamSize" type="number" min="1" step="1" value="${forecast.team||1}" required></div><div class="field"><label>Horas por dia / profissional *</label><input name="forecastHoursPerDay" type="number" min="1" step="0.5" value="${forecast.hours||8}" required></div><div class="field"><label>Custo diário por profissional (R$) *</label><input name="forecastDailyRate" type="number" min="0" step="0.01" value="${forecast.dailyRate||0}" required></div><div class="field full"><p class="subtext">A previsão calcula: diárias × profissionais × custo diário. O valor aprovado do orçamento não é alterado.</p></div>`;$('#recordDialog').showModal();
+}
+const projectForecastSaveBase=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='projectForecast'){
+    const project=(state.data.projects||[]).find(item=>item.id===(editId||data.projectId)),days=Number(data.forecastDays),team=Number(data.forecastTeamSize),hours=Number(data.forecastHoursPerDay),dailyRate=Number(data.forecastDailyRate);
+    if(!project||![days,team,hours,dailyRate].every(value=>Number.isFinite(value))||days<1||team<1||hours<1||dailyRate<0){toast('Informe uma previsão válida de dias, equipe, horas e custo diário.');return}
+    const end=forecastEndDate(data.forecastStart,days);Object.assign(project,{forecastStart:data.forecastStart||'',forecastEnd:end,forecastDays:days,forecastTeamSize:team,forecastHoursPerDay:hours,forecastDailyRate:dailyRate,forecastLaborCost:Number((days*team*dailyRate).toFixed(2)),forecastUpdatedAt:new Date().toISOString()});
+    if(end)project.due=end;const installation=(state.data.installations||[]).find(item=>item.projectId===project.id);if(installation&&end)installation.due=end;persist();render();toast('Previsão do cronograma salva. O orçamento aprovado foi preservado.');return;
+  }
+  return projectForecastSaveBase(kind,data,editId);
+};
+
 // Projeto 360°: o orçamento aprovado continua sendo a fonte comercial,
 // enquanto o projeto concentra planejamento, execução e pós-venda.
 const project360BaseView=views.projectDetail;
@@ -3529,9 +3558,11 @@ views.projectDetail=()=>{
   const project=(state.data.projects||[]).find(item=>item.id===state.selectedProject),html=project360BaseView();
   if(!project)return html;
   const quote=project.quoteId?(state.data.quotes||[]).find(item=>item.id===project.quoteId):null,totals=quote?quoteTotals(quote.id):{price:Number(project.budget||0),cost:Number(project.cost||0)},tasks=(state.data.tasks||[]).filter(item=>item.projectId===project.id),orders=(state.data.serviceOrders||[]).filter(item=>item.projectId===project.id),reports=(state.data.serviceReports||[]).filter(item=>item.projectId===project.id),purchases=(state.data.purchaseItems||[]).filter(item=>item.projectId===project.id);
+  const forecast=projectForecast(project),forecastCard=`<section class="card project-forecast-card"><div class="card-head"><div><p class="eyebrow">PLANEJAMENTO OPERACIONAL</p><h3>Previsão de prazo e equipe</h3><p class="subtext">Estimativa da execução técnica; não altera o valor comercial aprovado.</p></div><button type="button" class="button secondary" data-project-forecast="${project.id}">${forecast.configured?'Ajustar previsão':'Definir previsão'}</button></div>${forecast.configured?`<div class="kpi-grid"><div class="kpi"><div class="kpi-top">Duração prevista</div><div class="kpi-value">${forecast.days} dia${forecast.days===1?'':'s'}</div><div class="kpi-note">${project.forecastStart||'Início a definir'} → ${project.forecastEnd||'fim a definir'}</div></div><div class="kpi"><div class="kpi-top">Equipe prevista</div><div class="kpi-value">${forecast.team}</div><div class="kpi-note">${forecast.hours} h/dia por profissional</div></div><div class="kpi"><div class="kpi-top">Mão de obra prevista</div><div class="kpi-value">${money(forecast.labor)}</div><div class="kpi-note">${money(forecast.dailyRate)} por profissional/dia</div></div><div class="kpi"><div class="kpi-top">Margem operacional</div><div class="kpi-value">${forecast.margin}%</div><div class="kpi-note">custo total previsto ${money(forecast.forecastCost)}</div></div></div><p class="subtext">Realizado até agora: ${money(forecast.actual.labor)} em mão de obra e ${money(forecast.actual.total)} em execução.</p>`:'<div class="empty">Defina dias, equipe e custo diário para simular a execução desta obra.</div>'}</section>`;
   const bridge=`<section class="card project360-context"><div class="card-head"><div><p class="eyebrow">CENTRO DO PROJETO</p><h3>Projeto 360°</h3><p class="subtext">O orçamento aprovado, o cronograma, a execução e o pós-venda permanecem ligados a esta obra.</p></div><span class="badge blue">${project.status||'Planejamento'}</span></div><div class="kpi-grid"><div class="kpi"><div class="kpi-top">Orçamento aprovado</div><div class="kpi-value">${money(totals.price||0)}</div><div class="kpi-note">${quote?`v${quote.version||1} · ${quoteStatus(quote)}`:'Sem orçamento vinculado'}</div></div><div class="kpi"><div class="kpi-top">Cronograma</div><div class="kpi-value">${Number(project.progress||0)}%</div><div class="kpi-note">Prazo: ${project.due||'A definir'}</div></div><div class="kpi"><div class="kpi-top">Execução</div><div class="kpi-value">${tasks.length+orders.length}</div><div class="kpi-note">${tasks.length} tarefa(s) · ${orders.length} OS</div></div><div class="kpi"><div class="kpi-top">Pós-venda</div><div class="kpi-value">${reports.length+purchases.length}</div><div class="kpi-note">${reports.length} relatório(s) · ${purchases.length} item(ns) de obra</div></div></div><div class="module-toolbar"><button type="button" class="button secondary" data-project360-action="quote" ${quote?'':'disabled'}>Ver orçamento aprovado</button><button type="button" class="button secondary" data-project360-action="installations">Abrir cronograma</button><button type="button" class="button secondary" data-project360-action="operations">Abrir pós-venda</button><button type="button" class="button secondary" data-project360-action="purchases">Abrir compras</button></div></section>`;
-  return html.replace('<div class="project-flow card">',bridge+'<div class="project-flow card">').replace('EXECUÇÃO DO PROJETO','CENTRO DO PROJETO');
+  return html.replace('<div class="project-flow card">',bridge+forecastCard+'<div class="project-flow card">').replace('EXECUÇÃO DO PROJETO','CENTRO DO PROJETO');
 };
+document.addEventListener('click',event=>{const button=event.target.closest('[data-project-forecast]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();openProjectForecast(button.dataset.projectForecast)},true);
 document.addEventListener('click',event=>{
   const button=event.target.closest('[data-project360-action]');
   if(!button||button.disabled)return;

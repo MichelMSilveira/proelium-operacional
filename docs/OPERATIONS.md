@@ -58,6 +58,8 @@ O catálogo aparece no menu como `Produtos` e `Serviços`, dentro do fluxo comer
 
 No detalhe de um orçamento, `Adicionar produto` e `Adicionar serviço` usam o mesmo cálculo de custo, venda, desconto e margem. Se o serviço ainda não existir no catálogo, `Adicionar serviço` permite cadastrá-lo e já incluí-lo no orçamento.
 
+Após a aprovação, o `Projeto 360°` possui uma previsão operacional independente do orçamento: informe início, diárias, tamanho da equipe, horas por dia e custo diário por profissional. O sistema calcula custo de mão de obra, custo total previsto, prazo final e margem operacional. O valor comercial aprovado permanece preservado; os lançamentos reais em `Execução e mão de obra` permitem comparar previsto e realizado.
+
 ## Projeto 360°
 
 Depois da aprovação, o orçamento permanece como histórico comercial e o projeto passa a concentrar o ciclo operacional. A tela `Projetos 360°` reúne o resumo do orçamento aprovado, cronograma, tarefas, compras, execução, entrega, relatórios e pós-venda, mantendo os vínculos por `projectId` e `quoteId`. Os menus `Processos`, `Acompanhamento` e `Operação` foram reorganizados em áreas mais claras; o acesso global de pós-venda continua disponível para filas entre projetos.
