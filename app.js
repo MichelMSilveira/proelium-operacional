@@ -3373,3 +3373,57 @@ function createCommercialTestOpportunities(){
 }
 render();
 setMenu(false);
+
+// Orquestração final do Comercial: uma oportunidade só vira cliente na aprovação
+// de um orçamento, e cada cartão sempre aponta para o próximo passo real.
+function commercialFlowRecordFor(opportunity){
+  const surveys=(state.data.surveys||[]).filter(item=>item.opportunityId===opportunity.id);
+  const quotes=(state.data.quotes||[]).filter(item=>item.opportunityId===opportunity.id).sort((left,right)=>Number(right.version||1)-Number(left.version||1));
+  const survey=surveys.sort((left,right)=>String(right.updatedAt||'').localeCompare(String(left.updatedAt||'')))[0]||null;
+  const quote=quotes[0]||null;
+  const client=quote?.clientId?(state.data.clients||[]).find(item=>item.id===quote.clientId):null;
+  return {survey,quote,client,surveys,quotes};
+}
+function commercialFlowNextStep(opportunity,record){
+  if(!record.survey)return {label:'Iniciar levantamento',action:'survey',detail:'Registre ambientes, necessidades e quantitativos.'};
+  if(!record.quote)return {label:'Continuar levantamento',action:'surveyExisting',detail:'Revise e valide os pontos antes de precificar.'};
+  const status=quoteStatus(record.quote);
+  if(status==='Aprovado')return record.client?{label:'Abrir cliente',action:'client',detail:'Orçamento aprovado e cliente vinculado.'}:{label:'Revisar aprovação',action:'quote',detail:'A aprovação existe, mas o vínculo do cliente precisa ser conferido.'};
+  if(status==='Recusado'||status==='Vencido')return {label:'Ver orçamento',action:'quote',detail:`Proposta ${status.toLocaleLowerCase('pt-BR')}; registre a próxima decisão.`};
+  if(status==='Enviado')return {label:'Acompanhar proposta',action:'quote',detail:'Proposta enviada; aguarde a decisão do cliente.'};
+  return {label:'Continuar orçamento',action:'quote',detail:'Complete ambientes, itens, margem e condições comerciais.'};
+}
+function commercialFlowButton(id,step,record){
+  if(step.action==='survey')return `<button type="button" class="button primary" data-start-survey-opportunity="${id}">${step.label}</button>`;
+  if(step.action==='surveyExisting')return `<button type="button" class="button primary" data-open-commercial-survey="${record.survey.id}">${step.label}</button>`;
+  if(step.action==='quote')return `<button type="button" class="button primary" data-open-commercial-quote="${record.quote.id}">${step.label}</button>`;
+  return `<button type="button" class="button primary" data-open-commercial-client="${record.client.id}">${step.label}</button>`;
+}
+function commercialCompleteView(){
+  const stages=['Novo contato','Qualificação','Visita','Orçamento'];
+  const opportunities=(state.data.opportunities||[]),active=opportunities.filter(item=>!['Ganho','Perdido'].includes(item.stage)).filter(item=>matches(item.company,item.contact,item.source,item.owner,item.stage,item.nextAction));
+  const finished=opportunities.filter(item=>['Ganho','Perdido'].includes(item.stage));
+  const quotes=(state.data.quotes||[]).filter(item=>matches(item.title,quotePartyName(item),quoteStatus(item))).sort((left,right)=>String(right.createdAt||'').localeCompare(String(left.createdAt||'')));
+  const won=opportunities.filter(item=>item.stage==='Ganho').length,lost=opportunities.filter(item=>item.stage==='Perdido').length;
+  const quoteRows=quotes.map(quote=>{const total=quoteTotals(quote.id),rooms=(state.data.quoteRooms||[]).filter(item=>item.quoteId===quote.id);return `<tr class="clickable-row" data-quote="${quote.id}"><td><div class="entity">${escapeUserText(quote.title)}</div><div class="subtext">Versão ${quote.version||1}</div></td><td>${escapeUserText(quotePartyName(quote))}</td><td>${rooms.length}</td><td>${money(total.price||quote.value||0)}</td><td>${badge(quoteStatus(quote))}</td><td>→</td></tr>`}).join('');
+  const flowSteps=[['1','Oportunidade','Contato e responsável'],['2','Levantamento','Ambientes e quantitativos'],['3','Orçamento','Itens, preço e margem'],['4','Decisão','Enviar, revisar ou recusar'],['5','Cliente / projeto','Somente após aprovação']];
+  const pipeline=stages.map(stage=>{const deals=active.filter(item=>item.stage===stage);return `<section class="stage"><div class="stage-head"><span>${stage}</span><span class="stage-count">${deals.length}</span></div>${deals.map(opportunity=>{const record=commercialFlowRecordFor(opportunity),step=commercialFlowNextStep(opportunity,record),stageIndex=Math.max(0,stages.indexOf(opportunity.stage)),progress=stages.map((label,index)=>`<span class="commercial-flow-step ${index<=stageIndex?'done':''}" title="${label}">${index<stageIndex?'✓':index===stageIndex?'●':'○'}</span>`).join('');return `<article class="deal commercial-deal"><div class="commercial-deal-top"><div><strong>${escapeUserText(opportunity.company)}</strong><p>${escapeUserText(opportunity.contact)} · ${escapeUserText(opportunity.source||'Origem não informada')}</p></div><span class="badge ${record.quote?quoteStatus(record.quote).toLocaleLowerCase('pt-BR').includes('enviado')?'blue':'green':'amber'}">${record.quote?escapeUserText(quoteStatus(record.quote)):'Sem orçamento'}</span></div><div class="commercial-flow-progress" aria-label="Etapa ${stageIndex+1} de ${stages.length}">${progress}</div><p><b>Próxima ação:</b> ${escapeUserText(opportunity.nextAction||step.detail)}${opportunity.nextDue?` · ${escapeUserText(opportunity.nextDue)}`:''}</p><div class="deal-value">${opportunity.estimatedValue?money(opportunity.estimatedValue):'Valor a definir'}</div><div class="deal-actions">${commercialFlowButton(opportunity.id,step,record)}<button type="button" class="button secondary" data-advance-opportunity="${opportunity.id}">Avançar etapa</button><button type="button" class="link-button opportunity-delete" data-delete-opportunity="${opportunity.id}">Excluir</button></div><small class="subtext commercial-next-step">${escapeUserText(step.detail)}</small></article>`}).join('')||'<p class="subtext">Nenhuma oportunidade nesta etapa.</p>'}</section>`}).join('');
+  const finishedRows=finished.map(opportunity=>{const record=commercialFlowRecordFor(opportunity),client=record.client||(state.data.clients||[]).find(item=>String(item.name||'').toLowerCase()===String(opportunity.company||'').toLowerCase()),action=opportunity.stage==='Perdido'?`<span class="subtext">${escapeUserText(opportunity.lossReason||'Sem motivo registrado')}</span><div class="deal-actions"><button type="button" class="button secondary" data-reopen-opportunity="${opportunity.id}">Retomar</button><button type="button" class="button danger-outline" data-commercial-remove-opportunity="${opportunity.id}">Excluir</button></div>`:client?`<button type="button" class="button secondary" data-open-commercial-client="${client.id}">Abrir cliente</button>`:'Aguardando vínculo do orçamento aprovado';return `<tr><td><div class="entity">${escapeUserText(opportunity.company)}</div><div class="subtext">${escapeUserText(opportunity.contact)} · ${escapeUserText(opportunity.phone||'')}</div></td><td>${badge(opportunity.stage)}</td><td>${escapeUserText(opportunity.owner||'—')}</td><td>${action}</td></tr>`}).join('');
+  return `<div class="section-heading"><div><h2>Área comercial</h2><p>Controle o ciclo inteiro: oportunidade → levantamento → orçamento → decisão → cliente e projeto.</p></div><button class="button primary" data-add="opportunity">+ Nova oportunidade</button></div><section class="card commercial-flow-map"><div class="card-head"><div><h3>Fluxo de venda</h3><p class="subtext">A equipe trabalha na ordem abaixo. O cliente e o projeto só são criados quando uma proposta é aprovada.</p></div><button type="button" class="button secondary" data-view="quotes">Ver orçamentos →</button></div><div class="commercial-flow-map-steps">${flowSteps.map(([number,title,detail])=>`<div><b>${number}</b><strong>${title}</strong><span>${detail}</span></div>`).join('')}</div></section><div class="kpi-grid"><div class="kpi"><div class="kpi-top">Em atendimento</div><div class="kpi-value">${active.length}</div><div class="kpi-note">oportunidades abertas</div></div><div class="kpi"><div class="kpi-top">Próximas ações</div><div class="kpi-value">${active.filter(item=>item.nextAction).length}</div><div class="kpi-note">com acompanhamento definido</div></div><div class="kpi"><div class="kpi-top">Ganhas</div><div class="kpi-value">${won}</div><div class="kpi-note">clientes/projetos gerados</div></div><div class="kpi"><div class="kpi-top">Perdidas</div><div class="kpi-value">${lost}</div><div class="kpi-note">com histórico preservado</div></div></div><div class="pipeline">${pipeline}</div><section class="card commercial-history"><div class="card-head"><div><h3>Oportunidades concluídas</h3><p class="subtext">Perdas podem ser retomadas; ganhos ficam ligados ao cliente e ao projeto.</p></div></div>${finishedRows?table(['Oportunidade','Resultado','Responsável','Próximo acesso'],finishedRows):'<div class="empty">Nenhuma oportunidade concluída.</div>'}</section><section class="card commercial-history"><div class="card-head"><div><h3>Orçamentos por ambiente</h3><p class="subtext">Abra uma proposta para ajustar itens, margem, revisão, envio ou decisão.</p></div></div>${table(['Orçamento','Contato / cliente','Ambientes','Valor líquido','Status',''],quoteRows)}</section>`;
+}
+views.commercial=commercialCompleteView;
+const commercialConversionControl=convertOpportunity;
+convertOpportunity=id=>{
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id),approved=(state.data.quotes||[]).find(item=>item.opportunityId===id&&quoteStatus(item)==='Aprovado');
+  if(!approved){const pending=(state.data.quotes||[]).find(item=>item.opportunityId===id);toast('O cliente só é criado após a aprovação de um orçamento.');if(pending)openQuote(pending.id);return}
+  return commercialConversionControl(id);
+};
+const commercialFlowRender=render;
+render=()=>{
+  commercialFlowRender();
+  if(state.view!=='commercial')return;
+  document.querySelectorAll('[data-open-commercial-survey]').forEach(button=>button.onclick=()=>{state.selectedSurvey=button.dataset.openCommercialSurvey;state.selectedSurveyRoom='';state.view='survey';render()});
+  document.querySelectorAll('[data-open-commercial-quote]').forEach(button=>button.onclick=()=>openQuote(button.dataset.openCommercialQuote));
+  document.querySelectorAll('[data-open-commercial-client]').forEach(button=>button.onclick=()=>openClient(button.dataset.openCommercialClient));
+};
+render();
