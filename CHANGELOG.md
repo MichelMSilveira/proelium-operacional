@@ -13,6 +13,7 @@
 - Renovação do shell web reforçada: o registro do service worker agora usa o mesmo identificador da correção Google, evitando que abas públicas mantenham o shell anterior com controles sem resposta.
 - Fluxo comercial refinado: Lista de obra e compras e Minhas rotinas passam para Comercial; o orçamento agora oferece entradas explícitas para produtos e serviços, com serviço novo podendo ser criado diretamente no cálculo.
 - Previsão operacional no Projeto 360°: prazo, diárias, equipe, horas e custo estimado de mão de obra ficam editáveis no cronograma, com margem operacional separada do valor comercial aprovado.
+- Cronograma visual por projeto: a tela de acompanhamento agora lista as obras e apresenta a previsão em uma linha de quadrados diários, com cores para projeto técnico, infraestrutura, instalação e entrega.
 - Fixture do bot de uso local atualizado para reconhecer o rótulo atual “Pós-venda”, evitando falso negativo durante a validação da interface.
 - Fluxo local-first criado: branches `codex/...` e `Validar-Local.ps1` concentram sintaxe, smoke bot, teste de interface e revisão do diff antes de qualquer merge na `main`; o VPS permanece intacto durante o desenvolvimento.
 - Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.

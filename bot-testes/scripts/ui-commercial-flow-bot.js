@@ -348,6 +348,10 @@ async function run() {
     await saveDialog(page);
     await assertData(page, data => data.projects?.some(project => project.id === finalProject.id && project.forecastDays === 4 && project.forecastTeamSize === 2 && project.forecastLaborCost === 4000 && project.forecastEnd === '2026-09-13'), 'A previsão operacional não foi persistida no Projeto 360°.');
     console.log('[OK] UI — previsão de cronograma calculada e salva no Projeto 360°');
+    await openView(page, 'installations');
+    await page.locator(`[data-schedule-project="${finalProject.id}"]`).click();
+    if (await page.locator('.schedule-day').count() !== 4 || await page.locator('.schedule-phase-installation').count() === 0) throw new Error('O cronograma linear não exibiu os dias e fases coloridas da previsão.');
+    console.log('[OK] UI — cronograma linear exibiu dias e fases coloridas');
     await openView(page, 'clients');
     await page.locator(`[data-client="${finalClient.id}"]`).waitFor({ state: 'visible', timeout: 5_000 });
     if (!finalData.projects.some(project => project.quoteId === revisedQuote.id)) throw new Error('Projeto aprovado não foi vinculado ao orçamento revisado.');
