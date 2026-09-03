@@ -74,7 +74,7 @@ const companyTrialModules = {
 };
 function modulesForCompanyTrial(company, user) {
   const available = companyTrialModules[company?.companyType] || companyTrialModules.contratado;
-  if (user?.accountType === 'founder' || user?.role === 'admin') return available;
+  if (user?.accountType === 'founder' || user?.role === 'admin') return ['dashboard','commercial','survey','quotes','clients','products','projects','purchases','installations','execution','quality','operations','equipment','agenda','tasks','finance','reports','bi','biMarket','collaborators','knowledge','routines'];
   const roleViews = permissionsFor(user?.role);
   return available.filter(view => roleViews.includes('*') || roleViews.includes(view));
 }

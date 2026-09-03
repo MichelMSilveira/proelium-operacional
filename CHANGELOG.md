@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Conta fundadora alinhada ao menu empresarial de referência: Comercial, levantamentos, orçamentos, compras, execução, gestão e pessoas passam a ser visíveis no ambiente da própria empresa, sem liberar administração da plataforma.
 - Smoke bot tornado autônomo no ambiente local: `npm run test:bot` inicia um servidor temporário quando nenhuma URL externa é informada, aguarda o health check e encerra o processo ao finalizar; a documentação de publicação foi alinhada ao domínio HTTPS validado.
 
 - Exemplos comerciais demonstrativos adicionados de forma segura e idempotente: carga opcional de cinco ciclos identificados como DEMO, cobrindo oportunidade aberta, levantamento, proposta enviada, aprovação com cliente/projeto e recusa sem conversão. Nenhum registro existente é apagado ou substituído.
