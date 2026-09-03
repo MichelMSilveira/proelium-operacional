@@ -78,7 +78,7 @@ O estado operacional de `/api/data` é separado por `companyId`: sessões da mes
 
 Quando uma empresa ainda não possui uma linha de estado em `app_state`, a primeira leitura de `/api/data` começa vazia para os registros operacionais. A base demonstrativa não é copiada para a empresa; somente o conhecimento genérico e o catálogo técnico inicial podem ser preparados sem dados de clientes ou projetos.
 
-O nível e os módulos definidos para a empresa no painel da plataforma também entram na sessão do proprietário no próximo login. Um convite pode impor uma restrição adicional de módulos ao colaborador; quando há módulos individuais na sessão, eles são usados como o escopo desse vínculo.
+O nível e os módulos definidos para a empresa no painel da plataforma também entram na sessão dos participantes no próximo login. A conta fundadora mantém a visão dos módulos pertinentes ao tipo da empresa para avaliar o produto durante a fase de acesso limitado; um convite pode impor uma restrição adicional de módulos ao colaborador, que continua sujeito ao cargo e às permissões da empresa.
 
 O cargo de um colaborador define o acesso padrão. O administrador da empresa pode usar `POST /api/company/users` com `companyAccessOverride: "full"` para liberar todos os domínios operacionais somente dentro do `companyId` da empresa, ou `null` para restaurar o acesso do cargo. Esse override nunca concede `platformAdmin` e não pode ser criado pelo link de convite. `GET/PUT /api/account/profile` permite que cada usuário atualize seu nome de exibição e apresentação profissional; o e-mail Google é somente leitura. O perfil pessoal não é exibido no painel de suporte e não recebe dados operacionais empresariais.
 
