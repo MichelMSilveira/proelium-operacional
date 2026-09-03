@@ -27,6 +27,8 @@ npm run test:ui-use
 
 Os testes funcionais usam dados temporários e não devem acessar o banco ou os arquivos reais da operação. Credenciais de teste devem ser fornecidas por variáveis de ambiente e nunca gravadas no Git.
 
+O fluxo funcional também explora a matriz de contas: fundador recebe os módulos pertinentes ao perfil da empresa; colaborador convidado recebe somente os módulos do cargo; mestre acessa a administração da plataforma sem dados operacionais; suporte consulta a central sem empresa; e perfil pessoal conserva somente identidade e portfólio.
+
 ## Limites
 
 O bot não substitui homologação com usuários reais, revisão de segurança, conferência financeira ou aprovação da direção. Ele é uma camada automatizada de detecção de regressões.

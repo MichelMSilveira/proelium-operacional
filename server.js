@@ -150,7 +150,7 @@ function publicUser(user) {
   return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: supportUser ? 'Suporte da plataforma' : portfolioUser ? 'Perfil pessoal' : roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':supportUser?'support':portfolioUser?'portfolio':'legacy', platformAdmin, supportUser, portfolioUser, accountType:user.accountType||'member', founder:user.accountType==='founder'||user.founder===true, permissions:portfolioUser?[]:permissions, modules:portfolioUser?[]:(Array.isArray(user.modules)?user.modules:[]), companyAccessOverride:companyFullAccess?'full':null, portfolioCount:Array.isArray(user.portfolio)?user.portfolio.length:0, accessLevel:portfolioUser?'full':(user.accessLevel||(companyScoped?'limited':'full')), licenseStatus:portfolioUser?'approved':(user.licenseStatus||(companyScoped?'pending':'approved')), companyStatus:portfolioUser?'approved':(user.companyStatus||'approved'), active: user.active !== false, companyId: portfolioUser ? null : (user.companyId || 'legacy') };
 }
 function dataViewsForUser(user) {
-  if (isSupportUser(user) || isPortfolioUser(user)) return new Set();
+  if (isPlatformAdmin(user) || isSupportUser(user) || isPortfolioUser(user)) return new Set();
   if (user?.companyId && user.companyId !== 'legacy' && user.companyAccessOverride === 'full') return new Set(['*']);
   const roleViews = permissionsFor(user?.role);
   const modules = Array.isArray(user?.modules) ? user.modules : [];

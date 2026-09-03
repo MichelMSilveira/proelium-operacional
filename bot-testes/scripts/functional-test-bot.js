@@ -133,6 +133,9 @@ async function runFunctionalTestBot(options = {}) {
   child.stderr.on('data', chunk => { serverError += chunk.toString(); });
   const checks = [];
   let googleCompanyCookie = '';
+  let googleFullCookie = '';
+  let companyOperationsCookie = '';
+  let companyOperationsRevision = 0;
   const check = async (group, name, correction, action) => {
     try {
       const detail = String(await action() || 'Concluído');
@@ -180,7 +183,7 @@ async function runFunctionalTestBot(options = {}) {
       const authenticated = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCookie } });
       const payload = parseJson(authenticated, '/api/auth/me');
       const registrationPayload = parseJson(response, '/api/auth/register-google-company');
-      const googleFullCookie = `proelium_session=${encodeURIComponent(signedSession({ username: registrationPayload.user.username, role: 'admin', name: registrationPayload.user.name, email: registrationPayload.user.email, companyId: registrationPayload.user.companyId, accessLevel: 'full', modules: [], expiresAt: Date.now() + 60_000 }, testSessionSecret))}`;
+      googleFullCookie = `proelium_session=${encodeURIComponent(signedSession({ username: registrationPayload.user.username, role: 'admin', name: registrationPayload.user.name, email: registrationPayload.user.email, companyId: registrationPayload.user.companyId, accessLevel: 'full', companyAccessOverride: 'full', modules: [], expiresAt: Date.now() + 60_000 }, testSessionSecret))}`;
       expect(authenticated.status === 200 && payload.authenticated, 'Sessão criada não autenticou o usuário.');
       expect(['commercial', 'quotes', 'clients', 'projects'].every(view => payload.user?.modules?.includes(view)), 'A conta fundadora em avaliação não recebeu os módulos pertinentes ao perfil contratante.');
       expect(registrationPayload.user?.accountType === 'founder' && registrationPayload.user?.founder === true && registrationPayload.company?.founderUsername === registrationPayload.user.username, 'A conta que abriu a empresa não foi registrada como fundadora.');
@@ -207,13 +210,17 @@ async function runFunctionalTestBot(options = {}) {
       expect(joinedCookie.startsWith('proelium_session='), 'Aceite do convite não devolveu uma sessão nova.');
       const joinedData = await request(baseUrl, '/api/data', { headers: { Cookie: joinedCookie } });
       expect(joinedData.status === 200, `Participante convidado não entrou no app: HTTP ${joinedData.status}.`);
+      const joinedMe = parseJson(await request(baseUrl, '/api/auth/me', { headers: { Cookie: joinedCookie } }), '/api/auth/me colaborador convidado');
+      expect(joinedMe.user?.scope === 'company' && joinedMe.user?.founder === false, 'O colaborador convidado recebeu escopo de fundador.');
+      expect(joinedMe.user?.modules?.includes('projects') && joinedMe.user?.modules?.includes('tasks') && !joinedMe.user?.modules?.includes('quotes') && !joinedMe.user?.modules?.includes('finance'), 'O colaborador convidado recebeu módulos fora do cargo de operação.');
       const invitedUsers = parseJson(await request(baseUrl, '/api/company/users', { headers: { Cookie: googleCookie } }), '/api/company/users após convite');
       expect(invitedUsers.users.length === 2 && invitedUsers.users.some(user => user.email === 'convidado@example.invalid' && user.role === 'operacao'), 'O participante Google não foi adicionado à empresa do convite.');
       const secondPending=signedSession({ email: 'google.two@example.invalid', name: 'Google Two', expiresAt: Date.now() + 60_000 }, testSessionSecret);
       const secondRegistration=await request(baseUrl, '/api/auth/register-google-company', { method: 'POST', headers: { Cookie: `proelium_google_pending=${encodeURIComponent(secondPending)}` }, body: { companyType: 'contratante', companyName: 'Segunda Empresa Google Bot', document: '98.765.432/0001-98', responsible: 'Google Two', phone: '+55 11 98888-0000', profileInfo: '{}' } });
       expect(secondRegistration.status===201, `Segunda empresa retornou HTTP ${secondRegistration.status}: ${secondRegistration.text}`);
        const secondRegistrationPayload=parseJson(secondRegistration, '/api/auth/register-google-company empresa dois');
-       const secondCookie=sessionCookie(secondRegistration), secondFullCookie=`proelium_session=${encodeURIComponent(signedSession({ username: secondRegistrationPayload.user.username, role: 'admin', name: secondRegistrationPayload.user.name, email: secondRegistrationPayload.user.email, companyId: secondRegistrationPayload.user.companyId, accessLevel: 'full', modules: [], expiresAt: Date.now() + 60_000 }, testSessionSecret))}`;
+       const secondCookie=sessionCookie(secondRegistration), secondFullCookie=`proelium_session=${encodeURIComponent(signedSession({ username: secondRegistrationPayload.user.username, role: 'admin', name: secondRegistrationPayload.user.name, email: secondRegistrationPayload.user.email, companyId: secondRegistrationPayload.user.companyId, accessLevel: 'full', companyAccessOverride: 'full', modules: [], expiresAt: Date.now() + 60_000 }, testSessionSecret))}`;
+       companyOperationsCookie=secondFullCookie;
        const secondInitialData=await request(baseUrl, '/api/data', { headers:{Cookie:secondCookie} });
        const secondInitialPayload=parseJson(secondInitialData, '/api/data empresa nova');
        const initialState=secondInitialPayload.data||{};
@@ -235,6 +242,7 @@ async function runFunctionalTestBot(options = {}) {
       expect(secondBeforeWrite.status===200 && !String(secondBeforeWrite.text).includes('empresa-um'), 'A segunda empresa recebeu dados da primeira.');
       const secondWrite=await request(baseUrl, '/api/data', { method:'PUT', headers:{Cookie:secondFullCookie}, body:{data:secondState,baseRevision:0} });
       expect(secondWrite.status===200, `Gravação da segunda empresa retornou HTTP ${secondWrite.status}: ${secondWrite.text}`);
+      companyOperationsRevision=parseJson(secondWrite, '/api/data empresa dois').revision;
       const firstRead=await request(baseUrl, '/api/data', { headers:{Cookie:googleFullCookie} }),secondRead=await request(baseUrl, '/api/data', { headers:{Cookie:secondFullCookie} });
       expect(firstRead.status===200 && String(firstRead.text).includes('empresa-um') && !String(firstRead.text).includes('empresa-dois'), 'A primeira empresa recebeu dados cruzados.');
       expect(secondRead.status===200 && String(secondRead.text).includes('empresa-dois') && !String(secondRead.text).includes('empresa-um'), 'A segunda empresa recebeu dados cruzados.');
@@ -253,6 +261,16 @@ async function runFunctionalTestBot(options = {}) {
     const cookie = sessionCookie(login);
     expect(login.status === 200 && cookie, `Não foi possível autenticar o bot: HTTP ${login.status}.`);
     const api = (pathname, config = {}) => request(baseUrl, pathname, { ...config, headers: { Cookie: cookie, ...(config.headers || {}) } });
+    const companyApi = (pathname, config = {}) => request(baseUrl, pathname, { ...config, headers: { Cookie: companyOperationsCookie, ...(config.headers || {}) } });
+    await check('Contas', 'Matriz de escopos e menus', 'Comparar novamente as regras de fundador, plataforma, suporte e perfil pessoal.', async () => {
+      const masterMe = parseJson(await api('/api/auth/me'), '/api/auth/me mestre');
+      expect(masterMe.user?.scope === 'platform' && masterMe.user?.platformAdmin === true, 'A conta mestre não recebeu escopo de plataforma.');
+      const masterData = parseJson(await api('/api/data'), '/api/data mestre');
+      expect((!Array.isArray(masterData.data?.clients) || masterData.data.clients.length === 0) && (!Array.isArray(masterData.data?.projects) || masterData.data.projects.length === 0), 'A conta mestre recebeu dados operacionais de empresa.');
+      const platformCompanies = parseJson(await api('/api/admin/companies'), '/api/admin/companies matriz');
+      expect(platformCompanies.companies?.length >= 2 && platformCompanies.companies.every(company => company.adminEmail !== undefined), 'A central não apresentou as empresas com contato administrativo.');
+      return 'fundador: módulos do perfil; colaborador: cargo; mestre: plataforma sem dados; suporte: consulta; perfil pessoal: portfólio';
+    });
     await check('Segurança', 'Suporte separado das empresas', 'Garantir que o painel global liste somente contas sem companyId e não possa editar usuários empresariais.', async () => {
       const listing = parseJson(await api('/api/auth/users'), '/api/auth/users');
       expect(listing.users.every(user => !user.companyId || user.companyId === 'legacy'), 'O painel global exibiu uma conta vinculada a empresa.');
@@ -270,10 +288,10 @@ async function runFunctionalTestBot(options = {}) {
       await api('/api/auth/users?username=suporte.bot', { method: 'DELETE' });
       return 'contas empresariais fora do painel, edição cruzada bloqueada e suporte somente consulta';
     });
-    let revision = 0;
+    let revision = companyOperationsRevision;
     let state = emptyState();
     const save = async nextState => {
-      const response = await api('/api/data', { method: 'PUT', body: { data: nextState, baseRevision: revision } });
+      const response = await companyApi('/api/data', { method: 'PUT', body: { data: nextState, baseRevision: revision } });
       expect(response.status === 200, `Gravação isolada retornou HTTP ${response.status}: ${response.text}`);
       revision = parseJson(response, '/api/data PUT').revision;
       state = nextState;
@@ -378,7 +396,7 @@ async function runFunctionalTestBot(options = {}) {
     });
 
     await check('Sincronização', 'Leitura integral após uso simulado', 'Revisar serialização e envelope de /api/data.', async () => {
-      const response = await api('/api/data');
+      const response = await companyApi('/api/data');
       const saved = parseJson(response, '/api/data');
       expect(response.status === 200 && saved.revision === revision, 'Revisão divergente.');
       expect(saved.data.projects[0].id === records.project.id && saved.data.quotes[0].status === 'Aprovado', 'Fluxo comercial não foi recuperado.');
@@ -386,7 +404,7 @@ async function runFunctionalTestBot(options = {}) {
     });
 
     await check('Sincronização', 'Bloqueio de gravação antiga', 'Corrigir o controle otimista de revisão para retornar HTTP 409.', async () => {
-      const response = await api('/api/data', { method: 'PUT', body: { data: state, baseRevision: revision - 1 } });
+      const response = await companyApi('/api/data', { method: 'PUT', body: { data: state, baseRevision: revision - 1 } });
       expect(response.status === 409, `Esperado 409; recebido ${response.status}.`);
       return 'conflito detectado sem sobrescrever dados';
     });
@@ -415,21 +433,21 @@ async function runFunctionalTestBot(options = {}) {
     });
 
     await check('Administração', 'Exclusão segura de empresa', 'Manter a exclusão restrita à plataforma e remover todos os vínculos da empresa.', async () => {
-      const listing = parseJson(await request(baseUrl, '/api/admin/companies', { headers: { Cookie: cookie } }), '/api/admin/companies antes da exclusão');
+      const listing = parseJson(await api('/api/admin/companies'), '/api/admin/companies antes da exclusão');
       const targets = listing.companies.filter(company => company.name.includes('Google Bot'));
       expect(targets.length === 2, `Empresas de teste esperadas não encontradas: ${targets.length}.`);
       for (const target of targets) {
-        const deleted = await request(baseUrl, `/api/admin/companies?id=${encodeURIComponent(target.id)}`, { method: 'DELETE', headers: { Cookie: cookie } });
+        const deleted = await api(`/api/admin/companies?id=${encodeURIComponent(target.id)}`, { method: 'DELETE' });
         expect(deleted.status === 200, `Exclusão de ${target.name} retornou HTTP ${deleted.status}: ${deleted.text}`);
       }
-      const after = parseJson(await request(baseUrl, '/api/admin/companies', { headers: { Cookie: cookie } }), '/api/admin/companies após a exclusão');
+      const after = parseJson(await api('/api/admin/companies'), '/api/admin/companies após a exclusão');
       expect(!after.companies.some(company => targets.some(target => target.id === company.id)), 'A empresa excluída continuou no painel.');
       const portfolioMe = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCompanyCookie } });
       const portfolioPayload = parseJson(portfolioMe, '/api/auth/me perfil após saída');
       const portfolioData = parseJson(await request(baseUrl, '/api/data', { headers: { Cookie: googleCompanyCookie } }), '/api/data perfil após saída');
       const portfolioProfile = parseJson(await request(baseUrl, '/api/account/profile', { headers: { Cookie: googleCompanyCookie } }), '/api/account/profile após saída');
       expect(portfolioMe.status === 200 && portfolioPayload.user?.scope === 'portfolio' && portfolioPayload.user?.companyId === null, `O perfil pessoal não foi preservado após a exclusão: HTTP ${portfolioMe.status}.`);
-      expect(portfolioData.data.projects.length === 0 && portfolioData.data.clients.length === 0, 'O perfil pessoal recebeu dados privados da empresa excluída.');
+      expect((!Array.isArray(portfolioData.data?.projects) || portfolioData.data.projects.length === 0) && (!Array.isArray(portfolioData.data?.clients) || portfolioData.data.clients.length === 0), 'O perfil pessoal recebeu dados privados da empresa excluída.');
       expect(portfolioProfile.profile?.portfolio?.some(item => item.companyName === 'Empresa Google Bot'), 'O vínculo encerrado não foi registrado no portfólio pessoal.');
       return 'empresa, convites, rotinas e estado removidos; identidade pessoal e portfólio preservados sem dados privados';
     });
