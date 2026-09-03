@@ -1378,17 +1378,9 @@ const menuFlowGroup={dashboard:'Início',commercial:'Comercial',clients:'Comerci
  if(!navItems.some(item=>item[0]==='users'))navItems.push(['users','♙','Usuários de suporte']);
  if(!navItems.some(item=>item[0]==='companyUsers'))navItems.push(['companyUsers','♙','Equipe da empresa']);
  if(!navItems.some(item=>item[0]==='companySettings'))navItems.push(['companySettings','⚙','Configurações da empresa']);
- if(!navItems.some(item=>item[0]==='survey'))navItems.push(['survey','⌖','Levantamentos técnicos']);
- if(!navItems.some(item=>item[0]==='quotes'))navItems.push(['quotes','▤','Orçamentos']);
- if(!navItems.some(item=>item[0]==='execution'))navItems.push(['execution','⚙','Execução']);
- if(!navItems.some(item=>item[0]==='purchases'))navItems.push(['purchases','▣','Compras e materiais']);
- if(!navItems.some(item=>item[0]==='productLibrary'))navItems.push(['productLibrary','▤','Biblioteca técnica']);
  const companyInvitesItem=navItems.find(item=>item[0]==='companyInvites');if(companyInvitesItem)companyInvitesItem[2]='Convites';
- const menuLabels={agenda:'Agenda',tasks:'Tarefas',projects:'Projetos 360°',installations:'Cronograma geral',operations:'Pós-venda',equipment:'Equipamentos instalados',quality:'Entrega e qualidade',profile:'Meu perfil e portfólio',companyUsers:'Usuários da empresa',companySettings:'Configurações da empresa',collaborators:'Colaboradores e parceiros',bi:'Indicadores de desempenho',biMarket:'Indicadores de desempenho'};
- navItems.forEach(item=>{if(menuLabels[item[0]])item[2]=menuLabels[item[0]]});
  navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]));
- const hiddenStandaloneViews=new Set(['processes']);
-renderNav=()=>{let previousGroup='';const visible=navItems.filter(item=>!hiddenStandaloneViews.has(item[0])&&canViewRole(item[0]));if(!canViewRole(state.view))state.view=authenticatedUser?.scope==='platform'?'platformDashboard':authenticatedUser?.scope==='portfolio'?'profile':'dashboard';$('#navigation').innerHTML=visible.map(([id,icon,label])=>{const group=menuFlowGroup[id]||'Outros',section=group===previousGroup?'':`<p class="nav-section">${group}</p>`;previousGroup=group;return `${section}<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span>${label}</button>`}).join('')};
+renderNav=()=>{let previousGroup='';const visible=navItems.filter(item=>canViewRole(item[0]));if(!canViewRole(state.view))state.view=authenticatedUser?.scope==='platform'?'platformDashboard':authenticatedUser?.scope==='portfolio'?'profile':'dashboard';$('#navigation').innerHTML=visible.map(([id,icon,label])=>{const group=menuFlowGroup[id]||'Outros',section=group===previousGroup?'':`<p class="nav-section">${group}</p>`;previousGroup=group;return `${section}<button class="nav-item ${state.view===id?'active':''}" data-view="${id}"><span class="nav-icon">${icon}</span>${label}</button>`}).join('')};
 render();
 
 // Oportunidades em tratamento podem ser removidas com confirmação e restauração imediata.
