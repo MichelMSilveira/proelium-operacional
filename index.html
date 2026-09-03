@@ -414,7 +414,7 @@
         </button>
       </div>
     </section>
-    <script src="app.js"></script>
+    <script src="app.js?release=20260903-menu"></script>
     <script>
       // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
       setTimeout(
@@ -432,7 +432,7 @@
             window.__showAppUpdate?.(event.data.registration);
         });
         navigator.serviceWorker
-          .register("./sw.js?release=20260829-proelium-only")
+          .register("./sw.js?release=20260903-menu")
           .then((registration) => {
             const showUpdate = (registration) => {
               if (!navigator.serviceWorker.controller || !registration.waiting)
