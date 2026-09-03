@@ -1380,8 +1380,8 @@ const clientListDeleteView=views.clients;views.clients=()=>clientListDeleteView(
 document.addEventListener('click',event=>{const button=event.target.closest('[data-delete-client]');if(!button)return;event.preventDefault();event.stopPropagation();deleteClient(button.dataset.deleteClient)},true);
 
 // Menu orientado pelo caminho da informação. Os grupos serão a base dos futuros acessos por licença e perfil.
- const menuFlowOrder=['platformDashboard','dashboard','commercial','survey','quotes','products','services','clients','projects','productLibrary','purchases','diagram','installations','agenda','tasks','execution','quality','operations','equipment','collaborators','knowledge','finance','bi','biMarket','reports','audit','profile','companySettings','companyUsers','companyInvites','companyReview','users'];
- const menuFlowGroup={dashboard:'Início',commercial:'Comercial',survey:'Comercial',quotes:'Comercial',products:'Comercial',services:'Comercial',clients:'Comercial',projects:'Projetos 360°',processes:'Projetos 360°',productLibrary:'Projetos 360°',purchases:'Projetos 360°',diagram:'Projetos 360°',installations:'Projetos 360°',agenda:'Projetos 360°',tasks:'Projetos 360°',execution:'Projetos 360°',quality:'Projetos 360°',operations:'Pós-venda',equipment:'Pós-venda',collaborators:'Pessoas e padrões',knowledge:'Pessoas e padrões',routines:'Pessoas e padrões',finance:'Gestão',bi:'Gestão',biMarket:'Gestão',reports:'Gestão',audit:'Gestão'};
+ const menuFlowOrder=['platformDashboard','dashboard','commercial','survey','quotes','products','services','purchases','clients','routines','projects','productLibrary','diagram','installations','agenda','tasks','execution','quality','operations','equipment','collaborators','knowledge','finance','bi','biMarket','reports','audit','profile','companySettings','companyUsers','companyInvites','companyReview','users'];
+ const menuFlowGroup={dashboard:'Início',commercial:'Comercial',survey:'Comercial',quotes:'Comercial',products:'Comercial',services:'Comercial',purchases:'Comercial',clients:'Comercial',routines:'Comercial',projects:'Projetos 360°',processes:'Projetos 360°',productLibrary:'Projetos 360°',diagram:'Projetos 360°',installations:'Projetos 360°',agenda:'Projetos 360°',tasks:'Projetos 360°',execution:'Projetos 360°',quality:'Projetos 360°',operations:'Pós-venda',equipment:'Pós-venda',collaborators:'Pessoas e padrões',knowledge:'Pessoas e padrões',finance:'Gestão',bi:'Gestão',biMarket:'Gestão',reports:'Gestão',audit:'Gestão'};
  const menuChildViews=new Set(['products','services']);
  menuFlowGroup.platformDashboard='Administração da plataforma';menuFlowGroup.users='Administração da plataforma';menuFlowGroup.companyReview='Administração da plataforma';menuFlowGroup.profile='Conta pessoal';menuFlowGroup.companySettings='Administração da empresa';menuFlowGroup.companyUsers='Administração da empresa';menuFlowGroup.companyInvites='Administração da empresa';
  if(!navItems.some(item=>item[0]==='platformDashboard'))navItems.push(['platformDashboard','▦','Central de suporte']);
@@ -3157,6 +3157,49 @@ document.addEventListener('click',event=>{
   const edit=event.target.closest('[data-edit-quote]');
   if(edit){event.preventDefault();event.stopImmediatePropagation();openQuoteEdit(edit.dataset.editQuote);return}
 },true);
+
+// Orçamento: produtos e serviços têm entradas explícitas, mas continuam no mesmo cálculo.
+const quoteCatalogSearchBase=openQuoteItemSearch;
+openQuoteItemSearch=()=>{
+  const serviceOnly=state.quoteItemCatalogKind==='service';
+  quoteCatalogSearchBase();
+  if(!serviceOnly)return;
+  $('#dialogTitle').textContent='Adicionar serviço ao orçamento';
+  $('#saveButton').textContent='Adicionar serviço';
+  const form=$('#recordForm'),search=$('#quoteProductSearch'),matches=$('#quoteProductMatches'),requestButton=$('#quoteRequestItem');
+  if(!form||!search||!matches)return;
+  const marker=document.createElement('input');marker.type='hidden';marker.name='catalogKind';marker.value='service';form.append(marker);
+  if(requestButton)requestButton.textContent='Não encontrou? Adicionar serviço a cotar';
+  const originalInput=search.oninput;
+  search.oninput=()=>{
+    originalInput?.();
+    if(!search.value.trim())return;
+    const options=[...matches.querySelectorAll('[data-search-product]')],visible=options.filter(option=>catalogKind(productById(option.dataset.searchProduct))==='service');
+    options.forEach(option=>{option.hidden=!visible.includes(option)});
+    if(!visible.length)matches.innerHTML='<p class="subtext">Nenhum serviço cadastrado. Use “Adicionar serviço a cotar” para criar o primeiro.</p>';
+  };
+};
+const quoteServiceOpenForm=openForm;
+openForm=(kind,editId='',prefill={})=>{
+  if(kind==='quoteService'){
+    state.quoteItemCatalogKind='service';
+    try{return quoteServiceOpenForm('quoteItem',editId,prefill)}finally{state.quoteItemCatalogKind='all'}
+  }
+  state.quoteItemCatalogKind='all';
+  return quoteServiceOpenForm(kind,editId,prefill);
+};
+const quoteServiceSaveBase=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='quoteItemSearch'&&data.catalogKind==='service'&&!data.productId){
+    const room=state.data.quoteRooms.find(item=>item.id===data.roomId),name=String(data.requestName||'').trim();
+    if(!room||!name){toast('Informe o serviço que precisa ser cotado.');return}
+    const product={id:uid('prd'),sku:`SRV-${Date.now().toString().slice(-5)}`,name,brand:data.requestBrand||'',model:'',category:data.requestCategory||'Mão de obra',supplier:'',mode:'Serviço',unit:'h',cost:0,price:0,status:'A cotar',active:true,catalogType:'service',pendingPurchase:false};
+    state.data.products.push(product);room.items.push({productId:product.id,qty:Number(data.qty||1),discount:Number(data.discount||0)});persist();render();toast('Serviço criado e adicionado ao orçamento.');return;
+  }
+  return quoteServiceSaveBase(kind,data,editId);
+};
+const quoteServiceActionView=views.quoteDetail;
+views.quoteDetail=()=>quoteServiceActionView().replace('<button class="button primary" data-add="quoteItem">+ Adicionar item</button>','<button class="button primary" data-add="quoteItem">+ Adicionar produto</button><button class="button secondary" data-add="quoteService">+ Adicionar serviço</button>');
 
 // O levantamento mantém ambientes como agrupamentos dos pontos, permitindo renomeá-los sem perder os itens internos.
 function openSurveyRoomEdit(surveyId,room){
