@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Regra de licença corrigida: uma empresa já aprovada com licença pendente não recebe mais o pacote de avaliação completo; o acesso passa a seguir os módulos liberados, enquanto o pacote de análise fica reservado ao cadastro ainda pendente.
 - Fluxo local-first criado: branches `codex/...` e `Validar-Local.ps1` concentram sintaxe, smoke bot, teste de interface e revisão do diff antes de qualquer merge na `main`; o VPS permanece intacto durante o desenvolvimento.
 - Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.
 - Conta fundadora marcada como acesso ilimitado dentro da própria empresa, mantendo a separação da administração da plataforma.
