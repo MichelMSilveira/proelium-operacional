@@ -85,7 +85,7 @@ async function runSmokeBot(options = {}) {
     const response = await request(baseUrl, '/', { timeout });
     expect(response.status === 200, `HTTP ${response.status}`);
     expect(/<title>Proelium Operacional<\/title>/i.test(response.text), 'Título do app não encontrado.');
-    expect(/<script[^>]+src=["']app\.js["']/i.test(response.text), 'Script principal não encontrado.');
+    expect(/<script[^>]+src=["'][^"']*app\.js(?:\?[^"']*)?["']/i.test(response.text), 'Script principal não encontrado.');
     return 'HTML e app.js vinculados';
   });
 
