@@ -13,9 +13,6 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
     if (username && password) {
-      await page.locator('#authUsername').fill(username);
-      await page.locator('#authPassword').fill(password);
-      await page.waitForTimeout(500);
       const response = await page.evaluate(async ({ username, password }) => {
         const result = await fetch('./api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
         return { ok: result.ok, status: result.status };

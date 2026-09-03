@@ -5,6 +5,7 @@
 - Separadas as administrações: plataforma controla empresas, licenças e usuários globais; cada empresa controla somente seus próprios participantes.
 - Convites de empresa agora têm tela própria de participantes, vínculo exclusivo por Google, expiração de cinco minutos e compartilhamento direto pelo WhatsApp.
 - Convites para novos e-mails Google agora entram no fluxo correto de adesão à empresa, sem abrir cadastro duplicado de empresa.
+- Bot de navegação atualizado para acompanhar o login Google-only por sessão de teste e percorrer as áreas sem depender de campos de usuário e senha removidos da interface.
 
 - Painel administrativo agora exibe e alterna a licença de uso separadamente do acesso limitado.
 
