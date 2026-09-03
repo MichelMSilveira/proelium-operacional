@@ -193,8 +193,12 @@ function membershipModules(user, company, fallback=[]) {
   // continua valendo para os demais participantes convidados.
   if (company && (user?.accountType === 'founder' || user?.founder === true)) return modulesForCompanyTrial(company, user);
   if (Array.isArray(user?.modules) && user.modules.length) return user.modules;
-  if (company?.licenseStatus === 'pending' || company?.status === 'pending') return modulesForCompanyTrial(company, user);
-  return Array.isArray(company?.modules) && company.modules.length ? company.modules : fallback;
+  // Licença pendente não pode liberar mais módulos do que uma licença aprovada.
+  // O pacote de avaliação é reservado à empresa que ainda está em análise cadastral;
+  // depois da aprovação, a empresa segue somente os módulos definidos pela licença.
+  if (company?.status === 'pending') return modulesForCompanyTrial(company, user);
+  if (Array.isArray(company?.modules) && company.modules.length) return company.modules;
+  return fallback.length ? fallback : permissionsFor(user?.role);
 }
 function portfolioEntry(user, company, leftAt=new Date().toISOString()) {
   return { companyId:company.id, companyName:company.name||'Empresa', role:user.role||'operador', founder:user.accountType==='founder'||user.founder===true, joinedAt:user.createdAt||null, leftAt };
