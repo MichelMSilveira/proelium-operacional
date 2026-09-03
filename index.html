@@ -446,7 +446,7 @@
             window.__showAppUpdate?.(event.data.registration);
         });
         navigator.serviceWorker
-          .register("./sw.js?release=20260903-catalog")
+           .register("./sw.js?release=20260903-google-onboarding")
           .then((registration) => {
             const activateWaiting = async (currentRegistration) => {
               if (!currentRegistration.waiting) return;
