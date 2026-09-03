@@ -612,3 +612,6 @@
 - Adicionado `Exportar tabela` ao catálogo de Produtos e serviços; o CSV usa somente os produtos e serviços do ambiente da empresa atual.
 - Reorganizado o menu por áreas: Comercial, Projetos 360°, Pós-venda, Gestão, Pessoas e conta da empresa.
 - Criado o centro Projeto 360° com resumo do orçamento aprovado, cronograma, execução, compras e pós-venda vinculados à mesma obra.
+## 2026-09-03
+
+- OAuth Google local: o `state` da autenticação agora fica protegido também em cookie temporário assinado, evitando que um reinício do servidor local invalide uma tentativa legítima de login sem relaxar a proteção contra CSRF ou replay.
