@@ -547,3 +547,4 @@
 - Completado o esquema PostgreSQL de empresas com responsável, telefone e status, eliminando a falha que impedia finalizar o cadastro.
 - Mantido o acesso público exclusivamente pelo Google; usuário e senha internos não são exibidos como porta de entrada do produto.
 - Adicionado teste de regressão do onboarding Google, cobrindo cadastro da empresa, criação da sessão e entrada na API do app.
+- Removido o bloqueio silencioso de campos complementares no onboarding; somente a identificação crítica impede o envio e qualquer erro passa a ser exibido pelo app.
