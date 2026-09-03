@@ -58,7 +58,7 @@ const permissionsFor = role => rolePermissions[normalizeRole(role)] || rolePermi
 const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
 const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries' };
 const dataAccessScopes = {
-  clients: ['clients', 'activities'], projects: ['projects', 'projectChecklists', 'projectDeliveries', 'supportTickets', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides'],
+  clients: ['clients', 'activities'], projects: ['projects', 'projectChecklists', 'projectDeliveries', 'supportTickets', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides', 'schedulePhases'],
   processes: ['processes'], tasks: ['tasks'], agenda: ['appointments'], commercial: ['opportunities'],
   quotes: ['quotes', 'quoteRooms', 'packages', 'procurementRequests'], products: ['products', 'manufacturerLibrary'],
   survey: ['surveys', 'surveyPoints', 'surveyRooms'], installations: ['installations'], operations: ['serviceOrders'],
@@ -185,7 +185,12 @@ function mergeWritableData(current, incoming, user) {
   const allowed = dataViewsForUser(user), full = allowed.has('*'), merged = { ...current, ...Object.fromEntries(Object.entries(incoming || {}).filter(([, value]) => !Array.isArray(value))) };
   for (const [scope, keys] of Object.entries(dataAccessScopes)) {
     if (!full && !allowed.has(scope)) continue;
-    for (const key of keys) if (Object.prototype.hasOwnProperty.call(incoming || {}, key)) merged[key] = incoming[key];
+    for (const key of keys) {
+      // As fases e cores são uma configuração da empresa, não uma preferência
+      // do colaborador. Somente fundador/admin pode alterá-las.
+      if (key === 'schedulePhases' && !(isCompanyAdmin(user) || isCompanyFounder(user))) continue;
+      if (Object.prototype.hasOwnProperty.call(incoming || {}, key)) merged[key] = incoming[key];
+    }
   }
   return merged;
 }

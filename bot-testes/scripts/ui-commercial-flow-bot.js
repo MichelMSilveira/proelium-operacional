@@ -36,7 +36,7 @@ function emptyState() {
     'financialEntries', 'financialAccounts', 'evaluations', 'collaborators', 'projectChecklists',
     'serviceReports', 'projectDeliveries', 'serviceOrders', 'supportTickets', 'executionEntries',
     'executionItems', 'procurementRequests', 'purchaseItems', 'surveys', 'surveyPoints', 'surveyRooms',
-    'technicalPoints', 'technicalConnections', 'articles', 'auditLog', 'recoveryLog'
+    'technicalPoints', 'technicalConnections', 'articles', 'auditLog', 'recoveryLog', 'schedulePhases'
   ];
   return Object.fromEntries(keys.map(key => [key, []]));
 }
@@ -340,6 +340,8 @@ async function run() {
     await openView(page, 'projects');
     await page.locator(`[data-open-project="${finalProject.id}"]`).click();
     await page.locator(`[data-project-forecast="${finalProject.id}"]`).click();
+    await page.locator('[data-suggest-forecast]').click();
+    if (!(await page.locator('[name="forecastDays"]').inputValue()) || !(await page.locator('[name="forecastTeamSize"]').inputValue())) throw new Error('A sugestão automática não preencheu a previsão do cronograma.');
     await fillField(page, 'forecastStart', '2026-09-10');
     await fillField(page, 'forecastDays', '4');
     await fillField(page, 'forecastTeamSize', '2');
@@ -352,6 +354,13 @@ async function run() {
     await page.locator(`[data-schedule-project="${finalProject.id}"]`).click();
     if (await page.locator('.schedule-day').count() !== 4 || await page.locator('.schedule-phase-installation').count() === 0) throw new Error('O cronograma linear não exibiu os dias e fases coloridas da previsão.');
     console.log('[OK] UI — cronograma linear exibiu dias e fases coloridas');
+    await page.locator('[data-schedule-config]').click();
+    await page.locator('#addSchedulePhase').click();
+    const newPhase=page.locator('#schedulePhaseRows [data-schedule-phase-row]').last();
+    await newPhase.locator('[name="phaseLabel"]').fill('Acabamento e entrega');
+    await page.locator('#saveButton').click();
+    await assertData(page, data => Array.isArray(data.schedulePhases) && data.schedulePhases.some(phase => phase.label === 'Acabamento e entrega'), 'A nova fase do cronograma não foi persistida.');
+    console.log('[OK] UI — fases e cores do cronograma configuradas pela empresa');
     await openView(page, 'clients');
     await page.locator(`[data-client="${finalClient.id}"]`).waitFor({ state: 'visible', timeout: 5_000 });
     if (!finalData.projects.some(project => project.quoteId === revisedQuote.id)) throw new Error('Projeto aprovado não foi vinculado ao orçamento revisado.');
