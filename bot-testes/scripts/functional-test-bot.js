@@ -182,6 +182,7 @@ async function runFunctionalTestBot(options = {}) {
       const registrationPayload = parseJson(response, '/api/auth/register-google-company');
       const googleFullCookie = `proelium_session=${encodeURIComponent(signedSession({ username: registrationPayload.user.username, role: 'admin', name: registrationPayload.user.name, email: registrationPayload.user.email, companyId: registrationPayload.user.companyId, accessLevel: 'full', modules: [], expiresAt: Date.now() + 60_000 }, testSessionSecret))}`;
       expect(authenticated.status === 200 && payload.authenticated, 'Sessão criada não autenticou o usuário.');
+      expect(registrationPayload.user?.accountType === 'founder' && registrationPayload.user?.founder === true && registrationPayload.company?.founderUsername === registrationPayload.user.username, 'A conta que abriu a empresa não foi registrada como fundadora.');
       const sharedData = await request(baseUrl, '/api/data', { headers: { Cookie: googleCookie } });
       expect(sharedData.status === 200, `Usuário cadastrado não entrou no app: HTTP ${sharedData.status}.`);
       const companyUsers = await request(baseUrl, '/api/company/users', { headers: { Cookie: googleCookie } });
@@ -422,9 +423,14 @@ async function runFunctionalTestBot(options = {}) {
       }
       const after = parseJson(await request(baseUrl, '/api/admin/companies', { headers: { Cookie: cookie } }), '/api/admin/companies após a exclusão');
       expect(!after.companies.some(company => targets.some(target => target.id === company.id)), 'A empresa excluída continuou no painel.');
-      const revoked = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCompanyCookie } });
-      expect(revoked.status === 401, `Usuário da empresa excluída continuou autenticado: HTTP ${revoked.status}.`);
-      return 'empresa, usuários, convites, rotinas e estado removidos; sessão revogada';
+      const portfolioMe = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCompanyCookie } });
+      const portfolioPayload = parseJson(portfolioMe, '/api/auth/me perfil após saída');
+      const portfolioData = parseJson(await request(baseUrl, '/api/data', { headers: { Cookie: googleCompanyCookie } }), '/api/data perfil após saída');
+      const portfolioProfile = parseJson(await request(baseUrl, '/api/account/profile', { headers: { Cookie: googleCompanyCookie } }), '/api/account/profile após saída');
+      expect(portfolioMe.status === 200 && portfolioPayload.user?.scope === 'portfolio' && portfolioPayload.user?.companyId === null, `O perfil pessoal não foi preservado após a exclusão: HTTP ${portfolioMe.status}.`);
+      expect(portfolioData.data.projects.length === 0 && portfolioData.data.clients.length === 0, 'O perfil pessoal recebeu dados privados da empresa excluída.');
+      expect(portfolioProfile.profile?.portfolio?.some(item => item.companyName === 'Empresa Google Bot'), 'O vínculo encerrado não foi registrado no portfólio pessoal.');
+      return 'empresa, convites, rotinas e estado removidos; identidade pessoal e portfólio preservados sem dados privados';
     });
 
     await check('Interface', 'Módulos funcionais publicados', 'Restaurar no app.js o módulo ausente e sua navegação.', async () => {

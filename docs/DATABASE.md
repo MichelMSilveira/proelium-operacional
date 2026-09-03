@@ -10,11 +10,14 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
-- `app_users`: usuários, funções e hashes de senha;
+- `app_users`: usuários, funções, identidade Google, conta fundadora, perfil pessoal, portfólio e escopos de módulos;
+- `companies`: empresas e a referência `founder_username` da conta que iniciou cada cadastro;
 - `schema_migrations`: migrações já aplicadas.
 - A migração `002_user_roles.sql` amplia os papéis de acesso sem invalidar contas legadas `operador`.
 
 Essa primeira etapa prioriza transações, histórico e recuperação sem exigir mudanças simultâneas em todas as telas. O modelo normalizado de `database/schema.sql` permanece como evolução posterior.
+
+A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
 ## Migrações
 

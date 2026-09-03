@@ -65,9 +65,21 @@ const dataAccessScopes = {
   knowledge: ['articles'], audit: ['auditLog', 'recoveryLog'], diagram: ['technicalPoints', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides'],
   purchases: ['purchaseItems'], execution: ['executionEntries', 'executionItems']
 };
+const companyTrialModules = {
+  contratante: ['dashboard','commercial','quotes','clients','products','projects','processes','tasks','agenda','operations','reports','finance','bi','biMarket','quality','collaborators','equipment','knowledge','routines'],
+  contratado: ['dashboard','clients','projects','processes','tasks','agenda','operations','reports','quality','collaborators','equipment','execution','knowledge','routines'],
+  residencial: ['dashboard','clients','projects','agenda','operations','reports','quality','equipment','knowledge']
+};
+function modulesForCompanyTrial(company, user) {
+  const available = companyTrialModules[company?.companyType] || companyTrialModules.contratado;
+  if (user?.accountType === 'founder' || user?.role === 'admin') return available;
+  const roleViews = permissionsFor(user?.role);
+  return available.filter(view => roleViews.includes('*') || roleViews.includes(view));
+}
 const platformAdmins = new Set(String(process.env.PROELIUM_PLATFORM_ADMINS || 'admin').split(',').map(value => value.trim().toLowerCase()).filter(Boolean));
 function isPlatformAdmin(user) { return Boolean(user && (platformAdmins.has(String(user.username || '').toLowerCase()) || platformAdmins.has(String(user.email || '').toLowerCase()))); }
-function isSupportUser(user) { return Boolean(user && !isPlatformAdmin(user) && (!user.companyId || user.companyId === 'legacy') && (user.role === 'suporte' || user.role === 'admin')); }
+function isPortfolioUser(user) { return Boolean(user?.accountType === 'portfolio'); }
+function isSupportUser(user) { return Boolean(user && !isPlatformAdmin(user) && !isPortfolioUser(user) && (!user.companyId || user.companyId === 'legacy') && (user.role === 'suporte' || user.role === 'admin')); }
 function isPlatformStaff(user) { return isPlatformAdmin(user) || isSupportUser(user); }
 function isCompanyAdmin(user) { return Boolean(user?.role === 'admin' && user.companyId && user.companyId !== 'legacy'); }
 
@@ -134,10 +146,11 @@ function publicUser(user) {
   const companyScoped=Boolean(user.companyId&&user.companyId!=='legacy');
   const supportUser=isSupportUser(user);
   const companyFullAccess=companyScoped&&user.companyAccessOverride==='full',rolePermissionList=permissionsFor(role), permissions=companyFullAccess?['*']:(Array.isArray(user.modules)&&user.modules.length?rolePermissionList[0]==='*'?user.modules:rolePermissionList.filter(item=>user.modules.includes(item)):rolePermissionList);
-  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: supportUser ? 'Suporte da plataforma' : roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':supportUser?'support':'legacy', platformAdmin, supportUser, permissions, modules:Array.isArray(user.modules)?user.modules:[], companyAccessOverride:companyFullAccess?'full':null, accessLevel:user.accessLevel||(companyScoped?'limited':'full'), licenseStatus:user.licenseStatus||(companyScoped?'pending':'approved'), companyStatus:user.companyStatus||'approved', active: user.active !== false, companyId: user.companyId || 'legacy' };
+  const portfolioUser=isPortfolioUser(user);
+  return { username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador', roleLabel: supportUser ? 'Suporte da plataforma' : portfolioUser ? 'Perfil pessoal' : roleLabels[role], scope:platformAdmin?'platform':companyScoped?'company':supportUser?'support':portfolioUser?'portfolio':'legacy', platformAdmin, supportUser, portfolioUser, accountType:user.accountType||'member', founder:user.accountType==='founder'||user.founder===true, permissions:portfolioUser?[]:permissions, modules:portfolioUser?[]:(Array.isArray(user.modules)?user.modules:[]), companyAccessOverride:companyFullAccess?'full':null, portfolioCount:Array.isArray(user.portfolio)?user.portfolio.length:0, accessLevel:portfolioUser?'full':(user.accessLevel||(companyScoped?'limited':'full')), licenseStatus:portfolioUser?'approved':(user.licenseStatus||(companyScoped?'pending':'approved')), companyStatus:portfolioUser?'approved':(user.companyStatus||'approved'), active: user.active !== false, companyId: portfolioUser ? null : (user.companyId || 'legacy') };
 }
 function dataViewsForUser(user) {
-  if (isSupportUser(user)) return new Set();
+  if (isSupportUser(user) || isPortfolioUser(user)) return new Set();
   if (user?.companyId && user.companyId !== 'legacy' && user.companyAccessOverride === 'full') return new Set(['*']);
   const roleViews = permissionsFor(user?.role);
   const modules = Array.isArray(user?.modules) ? user.modules : [];
@@ -166,10 +179,21 @@ function validCnpj(value) { const digits=String(value||'').replace(/\D/g,''); if
 function validCpf(value) { const digits=String(value||'').replace(/\D/g,''); if(digits.length!==11||/^([0-9])\1+$/.test(digits))return false; const calc=(length)=>{let sum=0;for(let i=0;i<length;i++)sum+=Number(digits[i])*(length+1-i);const rest=(sum*10)%11;return rest===10?0:rest};return calc(9)===Number(digits[9])&&calc(10)===Number(digits[10]); }
 function inviteTokenHash(token) { return crypto.createHash('sha256').update(String(token)).digest('hex'); }
 function invitePublic(invite, companies) { const company=companies.find(item=>item.id===invite.companyId); return { id:invite.id, companyId:invite.companyId, companyName:company?.name||'Empresa', email:invite.email||'', role:invite.role||'operacao', modules:invite.modules||[], expiresAt:invite.expiresAt, usedAt:invite.usedAt||null, createdAt:invite.createdAt }; }
-function companyProfilePublic(company) { return { id:company.id, name:company.name||'', document:company.document||'', responsible:company.responsible||'', phone:company.phone||'', companyType:company.companyType||'', profileInfo:company.profileInfo||'', status:company.status||'pending', accessLevel:company.accessLevel||'limited', licenseStatus:company.licenseStatus||'pending', createdAt:company.createdAt||null }; }
+function companyProfilePublic(company) { return { id:company.id, name:company.name||'', document:company.document||'', responsible:company.responsible||'', phone:company.phone||'', companyType:company.companyType||'', profileInfo:company.profileInfo||'', founderUsername:company.founderUsername||'', status:company.status||'pending', accessLevel:company.accessLevel||'limited', licenseStatus:company.licenseStatus||'pending', createdAt:company.createdAt||null }; }
 function companyWithAdminContact(company, users) {
   const admin = users.find(user => user.companyId === company.id && user.role === 'admin' && user.active !== false);
   return { ...company, adminName: admin?.name || company.responsible || '', adminEmail: admin?.email || '', adminUsername: admin?.username || '' };
+}
+function membershipModules(user, company, fallback=[]) {
+  if (Array.isArray(user?.modules) && user.modules.length) return user.modules;
+  if (company?.licenseStatus === 'pending' || company?.status === 'pending') return modulesForCompanyTrial(company, user);
+  return Array.isArray(company?.modules) && company.modules.length ? company.modules : fallback;
+}
+function portfolioEntry(user, company, leftAt=new Date().toISOString()) {
+  return { companyId:company.id, companyName:company.name||'Empresa', role:user.role||'operador', founder:user.accountType==='founder'||user.founder===true, joinedAt:user.createdAt||null, leftAt };
+}
+function accountProfilePublic(user) {
+  return { username:user.username, name:user.name||user.username, email:user.email||'', accountType:user.accountType||'member', founder:user.accountType==='founder'||user.founder===true, profileInfo:user.profileInfo||'', portfolio:Array.isArray(user.portfolio)?user.portfolio:[], companyId:user.companyId||null };
 }
 function httpsJson(url, options={}, body='') { return new Promise((resolve,reject)=>{ const request=https.request(url,{...options,headers:{'Content-Type':'application/x-www-form-urlencoded',...(options.headers||{})}},response=>{let raw='';response.on('data',chunk=>raw+=chunk);response.on('end',()=>{try{resolve({status:response.statusCode,data:JSON.parse(raw)})}catch{reject(new Error('Resposta OAuth inválida.'))}})});request.on('error',reject);if(body)request.write(body);request.end();}); }
 
@@ -180,9 +204,9 @@ async function storedUserFromSession(req) {
   const user = users.find(item => item.username === session.username && item.active !== false);
   if (!user) return null;
   if (session.email && user.email && String(session.email).toLowerCase() !== String(user.email).toLowerCase()) return null;
-  const companyId = user.companyId || session.companyId || 'legacy';
+  const companyId = Object.prototype.hasOwnProperty.call(user, 'companyId') ? (user.companyId || 'legacy') : (session.companyId || 'legacy');
   const company = companyId !== 'legacy' ? (await storage.readCompanies()).find(item => item.id === companyId) : null;
-  const userModules = Array.isArray(user.modules) && user.modules.length ? user.modules : (Array.isArray(session.modules) && session.modules.length ? session.modules : (company?.accessLevel === 'limited' ? (company?.modules || []) : []));
+  const userModules = membershipModules(user, company, Array.isArray(session.modules) ? session.modules : []);
   return {
     ...session,
     ...user,
@@ -190,11 +214,15 @@ async function storedUserFromSession(req) {
     name: user.name || session.name || user.username,
     role: user.role || session.role || 'operador',
     companyId,
-    accessLevel: user.accessLevel || session.accessLevel || company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited'),
-    licenseStatus: user.licenseStatus || session.licenseStatus || company?.licenseStatus || (companyId === 'legacy' ? 'approved' : 'pending'),
-    companyStatus: user.companyStatus || session.companyStatus || company?.status || (companyId === 'legacy' ? 'approved' : 'pending'),
-    modules: userModules,
-    companyAccessOverride: user.companyAccessOverride || session.companyAccessOverride || null
+    accessLevel: isPortfolioUser(user) ? 'full' : (user.accessLevel || session.accessLevel || company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited')),
+    licenseStatus: isPortfolioUser(user) ? 'approved' : (user.licenseStatus || session.licenseStatus || company?.licenseStatus || (companyId === 'legacy' ? 'approved' : 'pending')),
+    companyStatus: isPortfolioUser(user) ? 'approved' : (user.companyStatus || session.companyStatus || company?.status || (companyId === 'legacy' ? 'approved' : 'pending')),
+    modules: isPortfolioUser(user) ? [] : userModules,
+    companyAccessOverride: user.companyAccessOverride || session.companyAccessOverride || null,
+    accountType: user.accountType || (isPlatformAdmin(user) ? 'support' : (companyId === 'legacy' ? 'support' : 'member')),
+    founder: user.founder === true || session.founder === true,
+    profileInfo: user.profileInfo || session.profileInfo || '',
+    portfolio: Array.isArray(user.portfolio) ? user.portfolio : (Array.isArray(session.portfolio) ? session.portfolio : [])
   };
 }
 
@@ -293,14 +321,14 @@ async function handleRequest(req, res) {
     } catch(error) { console.error('Falha ao vincular convite:',error.message);return sendJson(res,400,{error:'Não foi possível vincular o convite.'}); }
   }
   if (pathname === '/api/auth/join-google-company' && req.method === 'POST') {
-    try { const cookies=parseCookies(req),pending=currentUser({headers:{cookie:`proelium_session=${cookies.proelium_google_pending||''}`}}),token=String(cookies.proelium_invite||'');if(!pending?.email||!token)return sendJson(res,401,{error:'Convite ou identificação Google expirado.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});if(invite.email&&invite.email!==pending.email.toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const users=await storage.readUsers(),existing=users.find(item=>String(item.email||'').toLowerCase()===pending.email.toLowerCase());if(existing&&existing.companyId!==invite.companyId)return sendJson(res,409,{error:'Este e-mail já pertence a outra empresa.'});const username=existing?.username||`${pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'').slice(0,24)||'colaborador'}-${Date.now().toString().slice(-5)}`,user={...(existing||{}),username,name:existing?.name||pending.name||username,email:pending.email,role:invite.role||'operacao',active:true,companyId:invite.companyId,createdAt:existing?.createdAt||new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeUsers(existing?users.map(item=>item.username===existing.username?user:item):[...users,user]);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));const session=signedSession({username,role:user.role,name:user.name,email:user.email,companyId:invite.companyId,companyStatus:company.status,accessLevel:company.accessLevel||'limited',modules:invite.modules||[],expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.setHeader('Set-Cookie',[`proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${sessionTtl/1000}; HttpOnly; SameSite=Lax${secureCookie?' ; Secure':''}`.replace(';  ','; '),'proelium_invite=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax']);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao aceitar convite Google:',error.message);return sendJson(res,400,{error:'Não foi possível aceitar o convite.'}); }
+    try { const cookies=parseCookies(req),pending=currentUser({headers:{cookie:`proelium_session=${cookies.proelium_google_pending||''}`}}),token=String(cookies.proelium_invite||'');if(!pending?.email||!token)return sendJson(res,401,{error:'Convite ou identificação Google expirado.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});if(invite.email&&invite.email!==pending.email.toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const users=await storage.readUsers(),existing=users.find(item=>String(item.email||'').toLowerCase()===pending.email.toLowerCase());if(existing&&existing.companyId!==invite.companyId)return sendJson(res,409,{error:'Este e-mail já pertence a outra empresa.'});const username=existing?.username||`${pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'').slice(0,24)||'colaborador'}-${Date.now().toString().slice(-5)}`,user={...(existing||{}),username,name:existing?.name||pending.name||username,email:pending.email,role:invite.role||'operacao',active:true,companyId:invite.companyId,accountType:'member',founder:false,createdAt:existing?.createdAt||new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeUsers(existing?users.map(item=>item.username===existing.username?user:item):[...users,user]);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));const session=signedSession({username,role:user.role,name:user.name,email:user.email,companyId:invite.companyId,companyStatus:company.status,accessLevel:company.accessLevel||'limited',modules:membershipModules(user,company,invite.modules||[]),accountType:'member',founder:false,expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.setHeader('Set-Cookie',[`proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${sessionTtl/1000}; HttpOnly; SameSite=Lax${secureCookie?' ; Secure':''}`.replace(';  ','; '),'proelium_invite=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax']);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao aceitar convite Google:',error.message);return sendJson(res,400,{error:'Não foi possível aceitar o convite.'}); }
   }
   if (pathname === '/api/auth/google/callback' && req.method === 'GET') {
-    try { const query=new URL(req.url,`http://${req.headers.host}`).searchParams,state=query.get('state'),code=query.get('code');if(!state||googleStates.get(state)<Date.now()||!code)return sendJson(res,400,{error:'Validação Google expirada ou inválida.'});googleStates.delete(state);const redirect=process.env.GOOGLE_REDIRECT_URI || `${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}/api/auth/google/callback`;const token=await httpsJson('https://oauth2.googleapis.com/token',{method:'POST'},new URLSearchParams({code,client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,redirect_uri:redirect,grant_type:'authorization_code'}).toString());if(token.status!==200||!token.data.access_token){console.error('Google OAuth token recusado:',token.status,token.data.error||'sem código',token.data.error_description||'');return sendJson(res,401,{error:'Não foi possível validar a conta Google.'});}const profile=await httpsJson(`https://openidconnect.googleapis.com/v1/userinfo?access_token=${encodeURIComponent(token.data.access_token)}`);const email=String(profile.data.email||'').trim().toLowerCase();if(profile.status!==200||!email||profile.data.email_verified!==true)return sendJson(res,401,{error:'A conta Google precisa ter e-mail verificado.'});const user=(await storage.readUsers()).find(item=>String(item.email||'').toLowerCase()===email&&item.active!==false);if(!user){const invite=Boolean(parseCookies(req).proelium_invite);setGooglePendingCookie(res,signedSession({email,name:String(profile.data.name||'').slice(0,80),expiresAt:Date.now()+600000}),secureCookie);res.writeHead(302,{Location:invite?'/?google_invite=1':'/?google_onboarding=1'});res.end();return;}const companyId=user.companyId||'legacy',company=companyId!=='legacy'?(await storage.readCompanies()).find(item=>item.id===companyId):null,userModules=Array.isArray(user.modules)&&user.modules.length?user.modules:(company?.modules||[]),session=signedSession({username:user.username,role:user.role||'operador',name:user.name||profile.data.name||user.username,email,companyId,companyStatus:company?.status||(companyId==='legacy'?'approved':'pending'),accessLevel:company?.accessLevel||(companyId==='legacy'?'full':'limited'),licenseStatus:company?.licenseStatus||(companyId==='legacy'?'approved':'pending'),modules:userModules,expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.writeHead(302,{Location:'/'});res.end();return; } catch(error) { console.error('Falha no OAuth Google:',error.message);return sendJson(res,502,{error:'Não foi possível concluir o login Google.'}); }
+    try { const query=new URL(req.url,`http://${req.headers.host}`).searchParams,state=query.get('state'),code=query.get('code');if(!state||googleStates.get(state)<Date.now()||!code)return sendJson(res,400,{error:'Validação Google expirada ou inválida.'});googleStates.delete(state);const redirect=process.env.GOOGLE_REDIRECT_URI || `${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}/api/auth/google/callback`;const token=await httpsJson('https://oauth2.googleapis.com/token',{method:'POST'},new URLSearchParams({code,client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,redirect_uri:redirect,grant_type:'authorization_code'}).toString());if(token.status!==200||!token.data.access_token){console.error('Google OAuth token recusado:',token.status,token.data.error||'sem código',token.data.error_description||'');return sendJson(res,401,{error:'Não foi possível validar a conta Google.'});}const profile=await httpsJson(`https://openidconnect.googleapis.com/v1/userinfo?access_token=${encodeURIComponent(token.data.access_token)}`);const email=String(profile.data.email||'').trim().toLowerCase();if(profile.status!==200||!email||profile.data.email_verified!==true)return sendJson(res,401,{error:'A conta Google precisa ter e-mail verificado.'});const user=(await storage.readUsers()).find(item=>String(item.email||'').toLowerCase()===email&&item.active!==false);if(!user){const invite=Boolean(parseCookies(req).proelium_invite);setGooglePendingCookie(res,signedSession({email,name:String(profile.data.name||'').slice(0,80),expiresAt:Date.now()+600000}),secureCookie);res.writeHead(302,{Location:invite?'/?google_invite=1':'/?google_onboarding=1'});res.end();return;}const companyId=user.companyId||'legacy',company=companyId!=='legacy'?(await storage.readCompanies()).find(item=>item.id===companyId):null,userModules=membershipModules(user,company),accountType=user.accountType||(isPlatformAdmin(user)?'support':(user.companyId?'member':'support')),session=signedSession({username:user.username,role:user.role||'operador',name:user.name||profile.data.name||user.username,email,companyId,companyStatus:company?.status||(companyId==='legacy'?'approved':'pending'),accessLevel:company?.accessLevel||(companyId==='legacy'?'full':'limited'),licenseStatus:company?.licenseStatus||(companyId==='legacy'?'approved':'pending'),modules:userModules,accountType,founder:user.founder===true,profileInfo:user.profileInfo||'',portfolio:user.portfolio||[],expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.writeHead(302,{Location:'/'});res.end();return; } catch(error) { console.error('Falha no OAuth Google:',error.message);return sendJson(res,502,{error:'Não foi possível concluir o login Google.'}); }
   }
 
   if (pathname === '/api/auth/register-google-company' && req.method === 'POST') {
-    try { const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});if(!pending?.email)return sendJson(res,401,{error:'A identificação Google expirou. Tente novamente.'});const payload=JSON.parse(await readBody(req)),companyName=String(payload.companyName||'').trim().slice(0,120),document=String(payload.document||'').trim().slice(0,32),responsible=String(payload.responsible||pending.name||'').trim().slice(0,80),phone=String(payload.phone||'').trim().slice(0,30),companyType=['residencial','contratante','contratado'].includes(payload.companyType)?payload.companyType:'contratado',profileInfo=String(payload.profileInfo||'').trim().slice(0,2000),documentValid=companyType==='contratante'?validCnpj(document):validCnpj(document)||validCpf(document);if(!companyName||!documentValid||!responsible||phone.replace(/\D/g,'').length<10)return sendJson(res,400,{error:'Informe um CPF ou CNPJ válido, nome da empresa, responsável e telefone válido.'});const companies=await storage.readCompanies(),users=await storage.readUsers();if(companies.some(company=>company.document&&String(company.document).replace(/\D/g,'')===document.replace(/\D/g,'')))return sendJson(res,409,{error:'Este CNPJ já possui cadastro no Proelium.'});const company={id:`emp-${crypto.randomUUID()}`,name:companyName,document,responsible,phone,companyType,profileInfo,status:'approved',accessLevel:'limited',licenseStatus:'pending',createdAt:new Date().toISOString()};const base=(pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'')||'usuario').slice(0,24),username=users.some(user=>user.username===base)?`${base}-${Date.now().toString().slice(-5)}`:base;const user={username,name:responsible,email:pending.email,role:'admin',active:true,companyId:company.id,createdAt:new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeCompanies([...companies,company]);await storage.writeUsers([...users,user]);const session=signedSession({username,role:'admin',name:responsible,email:pending.email,companyId:company.id,companyStatus:'approved',accessLevel:'limited',licenseStatus:'pending',expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha no cadastro Google da empresa:',error.message);return sendJson(res,400,{error:'Não foi possível concluir o cadastro da empresa.'}); }
+    try { const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});if(!pending?.email)return sendJson(res,401,{error:'A identificação Google expirou. Tente novamente.'});const payload=JSON.parse(await readBody(req)),companyName=String(payload.companyName||'').trim().slice(0,120),document=String(payload.document||'').trim().slice(0,32),responsible=String(payload.responsible||pending.name||'').trim().slice(0,80),phone=String(payload.phone||'').trim().slice(0,30),companyType=['residencial','contratante','contratado'].includes(payload.companyType)?payload.companyType:'contratado',profileInfo=String(payload.profileInfo||'').trim().slice(0,2000),documentValid=companyType==='contratante'?validCnpj(document):validCnpj(document)||validCpf(document);if(!companyName||!documentValid||!responsible||phone.replace(/\D/g,'').length<10)return sendJson(res,400,{error:'Informe um CPF ou CNPJ válido, nome da empresa, responsável e telefone válido.'});const companies=await storage.readCompanies(),users=await storage.readUsers();if(companies.some(company=>company.document&&String(company.document).replace(/\D/g,'')===document.replace(/\D/g,'')))return sendJson(res,409,{error:'Este CNPJ já possui cadastro no Proelium.'});const company={id:`emp-${crypto.randomUUID()}`,name:companyName,document,responsible,phone,companyType,profileInfo,status:'approved',accessLevel:'limited',licenseStatus:'pending',founderUsername:'',createdAt:new Date().toISOString()};const base=(pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'')||'usuario').slice(0,24),username=users.some(user=>user.username===base)?`${base}-${Date.now().toString().slice(-5)}`:base;company.founderUsername=username;const user={username,name:responsible,email:pending.email,role:'admin',active:true,companyId:company.id,accountType:'founder',founder:true,profileInfo:'',portfolio:[],createdAt:new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeCompanies([...companies,company]);await storage.writeUsers([...users,user]);const session=signedSession({username,role:'admin',name:responsible,email:pending.email,companyId:company.id,companyStatus:'approved',accessLevel:'limited',licenseStatus:'pending',modules:modulesForCompanyTrial(company,user),accountType:'founder',founder:true,portfolio:[],expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha no cadastro Google da empresa:',error.message);return sendJson(res,400,{error:'Não foi possível concluir o cadastro da empresa.'}); }
   }
 
   if (pathname === '/api/auth/register-company' && req.method === 'POST') {
@@ -311,9 +339,9 @@ async function handleRequest(req, res) {
       if(!companyName||!name||!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)||password.length<10)return sendJson(res,400,{error:'Informe empresa, nome, usuário válido e senha com pelo menos 10 caracteres.'});
       const companies=await storage.readCompanies(), users=await storage.readUsers();
       if(users.some(user=>user.username===username))return sendJson(res,409,{error:'Esse usuário já está cadastrado.'});
-      const company={id:`emp-${crypto.randomUUID()}`,name:companyName,document,createdAt:new Date().toISOString()};
+      const company={id:`emp-${crypto.randomUUID()}`,name:companyName,document,founderUsername:username,createdAt:new Date().toISOString()};
       await storage.writeCompanies([...companies,company]);
-      const user={username,name,role:'admin',active:true,companyId:company.id,createdAt:new Date().toISOString(),...passwordRecord(password)};
+      const user={username,name,role:'admin',active:true,companyId:company.id,accountType:'founder',founder:true,profileInfo:'',portfolio:[],createdAt:new Date().toISOString(),...passwordRecord(password)};
       await storage.writeUsers([...users,user]);
       const token=signedSession({username,role:'admin',name,companyId:company.id,expiresAt:Date.now()+sessionTtl}); setSessionCookie(res,token,sessionTtl/1000,secureCookie);
       return sendJson(res,201,{ok:true,user:publicUser(user),company});
@@ -337,7 +365,7 @@ async function handleRequest(req, res) {
         return sendJson(res, 401, { error: 'Usuário ou senha inválidos.' });
       }
       loginAttempts.delete(attemptKey);
-      const companyId=user.companyId||'legacy',company=companyId!=='legacy'?(await storage.readCompanies()).find(item=>item.id===companyId):null,userModules=Array.isArray(user.modules)&&user.modules.length?user.modules:(company?.accessLevel==='limited'?(company?.modules||[]):[]),token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, companyId, companyStatus:company?.status||(companyId==='legacy'?'approved':'pending'), accessLevel:company?.accessLevel||(companyId==='legacy'?'full':'limited'), licenseStatus:company?.licenseStatus||(companyId==='legacy'?'approved':'pending'), modules:userModules, expiresAt: Date.now() + sessionTtl });
+      const companyId=user.companyId||'legacy',company=companyId!=='legacy'?(await storage.readCompanies()).find(item=>item.id===companyId):null,userModules=membershipModules(user,company),accountType=user.accountType||(isPlatformAdmin(user)?'support':(user.companyId?'member':'support')),token = signedSession({ username: user.username, role: user.role || 'operador', name: user.name || user.username, companyId, companyStatus:company?.status||(companyId==='legacy'?'approved':'pending'), accessLevel:company?.accessLevel||(companyId==='legacy'?'full':'limited'), licenseStatus:company?.licenseStatus||(companyId==='legacy'?'approved':'pending'), modules:userModules, accountType, founder:user.founder===true, profileInfo:user.profileInfo||'', portfolio:user.portfolio||[], expiresAt: Date.now() + sessionTtl });
       setSessionCookie(res, token, sessionTtl / 1000, secureCookie);
       return sendJson(res, 200, { ok: true, user: publicUser({ ...user, companyId, companyStatus:company?.status, accessLevel:company?.accessLevel, licenseStatus:company?.licenseStatus, modules:userModules }) });
     } catch { return sendJson(res, 400, { error: 'Solicitação de login inválida.' }); }
@@ -362,6 +390,18 @@ async function handleRequest(req, res) {
       await storage.writeCompanies(companies); return sendJson(res,200,{ok:true,company:companyProfilePublic(companies[index])});
     } catch { return sendJson(res,400,{error:'Configuração da empresa inválida.'}); }
   }
+  if (pathname === '/api/account/profile' && ['GET','PUT'].includes(req.method)) {
+    const actor=await requireUser(req,res); if(!actor)return;
+    try {
+      const users=await storage.readUsers(),index=users.findIndex(user=>user.username===actor.username);
+      if(index<0)return sendJson(res,404,{error:'Perfil não encontrado.'});
+      if(req.method==='GET')return sendJson(res,200,{profile:accountProfilePublic(users[index])});
+      const payload=JSON.parse(await readBody(req)),name=String(payload.name||'').trim().slice(0,80),profileInfo=String(payload.profileInfo||'').trim().slice(0,2000);
+      if(!name)return sendJson(res,400,{error:'Informe um nome para o perfil.'});
+      users[index]={...users[index],name,profileInfo,updatedAt:new Date().toISOString()};
+      await storage.writeUsers(users); return sendJson(res,200,{ok:true,profile:accountProfilePublic(users[index])});
+    } catch { return sendJson(res,400,{error:'Perfil inválido.'}); }
+  }
   if (pathname === '/api/company/routines' && ['GET','PUT'].includes(req.method)) {
     const actor=await requireUser(req,res); if(!actor)return;
     const companyId=actor.companyId||'legacy';
@@ -384,7 +424,8 @@ async function handleRequest(req, res) {
       if(actor.companyId===id)return sendJson(res,400,{error:'O administrador atual não pode excluir a própria empresa.'});
       const companies=await storage.readCompanies(),company=companies.find(item=>item.id===id);
       if(!company)return sendJson(res,404,{error:'Empresa não encontrada.'});
-      const companyUsers=(await storage.readUsers()).filter(user=>user.companyId===id);
+      const allUsers=await storage.readUsers(),companyUsers=allUsers.filter(user=>user.companyId===id),detachedUsers=allUsers.map(user=>user.companyId===id?{...user,companyId:null,accountType:'portfolio',founder:false,companyAccessOverride:null,modules:[],portfolio:[...(Array.isArray(user.portfolio)?user.portfolio:[]),portfolioEntry(user,company)]}:user);
+      await storage.writeUsers(detachedUsers);
       await storage.deleteCompany(id);
       for(const [username,entry] of presence)if(companyUsers.some(user=>user.username===username))presence.delete(username);
       for(const client of [...eventClients])if(client.companyId===id){eventClients.delete(client);try{client.end()}catch{}}
@@ -416,7 +457,9 @@ async function handleRequest(req, res) {
       if(username===actor.username)return sendJson(res,400,{error:'Você não pode remover ou desativar o próprio acesso.'});
       const allUsers=await storage.readUsers(),target=users[index];
       if(req.method==='DELETE') {
-        const next=allUsers.filter(user=>user.username!==username); await storage.writeUsers(next); return sendJson(res,200,{ok:true});
+        if(target.role==='admin')return sendJson(res,403,{error:'A conta fundadora/administradora não pode ser removida por este painel.'});
+        const company=(await storage.readCompanies()).find(item=>item.id===actor.companyId),portfolio=[...(Array.isArray(target.portfolio)?target.portfolio:[]),...(company?[portfolioEntry(target,company)]:[])],detached={...target,companyId:null,accountType:'portfolio',founder:false,companyAccessOverride:null,modules:[],portfolio};
+        const next=allUsers.map(user=>user.username===username?detached:user); await storage.writeUsers(next); return sendJson(res,200,{ok:true,user:publicUser(detached)});
       }
       if(target.role==='admin')return sendJson(res,403,{error:'A administração da empresa não pode ser alterada por este painel.'});
       target.active=payload.active!==false;
@@ -436,7 +479,7 @@ async function handleRequest(req, res) {
       console.error('Falha ao ler usuários:', error.message);
       return sendJson(res, 503, { error: 'Armazenamento temporariamente indisponível.' });
     }
-    if (req.method === 'GET') return sendJson(res, 200, { users: users.filter(user => !user.companyId || user.companyId === 'legacy').map(publicUser) });
+    if (req.method === 'GET') return sendJson(res, 200, { users: users.filter(user => (!user.companyId || user.companyId === 'legacy') && user.accountType !== 'portfolio').map(publicUser) });
     try {
       const payload = req.method === 'DELETE' ? { username: new URL(req.url, `http://${req.headers.host}`).searchParams.get('username') } : JSON.parse(await readBody(req));
       const username = String(payload.username || '').trim().toLowerCase();
@@ -444,7 +487,8 @@ async function handleRequest(req, res) {
       if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)) return sendJson(res, 400, { error: 'Usuário inválido.' });
       if (req.method === 'DELETE') {
         if (username === actor.username) return sendJson(res, 400, { error: 'Você não pode excluir o próprio usuário.' });
-        if (index < 0) return sendJson(res, 404, { error: 'Usuário não encontrado.' });
+      if (index < 0) return sendJson(res, 404, { error: 'Usuário não encontrado.' });
+        if (users[index].accountType === 'portfolio') return sendJson(res, 403, { error: 'Perfis pessoais não são gerenciados no painel de suporte.' });
         if (users[index].role === 'admin' && users.filter(item => item.role === 'admin' && item.active !== false).length <= 1) return sendJson(res, 400, { error: 'Mantenha pelo menos um administrador ativo.' });
         users.splice(index, 1); await storage.writeUsers(users); return sendJson(res, 200, { ok: true });
       }
@@ -452,10 +496,12 @@ async function handleRequest(req, res) {
       if (index < 0 && password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' });
       if (payload.role && !Object.keys(rolePermissions).includes(payload.role)) return sendJson(res, 400, { error: 'Papel inválido.' });
       const existing = index >= 0 ? users[index] : { username, createdAt: new Date().toISOString() };
+      if (existing.accountType === 'portfolio') return sendJson(res, 409, { error: 'Perfis pessoais devem ser gerenciados pelo próprio usuário.' });
       if (existing.companyId && existing.companyId !== 'legacy') return sendJson(res, 409, { error: 'Usuários de empresas devem ser gerenciados pela própria empresa.' });
       const email = String(payload.email || existing.email || '').trim().toLowerCase();
       if (email && !/^\S+@\S+\.\S+$/.test(email)) return sendJson(res, 400, { error: 'E-mail inválido.' });
-      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: isPlatformAdmin(existing) ? 'admin' : (payload.role || existing.role || 'operador'), active: payload.active !== false, companyId: null };
+      const nextRole = isPlatformAdmin(existing) ? 'admin' : (payload.role || existing.role || 'operador');
+      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: nextRole, active: payload.active !== false, companyId: null, accountType: nextRole === 'suporte' ? 'support' : (existing.accountType || 'support'), founder: false, modules: [] };
       if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
       users[index >= 0 ? index : users.length] = next;
       await storage.writeUsers(users);

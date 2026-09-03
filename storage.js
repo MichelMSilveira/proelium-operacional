@@ -153,10 +153,11 @@ class PostgresStorage {
   async readUsers() {
     const result = await this.pool.query(
       `select username, name, role, active, email, company_id as "companyId", salt, password_hash as hash,
-              created_at as "createdAt", updated_at as "updatedAt"
+              account_type as "accountType", founder, profile_info as "profileInfo", portfolio, modules,
+              company_access_override as "companyAccessOverride", created_at as "createdAt", updated_at as "updatedAt"
        from app_users order by username`
     );
-    return result.rows;
+    return result.rows.map(row => ({ ...row, portfolio: row.portfolio || [], modules: row.modules || [] }));
   }
 
   async writeUsers(users) {
@@ -168,11 +169,17 @@ class PostgresStorage {
       for (const user of users) {
         usernames.push(user.username);
         await client.query(
-          `insert into app_users (username, name, role, active, email, company_id, salt, password_hash, created_at, updated_at)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, coalesce($9::timestamptz, now()), now())
+          `insert into app_users (username, name, role, active, email, company_id, account_type, founder, profile_info, portfolio, modules, company_access_override, salt, password_hash, created_at, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12, $13, $14, coalesce($15::timestamptz, now()), now())
            on conflict (username) do update set name = excluded.name, role = excluded.role,
-             active = excluded.active, company_id = excluded.company_id, salt = excluded.salt, password_hash = excluded.password_hash, updated_at = now()`,
-          [user.username, user.name || user.username, user.role || 'operador', user.active !== false, user.email || null, user.companyId || null, user.salt, user.hash, user.createdAt || null]
+             active = excluded.active, email = excluded.email, company_id = excluded.company_id,
+             account_type = excluded.account_type, founder = excluded.founder, profile_info = excluded.profile_info,
+             portfolio = excluded.portfolio, modules = excluded.modules, company_access_override = excluded.company_access_override,
+             salt = excluded.salt, password_hash = excluded.password_hash, updated_at = now()`,
+          [user.username, user.name || user.username, user.role || 'operador', user.active !== false, user.email || null,
+            user.companyId || null, user.accountType || (user.companyId ? 'member' : 'support'), user.founder === true,
+            user.profileInfo || '', JSON.stringify(user.portfolio || []), JSON.stringify(user.modules || []),
+            user.companyAccessOverride || null, user.salt, user.hash, user.createdAt || null]
         );
       }
       if (usernames.length) await client.query('delete from app_users where not (username = any($1::text[]))', [usernames]);
@@ -190,8 +197,8 @@ class PostgresStorage {
     }
   }
 
-  async readCompanies() { return (await this.pool.query('select id, name, document, responsible, phone, company_type as "companyType", profile_info as "profileInfo", status, access_level as "accessLevel", license_status as "licenseStatus", modules, admin_notes as "adminNotes", reviewed_at as "reviewedAt", created_at as "createdAt" from companies order by name')).rows.map(row=>({...row,modules:row.modules||[]})); }
-  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document,responsible,phone,company_type,profile_info,status,access_level,license_status,modules,admin_notes,reviewed_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13) on conflict (id) do update set name=excluded.name, document=excluded.document, responsible=excluded.responsible, phone=excluded.phone, company_type=excluded.company_type, profile_info=excluded.profile_info, status=excluded.status, access_level=excluded.access_level, license_status=excluded.license_status, modules=excluded.modules, admin_notes=excluded.admin_notes, reviewed_at=excluded.reviewed_at`, [company.id,company.name,company.document||'',company.responsible||'',company.phone||'',company.companyType||'contratante',company.profileInfo||'',company.status||'pending',company.accessLevel||'limited',company.licenseStatus||'pending',JSON.stringify(company.modules||['dashboard','knowledge']),company.adminNotes||'',company.reviewedAt||null]); }
+  async readCompanies() { return (await this.pool.query('select id, name, document, responsible, phone, company_type as "companyType", profile_info as "profileInfo", founder_username as "founderUsername", status, access_level as "accessLevel", license_status as "licenseStatus", modules, admin_notes as "adminNotes", reviewed_at as "reviewedAt", created_at as "createdAt" from companies order by name')).rows.map(row=>({...row,modules:row.modules||[]})); }
+  async writeCompanies(companies) { for (const company of companies) await this.pool.query(`insert into companies (id,name,document,responsible,phone,company_type,profile_info,founder_username,status,access_level,license_status,modules,admin_notes,reviewed_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14) on conflict (id) do update set name=excluded.name, document=excluded.document, responsible=excluded.responsible, phone=excluded.phone, company_type=excluded.company_type, profile_info=excluded.profile_info, founder_username=excluded.founder_username, status=excluded.status, access_level=excluded.access_level, license_status=excluded.license_status, modules=excluded.modules, admin_notes=excluded.admin_notes, reviewed_at=excluded.reviewed_at`, [company.id,company.name,company.document||'',company.responsible||'',company.phone||'',company.companyType||'contratante',company.profileInfo||'',company.founderUsername||'',company.status||'pending',company.accessLevel||'limited',company.licenseStatus||'pending',JSON.stringify(company.modules||['dashboard','knowledge']),company.adminNotes||'',company.reviewedAt||null]); }
   async readInvites() { return (await this.pool.query('select id, company_id as "companyId", token_hash as "tokenHash", email, role, modules, expires_at as "expiresAt", used_at as "usedAt", created_at as "createdAt" from company_invites order by created_at desc')).rows.map(row=>({...row,modules:row.modules||[]})); }
   async writeInvites(invites) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from company_invites'); for(const invite of invites) await client.query('insert into company_invites (id,company_id,token_hash,email,role,modules,expires_at,used_at,created_at) values ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)',[invite.id,invite.companyId,invite.tokenHash,invite.email||null,invite.role||'operacao',JSON.stringify(invite.modules||[]),invite.expiresAt,invite.usedAt||null,invite.createdAt||new Date().toISOString()]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
   async readRoutines(companyId) { return (await this.pool.query('select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt" from routines where company_id=$1 order by created_at desc',[companyId])).rows.map(row=>({...row,steps:row.steps||[]})); }

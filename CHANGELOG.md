@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Conta fundadora e perfil pessoal separados: quem abre uma empresa fica registrado como fundador e administra os usuários daquele `companyId`; ao sair ou ter o vínculo encerrado, a conta Google permanece ativa como perfil pessoal com portfólio, sem carregar clientes, projetos, orçamentos ou outros dados privados da empresa.
+- Empresas em análise recebem módulos pertinentes ao seu tipo de entrada durante o acesso limitado, enquanto a licença continua sob controle da administração da plataforma. Os campos de fundador, perfil, portfólio e permissões agora persistem também no PostgreSQL.
 - Usuários de suporte separados dos ambientes empresariais: o painel global lista somente contas sem `companyId`, o cadastro de suporte nunca aceita vínculo com empresa e a API impede que uma conta empresarial seja administrada pela lista global. A equipe de suporte pode consultar o status das empresas sem acessar seus dados operacionais.
 - Contato dos administradores de contas incluído na central: cada empresa exibe o administrador Google responsável e atalhos seguros para e-mail e WhatsApp, mantendo a comunicação fora dos dados privados dos projetos.
 - Conta mestre protegida no cadastro global: ela continua administradora da plataforma e não pode ser rebaixada para suporte nem alterada como usuário comum.
