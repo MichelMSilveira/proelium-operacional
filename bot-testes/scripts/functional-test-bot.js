@@ -187,6 +187,16 @@ async function runFunctionalTestBot(options = {}) {
       const invite = await request(baseUrl, '/api/company/invites', { method: 'POST', headers: { Cookie: googleCookie }, body: { email: 'convidado@example.invalid', role: 'operacao' } });
       const invitePayload = parseJson(invite, '/api/company/invites');
       expect(invite.status === 201 && /^http:\/\/127\.0\.0\.1:\d+\/\?invite=/.test(invitePayload.url||''), `Convite temporário inválido: HTTP ${invite.status}: ${invite.text}`);
+      const inviteToken = new URL(invitePayload.url).searchParams.get('invite');
+      const invitedPending = signedSession({ email: 'convidado@example.invalid', name: 'Convidado Bot', expiresAt: Date.now() + 60_000 }, testSessionSecret);
+      const joined = await request(baseUrl, '/api/auth/join-google-company', { method: 'POST', headers: { Cookie: `proelium_google_pending=${encodeURIComponent(invitedPending)}; proelium_invite=${encodeURIComponent(inviteToken)}` } });
+      expect(joined.status === 201, `Aceite do convite Google retornou HTTP ${joined.status}: ${joined.text}`);
+      const joinedCookie = sessionCookie(joined);
+      expect(joinedCookie.startsWith('proelium_session='), 'Aceite do convite não devolveu uma sessão nova.');
+      const joinedData = await request(baseUrl, '/api/data', { headers: { Cookie: joinedCookie } });
+      expect(joinedData.status === 200, `Participante convidado não entrou no app: HTTP ${joinedData.status}.`);
+      const invitedUsers = parseJson(await request(baseUrl, '/api/company/users', { headers: { Cookie: googleCookie } }), '/api/company/users após convite');
+      expect(invitedUsers.users.length === 2 && invitedUsers.users.some(user => user.email === 'convidado@example.invalid' && user.role === 'operacao'), 'O participante Google não foi adicionado à empresa do convite.');
       const secondPending=signedSession({ email: 'google.two@example.invalid', name: 'Google Two', expiresAt: Date.now() + 60_000 }, testSessionSecret);
       const secondRegistration=await request(baseUrl, '/api/auth/register-google-company', { method: 'POST', headers: { Cookie: `proelium_google_pending=${encodeURIComponent(secondPending)}` }, body: { companyType: 'contratante', companyName: 'Segunda Empresa Google Bot', document: '98.765.432/0001-98', responsible: 'Google Two', phone: '+55 11 98888-0000', profileInfo: '{}' } });
       expect(secondRegistration.status===201, `Segunda empresa retornou HTTP ${secondRegistration.status}: ${secondRegistration.text}`);
@@ -202,8 +212,13 @@ async function runFunctionalTestBot(options = {}) {
       expect(secondRead.status===200 && String(secondRead.text).includes('empresa-dois') && !String(secondRead.text).includes('empresa-um'), 'A segunda empresa recebeu dados cruzados.');
       const firstUsers=parseJson(await request(baseUrl, '/api/company/users', { headers:{Cookie:googleCookie} }), '/api/company/users empresa um');
       const secondUsers=parseJson(await request(baseUrl, '/api/company/users', { headers:{Cookie:secondCookie} }), '/api/company/users empresa dois');
-      expect(firstUsers.users.length===1 && secondUsers.users.length===1 && firstUsers.users[0].email!==secondUsers.users[0].email, 'A lista de usuários foi compartilhada entre empresas.');
-      return 'duas empresas criadas, dados e usuários isolados, escopos separados e convite temporário criado';
+      expect(firstUsers.users.length===2 && secondUsers.users.length===1 && firstUsers.users.every(user=>user.companyId===firstUsers.users[0].companyId) && firstUsers.users[0].email!==secondUsers.users[0].email, 'A lista de usuários foi compartilhada entre empresas.');
+      const firstPresence = parseJson(await request(baseUrl, '/api/presence', { headers:{Cookie:googleCookie} }), '/api/presence empresa um');
+      const secondPresence = parseJson(await request(baseUrl, '/api/presence', { headers:{Cookie:secondCookie} }), '/api/presence empresa dois');
+      const firstPresenceAgain = parseJson(await request(baseUrl, '/api/presence', { headers:{Cookie:googleCookie} }), '/api/presence empresa um novamente');
+      expect(firstPresenceAgain.users.every(user => user.email === undefined && user.username !== 'google.two'), 'A presença da segunda empresa vazou para a primeira.');
+      expect(secondPresence.users.every(user => user.username !== 'google.bot'), 'A presença da primeira empresa vazou para a segunda.');
+      return 'duas empresas criadas, convite Google ativou o participante, dados, usuários e presença isolados';
     });
 
     const login = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: TEST_USER, password: TEST_PASSWORD } });
