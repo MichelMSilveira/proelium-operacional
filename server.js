@@ -185,6 +185,10 @@ function companyWithAdminContact(company, users) {
   return { ...company, adminName: admin?.name || company.responsible || '', adminEmail: admin?.email || '', adminUsername: admin?.username || '' };
 }
 function membershipModules(user, company, fallback=[]) {
+  // A conta fundadora é a responsável por avaliar o produto e precisa conhecer
+  // todos os módulos pertinentes ao seu tipo de empresa. A limitação de cargo
+  // continua valendo para os demais participantes convidados.
+  if (company && (user?.accountType === 'founder' || user?.founder === true)) return modulesForCompanyTrial(company, user);
   if (Array.isArray(user?.modules) && user.modules.length) return user.modules;
   if (company?.licenseStatus === 'pending' || company?.status === 'pending') return modulesForCompanyTrial(company, user);
   return Array.isArray(company?.modules) && company.modules.length ? company.modules : fallback;

@@ -182,6 +182,7 @@ async function runFunctionalTestBot(options = {}) {
       const registrationPayload = parseJson(response, '/api/auth/register-google-company');
       const googleFullCookie = `proelium_session=${encodeURIComponent(signedSession({ username: registrationPayload.user.username, role: 'admin', name: registrationPayload.user.name, email: registrationPayload.user.email, companyId: registrationPayload.user.companyId, accessLevel: 'full', modules: [], expiresAt: Date.now() + 60_000 }, testSessionSecret))}`;
       expect(authenticated.status === 200 && payload.authenticated, 'Sessão criada não autenticou o usuário.');
+      expect(['commercial', 'quotes', 'clients', 'projects'].every(view => payload.user?.modules?.includes(view)), 'A conta fundadora em avaliação não recebeu os módulos pertinentes ao perfil contratante.');
       expect(registrationPayload.user?.accountType === 'founder' && registrationPayload.user?.founder === true && registrationPayload.company?.founderUsername === registrationPayload.user.username, 'A conta que abriu a empresa não foi registrada como fundadora.');
       const sharedData = await request(baseUrl, '/api/data', { headers: { Cookie: googleCookie } });
       expect(sharedData.status === 200, `Usuário cadastrado não entrou no app: HTTP ${sharedData.status}.`);
