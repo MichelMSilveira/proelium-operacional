@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Catálogo comercial reorganizado: Produtos e Serviços ganharam entradas separadas no fluxo de Orçamentos; produtos representam equipamentos/materiais e serviços representam mão de obra, com classificação preservada nos itens existentes. A Biblioteca técnica absorveu a área de conexões e passou para Projetos 360°, mantendo as rotas internas antigas para compatibilidade.
 - Regra de licença corrigida: uma empresa já aprovada com licença pendente não recebe mais o pacote de avaliação completo; o acesso passa a seguir os módulos liberados, enquanto o pacote de análise fica reservado ao cadastro ainda pendente.
 - Compatibilidade do ambiente local corrigida: o espelho JSON antigo agora recebe as coleções ausentes em memória sem apagar registros existentes, evitando quebra ao abrir Colaboradores, Financeiro e BI; cache web incrementado para `v316`.
 - Inicialização visual corrigida na camada de boot: o shell autenticado só é revelado depois do render final e da tentativa de sincronização, evitando mostrar um menu intermediário antes do menu completo; atualização crítica do service worker passou a ativar automaticamente o shell novo e o cache web foi incrementado para `v321`. No localhost, caches e registros antigos do service worker são removidos automaticamente, sem tocar nos dados locais.

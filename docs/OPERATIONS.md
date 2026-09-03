@@ -51,7 +51,9 @@ Ao abrir um espelho JSON legado, o app completa em memória as coleções operac
 
 Ao entrar em uma empresa pelo navegador, o app inicia a tela operacional sem os dados de demonstração enquanto busca o ambiente compartilhado; assim os indicadores não exibem valores provisórios. Dados reais aparecem depois da sincronização e de uma inclusão feita pelo botão ou pelo usuário.
 
-Em `Produtos e serviços`, o botão `Exportar tabela` baixa um CSV com os produtos e serviços visíveis no ambiente atual, incluindo SKU, marca, fornecedor, modalidade, custo, preço e status. A exportação é feita no navegador e não consulta nem inclui dados de outras empresas.
+Em `Produtos`, o botão `Exportar tabela` baixa um CSV com o catálogo da empresa, incluindo SKU, marca, fornecedor, modalidade, custo, preço e status. A exportação é feita no navegador e não consulta nem inclui dados de outras empresas.
+
+O catálogo aparece no menu como `Produtos` e `Serviços`, dentro do fluxo comercial. Produtos representam equipamentos e materiais; serviços representam mão de obra, visitas, diárias e atividades precificadas. A `Biblioteca técnica`, dentro de `Projetos 360°`, concentra fabricantes, modelos, portas e regras de conexão usados por produtos e pacotes comerciais.
 
 ## Projeto 360°
 
