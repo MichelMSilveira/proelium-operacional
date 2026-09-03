@@ -161,6 +161,7 @@ function validCnpj(value) { const digits=String(value||'').replace(/\D/g,''); if
 function validCpf(value) { const digits=String(value||'').replace(/\D/g,''); if(digits.length!==11||/^([0-9])\1+$/.test(digits))return false; const calc=(length)=>{let sum=0;for(let i=0;i<length;i++)sum+=Number(digits[i])*(length+1-i);const rest=(sum*10)%11;return rest===10?0:rest};return calc(9)===Number(digits[9])&&calc(10)===Number(digits[10]); }
 function inviteTokenHash(token) { return crypto.createHash('sha256').update(String(token)).digest('hex'); }
 function invitePublic(invite, companies) { const company=companies.find(item=>item.id===invite.companyId); return { id:invite.id, companyId:invite.companyId, companyName:company?.name||'Empresa', email:invite.email||'', role:invite.role||'operacao', modules:invite.modules||[], expiresAt:invite.expiresAt, usedAt:invite.usedAt||null, createdAt:invite.createdAt }; }
+function companyProfilePublic(company) { return { id:company.id, name:company.name||'', document:company.document||'', responsible:company.responsible||'', phone:company.phone||'', companyType:company.companyType||'', profileInfo:company.profileInfo||'', status:company.status||'pending', accessLevel:company.accessLevel||'limited', licenseStatus:company.licenseStatus||'pending', createdAt:company.createdAt||null }; }
 function httpsJson(url, options={}, body='') { return new Promise((resolve,reject)=>{ const request=https.request(url,{...options,headers:{'Content-Type':'application/x-www-form-urlencoded',...(options.headers||{})}},response=>{let raw='';response.on('data',chunk=>raw+=chunk);response.on('end',()=>{try{resolve({status:response.statusCode,data:JSON.parse(raw)})}catch{reject(new Error('Resposta OAuth inválida.'))}})});request.on('error',reject);if(body)request.write(body);request.end();}); }
 
 async function storedUserFromSession(req) {
@@ -339,6 +340,19 @@ async function handleRequest(req, res) {
     return sendJson(res, 200, { ok: true });
   }
 
+  if (pathname === '/api/company/profile' && ['GET','PUT'].includes(req.method)) {
+    const actor=await requireUser(req,res); if(!actor)return;
+    if(!isCompanyAdmin(actor))return sendJson(res,403,{error:'Apenas o administrador da empresa pode editar sua configuração.'});
+    try {
+      const companies=await storage.readCompanies(),index=companies.findIndex(company=>company.id===actor.companyId);
+      if(index<0)return sendJson(res,404,{error:'Empresa não encontrada.'});
+      if(req.method==='GET')return sendJson(res,200,{company:companyProfilePublic(companies[index])});
+      const payload=JSON.parse(await readBody(req)),name=String(payload.name||'').trim().slice(0,120),responsible=String(payload.responsible||'').trim().slice(0,80),phone=String(payload.phone||'').trim().slice(0,30),profileInfo=String(payload.profileInfo||'').trim().slice(0,2000);
+      if(!name||!responsible||phone.replace(/\D/g,'').length<10)return sendJson(res,400,{error:'Informe nome da empresa, responsável e telefone válido.'});
+      companies[index]={...companies[index],name,responsible,phone,profileInfo,updatedAt:new Date().toISOString()};
+      await storage.writeCompanies(companies); return sendJson(res,200,{ok:true,company:companyProfilePublic(companies[index])});
+    } catch { return sendJson(res,400,{error:'Configuração da empresa inválida.'}); }
+  }
   if (pathname === '/api/company/routines' && ['GET','PUT'].includes(req.method)) {
     const actor=await requireUser(req,res); if(!actor)return;
     const companyId=actor.companyId||'legacy';

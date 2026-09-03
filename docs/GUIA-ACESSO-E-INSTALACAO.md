@@ -18,6 +18,8 @@ O acesso mestre é separado dos e-mails das empresas: use o usuário `admin` e a
 
 O responsável da empresa vê **Usuários da empresa** e **Convites da empresa**. Ele consulta somente os participantes vinculados à própria empresa, podendo ativar, desativar ou remover um participante.
 
+Em **Configurações da empresa**, o administrador atualiza nome, responsável, telefone e informações do próprio ambiente. Essa tela permanece disponível mesmo quando a licença ainda está em análise. As credenciais de login continuam sendo as contas Google de cada participante; o Proelium não armazena nem troca senhas Google.
+
 Para convidar alguém, abra **Convites da empresa**, informe opcionalmente o e-mail Google e a função, e clique em **WhatsApp**. O link é aleatório, vale cinco minutos, não contém dados pessoais e só pode ser usado uma vez. A pessoa abre o link, confirma a própria conta Google e entra na empresa sem criar uma nova empresa.
 
 ## Windows
