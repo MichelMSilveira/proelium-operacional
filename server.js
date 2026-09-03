@@ -74,7 +74,11 @@ const companyTrialModules = {
 };
 function modulesForCompanyTrial(company, user) {
   const available = companyTrialModules[company?.companyType] || companyTrialModules.contratado;
-  if (user?.accountType === 'founder' || user?.role === 'admin') return available;
+  if (user?.accountType === 'founder' || user?.role === 'admin') {
+    // A conta fundadora avalia o produto inteiro dentro do próprio ambiente.
+    // Isso não concede acesso à administração da plataforma nem a outra empresa.
+    return [...new Set(Object.values(companyTrialModules).flat())];
+  }
   const roleViews = permissionsFor(user?.role);
   return available.filter(view => roleViews.includes('*') || roleViews.includes(view));
 }
