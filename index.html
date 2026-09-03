@@ -414,7 +414,7 @@
         </button>
       </div>
     </section>
-    <script src="app.js?release=20260903-google-onboarding"></script>
+    <script src="app.js?release=20260903-commercial-catalog"></script>
     <script>
       // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
       setTimeout(
@@ -446,7 +446,7 @@
             window.__showAppUpdate?.(event.data.registration);
         });
         navigator.serviceWorker
-           .register("./sw.js?release=20260903-google-onboarding")
+           .register("./sw.js?release=20260903-commercial-catalog")
           .then((registration) => {
             const activateWaiting = async (currentRegistration) => {
               if (!currentRegistration.waiting) return;

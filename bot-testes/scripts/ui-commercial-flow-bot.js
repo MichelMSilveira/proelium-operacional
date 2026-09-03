@@ -300,7 +300,21 @@ async function run() {
     const afterItem = await assertData(page, data => data.quoteRooms?.some(room => room.items?.some(item => Number(item.qty) === 2)), 'Item do orçamento não foi gravado pelo formulário de busca do catálogo.');
     console.log('[OK] UI — item de catálogo adicionado ao orçamento com quantidade e desconto');
 
-    const quoteId = afterItem.quotes[0].id;
+    await page.locator('[data-add="quoteService"]').click();
+    await page.locator('#quoteRequestItem').click();
+    await fillField(page, 'requestName', 'Instalação e configuração');
+    await fillField(page, 'requestCategory', 'Mão de obra');
+    await fillField(page, 'requestBrand', 'Equipe técnica');
+    await fillField(page, 'qty', '3');
+    await fillField(page, 'discount', '10');
+    await saveDialog(page);
+    const afterService = await assertData(page, data => {
+      const service = data.products?.find(item => item.name === 'Instalação e configuração' && item.catalogType === 'service');
+      return Boolean(service && data.quoteRooms?.some(room => room.items?.some(item => item.productId === service.id && Number(item.qty) === 3)));
+    }, 'Serviço não foi criado no catálogo e adicionado ao orçamento pela interface.');
+    console.log('[OK] UI — serviço criado no catálogo e adicionado ao orçamento com quantidade e desconto');
+
+    const quoteId = afterService.quotes[0].id;
     await page.locator(`[data-quote-set-status="Enviado"][data-quote-id="${quoteId}"]`).click();
     await page.waitForFunction(() => document.querySelector('.quote-status-enviado.active'), null, { timeout: 5_000 });
     const sent = await assertData(page, data => data.quotes?.some(item => item.id === quoteId && item.status === 'Enviado'), 'A mudança para Enviado não foi persistida.');
