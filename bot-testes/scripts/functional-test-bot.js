@@ -331,16 +331,27 @@ async function runFunctionalTestBot(options = {}) {
       return 'conflito detectado sem sobrescrever dados';
     });
 
+    let readerCookie = '';
     await check('Permissões', 'Perfil Leitura não altera tarefas', 'Revisar writableRoles e dataDomains no servidor.', async () => {
       const createUser = await api('/api/auth/users', { method: 'POST', body: { username: 'leitor.bot', name: 'Leitor Bot', role: 'leitura', active: true, password: 'Leitor-Bot-2026!' } });
       expect(createUser.status === 201, `Criação isolada do leitor retornou ${createUser.status}.`);
       const readerLogin = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: 'leitor.bot', password: 'Leitor-Bot-2026!' } });
-      const readerCookie = sessionCookie(readerLogin);
+      readerCookie = sessionCookie(readerLogin);
       const changed = structuredClone(state);
       changed.tasks.push({ id: 'tsk-negada', title: 'Não deve salvar' });
       const denied = await request(baseUrl, '/api/data', { method: 'PUT', headers: { Cookie: readerCookie }, body: { data: changed, baseRevision: revision } });
       expect(denied.status === 403, `Esperado 403; recebido ${denied.status}.`);
       return 'alteração indevida bloqueada';
+    });
+
+    await check('Segurança', 'Sessão revogada após exclusão do usuário', 'Validar a sessão contra o cadastro atual em toda requisição protegida.', async () => {
+      const removed = await api('/api/auth/users?username=leitor.bot', { method: 'DELETE' });
+      expect(removed.status === 200, `Exclusão do leitor retornou HTTP ${removed.status}: ${removed.text}`);
+      const afterRemoval = await request(baseUrl, '/api/auth/me', { headers: { Cookie: readerCookie } });
+      expect(afterRemoval.status === 401, `Sessão antiga continuou válida com HTTP ${afterRemoval.status}: ${afterRemoval.text}`);
+      const blockedApi = await request(baseUrl, '/api/data', { headers: { Cookie: readerCookie } });
+      expect(blockedApi.status === 401, `API continuou aceitando sessão removida com HTTP ${blockedApi.status}.`);
+      return 'sessão antiga bloqueada no /api/auth/me e na API após exclusão';
     });
 
     await check('Interface', 'Módulos funcionais publicados', 'Restaurar no app.js o módulo ausente e sua navegação.', async () => {

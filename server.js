@@ -127,13 +127,36 @@ function inviteTokenHash(token) { return crypto.createHash('sha256').update(Stri
 function invitePublic(invite, companies) { const company=companies.find(item=>item.id===invite.companyId); return { id:invite.id, companyId:invite.companyId, companyName:company?.name||'Empresa', email:invite.email||'', role:invite.role||'operacao', modules:invite.modules||[], expiresAt:invite.expiresAt, usedAt:invite.usedAt||null, createdAt:invite.createdAt }; }
 function httpsJson(url, options={}, body='') { return new Promise((resolve,reject)=>{ const request=https.request(url,{...options,headers:{'Content-Type':'application/x-www-form-urlencoded',...(options.headers||{})}},response=>{let raw='';response.on('data',chunk=>raw+=chunk);response.on('end',()=>{try{resolve({status:response.statusCode,data:JSON.parse(raw)})}catch{reject(new Error('Resposta OAuth inválida.'))}})});request.on('error',reject);if(body)request.write(body);request.end();}); }
 
-function requireUser(req, res) {
-  const user = currentUser(req);
-  if (!user) {
-    sendJson(res, 401, { error: 'É necessário entrar no sistema.' });
+async function storedUserFromSession(req) {
+  const session = currentUser(req);
+  if (!session) return null;
+  const users = await storage.readUsers();
+  const user = users.find(item => item.username === session.username && item.active !== false);
+  if (!user) return null;
+  if (session.email && user.email && String(session.email).toLowerCase() !== String(user.email).toLowerCase()) return null;
+  return {
+    ...session,
+    ...user,
+    email: user.email || session.email || '',
+    name: user.name || session.name || user.username,
+    role: user.role || session.role || 'operador',
+    companyId: user.companyId || session.companyId || 'legacy'
+  };
+}
+
+async function requireUser(req, res) {
+  try {
+    const user = await storedUserFromSession(req);
+    if (!user) {
+      sendJson(res, 401, { error: 'É necessário entrar no sistema.' });
+      return null;
+    }
+    return user;
+  } catch (error) {
+    console.error('Falha ao validar sessão:', error.message);
+    sendJson(res, 503, { error: 'Não foi possível validar a sessão agora.' });
     return null;
   }
-  return user;
 }
 
 function broadcastUpdate(saved, companyId='legacy') {
@@ -168,9 +191,14 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/auth/me' && req.method === 'GET') {
-    const user = currentUser(req);
-    return user ? sendJson(res, 200, { authenticated: true, user: publicUser(user) })
-      : sendJson(res, 401, { authenticated: false });
+    try {
+      const user = await storedUserFromSession(req);
+      return user ? sendJson(res, 200, { authenticated: true, user: publicUser(user) })
+        : sendJson(res, 401, { authenticated: false });
+    } catch (error) {
+      console.error('Falha ao consultar sessão:', error.message);
+      return sendJson(res, 503, { authenticated: false, error: 'Não foi possível validar a sessão agora.' });
+    }
   }
   if (pathname === '/api/auth/google/pending' && req.method === 'GET') {
     const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});
@@ -189,7 +217,7 @@ async function handleRequest(req, res) {
     res.writeHead(302,{Location:`https://accounts.google.com/o/oauth2/v2/auth?${params}`});res.end();return;
   }
   if (pathname === '/api/auth/consume-invite' && req.method === 'POST') {
-    try { const actor=currentUser(req),cookies=parseCookies(req),token=String(cookies.proelium_invite||'');if(!actor?.email||!token)return sendJson(res,401,{error:'Nenhum convite pendente.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});if(invite.email&&invite.email!==String(actor.email).toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});const users=await storage.readUsers(),index=users.findIndex(item=>item.username===actor.username);if(index<0)return sendJson(res,404,{error:'Usuário não encontrado.'});const user={...users[index],companyId:invite.companyId,role:invite.role||'operacao',active:true};users[index]=user;await storage.writeUsers(users);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));return sendJson(res,200,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao vincular convite:',error.message);return sendJson(res,400,{error:'Não foi possível vincular o convite.'}); }
+    try { const actor=await requireUser(req,res);if(!actor)return;const cookies=parseCookies(req),token=String(cookies.proelium_invite||'');if(!actor.email||!token)return sendJson(res,401,{error:'Nenhum convite pendente.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});if(invite.email&&invite.email!==String(actor.email).toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});const users=await storage.readUsers(),index=users.findIndex(item=>item.username===actor.username);if(index<0)return sendJson(res,404,{error:'Usuário não encontrado.'});const user={...users[index],companyId:invite.companyId,role:invite.role||'operacao',active:true};users[index]=user;await storage.writeUsers(users);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));return sendJson(res,200,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao vincular convite:',error.message);return sendJson(res,400,{error:'Não foi possível vincular o convite.'}); }
   }
   if (pathname === '/api/auth/join-google-company' && req.method === 'POST') {
     try { const cookies=parseCookies(req),pending=currentUser({headers:{cookie:`proelium_session=${cookies.proelium_google_pending||''}`}}),token=String(cookies.proelium_invite||'');if(!pending?.email||!token)return sendJson(res,401,{error:'Convite ou identificação Google expirado.'});const invites=await storage.readInvites(),invite=invites.find(item=>item.tokenHash===inviteTokenHash(token)&&!item.usedAt&&new Date(item.expiresAt)>new Date());if(!invite)return sendJson(res,410,{error:'Este convite expirou ou já foi utilizado.'});const companies=await storage.readCompanies(),company=companies.find(item=>item.id===invite.companyId);if(!company)return sendJson(res,404,{error:'Empresa do convite não encontrada.'});if(invite.email&&invite.email!==pending.email.toLowerCase())return sendJson(res,403,{error:'Este convite foi enviado para outro e-mail Google.'});const users=await storage.readUsers(),existing=users.find(item=>String(item.email||'').toLowerCase()===pending.email.toLowerCase());if(existing&&existing.companyId!==invite.companyId)return sendJson(res,409,{error:'Este e-mail já pertence a outra empresa.'});const username=existing?.username||`${pending.email.split('@')[0].replace(/[^a-z0-9._-]/g,'').slice(0,24)||'colaborador'}-${Date.now().toString().slice(-5)}`,user={...(existing||{}),username,name:existing?.name||pending.name||username,email:pending.email,role:invite.role||'operacao',active:true,companyId:invite.companyId,createdAt:existing?.createdAt||new Date().toISOString(),...passwordRecord(crypto.randomBytes(32).toString('hex'))};await storage.writeUsers(existing?users.map(item=>item.username===existing.username?user:item):[...users,user]);await storage.writeInvites(invites.map(item=>item.id===invite.id?{...item,usedAt:new Date().toISOString()}:item));const session=signedSession({username,role:user.role,name:user.name,email:user.email,companyId:invite.companyId,companyStatus:company.status,accessLevel:company.accessLevel||'limited',modules:invite.modules||[],expiresAt:Date.now()+sessionTtl});setSessionCookie(res,session,sessionTtl/1000,secureCookie);res.setHeader('Set-Cookie',[`proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${sessionTtl/1000}; HttpOnly; SameSite=Lax${secureCookie?' ; Secure':''}`.replace(';  ','; '),'proelium_invite=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax']);return sendJson(res,201,{ok:true,user:publicUser(user),company}); } catch(error) { console.error('Falha ao aceitar convite Google:',error.message);return sendJson(res,400,{error:'Não foi possível aceitar o convite.'}); }
@@ -249,26 +277,26 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/company/routines' && ['GET','PUT'].includes(req.method)) {
-    const actor=requireUser(req,res); if(!actor)return;
+    const actor=await requireUser(req,res); if(!actor)return;
     const companyId=actor.companyId||'legacy';
     if(req.method==='GET')return sendJson(res,200,{routines:await storage.readRoutines(companyId)});
     try { const payload=JSON.parse(await readBody(req)), routines=Array.isArray(payload.routines)?payload.routines.slice(0,200).map(item=>({id:String(item.id||crypto.randomUUID()).slice(0,80),name:String(item.name||'').trim().slice(0,120),description:String(item.description||'').trim().slice(0,500),periodicity:String(item.periodicity||'Sem periodicidade').slice(0,40),steps:Array.isArray(item.steps)?item.steps.slice(0,100).map(step=>String(step).trim().slice(0,200)).filter(Boolean):[]})).filter(item=>item.name):[]; await storage.writeRoutines(companyId,routines); return sendJson(res,200,{ok:true,routines}); } catch { return sendJson(res,400,{error:'Rotinas inválidas.'}); }
   }
   if (pathname === '/api/company/invites' && ['GET','POST','DELETE'].includes(req.method)) {
-    const actor=requireUser(req,res); if(!actor)return; if(!actor.companyId||actor.companyId==='legacy'||!['admin'].includes(actor.role))return sendJson(res,403,{error:'Apenas o administrador da empresa pode gerenciar convites.'});
+    const actor=await requireUser(req,res); if(!actor)return; if(!actor.companyId||actor.companyId==='legacy'||!['admin'].includes(actor.role))return sendJson(res,403,{error:'Apenas o administrador da empresa pode gerenciar convites.'});
     const companies=await storage.readCompanies(),company=companies.find(item=>item.id===actor.companyId); if(!company)return sendJson(res,404,{error:'Empresa não encontrada.'});
     const invites=(await storage.readInvites()).filter(item=>item.companyId===actor.companyId);
     if(req.method==='GET')return sendJson(res,200,{invites:invites.filter(item=>!item.usedAt&&new Date(item.expiresAt)>new Date()).map(item=>invitePublic(item,companies))});
     try { const payload=req.method==='DELETE'?{id:new URL(req.url,`http://${req.headers.host}`).searchParams.get('id')}:JSON.parse(await readBody(req)); if(req.method==='DELETE'){const next=(await storage.readInvites()).map(item=>item.id===String(payload.id)?{...item,usedAt:new Date().toISOString()}:item);await storage.writeInvites(next);return sendJson(res,200,{ok:true});} const token=crypto.randomBytes(32).toString('base64url'),allowedModules=['dashboard','projects','tasks','agenda','operations','reports','quality','collaborators','equipment','knowledge','routines'],modules=[...new Set((Array.isArray(payload.modules)?payload.modules:allowedModules).filter(item=>allowedModules.includes(item)))].slice(0,12),invite={id:`inv-${crypto.randomUUID()}`,companyId:actor.companyId,tokenHash:inviteTokenHash(token),email:String(payload.email||'').trim().toLowerCase().slice(0,160),role:['operacao','comercial','financeiro','leitura'].includes(payload.role)?payload.role:'operacao',modules,expiresAt:new Date(Date.now()+300000).toISOString(),createdAt:new Date().toISOString()}; const all=(await storage.readInvites()).filter(item=>item.companyId!==actor.companyId||(!item.usedAt&&new Date(item.expiresAt)>new Date()));await storage.writeInvites([...all,invite]);const base=process.env.BASE_URL||`${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}`;return sendJson(res,201,{ok:true,invite:invitePublic(invite,companies),url:`${base}/?invite=${encodeURIComponent(token)}`}); } catch { return sendJson(res,400,{error:'Convite inválido.'}); }
   }
   if (pathname === '/api/admin/companies' && ['GET','PUT'].includes(req.method)) {
-    const actor=requireUser(req,res); if(!actor)return; if(!isPlatformAdmin(actor)||actor.role!=='admin')return sendJson(res,403,{error:'Apenas administradores da plataforma podem analisar empresas.'});
+    const actor=await requireUser(req,res); if(!actor)return; if(!isPlatformAdmin(actor)||actor.role!=='admin')return sendJson(res,403,{error:'Apenas administradores da plataforma podem analisar empresas.'});
     const companies=await storage.readCompanies(); if(req.method==='GET')return sendJson(res,200,{companies});
     try { const payload=JSON.parse(await readBody(req)),id=String(payload.id||''),status=String(payload.status||'');if(!id||!['pending','approved','rejected','suspended'].includes(status))return sendJson(res,400,{error:'Atualização inválida.'});const index=companies.findIndex(company=>company.id===id);if(index<0)return sendJson(res,404,{error:'Empresa não encontrada.'});const allowedModules=['dashboard','clients','projects','commercial','quotes','products','survey','routines','reports','finance','knowledge'];const modules=Array.isArray(payload.modules)?[...new Set(payload.modules.filter(item=>allowedModules.includes(item)))].slice(0,20):(companies[index].modules||['dashboard','knowledge']);companies[index]={...companies[index],status,accessLevel:['limited','full'].includes(payload.accessLevel)?payload.accessLevel:(companies[index].accessLevel||'limited'),modules,licenseStatus:['pending','approved','rejected'].includes(payload.licenseStatus)?payload.licenseStatus:(companies[index].licenseStatus||'pending'),adminNotes:String(payload.adminNotes||companies[index].adminNotes||'').slice(0,1000),reviewedAt:new Date().toISOString()};await storage.writeCompanies(companies);return sendJson(res,200,{ok:true,companies}); } catch { return sendJson(res,400,{error:'Não foi possível atualizar o cadastro.'}); }
   }
 
   if (pathname === '/api/company/users' && ['GET','POST','DELETE'].includes(req.method)) {
-    const actor=requireUser(req,res); if(!actor)return;
+    const actor=await requireUser(req,res); if(!actor)return;
     if(!isCompanyAdmin(actor))return sendJson(res,403,{error:'Apenas administradores da empresa podem gerenciar seus usuários.'});
     let users;
     try { users=(await storage.readUsers()).filter(user=>user.companyId===actor.companyId); }
@@ -292,7 +320,7 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/auth/users' && ['GET', 'POST', 'DELETE'].includes(req.method)) {
-    const actor = requireUser(req, res);
+    const actor = await requireUser(req, res);
     if (!actor) return;
     if (actor.role !== 'admin' || !isPlatformAdmin(actor)) return sendJson(res, 403, { error: 'Apenas administradores da plataforma podem gerenciar usuários globais.' });
     let users;
@@ -329,7 +357,7 @@ async function handleRequest(req, res) {
 
   let authenticatedUser = null;
   if (pathname.startsWith('/api/')) {
-    authenticatedUser = requireUser(req, res);
+    authenticatedUser = await requireUser(req, res);
     if (!authenticatedUser) return;
     if (rejectsCrossOriginMutation(req)) return sendJson(res, 403, { error: 'Origem da solicitação não autorizada.' });
     touchPresence(authenticatedUser, req);

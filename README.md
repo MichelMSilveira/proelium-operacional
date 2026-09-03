@@ -69,7 +69,7 @@ Execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"`. O comando valid
 ## Limites conhecidos
 
 - a interface ainda usa o contrato agregado `/api/data`; a API versionada por recurso está documentada como evolução;
-- sessões emitidas permanecem válidas até expirar ou receber logout, mesmo que o usuário seja desativado;
+- cada requisição protegida confirma que o usuário ainda existe e está ativo; exclusões e desativações revogam imediatamente sessões antigas;
 - o modo `file:` existe para demonstrações locais e não deve ser usado como ambiente de produção;
 - a implantação exige configurar os secrets do VPS no GitHub Actions.
 

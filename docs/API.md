@@ -69,3 +69,7 @@ O acesso público usa Google OAuth com `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET
 Cada empresa possui administração própria: `GET/POST/DELETE /api/company/users` lista, ativa/desativa ou remove somente seus participantes; `GET/POST/DELETE /api/company/invites` cria e revoga convites. O convite contém um token aleatório com validade de cinco minutos, armazenado no servidor somente como hash. O participante aceita o convite identificando-se com a própria conta Google; não há criação duplicada de empresa.
 
 O estado operacional de `/api/data` é separado por `companyId`: sessões da mesma empresa compartilham sua base e sessões de empresas diferentes não leem nem recebem eventos umas das outras. O estado legado permanece no espaço `shared` para compatibilidade do administrador técnico.
+
+## Sessão e revogação
+
+O cookie de sessão é assinado, protegido por `HttpOnly` e tem validade limitada. Além da assinatura e da expiração, cada rota protegida confere o usuário atual no armazenamento; se ele for removido ou desativado, a sessão antiga passa a receber HTTP 401 imediatamente, sem esperar o vencimento do cookie.
