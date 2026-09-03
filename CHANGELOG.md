@@ -550,3 +550,4 @@
 - Removido o bloqueio silencioso de campos complementares no onboarding; somente a identificação crítica impede o envio e qualquer erro passa a ser exibido pelo app.
 - Preservado o tipo de participante como campo oculto após a escolha do perfil, garantindo que o envio use o fluxo correto de cadastro Google.
 - Corrigido o cálculo dos dígitos verificadores do CNPJ; a validação passa a usar os pesos oficiais da Receita Federal.
+- Ajustado o CNPJ sintético do teste funcional para um número matematicamente válido, evitando falso negativo no fluxo de cadastro Google.
