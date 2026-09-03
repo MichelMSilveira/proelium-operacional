@@ -2,7 +2,6 @@
 
 ## Em desenvolvimento
 
-- Menu corrigido por ambiente: “Minhas rotinas” deixou de aparecer em “Outros”, os módulos empresariais seguem uma ordem única por fluxo e a administração da plataforma ganhou ordem própria; Auditoria e recuperação agora aparece com o rótulo adequado em cada ambiente.
 - Estrutura do menu empresarial alinhada ao fluxo solicitado, com grupos Comercial, Projetos, Pós-venda, Gestão, Pessoas e acessos e Conta pessoal; itens internos permanecem disponíveis dentro do Projeto 360°.
 - Conta fundadora marcada como acesso ilimitado dentro da própria empresa, mantendo a separação da administração da plataforma.
 - Conta fundadora alinhada ao menu empresarial de referência: Comercial, levantamentos, orçamentos, compras, execução, gestão e pessoas passam a ser visíveis no ambiente da própria empresa, sem liberar administração da plataforma.
