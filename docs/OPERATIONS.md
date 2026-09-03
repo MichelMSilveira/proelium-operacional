@@ -37,6 +37,8 @@ Ao abrir um espelho JSON legado, o app completa em memória as coleções operac
 ## Diagnóstico rápido
 
 - `localhost:4173` não abre: servidor local não está rodando.
+
+- Se o login Google retornar `Validação Google expirada ou inválida`, volte para a página inicial e inicie o login novamente. O estado OAuth é temporário e assinado; ele também fica em cookie por cinco minutos para sobreviver a um reinício do servidor local durante a autorização.
 - Android abre e iPhone não: conta, VPN ou rede Tailscale do iPhone.
 - endereço `.ts.net` aponta para 5500: Tailscale ainda está ligado ao Live Server.
 - exclusão não aparece em outro dispositivo: abra `https://homehell.tail99a9b2.ts.net/api/data`. A resposta deve ser JSON; `Cannot GET /api/data` indica que o Tailscale aponta para o servidor errado.
