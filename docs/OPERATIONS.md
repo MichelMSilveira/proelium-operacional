@@ -48,6 +48,10 @@ Ao entrar em uma empresa pelo navegador, o app inicia a tela operacional sem os 
 
 Em `Produtos e serviços`, o botão `Exportar tabela` baixa um CSV com os produtos e serviços visíveis no ambiente atual, incluindo SKU, marca, fornecedor, modalidade, custo, preço e status. A exportação é feita no navegador e não consulta nem inclui dados de outras empresas.
 
+## Projeto 360°
+
+Depois da aprovação, o orçamento permanece como histórico comercial e o projeto passa a concentrar o ciclo operacional. A tela `Projetos 360°` reúne o resumo do orçamento aprovado, cronograma, tarefas, compras, execução, entrega, relatórios e pós-venda, mantendo os vínculos por `projectId` e `quoteId`. Os menus `Processos`, `Acompanhamento` e `Operação` foram reorganizados em áreas mais claras; o acesso global de pós-venda continua disponível para filas entre projetos.
+
 ## Bot de teste operacional
 
 Para avaliar o app publicado sem criar ou alterar registros, rode `npm run test:real-use`. Esse modo somente leitura confere o shell, os módulos essenciais, a saúde do servidor, a proteção da API e, quando informadas, a sessão e a leitura sincronizada.
