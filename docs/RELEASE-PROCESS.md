@@ -16,13 +16,32 @@ O APK e o aplicativo Windows são clientes da mesma aplicação central. Eles n�
 
 ## Sequência de uma entrega
 
-1. Concluir uma mudança pequena e coerente.
-2. Atualizar `CHANGELOG.md` e os guias relacionados.
-3. Incrementar o cache de `sw.js` quando houver mudança no shell web.
-4. Validar JavaScript e revisar o diff.
-5. Criar commit e enviar `main` ao GitHub.
-6. O GitHub Actions publica somente os arquivos de execução no VPS, preservando `data/`, usuários e credenciais.
-7. Confirmar serviço ativo e resposta HTTP local no VPS.
+1. Atualizar a cópia local e criar uma branch de trabalho; não desenvolver diretamente na `main`.
+2. Concluir uma mudança pequena e coerente.
+3. Atualizar `CHANGELOG.md` e os guias relacionados.
+4. Incrementar o cache de `sw.js` quando houver mudança no shell web.
+5. Executar `./Validar-Local.ps1`, revisar o app em `http://localhost:4173` e conferir o diff.
+6. Enviar a branch de trabalho ao GitHub para manter o histórico, sem acionar produção.
+7. Depois da aprovação, integrar a branch na `main`; somente esse push publica no VPS.
+8. O GitHub Actions publica somente os arquivos de execução no VPS, preservando `data/`, usuários e credenciais.
+9. Confirmar serviço ativo e resposta HTTP no VPS antes de considerar a entrega concluída.
+
+## Desenvolvimento local primeiro
+
+O servidor local é a referência durante a construção e não altera o VPS:
+
+```powershell
+git switch -c codex/minha-tarefa
+.\Iniciar-App.ps1
+```
+
+Em outra janela, valide a branch sem tocar na produção:
+
+```powershell
+.\Validar-Local.ps1
+```
+
+Os bots iniciam servidores isolados e usam dados temporários. Para testar manualmente com os dados locais do projeto, use `http://localhost:4173`; não use o endereço público enquanto a mudança ainda estiver em avaliação. O VPS só deve ser conferido depois do merge em `main`.
 
 ## Automação
 
