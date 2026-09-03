@@ -3582,6 +3582,28 @@ render=()=>{
 views.projects=(()=>{const base=views.projects;return()=>base().replace('Projetos e execução','Projetos 360°').replace(/Abrir execução/g,'Abrir projeto 360°')})();
 views.installations=(()=>{const base=views.installations;return()=>base().replace('Acompanhamento','Cronograma e acompanhamento').replace('Abrir operação','Abrir pós-venda e ordens')})();
 views.operations=(()=>{const base=views.operations;return()=>base().replace('Operação e pós-venda','Pós-venda e ordens')})();
+function forecastPhaseDays(project){
+  const total=Math.max(0,Number(project.forecastDays||0)),saved=project.forecastPhaseDays||{},hasSaved=Object.values(saved).some(value=>Number(value)>0);
+  if(hasSaved)return {technical:Number(saved.technical||0),infrastructure:Number(saved.infrastructure||0),installation:Number(saved.installation||0),delivery:Number(saved.delivery||0)};
+  if(total<4)return {technical:0,infrastructure:0,installation:total,delivery:0};
+  const remaining=total-4,technical=1+Math.floor(remaining*.2),infrastructure=1+Math.floor(remaining*.2),delivery=1+Math.floor(remaining*.1),installation=Math.max(1,total-technical-infrastructure-delivery);
+  return {technical,infrastructure,installation,delivery};
+}
+function schedulePhaseTimeline(project){
+  const forecast=projectForecast(project),phases=forecastPhaseDays(project),definitions=[['technical','Projeto técnico','Azul'],['infrastructure','Cabeamento e infraestrutura','Verde'],['installation','Instalação','Laranja'],['delivery','Testes e entrega','Roxo']],days=[],start=project.forecastStart||'';let offset=0;
+  definitions.forEach(([key,label,color])=>{for(let index=0;index<phases[key];index++){const date=start?new Date(`${start}T12:00:00`):null;if(date&&!Number.isNaN(date.getTime()))date.setDate(date.getDate()+offset);days.push({label,color,key,number:offset+1,date:date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):`Dia ${offset+1}`});offset++}});
+  return {forecast,phases,days,definitions};
+}
+const scheduleTimelineView=views.installations;
+views.installations=()=>{
+  const projects=(state.data.projects||[]).filter(project=>matches(project.name,project.code,clientName(project.clientId),project.manager,project.status));
+  const selectedId=state.selectedScheduleProject&&projects.some(project=>project.id===state.selectedScheduleProject)?state.selectedScheduleProject:projects[0]?.id||'';
+  const selected=projects.find(project=>project.id===selectedId),timeline=selected?schedulePhaseTimeline(selected):null;
+  const list=projects.map(project=>`<button type="button" class="schedule-project ${project.id===selectedId?'active':''}" data-schedule-project="${project.id}"><strong>${project.name}</strong><small>${project.code||'Sem código'} · ${clientName(project.clientId)}</small><span>${project.forecastDays?`${project.forecastDays} dias previstos`:'Previsão não definida'} · ${project.progress||0}% concluído</span></button>`).join('');
+  const detail=selected&&timeline?`<section class="card schedule-detail"><div class="card-head"><div><p class="eyebrow">CRONOGRAMA LINEAR</p><h3>${selected.name}</h3><p class="subtext">Cada quadrado representa um dia previsto. As cores identificam a fase da obra.</p></div><div class="module-toolbar"><button type="button" class="button secondary" data-project-forecast="${selected.id}">${timeline.forecast.configured?'Ajustar previsão':'Definir previsão'}</button><button type="button" class="button secondary" data-open-project="${selected.id}">Abrir Projeto 360°</button></div></div>${timeline.forecast.configured?`<div class="schedule-legend">${timeline.definitions.map(([key,label,color])=>`<span><i class="schedule-dot schedule-phase-${key}"></i>${label}</span>`).join('')}</div><div class="schedule-track" aria-label="Cronograma de ${selected.name}">${timeline.days.map(day=>`<div class="schedule-day schedule-phase-${day.key}" title="${day.label} · ${day.date}"><b>${day.number}</b><small>${day.date}</small></div>`).join('')}</div><div class="schedule-summary"><span><strong>${timeline.forecast.days}</strong> dias</span><span><strong>${timeline.forecast.team}</strong> profissional(is)</span><span><strong>${money(timeline.forecast.labor)}</strong> mão de obra prevista</span><span><strong>${money(timeline.forecast.actual.total)}</strong> execução realizada</span></div>`:'<div class="empty">Defina a previsão no botão acima para montar a linha de dias desta obra.</div>'}</section>`:'<section class="card empty">Nenhum projeto encontrado.</section>';
+  return heading('Cronograma e acompanhamento','Lista de projetos com uma visão linear de dias, fases, equipe e previsão de execução.')+`<div class="schedule-layout"><aside class="card schedule-projects"><div class="card-head"><div><h3>Projetos</h3><span class="subtext">${projects.length} obra(s)</span></div></div>${list||'<div class="empty">Aprove um orçamento para criar o primeiro projeto.</div>'}</aside><div>${detail}</div></div>`;
+};
+document.addEventListener('click',event=>{const button=event.target.closest('[data-schedule-project]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();state.selectedScheduleProject=button.dataset.scheduleProject;render()},true);
 render();
 // Só inicia a autenticação depois que todos os aprimoramentos do menu e das telas
 // foram registrados. Assim o primeiro render autenticado já usa a interface final.
