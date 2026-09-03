@@ -455,7 +455,7 @@ async function handleRequest(req, res) {
       if (existing.companyId && existing.companyId !== 'legacy') return sendJson(res, 409, { error: 'Usuários de empresas devem ser gerenciados pela própria empresa.' });
       const email = String(payload.email || existing.email || '').trim().toLowerCase();
       if (email && !/^\S+@\S+\.\S+$/.test(email)) return sendJson(res, 400, { error: 'E-mail inválido.' });
-      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: payload.role || existing.role || 'operador', active: payload.active !== false, companyId: null };
+      const next = { ...existing, username, email, name: String(payload.name || username).trim().slice(0, 80), role: isPlatformAdmin(existing) ? 'admin' : (payload.role || existing.role || 'operador'), active: payload.active !== false, companyId: null };
       if (password) { if (password.length < 10) return sendJson(res, 400, { error: 'A senha deve ter pelo menos 10 caracteres.' }); Object.assign(next, passwordRecord(password)); }
       users[index >= 0 ? index : users.length] = next;
       await storage.writeUsers(users);

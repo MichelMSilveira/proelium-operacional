@@ -4,6 +4,7 @@
 
 - Usuários de suporte separados dos ambientes empresariais: o painel global lista somente contas sem `companyId`, o cadastro de suporte nunca aceita vínculo com empresa e a API impede que uma conta empresarial seja administrada pela lista global. A equipe de suporte pode consultar o status das empresas sem acessar seus dados operacionais.
 - Contato dos administradores de contas incluído na central: cada empresa exibe o administrador Google responsável e atalhos seguros para e-mail e WhatsApp, mantendo a comunicação fora dos dados privados dos projetos.
+- Conta mestre protegida no cadastro global: ela continua administradora da plataforma e não pode ser rebaixada para suporte nem alterada como usuário comum.
 - Logout tornado independente do vínculo do botão: a ação global encerra a sessão mesmo após recarga ou atualização do PWA, permitindo trocar da empresa para o acesso mestre.
 - Botão **Sair** do cabeçalho fixado ao lado da identificação do usuário, com saída funcional para trocar da conta empresarial para o acesso mestre sem limpar a sessão manualmente.
 - Saída de sessão reforçada: o botão **Sair** fica disponível no cabeçalho e no menu lateral para encerrar a sessão Google e permitir uma nova entrada sem limpar cookies manualmente.
