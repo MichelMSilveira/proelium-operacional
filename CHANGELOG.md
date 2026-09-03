@@ -543,3 +543,4 @@
 - Corrigida a persistência PostgreSQL do tipo de perfil, mensagem preliminar e status da licença.
 - O acesso limitado e a licença pendente agora ficam sinalizados na sessão do usuário.
 - Corrigida a autorização do administrador limitado: o usuário não recebe mais todos os módulos apenas por possuir o papel administrativo.
+- Corrigido o encerramento do onboarding Google: a sessão e os dados são carregados antes de fechar a tela de cadastro, evitando o loop.
