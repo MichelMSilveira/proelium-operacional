@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Botão **Sair** do cabeçalho fixado ao lado da identificação do usuário, com saída funcional para trocar da conta empresarial para o acesso mestre sem limpar a sessão manualmente.
 - Saída de sessão reforçada: o botão **Sair** fica disponível no cabeçalho e no menu lateral para encerrar a sessão Google e permitir uma nova entrada sem limpar cookies manualmente.
 - Administração da empresa ampliada: o administrador empresarial vê as configurações mesmo com licença limitada, edita identificação e contato da própria empresa e acessa equipe e convites sem enxergar a administração da plataforma.
 - Gestão de contas empresariais esclarecida: cada participante é identificado por sua conta Google; a empresa controla função, ativação, remoção e exceção de acesso, enquanto senhas Google permanecem fora do Proelium.
