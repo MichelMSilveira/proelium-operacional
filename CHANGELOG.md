@@ -4,6 +4,7 @@
 
 - Visibilidade por licença aplicada na API: orçamentos, salas e dados comerciais continuam restritos ao escopo comercial; quando um orçamento é convertido em projeto, o projeto e seus dados operacionais ficam disponíveis aos colaboradores da mesma empresa com permissão de projetos/operação/financeiro, sem expor dados a outras empresas.
 - Sincronização protegida por escopo: cada usuário recebe somente os domínios de dados compatíveis com suas permissões, gravações parciais preservam os demais domínios da empresa e o cache local passou a ser separado por empresa e usuário.
+- Licença da empresa incorporada à sessão: após a análise da plataforma, o próximo login aplica o nível e os módulos autorizados também ao proprietário do cadastro, sem perder as restrições específicas de um convite.
 - Painel de empresas em análise agora permite excluir uma empresa de forma exclusiva pela administração da plataforma, removendo também usuários, convites, rotinas e dados operacionais vinculados, com confirmação explícita.
 - A lista de usuários da empresa permanece limitada aos participantes do `companyId` do administrador; a lista global continua disponível somente para a administração da plataforma.
 - Auditoria de isolamento reforçada: o administrador de uma empresa não consegue revogar convites de outra, e as rotas de convite continuam usando exclusivamente o vínculo da sessão autenticada.

@@ -70,6 +70,8 @@ Cada empresa possui administração própria: `GET/POST/DELETE /api/company/user
 
 O estado operacional de `/api/data` é separado por `companyId`: sessões da mesma empresa compartilham sua base e sessões de empresas diferentes não leem nem recebem eventos umas das outras. Além do isolamento por empresa, a resposta é filtrada pelo escopo licenciado do usuário: `quotes`, `quoteRooms`, `packages` e `procurementRequests` pertencem ao escopo comercial; `projects`, `projectChecklists`, `projectDeliveries` e `supportTickets` pertencem ao escopo de projetos. Assim, a conversão de um orçamento em projeto permite que colaboradores com licença pertinente ao projeto trabalhem nele sem receber o orçamento privado. Presença, colaboração e pedidos de auxílio em `/api/events` também são filtrados pelo mesmo vínculo. `DELETE /api/admin/companies?id=...` é exclusivo da administração da plataforma e remove a empresa junto com usuários, convites, rotinas e estado operacional vinculados. O estado legado permanece no espaço `shared` para compatibilidade do administrador técnico.
 
+O nível e os módulos definidos para a empresa no painel da plataforma também entram na sessão do proprietário no próximo login. Um convite pode impor uma restrição adicional de módulos ao colaborador; quando há módulos individuais na sessão, eles são usados como o escopo desse vínculo.
+
 ## Sessão e revogação
 
 O cookie de sessão é assinado, protegido por `HttpOnly` e tem validade limitada. Além da assinatura e da expiração, cada rota protegida confere o usuário atual no armazenamento; se ele for removido ou desativado, a sessão antiga passa a receber HTTP 401 imediatamente, sem esperar o vencimento do cookie.
