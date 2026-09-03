@@ -6,6 +6,7 @@
 - Conta fundadora marcada como acesso ilimitado dentro da própria empresa, mantendo a separação da administração da plataforma.
 - Conta fundadora alinhada ao menu empresarial de referência: Comercial, levantamentos, orçamentos, compras, execução, gestão e pessoas passam a ser visíveis no ambiente da própria empresa, sem liberar administração da plataforma.
 - Smoke bot tornado autônomo no ambiente local: `npm run test:bot` inicia um servidor temporário quando nenhuma URL externa é informada, aguarda o health check e encerra o processo ao finalizar; a documentação de publicação foi alinhada ao domínio HTTPS validado.
+- Corrigida a reorganização do menu: conexões de produtos e diagrama técnico voltam a ficar acessíveis, Conhecimento recupera seu nome e BI volta a ter rótulos distintos; Processos permanece absorvido pelo Projeto 360°.
 
 - Exemplos comerciais demonstrativos adicionados de forma segura e idempotente: carga opcional de cinco ciclos identificados como DEMO, cobrindo oportunidade aberta, levantamento, proposta enviada, aprovação com cliente/projeto e recusa sem conversão. Nenhum registro existente é apagado ou substituído.
 - Área comercial consolidada em um fluxo único: oportunidade, levantamento, orçamento, decisão e conversão em cliente/projeto. Cada oportunidade agora mostra o próximo passo real, o orçamento mais recente e atalhos coerentes; a conversão manual é bloqueada sem orçamento aprovado.
