@@ -8,7 +8,7 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => errors.push(`${error.message} @ ${error.stack || 'sem stack'}`));
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('401 (Unauthorized)')) errors.push(message.text()); });
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
@@ -28,7 +28,7 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
     }
     if (!username || !password) return;
     const views = ['dashboard', 'commercial', 'clients', 'projects', 'processes', 'purchases', 'diagram', 'installations', 'agenda', 'tasks', 'operations', 'reports', 'equipment', 'execution', 'collaborators', 'quality', 'knowledge', 'finance', 'bi', 'audit'];
-    const expected = { dashboard: 'Visão geral', commercial: 'Comercial', clients: 'Clientes', projects: 'Projetos', processes: 'Processos', purchases: 'Compras', diagram: 'Diagrama', installations: 'Instalação', agenda: 'Agenda', tasks: 'Tarefas', operations: 'Operação', reports: 'Relatórios', equipment: 'Equipamentos', execution: 'Execução', collaborators: 'Colaboradores', quality: 'Qualidade', knowledge: 'Conhecimento', finance: 'Financeiro', bi: 'BI', audit: 'Auditoria' };
+    const expected = { dashboard: 'Visão geral', commercial: 'Comercial', clients: 'Clientes', projects: 'Projetos', processes: 'Processos', purchases: 'Compras', diagram: 'Diagrama', installations: 'Instalação', agenda: 'Agenda', tasks: 'Tarefas', operations: 'Pós-venda', reports: 'Relatórios', equipment: 'Equipamentos', execution: 'Execução', collaborators: 'Colaboradores', quality: 'Qualidade', knowledge: 'Conhecimento', finance: 'Financeiro', bi: 'BI', audit: 'Auditoria' };
     for (const view of views) {
       const button = page.locator(`[data-view="${view}"]`).first();
       if (await button.count() === 0) continue;
