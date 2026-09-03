@@ -26,7 +26,8 @@ const usersFile = path.join(dataDirectory, 'users.json');
 const companiesFile = path.join(dataDirectory, 'companies.json');
 const routinesFile = path.join(dataDirectory, 'routines.json');
 const invitesFile = path.join(dataDirectory, 'company-invites.json');
-const storage = createStorage({ dataFile, usersFile, companiesFile, routinesFile, invitesFile });
+const companyDataDirectory = path.join(dataDirectory, 'company-data');
+const storage = createStorage({ dataFile, usersFile, companiesFile, routinesFile, invitesFile, companyDataDirectory });
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
@@ -135,9 +136,9 @@ function requireUser(req, res) {
   return user;
 }
 
-function broadcastUpdate(saved) {
+function broadcastUpdate(saved, companyId='legacy') {
   const message = `event: data-updated\ndata: ${JSON.stringify({ revision: saved.revision, updatedAt: saved.updatedAt })}\n\n`;
-  for (const client of eventClients) client.write(message);
+  for (const client of eventClients) if (client.companyId===companyId) client.write(message);
 }
 function broadcastEvent(name, payload) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) client.write(message); }
 function normalizeDevice(value) { const device = String(value || '').trim().slice(0, 32); return ['Android', 'iPhone/iPad', 'Windows', 'macOS', 'Linux', 'Navegador'].includes(device) ? device : 'Navegador'; }
@@ -362,7 +363,7 @@ async function handleRequest(req, res) {
 
   if (pathname === '/api/data' && req.method === 'GET') {
     try {
-      return sendJson(res, 200, await storage.readSharedData());
+      return sendJson(res, 200, await storage.readSharedData(authenticatedUser.companyId || 'legacy'));
     } catch {
       return sendJson(res, 500, { error: 'Não foi possível ler os dados compartilhados.' });
     }
@@ -379,6 +380,7 @@ async function handleRequest(req, res) {
     res.write('retry: 3000\n\n');
     eventClients.add(res);
     res.username = authenticatedUser.username;
+    res.companyId = authenticatedUser.companyId || 'legacy';
     res.userRole = normalizeRole(authenticatedUser.role);
     res.device = deviceFromUserAgent(req.headers['user-agent']);
     res.available = presence.get(authenticatedUser.username)?.available !== false;
@@ -398,7 +400,7 @@ async function handleRequest(req, res) {
         ? new Set([...roleAllowed].filter(view => authenticatedUser.modules.includes(view)))
         : roleAllowed;
       if (allowed) {
-        const current = await storage.readSharedData();
+        const current = await storage.readSharedData(authenticatedUser.companyId || 'legacy');
         const changedDomains = Object.keys(dataDomains).filter(view => {
           const key = dataDomains[view];
           return JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
@@ -407,7 +409,7 @@ async function handleRequest(req, res) {
         if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
       }
       const baseRevision = Number(payload.baseRevision || 0);
-      const result = await storage.writeSharedData(payload.data, baseRevision, authenticatedUser.username);
+      const result = await storage.writeSharedData(payload.data, baseRevision, authenticatedUser.username, authenticatedUser.companyId || 'legacy');
       if (result.conflict) {
         return sendJson(res, 409, {
           error: 'Os dados foram atualizados por outro aparelho.',
@@ -417,7 +419,7 @@ async function handleRequest(req, res) {
       }
       const saved = result.value;
       sendJson(res, 200, { ok: true, updatedAt: saved.updatedAt, revision: saved.revision });
-      broadcastUpdate(saved);
+      broadcastUpdate(saved, authenticatedUser.companyId || 'legacy');
       return;
     } catch {
       return sendJson(res, 400, { error: 'Não foi possível salvar os dados.' });

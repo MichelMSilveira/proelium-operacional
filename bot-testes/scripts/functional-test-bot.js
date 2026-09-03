@@ -187,7 +187,23 @@ async function runFunctionalTestBot(options = {}) {
       const invite = await request(baseUrl, '/api/company/invites', { method: 'POST', headers: { Cookie: googleCookie }, body: { email: 'convidado@example.invalid', role: 'operacao' } });
       const invitePayload = parseJson(invite, '/api/company/invites');
       expect(invite.status === 201 && /^http:\/\/127\.0\.0\.1:\d+\/\?invite=/.test(invitePayload.url||''), `Convite temporário inválido: HTTP ${invite.status}: ${invite.text}`);
-      return 'empresa salva, sessão criada, API liberada, escopos separados e convite temporário criado';
+      const secondPending=signedSession({ email: 'google.two@example.invalid', name: 'Google Two', expiresAt: Date.now() + 60_000 }, testSessionSecret);
+      const secondRegistration=await request(baseUrl, '/api/auth/register-google-company', { method: 'POST', headers: { Cookie: `proelium_google_pending=${encodeURIComponent(secondPending)}` }, body: { companyType: 'contratante', companyName: 'Segunda Empresa Google Bot', document: '98.765.432/0001-98', responsible: 'Google Two', phone: '+55 11 98888-0000', profileInfo: '{}' } });
+      expect(secondRegistration.status===201, `Segunda empresa retornou HTTP ${secondRegistration.status}: ${secondRegistration.text}`);
+      const secondCookie=sessionCookie(secondRegistration), firstState={companyMarker:'empresa-um',clients:[]}, secondState={companyMarker:'empresa-dois',clients:[]};
+      const firstWrite=await request(baseUrl, '/api/data', { method:'PUT', headers:{Cookie:googleCookie}, body:{data:firstState,baseRevision:0} });
+      expect(firstWrite.status===200, `Gravação da primeira empresa retornou HTTP ${firstWrite.status}: ${firstWrite.text}`);
+      const secondBeforeWrite=await request(baseUrl, '/api/data', { headers:{Cookie:secondCookie} });
+      expect(secondBeforeWrite.status===200 && !String(secondBeforeWrite.text).includes('empresa-um'), 'A segunda empresa recebeu dados da primeira.');
+      const secondWrite=await request(baseUrl, '/api/data', { method:'PUT', headers:{Cookie:secondCookie}, body:{data:secondState,baseRevision:0} });
+      expect(secondWrite.status===200, `Gravação da segunda empresa retornou HTTP ${secondWrite.status}: ${secondWrite.text}`);
+      const firstRead=await request(baseUrl, '/api/data', { headers:{Cookie:googleCookie} }),secondRead=await request(baseUrl, '/api/data', { headers:{Cookie:secondCookie} });
+      expect(firstRead.status===200 && String(firstRead.text).includes('empresa-um') && !String(firstRead.text).includes('empresa-dois'), 'A primeira empresa recebeu dados cruzados.');
+      expect(secondRead.status===200 && String(secondRead.text).includes('empresa-dois') && !String(secondRead.text).includes('empresa-um'), 'A segunda empresa recebeu dados cruzados.');
+      const firstUsers=parseJson(await request(baseUrl, '/api/company/users', { headers:{Cookie:googleCookie} }), '/api/company/users empresa um');
+      const secondUsers=parseJson(await request(baseUrl, '/api/company/users', { headers:{Cookie:secondCookie} }), '/api/company/users empresa dois');
+      expect(firstUsers.users.length===1 && secondUsers.users.length===1 && firstUsers.users[0].email!==secondUsers.users[0].email, 'A lista de usuários foi compartilhada entre empresas.');
+      return 'duas empresas criadas, dados e usuários isolados, escopos separados e convite temporário criado';
     });
 
     const login = await request(baseUrl, '/api/auth/login', { method: 'POST', body: { username: TEST_USER, password: TEST_PASSWORD } });

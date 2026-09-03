@@ -6,6 +6,7 @@
 - Convites de empresa agora têm tela própria de participantes, vínculo exclusivo por Google, expiração de cinco minutos e compartilhamento direto pelo WhatsApp.
 - Convites para novos e-mails Google agora entram no fluxo correto de adesão à empresa, sem abrir cadastro duplicado de empresa.
 - Bot de navegação atualizado para acompanhar o login Google-only por sessão de teste e percorrer as áreas sem depender de campos de usuário e senha removidos da interface.
+- Estado operacional separado por empresa no servidor e no armazenamento local do navegador; atualizações em tempo real também ficam limitadas à empresa da sessão.
 
 - Painel administrativo agora exibe e alterna a licença de uso separadamente do acesso limitado.
 
