@@ -72,6 +72,8 @@ O estado operacional de `/api/data` é separado por `companyId`: sessões da mes
 
 O nível e os módulos definidos para a empresa no painel da plataforma também entram na sessão do proprietário no próximo login. Um convite pode impor uma restrição adicional de módulos ao colaborador; quando há módulos individuais na sessão, eles são usados como o escopo desse vínculo.
 
+O cargo de um colaborador define o acesso padrão. O administrador da empresa pode usar `POST /api/company/users` com `companyAccessOverride: "full"` para liberar todos os domínios operacionais somente dentro do `companyId` da empresa, ou `null` para restaurar o acesso do cargo. Esse override nunca concede `platformAdmin` e não pode ser criado pelo link de convite.
+
 ## Sessão e revogação
 
 O cookie de sessão é assinado, protegido por `HttpOnly` e tem validade limitada. Além da assinatura e da expiração, cada rota protegida confere o usuário atual no armazenamento; se ele for removido ou desativado, a sessão antiga passa a receber HTTP 401 imediatamente, sem esperar o vencimento do cookie.
