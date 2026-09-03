@@ -545,3 +545,4 @@
 - Corrigida a autorização do administrador limitado: o usuário não recebe mais todos os módulos apenas por possuir o papel administrativo.
 - Corrigido o encerramento do onboarding Google: a sessão e os dados são carregados antes de fechar a tela de cadastro, evitando o loop.
 - Completado o esquema PostgreSQL de empresas com responsável, telefone e status, eliminando a falha que impedia finalizar o cadastro.
+- Mantido o acesso público exclusivamente pelo Google; usuário e senha internos não são exibidos como porta de entrada do produto.
