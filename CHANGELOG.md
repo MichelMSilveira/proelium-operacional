@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Smoke bot tornado autônomo no ambiente local: `npm run test:bot` inicia um servidor temporário quando nenhuma URL externa é informada, aguarda o health check e encerra o processo ao finalizar; a documentação de publicação foi alinhada ao domínio HTTPS validado.
+
 - Exemplos comerciais demonstrativos adicionados de forma segura e idempotente: carga opcional de cinco ciclos identificados como DEMO, cobrindo oportunidade aberta, levantamento, proposta enviada, aprovação com cliente/projeto e recusa sem conversão. Nenhum registro existente é apagado ou substituído.
 - Área comercial consolidada em um fluxo único: oportunidade, levantamento, orçamento, decisão e conversão em cliente/projeto. Cada oportunidade agora mostra o próximo passo real, o orçamento mais recente e atalhos coerentes; a conversão manual é bloqueada sem orçamento aprovado.
 - Bot comercial ampliado para percorrer ciclos completos: oportunidade até orçamento, revisão preservada, cálculo de bruto/desconto/líquido/custo, aprovação convertida em cliente e projeto e recusa encerrada sem conversão.

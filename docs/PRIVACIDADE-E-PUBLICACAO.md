@@ -30,6 +30,18 @@ Somente código, documentação técnica, imagens institucionais e dados fictíc
 - [ ] `npm run check` passou.
 - [ ] O diff foi revisado com `git diff --check`.
 
+## Checklist para abertura pública
+
+- [ ] O domínio público é `https://app.proeliumservicos.com.br` e o certificado HTTPS responde sem alerta.
+- [ ] `GET /api/health` retorna `ok: true` com `storage: postgresql` em produção.
+- [ ] `SESSION_SECRET` de produção é aleatório e tem pelo menos 32 caracteres.
+- [ ] Google OAuth está configurado com o redirect URI HTTPS do domínio.
+- [ ] O usuário mestre não é usado para contas empresariais ou suporte.
+- [ ] Backup e restauração do PostgreSQL foram testados e há monitoramento do serviço.
+- [ ] Os secrets `VPS_HOST`, `VPS_USER` e `VPS_SSH_KEY` estão configurados no GitHub Actions.
+- [ ] Termos de uso, política de privacidade e canal de suporte estão publicados.
+- [ ] Foi feito um teste de cadastro, login, logout, convite e isolamento entre duas empresas.
+
 ## Ponto pendente
 
-O cliente Android ainda contém o endereço IP do VPS. Ele deve ser substituído por um domínio HTTPS somente depois que `app.proeliumservicos.com.br` estiver configurado e testado, para não interromper o acesso ao sistema.
+O domínio `app.proeliumservicos.com.br` já resolve para o VPS e respondeu corretamente nos testes desta revisão. Os clientes que ainda apontarem para o IP devem ser atualizados gradualmente para esse domínio HTTPS.

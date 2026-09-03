@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "check": "node --check app.js && node --check server.js && node --check storage.js && node --test test/encoding.test.js test/storage.test.js bot-testes/test/smoke-bot.test.js bot-testes/test/functional-test-bot.test.js",
-    "test:bot": "node bot-testes/scripts/smoke-bot.js",
+    "test:bot": "node bot-testes/scripts/run-smoke-bot.js",
     "test:real-use": "node bot-testes/scripts/real-use-bot.js",
     "test:ui-use": "node bot-testes/scripts/ui-use-bot.js",
     "test:ui-flow": "node bot-testes/scripts/ui-commercial-flow-bot.js",
