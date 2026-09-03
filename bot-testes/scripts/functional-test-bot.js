@@ -132,6 +132,7 @@ async function runFunctionalTestBot(options = {}) {
   let serverError = '';
   child.stderr.on('data', chunk => { serverError += chunk.toString(); });
   const checks = [];
+  let googleCompanyCookie = '';
   const check = async (group, name, correction, action) => {
     try {
       const detail = String(await action() || 'Concluído');
@@ -174,6 +175,7 @@ async function runFunctionalTestBot(options = {}) {
       });
       expect(response.status === 201, `Cadastro Google retornou HTTP ${response.status}: ${response.text}`);
       const googleCookie = sessionCookie(response);
+      googleCompanyCookie = googleCookie;
       expect(googleCookie.startsWith('proelium_session='), 'Cadastro não devolveu cookie de sessão.');
       const authenticated = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCookie } });
       const payload = parseJson(authenticated, '/api/auth/me');
@@ -371,6 +373,21 @@ async function runFunctionalTestBot(options = {}) {
       const blockedApi = await request(baseUrl, '/api/data', { headers: { Cookie: readerCookie } });
       expect(blockedApi.status === 401, `API continuou aceitando sessão removida com HTTP ${blockedApi.status}.`);
       return 'sessão antiga bloqueada no /api/auth/me e na API após exclusão';
+    });
+
+    await check('Administração', 'Exclusão segura de empresa', 'Manter a exclusão restrita à plataforma e remover todos os vínculos da empresa.', async () => {
+      const listing = parseJson(await request(baseUrl, '/api/admin/companies', { headers: { Cookie: cookie } }), '/api/admin/companies antes da exclusão');
+      const targets = listing.companies.filter(company => company.name.includes('Google Bot'));
+      expect(targets.length === 2, `Empresas de teste esperadas não encontradas: ${targets.length}.`);
+      for (const target of targets) {
+        const deleted = await request(baseUrl, `/api/admin/companies?id=${encodeURIComponent(target.id)}`, { method: 'DELETE', headers: { Cookie: cookie } });
+        expect(deleted.status === 200, `Exclusão de ${target.name} retornou HTTP ${deleted.status}: ${deleted.text}`);
+      }
+      const after = parseJson(await request(baseUrl, '/api/admin/companies', { headers: { Cookie: cookie } }), '/api/admin/companies após a exclusão');
+      expect(!after.companies.some(company => targets.some(target => target.id === company.id)), 'A empresa excluída continuou no painel.');
+      const revoked = await request(baseUrl, '/api/auth/me', { headers: { Cookie: googleCompanyCookie } });
+      expect(revoked.status === 401, `Usuário da empresa excluída continuou autenticado: HTTP ${revoked.status}.`);
+      return 'empresa, usuários, convites, rotinas e estado removidos; sessão revogada';
     });
 
     await check('Interface', 'Módulos funcionais publicados', 'Restaurar no app.js o módulo ausente e sua navegação.', async () => {

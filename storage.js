@@ -70,6 +70,18 @@ class JsonStorage {
   async writeRoutines(companyId, routines) { let all={}; try { all=JSON.parse(fs.readFileSync(this.routinesFile, 'utf8')); } catch {} all[companyId]=routines; atomicWriteJson(this.routinesFile, all, 0o600); }
   async readInvites() { try { const invites=JSON.parse(fs.readFileSync(this.invitesFile,'utf8')); return Array.isArray(invites)?invites:[]; } catch { return []; } }
   async writeInvites(invites) { atomicWriteJson(this.invitesFile, invites, 0o600); }
+  async deleteCompany(companyId) {
+    if (!companyId || companyId === 'legacy') throw new Error('Empresa inválida para exclusão.');
+    await this.writeCompanies((await this.readCompanies()).filter(company => company.id !== companyId));
+    await this.writeUsers((await this.readUsers()).filter(user => user.companyId !== companyId));
+    await this.writeInvites((await this.readInvites()).filter(invite => invite.companyId !== companyId));
+    let routines = {};
+    try { routines = JSON.parse(fs.readFileSync(this.routinesFile, 'utf8')); } catch {}
+    if (Object.prototype.hasOwnProperty.call(routines, companyId)) { delete routines[companyId]; atomicWriteJson(this.routinesFile, routines, 0o600); }
+    const file = this.stateFile(companyId);
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+    return true;
+  }
 
   async close() {}
 }
@@ -184,6 +196,24 @@ class PostgresStorage {
   async writeInvites(invites) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from company_invites'); for(const invite of invites) await client.query('insert into company_invites (id,company_id,token_hash,email,role,modules,expires_at,used_at,created_at) values ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)',[invite.id,invite.companyId,invite.tokenHash,invite.email||null,invite.role||'operacao',JSON.stringify(invite.modules||[]),invite.expiresAt,invite.usedAt||null,invite.createdAt||new Date().toISOString()]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
   async readRoutines(companyId) { return (await this.pool.query('select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt" from routines where company_id=$1 order by created_at desc',[companyId])).rows.map(row=>({...row,steps:row.steps||[]})); }
   async writeRoutines(companyId, routines) { const client=await this.pool.connect(); try { await client.query('begin'); await client.query('delete from routines where company_id=$1',[companyId]); for(const routine of routines) await client.query('insert into routines (id,company_id,name,description,periodicity,steps) values ($1,$2,$3,$4,$5,$6::jsonb)',[routine.id,companyId,routine.name,routine.description||'',routine.periodicity||'Sem periodicidade',JSON.stringify(routine.steps||[])]); await client.query('commit'); } catch(error){await client.query('rollback');throw error} finally {client.release()} }
+  async deleteCompany(companyId) {
+    if (!companyId || companyId === 'legacy') throw new Error('Empresa inválida para exclusão.');
+    const stateKey = this.stateKey(companyId), client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      await client.query('delete from app_users where company_id=$1', [companyId]);
+      await client.query('delete from app_state_revisions where state_key=$1', [stateKey]);
+      await client.query('delete from app_state where state_key=$1', [stateKey]);
+      const result = await client.query('delete from companies where id=$1 returning id', [companyId]);
+      await client.query('commit');
+      if (this.mirrorJson) {
+        try { const file=path.join(this.companyDataDirectory, `${String(companyId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,100)}.json`); if (fs.existsSync(file)) fs.unlinkSync(file); }
+        catch (error) { console.error('Falha ao remover espelho JSON da empresa:', error.message); }
+      }
+      return result.rowCount > 0;
+    } catch (error) { await client.query('rollback'); throw error; }
+    finally { client.release(); }
+  }
 
   async close() {
     await this.pool.end();
