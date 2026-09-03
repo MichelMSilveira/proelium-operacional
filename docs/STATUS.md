@@ -11,10 +11,11 @@ Projeto operacional ativo. O bot funcional executa um cenário completo em servi
 
 ## Validação atual
 
-- `npm run check`: valida sintaxe, armazenamento, bot funcional e codificação;
+- `npm run check`: valida sintaxe, armazenamento, bot funcional, isolamento empresa/perfil fundador e codificação;
 - `npm run test:functional`: simula 33 domínios e relações do app;
 - interface: 26 módulos renderizados e fluxo contato → proposta → venda → projeto conferido no navegador isolado;
 - relatório: `docs/TEST-BOT-REPORT.md`;
+- identidade: a primeira conta do cadastro é fundadora; perfis desligados permanecem com portfólio pessoal sem dados privados da empresa;
 - bloqueios: nenhum.
 
 ## Regra
