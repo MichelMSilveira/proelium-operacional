@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Bot comercial ampliado para percorrer ciclos completos: oportunidade até orçamento, revisão preservada, cálculo de bruto/desconto/líquido/custo, aprovação convertida em cliente e projeto e recusa encerrada sem conversão.
 - Matriz de contas explorada pelo bot: conta mestre e suporte ficam restritos à central, fundador recebe os módulos da própria empresa, colaborador convidado respeita o cargo e perfil pessoal permanece separado dos dados operacionais.
 - Visibilidade do produto para fundadores corrigida: a conta fundadora agora vê todos os módulos pertinentes ao seu perfil de empresa durante a avaliação, mesmo quando a licença ainda está limitada; os colaboradores convidados continuam obedecendo cargo e permissões.
 - Menu reorganizado: “Minhas rotinas” deixou de cair em “Outros” no topo e agora aparece junto de “Pessoas e padrões”, respeitando a ordem comum entre os ambientes empresariais.

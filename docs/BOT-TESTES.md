@@ -29,6 +29,8 @@ Os testes funcionais usam dados temporários e não devem acessar o banco ou os 
 
 O fluxo funcional também explora a matriz de contas: fundador recebe os módulos pertinentes ao perfil da empresa; colaborador convidado recebe somente os módulos do cargo; mestre acessa a administração da plataforma sem dados operacionais; suporte consulta a central sem empresa; e perfil pessoal conserva somente identidade e portfólio.
 
+Na área comercial, o bot percorre dois ciclos completos: uma oportunidade passa pelas etapas até o orçamento, preserva a primeira versão enviada, cria uma revisão com desconto e quantidade ajustados e aprova a revisão convertendo-a em cliente e projeto; outra proposta é recusada e encerrada como perdida sem criar cliente ou projeto. Os totais bruto, desconto, líquido, custo, margem e vínculos são conferidos antes e depois da gravação.
+
 ## Limites
 
 O bot não substitui homologação com usuários reais, revisão de segurança, conferência financeira ou aprovação da direção. Ele é uma camada automatizada de detecção de regressões.
