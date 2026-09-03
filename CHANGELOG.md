@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Área comercial consolidada em um fluxo único: oportunidade, levantamento, orçamento, decisão e conversão em cliente/projeto. Cada oportunidade agora mostra o próximo passo real, o orçamento mais recente e atalhos coerentes; a conversão manual é bloqueada sem orçamento aprovado.
 - Bot comercial ampliado para percorrer ciclos completos: oportunidade até orçamento, revisão preservada, cálculo de bruto/desconto/líquido/custo, aprovação convertida em cliente e projeto e recusa encerrada sem conversão.
 - Matriz de contas explorada pelo bot: conta mestre e suporte ficam restritos à central, fundador recebe os módulos da própria empresa, colaborador convidado respeita o cargo e perfil pessoal permanece separado dos dados operacionais.
 - Visibilidade do produto para fundadores corrigida: a conta fundadora agora vê todos os módulos pertinentes ao seu perfil de empresa durante a avaliação, mesmo quando a licença ainda está limitada; os colaboradores convidados continuam obedecendo cargo e permissões.
