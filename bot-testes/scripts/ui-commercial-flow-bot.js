@@ -216,11 +216,12 @@ async function run() {
     await page.evaluate(() => window.refreshSharedData(true));
     await page.locator('[data-view="commercial"]').first().waitFor({ state: 'visible', timeout: 10_000 });
     await openView(page, 'commercial');
-    if (await page.locator('[data-commercial-demo]').count() !== 1) {
+    if (await page.locator('[data-commercial-demo]').count() !== 0) {
       const title = await page.locator('#pageTitle').innerText().catch(() => '');
       const body = (await page.locator('body').innerText().catch(() => '')).slice(0, 500).replace(/\s+/g, ' ');
-      throw new Error(`Botão de demonstração não foi localizado; tela atual: ${title || 'sem título'} · ${body}`);
+      throw new Error(`Botão de exemplos ainda está visível; tela atual: ${title || 'sem título'} · ${body}`);
     }
+    console.log('[OK] UI — carga de exemplos não fica disponível no ambiente da empresa');
     const initialSnapshot = await assertData(page, data => {
       const keys = ['opportunities', 'surveys', 'quotes', 'clients', 'projects'];
       if (keys.every(key => !data[key]?.length)) return true;

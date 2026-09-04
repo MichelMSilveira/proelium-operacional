@@ -623,3 +623,4 @@
 ## 2026-09-03
 
 - OAuth Google local: o `state` da autenticação agora fica protegido também em cookie temporário assinado, evitando que um reinício do servidor local invalide uma tentativa legítima de login sem relaxar a proteção contra CSRF ou replay.
+- Comercial: removidos os atalhos de avanço manual e carga de exemplos do ambiente empresarial; a criação do orçamento agora exige levantamento validado com pontos ou quantitativos registrados.
