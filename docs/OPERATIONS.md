@@ -90,3 +90,6 @@ Para inspecionar manualmente a interface já preenchida pelo bot, use `npm run t
 
 O relatório validado desta entrega está em [TEST-BOT-REPORT.md](TEST-BOT-REPORT.md).
 Em produção, configure `SESSION_SECRET` no ambiente do serviço com um valor aleatório de pelo menos 32 caracteres. O servidor recusa iniciar com o segredo padrão de desenvolvimento; nunca registre esse valor em arquivos versionados.
+# Atualização comercial — 04/09/2026
+
+O funil não oferece mais avanço manual de etapa nem carga de dados demonstrativos. O orçamento deve ser iniciado a partir de um levantamento validado, com pelo menos um ponto ou quantitativo registrado. A carga demonstrativa permanece disponível apenas nos cenários automatizados de teste isolado.

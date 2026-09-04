@@ -2385,6 +2385,8 @@ function startQuoteFromSurvey(id){
   const survey=(state.data.surveys||[]).find(item=>item.id===id);
   const opportunity=(state.data.opportunities||[]).find(item=>item.id===survey?.opportunityId);
   if(!survey||!opportunity){toast('Vincule este levantamento a uma oportunidade comercial antes de criar o orçamento.');return}
+  const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===survey.id);
+  if(!['Validado','Enviado ao orçamento'].includes(survey.status)||!points.length){toast('Valide o levantamento e registre ao menos um ponto ou quantitativo antes de criar o orçamento.');return}
   let quote=(state.data.quotes||[]).find(item=>item.opportunityId===opportunity.id&&item.status!=='Aprovado');
   if(!quote){quote={id:uid('orc'),opportunityId:opportunity.id,clientId:'',title:`Proposta — ${opportunity.company}`,value:0,status:'Em elaboração'};state.data.quotes.unshift(quote);opportunity.stage='Orçamento';logAudit('Criou orçamento a partir do levantamento','Levantamento técnico',`${survey.title} → ${quote.title}`)}
   const count=sendSurveyRoomsToQuote(survey,quote);
@@ -3520,6 +3522,11 @@ render=()=>{
   document.querySelectorAll('[data-open-commercial-client]').forEach(button=>button.onclick=()=>openClient(button.dataset.openCommercialClient));
   document.querySelectorAll('[data-commercial-demo]').forEach(button=>button.onclick=()=>addCommercialDemoCycles());
 };
+// Atalhos removidos do fluxo comercial: avanço manual e carga de dados demonstrativos
+// não devem aparecer nem ser acionáveis no ambiente da empresa.
+const removeCommercialShortcuts=()=>document.querySelectorAll('[data-advance-opportunity],[data-commercial-demo]').forEach(element=>element.remove());
+new MutationObserver(removeCommercialShortcuts).observe(document.body,{childList:true,subtree:true});
+removeCommercialShortcuts();
 render();
 
 // Previsão operacional: o valor comercial permanece congelado no orçamento;
