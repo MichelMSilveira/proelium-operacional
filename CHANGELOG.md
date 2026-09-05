@@ -44,6 +44,7 @@
 - Relatórios refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Colaboradores e parceiros refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Equipamentos refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Compras e materiais consolidados no layout compartilhado e no cliente HTTP comum.
 - Compras e materiais refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Levantamento técnico refatorado para usar o layout compartilhado e o cliente HTTP comum.
 - Instalações refatoradas para usar o layout compartilhado e o cliente HTTP comum.
