@@ -630,3 +630,4 @@
 - Comercial: funil ganhou indicadores de valor em aberto, valor ganho, conversão, ticket médio e ações atrasadas.
 - Orçamentos: aprovação bloqueia propostas sem margem bruta positiva, inclusive ao alterar diretamente a situação para Aprovado; descontos continuam limitados entre 0% e 100%.
 - Propostas: análise do orçamento ganhou impressão para salvar em PDF pelo navegador, aceite explícito do cliente e registro de recusa com motivo e data.
+- Oportunidades: tela passou a representar exclusivamente prospecção e interações; o resumo de orçamentos por ambiente foi removido, mantendo propostas na área própria.

@@ -3746,3 +3746,12 @@ document.addEventListener('click',event=>{
 },true);
 new MutationObserver(injectQuoteCommercialActions).observe(document.body,{childList:true,subtree:true});
 injectQuoteCommercialActions();
+function removeQuoteSummaryFromProspecting(){
+  if(state.view!=='commercial')return;
+  document.querySelectorAll('.commercial-history').forEach(section=>{
+    const title=section.querySelector('h3')?.textContent.trim().toLocaleLowerCase('pt-BR');
+    if(title==='orçamentos por ambiente')section.remove();
+  });
+}
+new MutationObserver(removeQuoteSummaryFromProspecting).observe(document.body,{childList:true,subtree:true});
+removeQuoteSummaryFromProspecting();

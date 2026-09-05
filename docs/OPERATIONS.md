@@ -100,3 +100,4 @@ Cadastros de clientes devem usar documento, e-mail e telefone únicos dentro da 
 O funil comercial exibe indicadores calculados da própria empresa: valor em aberto, valor ganho, conversão entre decisões, ticket médio das oportunidades ganhas e ações vencidas.
 Uma proposta só pode ser aprovada quando o total líquido de venda supera o custo previsto. Descontos são aceitos de 0% a 100%; a margem mínima configurável da empresa permanece como próxima evolução.
 Na análise da proposta, “Imprimir / salvar PDF” usa a impressão do navegador para gerar o arquivo, enquanto “Aceite do cliente” aprova a proposta e cria os vínculos operacionais existentes. “Registrar recusa” guarda motivo e data no orçamento.
+Oportunidades representam prospecção e contatos em desenvolvimento. A tela não exibe mais a análise de orçamentos por ambiente; propostas devem ser acompanhadas em Orçamentos, e clientes convertidos em Clientes.
