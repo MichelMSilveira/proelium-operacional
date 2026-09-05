@@ -259,6 +259,24 @@ async function run() {
     await assertData(page, data => data.opportunities?.some(item => item.company === 'Casa Aurora · UI Bot'), 'Oportunidade não foi gravada pelo formulário.');
     console.log('[OK] UI — oportunidade criada com contato, responsável e próxima ação');
 
+    for (let index = 2; index <= 30; index += 1) {
+      await page.locator('[data-add="opportunity"]').click();
+      await fillField(page, 'company', `${index % 2 ? 'Pessoa' : 'Empresa'} Prospect ${String(index).padStart(2, '0')}`);
+      await fillField(page, 'contact', `Contato Prospect ${index}`);
+      await fillField(page, 'phone', `551199999${String(1000 + index).slice(-4)}`);
+      await fillField(page, 'email', `prospect${index}@example.invalid`);
+      await selectLabel(page, 'source', index % 3 ? 'Indicação' : 'Site');
+      await selectLabel(page, 'owner', 'Ana UI Operações');
+      await selectLabel(page, 'stage', index % 4 === 0 ? 'Qualificação' : 'Novo contato');
+      await fillField(page, 'nextAction', `Confirmar interesse do prospect ${index}`);
+      await fillField(page, 'nextDue', new Date(Date.now() + index * 86_400_000).toISOString().slice(0, 10));
+      await fillField(page, 'estimatedValue', String(10000 + index * 500));
+      await fillField(page, 'lossReason', '');
+      await saveDialog(page);
+    }
+    await assertData(page, data => data.opportunities?.length === 30, 'O bot não criou 30 oportunidades pela interface.');
+    console.log('[OK] UI — 30 oportunidades de prospecção criadas pela interface');
+
     const activityOpportunityId = (await page.evaluate(() => fetch('./api/data', { cache: 'no-store' }).then(response => response.json()))).data.opportunities.find(item => item.company === 'Casa Aurora · UI Bot').id;
     await page.locator(`[data-commercial-activity="${activityOpportunityId}"]`).click();
     await fillField(page, 'assignee', 'Ana UI Operações');
@@ -269,7 +287,7 @@ async function run() {
     await assertData(page, data => data.appointments?.some(item => item.opportunityId === activityOpportunityId && item.assignee === 'Ana UI Operações'), 'Atividade comercial não foi vinculada à oportunidade.');
     console.log('[OK] UI — atividade comercial criada e vinculada à agenda');
 
-    const opportunityId = (await assertData(page, data => data.opportunities?.length === 1, 'A base do bot recebeu dados comerciais antes da oportunidade.')).opportunities[0].id;
+    const opportunityId = (await assertData(page, data => data.opportunities?.some(item => item.company === 'Casa Aurora · UI Bot'), 'A oportunidade principal do fluxo não foi preservada.')).opportunities.find(item => item.company === 'Casa Aurora · UI Bot').id;
     const startSurvey = page.locator(`[data-start-survey-opportunity="${opportunityId}"]`);
     await startSurvey.click();
     await fillField(page, 'title', 'Levantamento UI Bot · Casa Aurora');

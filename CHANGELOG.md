@@ -633,3 +633,4 @@
 - Oportunidades: tela passou a representar exclusivamente prospecção e interações; o resumo de orçamentos por ambiente foi removido, mantendo propostas na área própria.
 - Oportunidades: visual simplificado para relacionamento e interesses futuros, com métricas de contatos e próximas interações; referências financeiras e atalhos de orçamento foram retirados dos cartões.
 - Oportunidades: indicadores agora refletem apenas prospecção e relacionamento; oportunidades concluídas saem do mapa ativo, sem apagar o cliente, permitindo novas oportunidades para clientes e projetos existentes.
+- Teste de interface: o bot comercial passou a criar 30 oportunidades de prospecção por formulários reais, mantendo a empresa temporária sem carga comercial prévia.
