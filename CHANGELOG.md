@@ -22,6 +22,7 @@
 - Rota de Qualidade adicionada em modo somente leitura, com avaliações, média e comentários consumidos da API atual.
 - Rota de Relatórios adicionada em modo somente leitura, com registros de serviço e entregas de projetos.
 - Rota de Compras adicionada em modo somente leitura, com itens, quantidades e status de materiais consumidos da API atual.
+- Rota de Instalações adicionada em modo somente leitura, com execuções de campo, projeto e status.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
