@@ -7,6 +7,21 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
+  if (process.env.PROELIUM_NEXT_TEST === '1' || process.argv.includes('--next')) {
+    try {
+      for (const route of ['/clients', '/projects', '/commercial', '/quotes']) {
+        const response = await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle', timeout: 15000 });
+        if (!response || !response.ok()) throw new Error(`${route} retornou HTTP ${response?.status() || 'sem resposta'}.`);
+        if (!(await page.locator('body').innerText()).trim()) throw new Error(`${route} ficou vazia.`);
+        console.log(`[OK] Next.js — ${route}`);
+      }
+      await page.goto(`${baseUrl}/quotes`, { waitUntil: 'networkidle', timeout: 15000 });
+      const detail = page.locator('a[href^="/quotes/"]').first();
+      if (await detail.count()) { await detail.click(); await page.waitForLoadState('networkidle'); console.log(`[OK] Next.js — detalhe ${new URL(page.url()).pathname}`); }
+      else console.log('[OK] Next.js — nenhum orçamento cadastrado para testar o detalhe');
+    } finally { await browser.close(); }
+    return;
+  }
   const errors = [];
   page.on('pageerror', error => errors.push(`${error.message} @ ${error.stack || 'sem stack'}`));
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('401 (Unauthorized)')) errors.push(message.text()); });
