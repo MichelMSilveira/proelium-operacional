@@ -93,7 +93,11 @@ export default function ClientsPage() {
     if (!payload?.data) return;
     const name = window.prompt("Nome do cliente", String(client.name || client.nome || ""));
     if (!name?.trim()) return;
-    const clients = (payload.data.clients || []).map((item) => item.id === client.id ? { ...item, name: name.trim() } : item);
+    const email = window.prompt("E-mail do cliente", String(client.email || ""));
+    if (email === null) return;
+    const phone = window.prompt("Telefone do cliente", String(client.phone || client.telefone || ""));
+    if (phone === null) return;
+    const clients = (payload.data.clients || []).map((item) => item.id === client.id ? { ...item, name: name.trim(), email: email.trim(), phone: phone.trim() } : item);
     setSaving(true); setError("");
     try { const result = await apiPut<{ revision?: number }>("/api/data", { data: { ...payload.data, clients }, baseRevision: payload.revision || 0 }); setPayload({ ...payload, revision: result.revision, data: { ...payload.data, clients } }); } catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível editar o cliente."); } finally { setSaving(false); }
   }
