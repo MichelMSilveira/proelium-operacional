@@ -27,6 +27,9 @@ export default function Page() {
     document.querySelectorAll('nav button').forEach((button) => {
       if (button.textContent === 'Clientes') button.addEventListener('click', () => { window.location.href = '/clients'; });
       if (button.textContent === 'Projetos') button.addEventListener('click', () => { window.location.href = '/projects'; });
+      if (button.textContent === 'Comercial') button.addEventListener('click', () => { window.location.href = '/commercial'; });
+      if (button.textContent === 'Financeiro') button.addEventListener('click', () => { window.location.href = '/finance'; });
+      if (button.textContent === 'Indicadores') button.addEventListener('click', () => { window.location.href = '/bi'; });
     });
   }, [user]);
 
