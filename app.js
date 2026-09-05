@@ -3653,6 +3653,29 @@ render();
 // Só inicia a autenticação depois que todos os aprimoramentos do menu e das telas
 // foram registrados. Assim o primeiro render autenticado já usa a interface final.
 connectSharedData();
+function duplicateClientReason(candidate, ignoreId=''){
+  const normalize=value=>String(value||'').trim().toLocaleLowerCase('pt-BR');
+  const digits=value=>String(value||'').replace(/\D/g,'');
+  return (state.data.clients||[]).find(client=>client.id!==ignoreId&&(
+    (digits(candidate.document)&&digits(candidate.document)===digits(client.document))||
+    (normalize(candidate.email)&&normalize(candidate.email)===normalize(client.email))||
+    (digits(candidate.phone).length>=10&&digits(candidate.phone)===digits(client.phone))
+  ));
+}
+const duplicateGuardSaveRecord=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='client'){
+    const duplicate=duplicateClientReason(data,editId);
+    if(duplicate){toast(`Cliente não salvo: já existe cadastro com os mesmos dados de ${duplicate.name}.`);return false}
+  }
+  return duplicateGuardSaveRecord(kind,data,editId);
+};
+const duplicateGuardApproveQuote=approveQuote;
+approveQuote=id=>{
+  const quote=(state.data.quotes||[]).find(item=>item.id===id),opportunity=quote?.opportunityId?(state.data.opportunities||[]).find(item=>item.id===quote.opportunityId):null;
+  if(quote&&!quote.clientId&&opportunity){const duplicate=duplicateClientReason({name:opportunity.company,email:opportunity.email,phone:opportunity.phone});if(duplicate){toast(`Aprovação bloqueada: já existe cliente semelhante (${duplicate.name}). Abra o cadastro existente antes de aprovar.`);return}}
+  return duplicateGuardApproveQuote(id);
+};
 dataScopeKeysByView.commercial=[...(dataScopeKeysByView.commercial||[]),'appointments'];
 
 // Atividades comerciais: compromissos vinculados à oportunidade também funcionam

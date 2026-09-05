@@ -626,3 +626,4 @@
 - Comercial: removidos os atalhos de avanço manual e carga de exemplos do ambiente empresarial; a criação do orçamento agora exige levantamento validado com pontos ou quantitativos registrados.
 - Comercial: oportunidades agora permitem registrar atividades com responsável, data, horário e observação; o compromisso fica vinculado à oportunidade e aparece na Agenda operacional como lembrete.
 - Comercial: atividades vinculadas a oportunidades passaram a integrar o escopo de dados comercial, mantendo a permissão por empresa também para perfis comerciais limitados.
+- Clientes: novos cadastros e aprovações de oportunidades são bloqueados quando documento, e-mail ou telefone já pertencem a outro cliente da empresa; registros existentes permanecem preservados.
