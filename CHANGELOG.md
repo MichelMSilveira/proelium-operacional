@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Comando visual `test:ui-chrome` adicionado para abrir o Chrome real pelo Playwright.
+- Bot Playwright passou a aceitar conexão CDP com uma sessão Chrome iniciada manualmente.
 - Bot Playwright de uso da interface ganhou modo de smoke test das rotas Next.js migradas.
 - Correção do artefato Next.js para incluir os arquivos ocultos `.next` necessários ao runtime standalone.
 - Templates de serviço systemd e proxy reverso criados para revisão antes da ativação do Next.js no VPS.

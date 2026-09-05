@@ -5,7 +5,12 @@ const username = process.env.PROELIUM_TEST_USER;
 const password = process.env.PROELIUM_TEST_PASSWORD;
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = process.env.PLAYWRIGHT_CDP_URL
+    ? await chromium.connectOverCDP(process.env.PLAYWRIGHT_CDP_URL)
+    : await chromium.launch({
+        channel: process.argv.includes('--chrome') ? 'chrome' : undefined,
+        headless: !process.argv.includes('--headed'),
+      });
   const page = await browser.newPage();
   if (process.env.PROELIUM_NEXT_TEST === '1' || process.argv.includes('--next')) {
     try {
