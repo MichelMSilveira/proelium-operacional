@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { ModuleLayout } from '../components/ModuleLayout';
-import { apiGet } from '../../lib/api';
+import { apiGet, apiPost } from '../../lib/api';
 
 type Invite = Record<string, unknown>;
 export default function InvitesPage() {
-  const [items, setItems] = useState<Invite[]>([]);
-  const [error, setError] = useState('');
-  useEffect(() => { apiGet<{ invites?: Invite[] }>('/api/company/invites').then((payload) => setItems(payload.invites || [])).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Falha ao carregar convites.')); }, []);
-  return <ModuleLayout eyebrow="ACESSOS" title="Convites da empresa" description="Convites emitidos para participantes da empresa.">{error && <p className="error">{error}</p>}<div className="record-list">{items.map((item, index) => <article key={String(item.id || index)}><strong>{String(item.email || 'Convite sem e-mail específico')}</strong><span>{String(item.role || 'Operação')} · {item.usedAt ? 'Utilizado' : 'Pendente'}</span></article>)}{!error && !items.length && <p>Nenhum convite disponível.</p>}</div><style jsx>{`.record-list{display:grid;gap:10px;margin-top:28px}.record-list article{display:grid;gap:6px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.record-list span,.record-list>p{font-size:12px;color:var(--proelium-muted)}`}</style></ModuleLayout>;
+  const [items, setItems] = useState<Invite[]>([]); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
+  const load = () => apiGet<{ invites?: Invite[] }>('/api/company/invites').then((payload) => setItems(payload.invites || [])).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Falha ao carregar convites.'));
+  useEffect(() => { void load(); }, []);
+  async function create(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setSaving(true); setError(''); const values = Object.fromEntries(new FormData(event.currentTarget)); try { await apiPost('/api/company/invites', { email: String(values.email || '').trim(), role: values.role }); event.currentTarget.reset(); await load(); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Não foi possível criar o convite.'); } finally { setSaving(false); } }
+  return <ModuleLayout eyebrow="ACESSOS" title="Convites da empresa" description="Convites emitidos para participantes da empresa.">{error && <p className="error">{error}</p>}<form className="invite-form" onSubmit={create}><input name="email" type="email" placeholder="E-mail Google (opcional)" /><select name="role" defaultValue="operacao"><option value="operacao">Operação</option><option value="comercial">Comercial</option><option value="financeiro">Financeiro</option><option value="leitura">Leitura</option></select><button disabled={saving}>{saving ? 'Criando…' : 'Criar convite'}</button></form><div className="record-list">{items.map((item, index) => <article key={String(item.id || index)}><strong>{String(item.email || 'Convite sem e-mail específico')}</strong><span>{String(item.role || 'Operação')} · {item.usedAt ? 'Utilizado' : 'Pendente'}</span></article>)}{!error && !items.length && <p>Nenhum convite disponível.</p>}</div><style jsx>{`.invite-form{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:24px}.invite-form input,.invite-form select{padding:11px;border:1px solid var(--proelium-line);border-radius:7px}.invite-form button{border:0;border-radius:7px;padding:10px 14px;background:var(--proelium-orange);color:#fff;font-weight:700;cursor:pointer}.invite-form button:disabled{opacity:.6}.record-list{display:grid;gap:10px;margin-top:28px}.record-list article{display:grid;gap:6px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.record-list span,.record-list>p{font-size:12px;color:var(--proelium-muted)}@media(max-width:700px){.invite-form{grid-template-columns:1fr}}`}</style></ModuleLayout>;
 }
