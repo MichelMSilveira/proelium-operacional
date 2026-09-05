@@ -3676,6 +3676,15 @@ approveQuote=id=>{
   if(quote&&!quote.clientId&&opportunity){const duplicate=duplicateClientReason({name:opportunity.company,email:opportunity.email,phone:opportunity.phone});if(duplicate){toast(`Aprovação bloqueada: já existe cliente semelhante (${duplicate.name}). Abra o cadastro existente antes de aprovar.`);return}}
   return duplicateGuardApproveQuote(id);
 };
+function injectCommercialMetrics(){
+  if(state.view!=='commercial'||document.querySelector('[data-commercial-metrics]'))return;
+  const opportunities=state.data.opportunities||[],active=opportunities.filter(item=>!['Ganho','Perdido'].includes(item.stage)),won=opportunities.filter(item=>item.stage==='Ganho'),today=todayInput(),overdue=active.filter(item=>item.nextDue&&item.nextDue<today).length;
+  const openValue=active.reduce((sum,item)=>sum+Number(item.estimatedValue||0),0),wonValue=won.reduce((sum,item)=>sum+Number(item.estimatedValue||0),0),decided=won.length+opportunities.filter(item=>item.stage==='Perdido').length,conversion=decided?Math.round(won.length/decided*100):0,ticket=won.length?wonValue/won.length:0;
+  const anchor=document.querySelector('.commercial-flow-map');if(!anchor)return;
+  const section=document.createElement('section');section.className='kpi-grid commercial-metrics';section.dataset.commercialMetrics='';section.innerHTML=`<div class="kpi"><div class="kpi-top">Valor em aberto</div><div class="kpi-value">${money(openValue)}</div><div class="kpi-note">oportunidades em atendimento</div></div><div class="kpi"><div class="kpi-top">Valor ganho</div><div class="kpi-value">${money(wonValue)}</div><div class="kpi-note">negócios concluídos</div></div><div class="kpi"><div class="kpi-top">Conversão</div><div class="kpi-value">${conversion}%</div><div class="kpi-note">ganhos sobre decisões</div></div><div class="kpi"><div class="kpi-top">Ticket médio ganho</div><div class="kpi-value">${money(ticket)}</div><div class="kpi-note">por oportunidade ganha</div></div><div class="kpi"><div class="kpi-top">Ações atrasadas</div><div class="kpi-value">${overdue}</div><div class="kpi-note">próximas ações vencidas</div></div>`;anchor.insertAdjacentElement('afterend',section);
+}
+new MutationObserver(injectCommercialMetrics).observe(document.body,{childList:true,subtree:true});
+injectCommercialMetrics();
 dataScopeKeysByView.commercial=[...(dataScopeKeysByView.commercial||[]),'appointments'];
 
 // Atividades comerciais: compromissos vinculados à oportunidade também funcionam
