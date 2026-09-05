@@ -632,3 +632,4 @@
 - Propostas: análise do orçamento ganhou impressão para salvar em PDF pelo navegador, aceite explícito do cliente e registro de recusa com motivo e data.
 - Oportunidades: tela passou a representar exclusivamente prospecção e interações; o resumo de orçamentos por ambiente foi removido, mantendo propostas na área própria.
 - Oportunidades: visual simplificado para relacionamento e interesses futuros, com métricas de contatos e próximas interações; referências financeiras e atalhos de orçamento foram retirados dos cartões.
+- Oportunidades: indicadores agora refletem apenas prospecção e relacionamento; oportunidades concluídas saem do mapa ativo, sem apagar o cliente, permitindo novas oportunidades para clientes e projetos existentes.

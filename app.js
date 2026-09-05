@@ -3750,8 +3750,14 @@ render=()=>{
   });
   const first=document.querySelector('#content>.kpi-grid');
   if(first){
-    ['Contatos em prospecção','Com próxima interação','Relacionamentos ganhos','Relacionamentos encerrados'].forEach((label,index)=>{const item=first.querySelectorAll('.kpi-top')[index];if(item)item.textContent=label});
+    const opportunities=state.data.opportunities||[],active=opportunities.filter(item=>!['Ganho','Perdido'].includes(item.stage)),today=todayInput(),next=active.filter(item=>item.nextDue&&item.nextDue>=today).length,late=active.filter(item=>item.nextDue&&item.nextDue<today).length,withoutAction=active.filter(item=>!item.nextAction).length;
+    const values=[active.length,next,late,withoutAction],labels=['Prospecções ativas','Próximas interações','Interações atrasadas','Sem próxima interação'];
+    first.querySelectorAll('.kpi-top').forEach((item,index)=>{if(labels[index])item.textContent=labels[index]});
+    first.querySelectorAll('.kpi-value').forEach((item,index)=>{if(values[index]!==undefined)item.textContent=String(values[index])});
+    first.querySelectorAll('.kpi-note').forEach((item,index)=>{if(index===0)item.textContent='pessoas e empresas em acompanhamento';if(index===1)item.textContent='com prazo definido';if(index===2)item.textContent='exigem contato';if(index===3)item.textContent='precisam de registro'});
   }
+  const activeCompanies=new Set((state.data.opportunities||[]).filter(item=>!['Ganho','Perdido'].includes(item.stage)).map(item=>String(item.company||'').trim().toLocaleLowerCase('pt-BR')));
+  document.querySelectorAll('.commercial-history').forEach(section=>section.querySelectorAll('tbody tr').forEach(row=>{const stage=row.querySelector('.badge')?.textContent.trim(),company=row.querySelector('.entity')?.textContent.trim().toLocaleLowerCase('pt-BR');if(stage==='Ganho'&&!activeCompanies.has(company))row.remove()}));
 };
 function injectQuoteCommercialActions(){
   if(state.view!=='quoteDetail'||document.querySelector('[data-quote-commercial-actions]'))return;
