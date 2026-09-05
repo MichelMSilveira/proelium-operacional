@@ -57,6 +57,7 @@
 - Clientes recebeu o primeiro fluxo de escrita migrado: cadastro de nome, e-mail e telefone com envio protegido por `baseRevision`.
 - Configurações recebeu edição controlada de nome, responsável, telefone e informações pelo endpoint específico da empresa.
 - Convites recebeu criação de convite com e-mail e função, mantendo autorização e geração do token no backend.
+- Clientes recebeu exclusão protegida por confirmação e `baseRevision`, mantendo controle de concorrência e autorização no backend.
 - Comandos `check:frontend` e `check:all` adicionados ao projeto para validar backend e frontend em conjunto.
 - Estado das rotas em transição documentado em `frontend/README.md`, incluindo limites atuais e comando de validação.
 - Origem da API do frontend Next.js parametrizada por `PROELIUM_API_ORIGIN`, preparando a publicação online sem alterar o código.
