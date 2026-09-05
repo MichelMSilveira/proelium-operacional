@@ -3733,6 +3733,26 @@ setQuoteStatus=(id,status)=>{
   }
   return commercialStatusGuard(id,status);
 };
+const prospectingRender=render;
+render=()=>{
+  prospectingRender();
+  if(state.view!=='commercial')return;
+  document.querySelector('.commercial-flow-map')?.remove();
+  document.querySelectorAll('.commercial-history').forEach(section=>{
+    if(section.querySelector('h3')?.textContent.trim().toLocaleLowerCase('pt-BR')==='orçamentos por ambiente')section.remove();
+  });
+  document.querySelectorAll('.commercial-deal').forEach(card=>{
+    card.querySelector('.commercial-flow-progress')?.remove();
+    card.querySelector('.deal-value')?.remove();
+    card.querySelector('.commercial-deal-top .badge')?.remove();
+    card.querySelector('.commercial-next-step')?.remove();
+    card.querySelectorAll('[data-open-commercial-quote]').forEach(button=>button.remove());
+  });
+  const first=document.querySelector('#content>.kpi-grid');
+  if(first){
+    ['Contatos em prospecção','Com próxima interação','Relacionamentos ganhos','Relacionamentos encerrados'].forEach((label,index)=>{const item=first.querySelectorAll('.kpi-top')[index];if(item)item.textContent=label});
+  }
+};
 function injectQuoteCommercialActions(){
   if(state.view!=='quoteDetail'||document.querySelector('[data-quote-commercial-actions]'))return;
   const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote),actions=document.querySelector('.quote-actions');if(!quote||!actions)return;
@@ -3753,5 +3773,3 @@ function removeQuoteSummaryFromProspecting(){
     if(title==='orçamentos por ambiente')section.remove();
   });
 }
-new MutationObserver(removeQuoteSummaryFromProspecting).observe(document.body,{childList:true,subtree:true});
-removeQuoteSummaryFromProspecting();
