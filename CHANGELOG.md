@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- EdiÃ§Ã£o bÃ¡sica de oportunidades adicionada em Comercial, com tÃ­tulo, status e revisÃ£o-base.
 - Cadastro inicial de oportunidades migrado para Comercial, com título, status e controle de revisão.
 - Ciclo bÃ¡sico de Projetos concluÃ­do com exclusÃ£o confirmada e controle de revisÃ£o.
 - EdiÃ§Ã£o bÃ¡sica de Projetos adicionada para nome e status, com revisÃ£o-base da API.
