@@ -98,3 +98,4 @@ Atividades comerciais são registradas pelo cartão da oportunidade em “Nova a
 O escopo de dados das atividades comerciais acompanha a oportunidade e permanece isolado por empresa, inclusive para usuários com perfil comercial limitado.
 Cadastros de clientes devem usar documento, e-mail e telefone únicos dentro da empresa. Em caso de duplicidade, o sistema bloqueia a gravação ou a aprovação e orienta a reutilizar o cliente existente.
 O funil comercial exibe indicadores calculados da própria empresa: valor em aberto, valor ganho, conversão entre decisões, ticket médio das oportunidades ganhas e ações vencidas.
+Uma proposta só pode ser aprovada quando o total líquido de venda supera o custo previsto. Descontos são aceitos de 0% a 100%; a margem mínima configurável da empresa permanece como próxima evolução.
