@@ -31,7 +31,7 @@
       🔓
     </button>
     <div id="appVersionStatus" class="app-version-status">
-      App v234 · verificando atualização
+      App v235 · verificando atualização
     </div>
     <div id="splash" class="splash-screen" aria-label="Proelium Operacional">
       <img
@@ -414,7 +414,7 @@
         </button>
       </div>
     </section>
-    <script src="app.js?release=20260904-commercial-guardrails"></script>
+    <script src="app.js?release=20260904-commercial-activities"></script>
     <script>
       // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
       setTimeout(
@@ -446,7 +446,7 @@
             window.__showAppUpdate?.(event.data.registration);
         });
         navigator.serviceWorker
-           .register("./sw.js?release=20260904-commercial-guardrails")
+           .register("./sw.js?release=20260904-commercial-activities")
           .then((registration) => {
             const activateWaiting = async (currentRegistration) => {
               if (!currentRegistration.waiting) return;
