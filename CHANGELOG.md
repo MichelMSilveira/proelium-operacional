@@ -54,6 +54,7 @@
 - Comandos `check:frontend` e `check:all` adicionados ao projeto para validar backend e frontend em conjunto.
 - Estado das rotas em transição documentado em `frontend/README.md`, incluindo limites atuais e comando de validação.
 - Origem da API do frontend Next.js parametrizada por `PROELIUM_API_ORIGIN`, preparando a publicação online sem alterar o código.
+- Pipeline de deploy reforçado para instalar e compilar o frontend Next.js antes de qualquer publicação no VPS.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
