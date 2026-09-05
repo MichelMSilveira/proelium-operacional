@@ -15,3 +15,7 @@ O shell de autenticação, sessão, logout e navegação também está em Next.j
 ## Validação
 
 Na raiz do projeto, execute `npm run check:all` para validar o backend legado e o frontend Next.js juntos.
+
+## Origem da API
+
+Em desenvolvimento, o proxy usa `http://localhost:4173`. No ambiente online, configure `PROELIUM_API_ORIGIN` com a origem HTTPS do servidor antes de iniciar o Next.js.
