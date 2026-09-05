@@ -6,6 +6,7 @@
 - Primeira fatia funcional avançada: shell Next.js passou a consultar a sessão atual, exibir o acesso Google e oferecer o login mestre pela API legada, com proxy local para `localhost:4173`.
 - Shell autenticado ampliado com logout e resumo inicial de clientes, projetos, tarefas e lançamentos financeiros via `/api/data`, sem substituir os módulos legados.
 - Menu lateral e navegação inicial adicionados ao shell Next.js, com pontos de entrada para Visão geral, Clientes, Projetos, Comercial, Financeiro e Indicadores; módulos ainda são migrados individualmente.
+- Menu conectado às rotas migradas de Clientes e Projetos, mantendo as demais áreas como pontos de transição controlados.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.

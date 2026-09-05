@@ -23,6 +23,13 @@ export default function Page() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    document.querySelectorAll('nav button').forEach((button) => {
+      if (button.textContent === 'Clientes') button.addEventListener('click', () => { window.location.href = '/clients'; });
+      if (button.textContent === 'Projetos') button.addEventListener('click', () => { window.location.href = '/projects'; });
+    });
+  }, [user]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
