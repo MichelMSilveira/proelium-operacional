@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Levantamento inicial reorganizado por necessidades do cliente: Automação, Áudio e vídeo, Conectividade e Câmera e Acessos. Os itens passam a alimentar futuramente orçamento, materiais e biblioteca de conexões; registros já existentes são preservados.
+- Checklist do levantamento ganhou árvore expansível, seleção por item, quantidade compacta e nota comercial/técnica persistida junto ao requisito.
+- Conta fundadora da empresa passou a ser elegível como responsável interno pelas oportunidades.
+
 - Cronograma: fases e cores agora podem ser configuradas pelo fundador/administrador da empresa, com suporte a novas fases e isolamento por empresa.
 - Cronograma: previsão operacional passou a oferecer sugestão automática e transparente de dias, equipe e horas a partir de ambientes, itens do orçamento e pontos do levantamento, sempre com ajuste manual antes de salvar.
 - Catálogo comercial reorganizado: Produtos e Serviços ganharam entradas separadas no fluxo de Orçamentos; produtos representam equipamentos/materiais e serviços representam mão de obra, com classificação preservada nos itens existentes. A Biblioteca técnica absorveu a área de conexões e passou para Projetos 360°, mantendo as rotas internas antigas para compatibilidade.

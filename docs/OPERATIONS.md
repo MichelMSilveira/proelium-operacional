@@ -104,3 +104,6 @@ Oportunidades representam prospecção e contatos em desenvolvimento. A tela nã
 Na visão de prospecção, os cartões priorizam relacionamento, próxima interação e situação do contato. O levantamento permanece como ponte técnica quando necessário, mas valores, margem, métricas financeiras e análise de orçamento não fazem parte dessa tela.
 Ao aprovar uma oportunidade, ela deixa de aparecer no mapa ativo e o cliente permanece preservado. Novos interesses do mesmo cliente ou projeto devem ser registrados como novas oportunidades independentes.
 O teste `npm run test:ui-flow` cria 30 oportunidades por interação real com a interface antes de validar o ciclo principal; a base temporária começa vazia e não usa mutações diretas de oportunidades, levantamentos, clientes ou projetos.
+## Levantamento inicial por necessidades
+
+O levantamento começa pelos ambientes e pelas necessidades do cliente nos quatro temas: Automação, Áudio e vídeo, Conectividade e Câmera e Acessos. O checklist é expansível por tema; cada item selecionado pode receber quantidade e uma nota comercial/técnica. Essa informação é a origem futura do orçamento, da lista de materiais e dos vínculos de entradas e saídas dos dispositivos. Alterações futuras no catálogo devem preservar versões já usadas em levantamentos e propostas.
