@@ -46,6 +46,7 @@
 - Equipamentos refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Compras e materiais refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Levantamento técnico refatorado para usar o layout compartilhado e o cliente HTTP comum.
+- Instalações refatoradas para usar o layout compartilhado e o cliente HTTP comum.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
