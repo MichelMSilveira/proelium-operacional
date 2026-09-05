@@ -115,6 +115,7 @@ export default function Page() {
       ["clients", "Clientes"],
       ["projects", "Projetos"],
       ["commercial", "Comercial"],
+      ["quotes", "OrÃ§amentos", "/quotes"],
       ["finance", "Financeiro"],
       ["bi", "Indicadores"],
       ["operations", "OperaÃ§Ã£o", "/operations"],
