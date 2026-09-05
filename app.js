@@ -3653,6 +3653,7 @@ render();
 // Só inicia a autenticação depois que todos os aprimoramentos do menu e das telas
 // foram registrados. Assim o primeiro render autenticado já usa a interface final.
 connectSharedData();
+dataScopeKeysByView.commercial=[...(dataScopeKeysByView.commercial||[]),'appointments'];
 
 // Atividades comerciais: compromissos vinculados à oportunidade também funcionam
 // como lembretes e aparecem na Agenda operacional.
