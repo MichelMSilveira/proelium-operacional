@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Playwright Next.js passou a aceitar autenticação opcional por variáveis de ambiente, mantendo o acesso de teste normal e sem credenciais no código.
 - Comando visual `test:ui-chrome` adicionado para abrir o Chrome real pelo Playwright.
 - Bot Playwright passou a aceitar conexão CDP com uma sessão Chrome iniciada manualmente.
 - Bot Playwright de uso da interface ganhou modo de smoke test das rotas Next.js migradas.

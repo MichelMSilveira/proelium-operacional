@@ -14,6 +14,19 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
   const page = await browser.newPage();
   if (process.env.PROELIUM_NEXT_TEST === '1' || process.argv.includes('--next')) {
     try {
+      if (username && password) {
+        await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        const login = await page.evaluate(async ({ username, password }) => {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          });
+          return { ok: response.ok, status: response.status };
+        }, { username, password });
+        if (!login.ok) throw new Error(`login Next rejeitado pelo servidor (HTTP ${login.status}).`);
+        console.log('[OK] Next.js — autenticação de teste concluída');
+      }
       for (const route of ['/clients', '/projects', '/commercial', '/quotes']) {
         const response = await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle', timeout: 15000 });
         if (!response || !response.ok()) throw new Error(`${route} retornou HTTP ${response?.status() || 'sem resposta'}.`);
