@@ -2,6 +2,9 @@
 
 ## Em desenvolvimento
 
+- Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
+- Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
+
 - Levantamento inicial reorganizado por necessidades do cliente: Automação, Áudio e vídeo, Conectividade e Câmera e Acessos. Os itens passam a alimentar futuramente orçamento, materiais e biblioteca de conexões; registros já existentes são preservados.
 - Checklist do levantamento ganhou árvore expansível, seleção por item, quantidade compacta e nota comercial/técnica persistida junto ao requisito.
 - Conta fundadora da empresa passou a ser elegível como responsável interno pelas oportunidades.
