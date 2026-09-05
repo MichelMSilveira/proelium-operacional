@@ -1,0 +1,2 @@
+:root{--proelium-olive:#3b4a3a;--proelium-orange:#cb6445;--proelium-sand:#f5f1eb;--proelium-ink:#262828;--proelium-muted:#66705f;--proelium-line:#ded6cb;--proelium-card:#fffdfa}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--proelium-sand);color:var(--proelium-ink)}button,input{font:inherit}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}.error{padding:10px;border-radius:7px;background:#fbe8e4;color:#9d423b}
