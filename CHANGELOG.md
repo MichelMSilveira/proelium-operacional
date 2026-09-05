@@ -25,6 +25,7 @@
 - Rota de Instalações adicionada em modo somente leitura, com execuções de campo, projeto e status.
 - Rota de Rotinas adicionada em modo somente leitura, com procedimentos e checklists operacionais.
 - Rota de Configurações adicionada em modo somente leitura, com identidade, responsável, status e licença da empresa autenticada.
+- Rota de Usuários da empresa adicionada em modo somente leitura, respeitando o endpoint protegido e exibindo função e situação de cada participante.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
