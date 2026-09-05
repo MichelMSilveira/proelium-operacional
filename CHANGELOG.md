@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Detalhe de Orçamentos passou a permitir criar ambientes vinculados ao orçamento.
 - Listagem de Orçamentos conectada à tela de detalhe por links individuais.
 - Tela de detalhe de OrÃ§amento criada para consultar status, versÃ£o e ambientes vinculados.
 - README do frontend atualizado com a rota de OrÃ§amentos e seus limites funcionais atuais.
