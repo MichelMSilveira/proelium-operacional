@@ -23,6 +23,19 @@ jobs:
           npm --prefix frontend ci --no-audit --no-fund
           npm run check:frontend
 
+      - name: Package Next.js standalone
+        run: |
+          mkdir -p frontend/.next/standalone/frontend/.next
+          cp -R frontend/.next/static frontend/.next/standalone/frontend/.next/static
+          if [ -d frontend/public ]; then cp -R frontend/public frontend/.next/standalone/frontend/public; fi
+
+      - name: Upload Next.js artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proelium-next-standalone
+          path: frontend/.next/standalone
+          if-no-files-found: error
+
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
