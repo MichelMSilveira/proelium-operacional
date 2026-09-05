@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Tela de detalhe de OrÃ§amento criada para consultar status, versÃ£o e ambientes vinculados.
 - README do frontend atualizado com a rota de OrÃ§amentos e seus limites funcionais atuais.
 - Rota de OrÃ§amentos adicionada com criaÃ§Ã£o de rascunhos, cliente opcional, validade e versÃ£o.
 - EdiÃ§Ã£o bÃ¡sica de oportunidades adicionada em Comercial, com tÃ­tulo, status e revisÃ£o-base.
