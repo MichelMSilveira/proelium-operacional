@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Bot Playwright de uso da interface ganhou modo de smoke test das rotas Next.js migradas.
 - Correção do artefato Next.js para incluir os arquivos ocultos `.next` necessários ao runtime standalone.
 - Templates de serviço systemd e proxy reverso criados para revisão antes da ativação do Next.js no VPS.
 - CI passou a empacotar e disponibilizar o build standalone do frontend Next.js como artefato.
