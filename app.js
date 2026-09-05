@@ -3653,3 +3653,36 @@ render();
 // Só inicia a autenticação depois que todos os aprimoramentos do menu e das telas
 // foram registrados. Assim o primeiro render autenticado já usa a interface final.
 connectSharedData();
+
+// Atividades comerciais: compromissos vinculados à oportunidade também funcionam
+// como lembretes e aparecem na Agenda operacional.
+let pendingCommercialOpportunity='';
+const commercialAppointmentSave=saveRecord;
+saveRecord=(kind,data,editId='')=>{
+  const result=commercialAppointmentSave(kind,data,editId);
+  if(kind==='appointment'&&pendingCommercialOpportunity){
+    const appointment=state.data.appointments.find(item=>item.id===editId)||state.data.appointments[0];
+    if(appointment){appointment.opportunityId=pendingCommercialOpportunity;appointment.status='Agendado';persist()}
+    pendingCommercialOpportunity='';
+  }
+  return result;
+};
+function injectCommercialActivities(){
+  if(state.view!=='commercial')return;
+  document.querySelectorAll('.commercial-deal').forEach(card=>{
+    if(card.querySelector('[data-commercial-activity]'))return;
+    const opportunityId=card.querySelector('[data-start-survey-opportunity]')?.dataset.startSurveyOpportunity||card.querySelector('[data-delete-opportunity]')?.dataset.deleteOpportunity;
+    if(!opportunityId)return;
+    const actions=card.querySelector('.deal-actions');if(!actions)return;
+    const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.commercialActivity=opportunityId;button.textContent='Nova atividade';actions.insertBefore(button,actions.firstChild);
+    const items=(state.data.appointments||[]).filter(item=>item.opportunityId===opportunityId);
+    if(items.length){const list=document.createElement('small');list.className='subtext commercial-activities';list.textContent=`${items.length} atividade(s) na agenda · próxima: ${items.sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0].date||'sem data'}`;card.appendChild(list)}
+  });
+}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-commercial-activity]');if(!button)return;
+  pendingCommercialOpportunity=button.dataset.commercialActivity;
+  openForm('appointment','',{title:'Contato comercial',date:todayInput(),note:'Registrar resultado e próxima decisão comercial.'});
+},true);
+new MutationObserver(injectCommercialActivities).observe(document.body,{childList:true,subtree:true});
+injectCommercialActivities();

@@ -93,3 +93,5 @@ Em produção, configure `SESSION_SECRET` no ambiente do serviço com um valor a
 # Atualização comercial — 04/09/2026
 
 O funil não oferece mais avanço manual de etapa nem carga de dados demonstrativos. O orçamento deve ser iniciado a partir de um levantamento validado, com pelo menos um ponto ou quantitativo registrado. A carga demonstrativa permanece disponível apenas nos cenários automatizados de teste isolado.
+
+Atividades comerciais são registradas pelo cartão da oportunidade em “Nova atividade”. Elas usam a agenda operacional, preservando responsável, data, horário e observação; a oportunidade mantém a contagem e a próxima data registrada.
