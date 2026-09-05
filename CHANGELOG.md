@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- CI passou a empacotar e disponibilizar o build standalone do frontend Next.js como artefato.
 - Plano de publicação gradual do frontend Next.js documentado, incluindo proxy, health check e rollback.
 - Total do Orçamento passou a ser calculado por item, quantidade e desconto, sem alterar a aprovação.
 - Detalhe de Orçamentos passou a permitir incluir produtos/serviços, quantidade e desconto por ambiente.
