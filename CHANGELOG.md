@@ -46,6 +46,7 @@
 - Equipamentos refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Compras e materiais consolidados no layout compartilhado e no cliente HTTP comum.
 - Instalações consolidadas no layout compartilhado e no cliente HTTP comum, usando o hook `useApi`.
+- Relatórios consolidados no layout compartilhado e no hook `useApi`.
 - Compras e materiais refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Levantamento técnico refatorado para usar o layout compartilhado e o cliente HTTP comum.
 - Instalações refatoradas para usar o layout compartilhado e o cliente HTTP comum.
