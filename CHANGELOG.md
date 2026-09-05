@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Ciclo bÃ¡sico de Projetos concluÃ­do com exclusÃ£o confirmada e controle de revisÃ£o.
 - EdiÃ§Ã£o bÃ¡sica de Projetos adicionada para nome e status, com revisÃ£o-base da API.
 - Cadastro inicial de Projetos migrado para o frontend Next.js, com nome, status e controle de revisÃ£o.
 - DocumentaÃ§Ã£o do frontend atualizada para distinguir rotas somente leitura dos fluxos de escrita jÃ¡ validados.
