@@ -99,3 +99,4 @@ O escopo de dados das atividades comerciais acompanha a oportunidade e permanece
 Cadastros de clientes devem usar documento, e-mail e telefone únicos dentro da empresa. Em caso de duplicidade, o sistema bloqueia a gravação ou a aprovação e orienta a reutilizar o cliente existente.
 O funil comercial exibe indicadores calculados da própria empresa: valor em aberto, valor ganho, conversão entre decisões, ticket médio das oportunidades ganhas e ações vencidas.
 Uma proposta só pode ser aprovada quando o total líquido de venda supera o custo previsto. Descontos são aceitos de 0% a 100%; a margem mínima configurável da empresa permanece como próxima evolução.
+Na análise da proposta, “Imprimir / salvar PDF” usa a impressão do navegador para gerar o arquivo, enquanto “Aceite do cliente” aprova a proposta e cria os vínculos operacionais existentes. “Registrar recusa” guarda motivo e data no orçamento.
