@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Total do Orçamento passou a ser calculado por item, quantidade e desconto, sem alterar a aprovação.
 - Detalhe de Orçamentos passou a permitir incluir produtos/serviços, quantidade e desconto por ambiente.
 - Detalhe de Orçamentos passou a permitir criar ambientes vinculados ao orçamento.
 - Listagem de Orçamentos conectada à tela de detalhe por links individuais.
