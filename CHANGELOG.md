@@ -50,6 +50,7 @@
 - Rotinas e checklists refatorados para usar o layout compartilhado e o cliente HTTP comum.
 - Hook `useApi` criado para centralizar carregamento, erro e cancelamento seguro de consultas; aplicado à tela de Rotinas.
 - Hook `useApi` aplicado também à tela de Qualidade, removendo carregamento manual duplicado.
+- Cliente HTTP Next.js preparado para operações de escrita via `apiPut`, mantendo autenticação e controle de revisão da API.
 - Comandos `check:frontend` e `check:all` adicionados ao projeto para validar backend e frontend em conjunto.
 - Estado das rotas em transição documentado em `frontend/README.md`, incluindo limites atuais e comando de validação.
 
