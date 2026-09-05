@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Usuários empresariais com cargo Comercial passam a receber também Clientes, Comercial, Orçamentos, Produtos e Levantamento, inclusive em convites antigos.
 - Playwright Next.js passou a aceitar autenticação opcional por variáveis de ambiente, mantendo o acesso de teste normal e sem credenciais no código.
 - Comando visual `test:ui-chrome` adicionado para abrir o Chrome real pelo Playwright.
 - Bot Playwright passou a aceitar conexão CDP com uma sessão Chrome iniciada manualmente.
