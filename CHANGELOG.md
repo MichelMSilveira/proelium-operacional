@@ -54,6 +54,7 @@
 - Hook `useApi` criado para centralizar carregamento, erro e cancelamento seguro de consultas; aplicado à tela de Rotinas.
 - Hook `useApi` aplicado também à tela de Qualidade, removendo carregamento manual duplicado.
 - Cliente HTTP Next.js preparado para operações de escrita via `apiPut`, mantendo autenticação e controle de revisão da API.
+- Clientes recebeu o primeiro fluxo de escrita migrado: cadastro de nome, e-mail e telefone com envio protegido por `baseRevision`.
 - Comandos `check:frontend` e `check:all` adicionados ao projeto para validar backend e frontend em conjunto.
 - Estado das rotas em transição documentado em `frontend/README.md`, incluindo limites atuais e comando de validação.
 - Origem da API do frontend Next.js parametrizada por `PROELIUM_API_ORIGIN`, preparando a publicação online sem alterar o código.
