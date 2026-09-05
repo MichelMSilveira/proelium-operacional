@@ -51,6 +51,7 @@
 - Hook `useApi` criado para centralizar carregamento, erro e cancelamento seguro de consultas; aplicado à tela de Rotinas.
 - Hook `useApi` aplicado também à tela de Qualidade, removendo carregamento manual duplicado.
 - Comandos `check:frontend` e `check:all` adicionados ao projeto para validar backend e frontend em conjunto.
+- Estado das rotas em transição documentado em `frontend/README.md`, incluindo limites atuais e comando de validação.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
