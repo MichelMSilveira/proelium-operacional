@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Correção do artefato Next.js para incluir os arquivos ocultos `.next` necessários ao runtime standalone.
 - Templates de serviço systemd e proxy reverso criados para revisão antes da ativação do Next.js no VPS.
 - CI passou a empacotar e disponibilizar o build standalone do frontend Next.js como artefato.
 - Plano de publicação gradual do frontend Next.js documentado, incluindo proxy, health check e rollback.
