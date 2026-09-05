@@ -1,0 +1,13 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { apiGet } from '../../lib/api';
+
+type Payload = { data?: { evaluations?: Record<string, unknown>[] } };
+export default function QualityPage() {
+  const [items, setItems] = useState<Record<string, unknown>[]>([]);
+  const [error, setError] = useState('');
+  useEffect(() => { apiGet<Payload>('/api/data').then((payload) => setItems(payload.data?.evaluations || [])).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Falha ao carregar qualidade.')); }, []);
+  const average = useMemo(() => { const values = items.map((item) => Number(item.score || item.rating || item.nota || 0)).filter(Boolean); return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '—'; }, [items]);
+  return <main className="page"><header><strong>PROELIUM</strong><a href="/">Voltar ao painel</a></header><section><p className="eyebrow">QUALIDADE</p><h1>Avaliações</h1><p className="intro">Percepções de clientes e equipe sobre a operação.</p>{error && <p className="error">{error}</p>}<div className="summary"><article><span>Avaliações</span><strong>{items.length}</strong></article><article><span>Média</span><strong>{average}</strong></article></div><div className="list">{items.map((item, index) => <article key={String(item.id || index)}><strong>{String(item.title || item.clientName || item.name || `Avaliação ${index + 1}`)}</strong><span>{String(item.score || item.rating || item.nota || 'Sem nota')} · {String(item.comment || item.comments || item.comentario || 'Sem comentário')}</span></article>)}{!error && !items.length && <p>Nenhuma avaliação disponível.</p>}</div></section><style jsx>{`.page{min-height:100vh;background:var(--proelium-sand);color:var(--proelium-ink);font:15px Arial,sans-serif}.page header{display:flex;justify-content:space-between;padding:20px 6%;background:var(--proelium-olive);color:#fff}.page a{color:#fff}.page section{max-width:900px;margin:auto;padding:48px 6%}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.2em}.page h1{font:500 36px Georgia,serif}.intro,.list>p{color:var(--proelium-muted)}.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0}.summary article,.list article{display:grid;gap:8px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.summary span,.list span{font-size:12px;color:var(--proelium-muted)}.summary strong{font-size:28px;color:var(--proelium-olive)}.list{display:grid;gap:10px}.error{padding:10px;border-radius:7px;background:#fbe8e4;color:#9d423b}`}</style></main>;
+}
