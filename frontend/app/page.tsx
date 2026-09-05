@@ -30,6 +30,10 @@ export default function Page() {
       if (button.textContent === 'Comercial') button.addEventListener('click', () => { window.location.href = '/commercial'; });
       if (button.textContent === 'Financeiro') button.addEventListener('click', () => { window.location.href = '/finance'; });
       if (button.textContent === 'Indicadores') button.addEventListener('click', () => { window.location.href = '/bi'; });
+      const routes: Record<string, string> = { 'Operação': '/operations', 'Agenda': '/agenda', 'Catálogo': '/products', 'Qualidade': '/quality', 'Conhecimento': '/knowledge', 'Equipamentos': '/equipment', 'Compras': '/purchases', 'Levantamento': '/survey', 'Relatórios': '/reports', 'Colaboradores': '/collaborators', 'Usuários': '/users', 'Convites': '/invites', 'Configurações': '/settings' };
+      Object.entries(routes).forEach(([label, route]) => { if (button.textContent === label) button.addEventListener('click', () => { window.location.href = route; }); });
+      const nav = document.querySelector('nav');
+      if (nav && !nav.querySelector('[data-expanded-navigation]')) { const marker = document.createElement('span'); marker.dataset.expandedNavigation = 'true'; marker.hidden = true; nav.appendChild(marker); Object.entries(routes).forEach(([label, route]) => { const link = document.createElement('button'); link.textContent = label; link.onclick = () => { window.location.href = route; }; nav.appendChild(link); }); }
     });
   }, [user]);
 
