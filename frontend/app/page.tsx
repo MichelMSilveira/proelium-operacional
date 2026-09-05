@@ -130,6 +130,8 @@ export default function Page() {
       ["users", "UsuÃ¡rios", "/users"],
       ["invites", "Convites", "/invites"],
       ["settings", "ConfiguraÃ§Ãµes", "/settings"],
+      ["installations", "InstalaÃ§Ãµes", "/installations"],
+      ["routines", "Rotinas", "/routines"],
     ];
     const statDefinitions = [
       ["clients", "Clientes"],
