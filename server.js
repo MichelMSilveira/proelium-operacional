@@ -67,6 +67,7 @@ const dataAccessScopes = {
   knowledge: ['articles'], audit: ['auditLog', 'recoveryLog'], diagram: ['technicalPoints', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides'],
   purchases: ['purchaseItems'], execution: ['executionEntries', 'executionItems']
 };
+dataAccessScopes.commercial.push('appointments');
 const companyTrialModules = {
   contratante: ['dashboard','commercial','quotes','clients','products','projects','processes','tasks','agenda','operations','reports','finance','bi','biMarket','quality','collaborators','equipment','knowledge','routines'],
   contratado: ['dashboard','clients','projects','processes','tasks','agenda','operations','reports','quality','collaborators','equipment','execution','knowledge','routines'],
