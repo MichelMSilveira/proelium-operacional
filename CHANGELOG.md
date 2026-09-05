@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- DocumentaÃ§Ã£o do frontend atualizada para distinguir rotas somente leitura dos fluxos de escrita jÃ¡ validados.
 - NavegaÃ§Ã£o do shell ampliada para incluir InstalaÃ§Ãµes e Rotinas, que jÃ¡ possuem rotas migradas.
 - NavegaÃ§Ã£o do shell Next.js ampliada com entradas React controladas para os mÃ³dulos migrados.
 - EdiÃ§Ã£o de clientes ampliada para nome, e-mail e telefone, preservando a revisÃ£o-base da API.
