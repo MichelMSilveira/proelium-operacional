@@ -176,7 +176,8 @@ async function run() {
   });
   let serverError = '';
   child.stderr.on('data', chunk => { serverError += chunk.toString(); });
-  const browser = await chromium.launch({ headless: true });
+  const visibleRun = process.env.PROELIUM_UI_VISIBLE === 'true';
+  const browser = await chromium.launch({ headless: !visibleRun, slowMo: visibleRun ? 180 : 0 });
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
