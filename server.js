@@ -209,7 +209,12 @@ function membershipModules(user, company, fallback=[]) {
   // todos os módulos pertinentes ao seu tipo de empresa. A limitação de cargo
   // continua valendo para os demais participantes convidados.
   if (company && (user?.accountType === 'founder' || user?.founder === true)) return modulesForCompanyTrial(company, user);
-  if (Array.isArray(user?.modules) && user.modules.length) return user.modules;
+  if (Array.isArray(user?.modules) && user.modules.length) {
+    // O cargo Comercial sempre mantém seu conjunto funcional mínimo, mesmo
+    // quando o convite antigo não continha os módulos comerciais.
+    if (user?.role === 'comercial') return [...new Set([...user.modules, ...rolePermissions.comercial])];
+    return user.modules;
+  }
   // Licença pendente não pode liberar mais módulos do que uma licença aprovada.
   // O pacote de avaliação é reservado à empresa que ainda está em análise cadastral;
   // depois da aprovação, a empresa segue somente os módulos definidos pela licença.
