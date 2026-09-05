@@ -35,6 +35,7 @@ jobs:
           name: proelium-next-standalone
           path: frontend/.next/standalone
           if-no-files-found: error
+          include-hidden-files: true
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0
