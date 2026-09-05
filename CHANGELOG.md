@@ -28,6 +28,7 @@
 - Rota de Usuários da empresa adicionada em modo somente leitura, respeitando o endpoint protegido e exibindo função e situação de cada participante.
 - Rota de Convites adicionada em modo somente leitura, exibindo destinatário, função e situação do convite.
 - Menu expandido para expor as áreas migradas disponíveis no frontend Next.js.
+- Componente de layout compartilhado criado e aplicado à tela de Clientes; o shell principal também foi formatado para facilitar a manutenção segura.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
