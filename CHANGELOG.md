@@ -15,6 +15,7 @@
 - Rota de Operação adicionada em modo somente leitura, com tarefas e ordens de serviço consumidas pela API atual.
 - Rota de Conhecimento adicionada em modo somente leitura, com artigos e referências técnicas da API atual.
 - Rota de Equipamentos adicionada em modo somente leitura, com catálogo técnico, fabricante, status e localização.
+- Rota de Colaboradores adicionada em modo somente leitura, com equipe, função e especialidade consumidas da API atual.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
