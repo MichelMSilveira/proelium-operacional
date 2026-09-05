@@ -97,3 +97,4 @@ O funil não oferece mais avanço manual de etapa nem carga de dados demonstrati
 Atividades comerciais são registradas pelo cartão da oportunidade em “Nova atividade”. Elas usam a agenda operacional, preservando responsável, data, horário e observação; a oportunidade mantém a contagem e a próxima data registrada.
 O escopo de dados das atividades comerciais acompanha a oportunidade e permanece isolado por empresa, inclusive para usuários com perfil comercial limitado.
 Cadastros de clientes devem usar documento, e-mail e telefone únicos dentro da empresa. Em caso de duplicidade, o sistema bloqueia a gravação ou a aprovação e orienta a reutilizar o cliente existente.
+O funil comercial exibe indicadores calculados da própria empresa: valor em aberto, valor ganho, conversão entre decisões, ticket médio das oportunidades ganhas e ações vencidas.
