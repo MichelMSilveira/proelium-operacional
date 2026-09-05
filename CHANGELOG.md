@@ -10,6 +10,7 @@
 - Rota Comercial adicionada em modo somente leitura, com oportunidades e orçamentos consumidos da API atual.
 - Rota Financeiro adicionada em modo somente leitura, com lançamentos autorizados e total calculado no frontend.
 - Base visual e cliente HTTP compartilhados adicionados ao frontend Next.js, preparando os próximos módulos para componentes e estilos consistentes.
+- Rota de Indicadores adicionada em modo somente leitura, com métricas iniciais de clientes, projetos, comercial, tarefas e lançamentos usando o cliente HTTP compartilhado.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
