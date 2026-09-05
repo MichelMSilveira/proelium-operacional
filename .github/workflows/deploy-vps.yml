@@ -20,6 +20,8 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run check
+          npm --prefix frontend ci --no-audit --no-fund
+          npm run check:frontend
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0
