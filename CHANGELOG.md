@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- README do frontend atualizado com a rota de OrÃ§amentos e seus limites funcionais atuais.
 - Rota de OrÃ§amentos adicionada com criaÃ§Ã£o de rascunhos, cliente opcional, validade e versÃ£o.
 - EdiÃ§Ã£o bÃ¡sica de oportunidades adicionada em Comercial, com tÃ­tulo, status e revisÃ£o-base.
 - Cadastro inicial de oportunidades migrado para Comercial, com título, status e controle de revisão.
