@@ -3733,3 +3733,16 @@ setQuoteStatus=(id,status)=>{
   }
   return commercialStatusGuard(id,status);
 };
+function injectQuoteCommercialActions(){
+  if(state.view!=='quoteDetail'||document.querySelector('[data-quote-commercial-actions]'))return;
+  const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote),actions=document.querySelector('.quote-actions');if(!quote||!actions)return;
+  const bar=document.createElement('div');bar.className='module-toolbar quote-commercial-actions';bar.dataset.quoteCommercialActions='';bar.innerHTML='<button type="button" class="button secondary" data-quote-print>Imprimir / salvar PDF</button>'+(quoteStatus(quote)==='Aprovado'?'':'<button type="button" class="button primary" data-quote-accept>Aceite do cliente</button><button type="button" class="button danger-outline" data-quote-reject>Registrar recusa</button>');actions.insertAdjacentElement('afterend',bar);
+}
+document.addEventListener('click',event=>{
+  const print=event.target.closest('[data-quote-print]'),accept=event.target.closest('[data-quote-accept]'),reject=event.target.closest('[data-quote-reject]');
+  if(print){event.preventDefault();window.print();return}
+  if(accept){event.preventDefault();if(confirm('Confirmar aceite desta proposta pelo cliente?'))approveQuote(state.selectedQuote);return}
+  if(reject){event.preventDefault();const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote);if(!quote)return;const note=prompt('Motivo da recusa (opcional):','Cliente não aprovou a proposta');if(note===null)return;quote.status='Recusado';quote.rejectionReason=note.trim();quote.rejectedAt=new Date().toISOString();persist();render();toast('Recusa registrada no histórico da proposta.');}
+},true);
+new MutationObserver(injectQuoteCommercialActions).observe(document.body,{childList:true,subtree:true});
+injectQuoteCommercialActions();
