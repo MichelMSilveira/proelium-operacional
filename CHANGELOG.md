@@ -8,6 +8,7 @@
 - Menu lateral e navegação inicial adicionados ao shell Next.js, com pontos de entrada para Visão geral, Clientes, Projetos, Comercial, Financeiro e Indicadores; módulos ainda são migrados individualmente.
 - Menu conectado às rotas migradas de Clientes e Projetos, mantendo as demais áreas como pontos de transição controlados.
 - Rota Comercial adicionada em modo somente leitura, com oportunidades e orçamentos consumidos da API atual.
+- Rota Financeiro adicionada em modo somente leitura, com lançamentos autorizados e total calculado no frontend.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
