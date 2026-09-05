@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Migração incremental iniciada: criado o frontend Next.js 16 + React 19 + TypeScript em `frontend/`, com shell inicial e entrada OAuth Google apontando para a API existente. A aplicação legada permanece ativa durante a validação da primeira fatia.
+
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
 
