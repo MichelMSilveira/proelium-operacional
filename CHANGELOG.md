@@ -628,3 +628,4 @@
 - Comercial: atividades vinculadas a oportunidades passaram a integrar o escopo de dados comercial, mantendo a permissão por empresa também para perfis comerciais limitados.
 - Clientes: novos cadastros e aprovações de oportunidades são bloqueados quando documento, e-mail ou telefone já pertencem a outro cliente da empresa; registros existentes permanecem preservados.
 - Comercial: funil ganhou indicadores de valor em aberto, valor ganho, conversão, ticket médio e ações atrasadas.
+- Orçamentos: aprovação bloqueia propostas sem margem bruta positiva, inclusive ao alterar diretamente a situação para Aprovado; descontos continuam limitados entre 0% e 100%.

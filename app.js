@@ -3676,6 +3676,12 @@ approveQuote=id=>{
   if(quote&&!quote.clientId&&opportunity){const duplicate=duplicateClientReason({name:opportunity.company,email:opportunity.email,phone:opportunity.phone});if(duplicate){toast(`Aprovação bloqueada: já existe cliente semelhante (${duplicate.name}). Abra o cadastro existente antes de aprovar.`);return}}
   return duplicateGuardApproveQuote(id);
 };
+const commercialApprovalGuard=approveQuote;
+approveQuote=id=>{
+  const totals=quoteTotals(id);
+  if(totals.price<=totals.cost){toast('Aprovação bloqueada: o orçamento precisa ter margem bruta positiva. Ajuste preços, custos ou descontos.');return}
+  return commercialApprovalGuard(id);
+};
 function injectCommercialMetrics(){
   if(state.view!=='commercial'||document.querySelector('[data-commercial-metrics]'))return;
   const opportunities=state.data.opportunities||[],active=opportunities.filter(item=>!['Ganho','Perdido'].includes(item.stage)),won=opportunities.filter(item=>item.stage==='Ganho'),today=todayInput(),overdue=active.filter(item=>item.nextDue&&item.nextDue<today).length;
@@ -3719,3 +3725,11 @@ document.addEventListener('click',event=>{
 },true);
 new MutationObserver(injectCommercialActivities).observe(document.body,{childList:true,subtree:true});
 injectCommercialActivities();
+const commercialStatusGuard=setQuoteStatus;
+setQuoteStatus=(id,status)=>{
+  if(status==='Aprovado'){
+    const totals=quoteTotals(id);
+    if(totals.price<=totals.cost){toast('Aprovação bloqueada: a margem bruta precisa ser positiva.');return}
+  }
+  return commercialStatusGuard(id,status);
+};
