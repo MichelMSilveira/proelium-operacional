@@ -10,6 +10,8 @@ As rotas atuais consultam a API existente e estão inicialmente em modo somente 
 
 `/clients`, `/projects`, `/commercial`, `/finance`, `/bi`, `/operations`, `/agenda`, `/products`, `/quality`, `/knowledge`, `/equipment`, `/purchases`, `/survey`, `/reports`, `/routines`, `/installations`, `/collaborators`, `/settings`, `/users` e `/invites`.
 
+Clientes, ConfiguraÃ§Ãµes e Convites jÃ¡ possuem fluxos de escrita validados; as demais rotas permanecem inicialmente em modo somente leitura.
+
 O shell de autenticação, sessão, logout e navegação também está em Next.js. Formulários de edição, permissões de interface, sincronização em tempo real e substituição do legado permanecem como próximas etapas.
 
 ## Validação
