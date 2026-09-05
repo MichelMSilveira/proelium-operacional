@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- NavegaÃ§Ã£o do shell Next.js ampliada com entradas React controladas para os mÃ³dulos migrados.
 - EdiÃ§Ã£o de clientes ampliada para nome, e-mail e telefone, preservando a revisÃ£o-base da API.
 - Migração incremental iniciada: criado o frontend Next.js 16 + React 19 + TypeScript em `frontend/`, com shell inicial e entrada OAuth Google apontando para a API existente. A aplicação legada permanece ativa durante a validação da primeira fatia.
 - Primeira fatia funcional avançada: shell Next.js passou a consultar a sessão atual, exibir o acesso Google e oferecer o login mestre pela API legada, com proxy local para `localhost:4173`.

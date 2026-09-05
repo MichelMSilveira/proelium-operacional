@@ -23,6 +23,7 @@ export default function Page() {
       .finally(() => setLoading(false));
   }, []);
 
+  /* legacy navigation wiring removed */
   useEffect(() => {
     document.querySelectorAll("nav button").forEach((button) => {
       if (button.textContent === "Clientes")
@@ -109,13 +110,26 @@ export default function Page() {
       </main>
     );
   if (user) {
-    const navigation = [
+    const navigation: [string, string, string?][] = [
       ["dashboard", "Visão geral"],
       ["clients", "Clientes"],
       ["projects", "Projetos"],
       ["commercial", "Comercial"],
       ["finance", "Financeiro"],
       ["bi", "Indicadores"],
+      ["operations", "OperaÃ§Ã£o", "/operations"],
+      ["agenda", "Agenda", "/agenda"],
+      ["products", "CatÃ¡logo", "/products"],
+      ["quality", "Qualidade", "/quality"],
+      ["knowledge", "Conhecimento", "/knowledge"],
+      ["equipment", "Equipamentos", "/equipment"],
+      ["purchases", "Compras", "/purchases"],
+      ["survey", "Levantamento", "/survey"],
+      ["reports", "RelatÃ³rios", "/reports"],
+      ["collaborators", "Colaboradores", "/collaborators"],
+      ["users", "UsuÃ¡rios", "/users"],
+      ["invites", "Convites", "/invites"],
+      ["settings", "ConfiguraÃ§Ãµes", "/settings"],
     ];
     const statDefinitions = [
       ["clients", "Clientes"],
@@ -128,11 +142,11 @@ export default function Page() {
         <aside>
           <span className="eyebrow">PROELIUM</span>
           <nav>
-            {navigation.map(([key, label]) => (
+            {navigation.map(([key, label, route]) => (
               <button
                 className={view === key ? "active" : ""}
                 key={key}
-                onClick={() => setView(key)}
+                onClick={() => (route ? (window.location.href = route) : setView(key))}
               >
                 {label}
               </button>
