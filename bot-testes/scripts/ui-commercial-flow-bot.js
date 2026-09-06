@@ -276,7 +276,7 @@ async function run() {
     await fillField(page, 'phone', '5511999991001');
     await fillField(page, 'email', 'marina.ui.bot@example.invalid');
     await selectLabel(page, 'owner', 'Ana UI Operações');
-    await selectLabel(page, 'stage', 'Qualificação');
+    await selectLabel(page, 'stage', 'Primeiro contato');
     await selectLabel(page, 'source', 'Indicação');
     await fillField(page, 'nextAction', 'Agendar levantamento técnico');
     await fillField(page, 'nextDue', new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
@@ -286,6 +286,24 @@ async function run() {
     await assertData(page, data => data.opportunities?.some(item => item.company === 'Casa Aurora · UI Bot'), 'Oportunidade não foi gravada pelo formulário.');
     console.log('[OK] UI — oportunidade criada com contato, responsável e próxima ação');
 
+    const firstContactData = await assertData(page, data => data.opportunities?.some(item => item.company === 'Casa Aurora · UI Bot'), 'A oportunidade de primeiro contato não foi encontrada.');
+    const firstContactId = firstContactData.opportunities.find(item => item.company === 'Casa Aurora · UI Bot').id;
+    const firstContactCard = page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
+    if (await firstContactCard.locator('[data-commercial-activity]').count() !== 0) throw new Error('Primeiro contato não deve exibir Nova atividade.');
+    if (await firstContactCard.locator('[data-start-survey-opportunity]').count() !== 0) throw new Error('Primeiro contato não deve exibir Iniciar levantamento.');
+    const qualifyButton = firstContactCard.locator(`[data-qualify-opportunity="${firstContactId}"]`);
+    if (await qualifyButton.count() !== 1 || !(await qualifyButton.innerText()).includes('Registrar interesse')) throw new Error('A ação Registrar interesse não apareceu no Primeiro contato.');
+    if (await firstContactCard.locator(`[data-delete-opportunity="${firstContactId}"]`).count() !== 1) throw new Error('Primeiro contato precisa manter a ação Excluir.');
+    await page.evaluate(() => localStorage.setItem('proelium-current-actor', 'Ana UI Operações'));
+    await qualifyButton.click();
+    await fillField(page, 'signature', 'Ana UI Operações');
+    await saveDialog(page);
+    await assertData(page, data => {
+      const opportunity = data.opportunities?.find(item => item.id === firstContactId);
+      return opportunity?.stage === 'Qualificação' && data.auditLog?.some(item => item.action === 'Registrou interesse' && item.detail?.includes('Primeiro contato'));
+    }, 'Registrar interesse não qualificou a oportunidade nem registrou auditoria.');
+    console.log('[OK] UI — interesse confirmado, transição para Qualificação e auditoria registrados');
+
     for (let index = 2; index <= 30; index += 1) {
       await page.locator('[data-add="opportunity"]').click();
       await fillField(page, 'company', `${index % 2 ? 'Pessoa' : 'Empresa'} Prospect ${String(index).padStart(2, '0')}`);
@@ -294,7 +312,7 @@ async function run() {
       await fillField(page, 'email', `prospect${index}@example.invalid`);
       await selectLabel(page, 'source', index % 3 ? 'Indicação' : 'Site');
       await selectLabel(page, 'owner', 'Ana UI Operações');
-      await selectLabel(page, 'stage', index % 4 === 0 ? 'Qualificação' : 'Novo contato');
+      await selectLabel(page, 'stage', index % 4 === 0 ? 'Qualificação' : 'Primeiro contato');
       await fillField(page, 'nextAction', `Confirmar interesse do prospect ${index}`);
       await fillField(page, 'nextDue', new Date(Date.now() + index * 86_400_000).toISOString().slice(0, 10));
       await fillField(page, 'estimatedValue', String(10000 + index * 500));

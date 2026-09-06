@@ -12,9 +12,21 @@ const base = () => ({
 test('bloqueia levantamento sem oportunidade ou antes da qualificação', () => {
   const current = base();
   assert.equal(workflow.validate(current, { ...current, surveys: [{ id: 'survey-1' }] }).ok, false);
-  const novoContato = { ...current, opportunities: [{ id: 'opp-1', stage: 'Novo contato' }] };
-  assert.equal(workflow.validate(novoContato, { ...novoContato, surveys: [{ id: 'survey-1', opportunityId: 'opp-1' }] }).message,
+  const primeiroContato = { ...current, opportunities: [{ id: 'opp-1', stage: 'Primeiro contato' }] };
+  assert.equal(workflow.validate(primeiroContato, { ...primeiroContato, surveys: [{ id: 'survey-1', opportunityId: 'opp-1' }] }).message,
     'A oportunidade precisa estar em Qualificação antes de iniciar um levantamento técnico.');
+});
+
+test('registra interesse de Primeiro contato para Qualificação e mantém o alias legado', () => {
+  const current = {
+    opportunities: [{ id: 'opp-1', stage: 'Primeiro contato' }],
+    surveys: [], appointments: [], quotes: []
+  };
+  const qualified = { ...current, opportunities: [{ id: 'opp-1', stage: 'Qualificação' }] };
+  assert.equal(workflow.validate(current, qualified).ok, true);
+  const legacy = { ...current, opportunities: [{ id: 'opp-1', stage: 'Novo contato' }] };
+  assert.equal(workflow.validate(legacy, { ...legacy, opportunities: [{ id: 'opp-1', stage: 'Qualificação' }] }).ok, true);
+  assert.equal(workflow.canonicalStage('Novo contato'), 'Primeiro contato');
 });
 
 test('permite iniciar levantamento qualificado e exige visita antes do orçamento', () => {

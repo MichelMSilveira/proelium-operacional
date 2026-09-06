@@ -17,7 +17,7 @@ Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a
 
 `POST /api/commercial/reconcile-legacy` recebe `{ "apply": false }` para prévia e `{ "apply": true }` para aplicar. A aplicação promove somente etapas defasadas conforme os vínculos existentes (levantamento, visita e orçamento), preserva Ganho/Perdido e os demais campos, registra uma entrada em `auditLog` e usa a revisão central para evitar sobrescrita concorrente. A operação não é um salto normal do funil.
 
-As gravações que alteram o fluxo comercial são validadas no servidor: levantamentos precisam de oportunidade, a oportunidade deve respeitar Qualificação → Levantamento técnico → Visita → Orçamento, visitas precisam apontar para o levantamento e novos orçamentos precisam apontar para uma oportunidade após visita. Uma violação recebe HTTP `422`; estados legados não alterados são preservados.
+As gravações que alteram o fluxo comercial são validadas no servidor: a oportunidade deve respeitar Primeiro contato → Qualificação → Levantamento técnico → Visita → Orçamento, levantamentos precisam de oportunidade, visitas precisam apontar para o levantamento e novos orçamentos precisam apontar para uma oportunidade após visita. O alias legado `Novo contato` continua aceito como Primeiro contato para preservar registros existentes. Uma violação recebe HTTP `422`; estados legados não alterados são preservados.
 
 ## Recursos
 

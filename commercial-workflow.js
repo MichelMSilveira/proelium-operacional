@@ -3,7 +3,8 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.ProeliumCommercialWorkflow = api;
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  const stages = ['Novo contato', 'Qualificação', 'Levantamento técnico', 'Visita', 'Orçamento'];
+  const stages = ['Primeiro contato', 'Qualificação', 'Levantamento técnico', 'Visita', 'Orçamento'];
+  const legacyStageAliases = { 'Novo contato': 'Primeiro contato' };
   const terminalStages = ['Ganho', 'Perdido'];
 
   const list = (data, key) => Array.isArray(data?.[key]) ? data[key] : [];
@@ -15,7 +16,8 @@
       return !old || JSON.stringify(old) !== JSON.stringify(item);
     });
   };
-  const stageIndex = stage => stages.indexOf(stage);
+  const canonicalStage = stage => legacyStageAliases[stage] || stage;
+  const stageIndex = stage => stages.indexOf(canonicalStage(stage));
   const isVisit = appointment => Boolean(appointment && (
     appointment.type === 'Visita técnica' || appointment.visit === true || appointment.visitId || appointment.surveyId
   ));
@@ -94,7 +96,7 @@
     for (const opportunity of changedRecords(current, next, 'opportunities')) {
       const old = byId(list(current, 'opportunities'), opportunity.id);
       if (!old) {
-        if (['Novo contato', 'Qualificação'].includes(opportunity.stage)) continue;
+        if (['Primeiro contato', 'Novo contato', 'Qualificação'].includes(opportunity.stage)) continue;
         if (opportunity.stage === 'Levantamento técnico' && surveys.some(survey => String(survey.opportunityId) === String(opportunity.id))) continue;
         if (opportunity.stage === 'Visita' && surveys.some(survey => String(survey.opportunityId) === String(opportunity.id)) && visitsFor(next, opportunity.id).length) continue;
         if (opportunity.stage === 'Orçamento' && visitsFor(next, opportunity.id).length) continue;
@@ -107,8 +109,8 @@
       const to = stageIndex(opportunity.stage);
       if (terminalStages.includes(opportunity.stage)) continue;
       if (to < 0) return error('Etapa comercial inválida.');
-      if (opportunity.stage === 'Qualificação' && old.stage !== 'Novo contato') {
-        return error('A oportunidade só pode entrar em Qualificação a partir de Novo contato.');
+      if (opportunity.stage === 'Qualificação' && canonicalStage(old.stage) !== 'Primeiro contato') {
+        return error('A oportunidade só pode entrar em Qualificação a partir de Primeiro contato.');
       }
       if (opportunity.stage === 'Levantamento técnico') {
         if (old.stage !== 'Qualificação' || !surveys.some(survey => String(survey.opportunityId) === String(opportunity.id))) {
@@ -136,5 +138,5 @@
     return { ok: true };
   }
 
-  return { stages, terminalStages, isVisit, visitsFor, reconcileLegacyStages, validate };
+  return { stages, terminalStages, legacyStageAliases, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, validate };
 }));

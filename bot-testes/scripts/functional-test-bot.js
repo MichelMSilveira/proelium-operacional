@@ -93,7 +93,7 @@ function scenarioRecords(state) {
   const today = new Date().toISOString().slice(0, 10);
   const product = { id: 'prd-bot-switch', sku: 'BOT-SW-01', name: 'Switch de teste isolado', brand: 'Proelium Teste', model: 'SW-24', category: 'Rede', supplier: 'Fornecedor simulado', mode: 'Venda', unit: 'un', cost: 1200, price: 2000, status: 'Ativo', active: true };
   const service = { id: 'prd-bot-service', sku: 'BOT-SRV-01', name: 'Instalação de teste isolada', brand: 'Proelium', model: 'Serviço', category: 'Serviço', supplier: 'Interno', mode: 'Serviço', unit: 'h', cost: 80, price: 160, status: 'Ativo', active: true };
-  const opportunity = { id: 'opp-bot-1', company: 'Cliente Simulado Bot', contact: 'Contato Teste', phone: '(11) 0000-0000', email: 'bot@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Novo contato', nextAction: 'Elaborar proposta', nextDue: today, estimatedValue: 0, lossReason: '' };
+  const opportunity = { id: 'opp-bot-1', company: 'Cliente Simulado Bot', contact: 'Contato Teste', phone: '(11) 0000-0000', email: 'bot@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Primeiro contato', nextAction: 'Elaborar proposta', nextDue: today, estimatedValue: 0, lossReason: '' };
   const quote = { id: 'orc-bot-1', opportunityId: opportunity.id, clientId: '', title: 'Proposta funcional isolada', value: 0, status: 'Em elaboração', version: 1, createdAt: new Date().toISOString(), validUntil: today };
   const room = { id: 'amb-bot-1', quoteId: quote.id, name: 'Sala de teste', items: [{ productId: product.id, qty: 2, discount: 10 }, { productId: service.id, qty: 8, discount: 0 }] };
   const total = 2 * 2000 * 0.9 + 8 * 160;
@@ -323,8 +323,8 @@ async function runFunctionalTestBot(options = {}) {
     const blockedSurveyWrite = await companyApi('/api/data', { method: 'PUT', body: { data: { ...structuredClone(state), surveys: [{ id: 'srv-blocked', opportunityId: records.opportunity.id, title: 'Levantamento bloqueado' }] }, baseRevision: revision } });
     expect(blockedSurveyWrite.status === 422 && blockedSurveyWrite.text.includes('Qualificação'), `O backend permitiu levantamento antes da qualificação: HTTP ${blockedSurveyWrite.status}: ${blockedSurveyWrite.text}`);
     await check('CRM', 'Criação de contato e oportunidade', 'Revisar o cadastro comercial e seus campos obrigatórios.', async () => {
-      expect(state.opportunities.some(item => item.id === records.opportunity.id && item.stage === 'Novo contato'), 'Contato não permaneceu no funil.');
-      return 'novo contato salvo no funil';
+      expect(state.opportunities.some(item => item.id === records.opportunity.id && item.stage === 'Primeiro contato'), 'Contato não permaneceu no funil.');
+      return 'primeiro contato salvo no funil';
     });
 
     records.opportunity.stage = 'Qualificação';
@@ -368,7 +368,7 @@ async function runFunctionalTestBot(options = {}) {
       return 'venda aprovada e projeto criado';
     });
     await check('Comercial', 'Ciclos completos até o fim do orçamento', 'Revisar a passagem de oportunidade, versões, situação, totais e conversão final.', async () => {
-      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Novo contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '' };
+      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Primeiro contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '' };
       const draftQuote = { id: 'orc-cycle-approved-v1', opportunityId: approvedOpportunity.id, clientId: '', title: 'Proposta Ciclo Aprovado', value: 0, status: 'Rascunho', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
       const draftRooms = [
         { id: 'amb-cycle-approved-1', quoteId: draftQuote.id, name: 'Sala principal', items: [{ productId: records.product.id, qty: 2, discount: 0 }] },
@@ -379,7 +379,7 @@ async function runFunctionalTestBot(options = {}) {
       state.appointments.push({ id: 'visit-cycle-approved', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: approvedOpportunity.id, surveyId: 'srv-cycle-approved' });
       state.quotes.push(draftQuote);
       state.quoteRooms.push(...draftRooms);
-      for (const [from, to, action] of [['Novo contato', 'Qualificação', 'Qualificar necessidade'], ['Qualificação', 'Visita', 'Agendar visita técnica'], ['Visita', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
+      for (const [from, to, action] of [['Primeiro contato', 'Qualificação', 'Qualificar necessidade'], ['Qualificação', 'Visita', 'Agendar visita técnica'], ['Visita', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
         approvedOpportunity.stage = to;
         approvedOpportunity.nextAction = action;
         approvedOpportunity.advanceAuthorizations = [...(approvedOpportunity.advanceAuthorizations || []), { from, to, actor: 'Equipe Comercial', at: new Date().toISOString() }];

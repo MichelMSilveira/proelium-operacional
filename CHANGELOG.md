@@ -5,6 +5,7 @@
 - Fluxo comercial protegido no frontend e na persistência: levantamento exige oportunidade em Qualificação, a oportunidade avança para Levantamento técnico, a visita fica vinculada ao levantamento e o orçamento só é criado após a visita. Registros legados inalterados continuam preservados; cache web atualizado para `v348`.
 - Reconciliação administrativa e auditável adicionada para etapas comerciais legadas: levantamentos, visitas e orçamentos passam a contar na etapa inferida sem alterar dados de negócio ou etapas Ganho/Perdido; cache web atualizado para `v349`.
 - Navegação Comercial estabilizada após autenticação: Oportunidades é renderizada antes da sincronização remota e o shell/cache web atualizado para `v350`.
+- Oportunidades renomeou “Novo contato” para “Primeiro contato”; nessa etapa, “Nova atividade” e “Iniciar levantamento” ficam ocultos, enquanto “Registrar interesse → Qualificação” exige dados mínimos, confirmação assinada e auditoria; cache web atualizado para `v351`.
 - Documentação dos módulos de regras da Bancada de Trabalho do Hell consolidada, com responsabilidades claras para Codex, Node.js, bots, Playwright, GitHub Actions e Ollama.
 - O avanço de oportunidades usa o botão “Avançar processo” e exige conferência e autorização antes de mover para a próxima etapa.
 - O funil comercial passou a permitir alterar diretamente a etapa de oportunidades existentes.

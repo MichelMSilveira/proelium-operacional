@@ -1509,19 +1509,20 @@ function commercialAdvanceChecklist(opportunity){
   return missing;
 }
 function openOpportunityAdvanceAuthorization(id){
-  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id),stages=['Novo contato','Qualificação','Visita','Orçamento'];
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id),stages=['Primeiro contato','Qualificação','Visita','Orçamento'];
   if(!opportunity)return;
-  const index=stages.indexOf(opportunity.stage),nextStage=stages[index+1];
+  const currentStage=ProeliumCommercialWorkflow.canonicalStage(opportunity.stage),index=stages.indexOf(currentStage),nextStage=stages[index+1];
   if(!nextStage){toast('Esta oportunidade já está em Orçamento. A próxima decisão acontece dentro do orçamento: enviar, aprovar ou recusar.');return}
   const missing=commercialAdvanceChecklist(opportunity);
   if(missing.length){toast(`Antes de avançar, complete: ${missing.join(', ')}.`);openForm('opportunity',id);return}
   const actor=auditActor();
   if(actor==='Usuário do dispositivo'){toast('Antes de autorizar, identifique o responsável na aba Auditoria.');return}
-  $('#dialogTitle').textContent=`Autorizar: ${opportunity.stage} → ${nextStage}`;
+  const registeringInterest=currentStage==='Primeiro contato';
+  $('#dialogTitle').textContent=registeringInterest?'Registrar interesse: Primeiro contato → Qualificação':`Autorizar: ${currentStage} → ${nextStage}`;
   $('#recordForm').dataset.kind='opportunityAdvanceAuthorization';
   $('#recordForm').dataset.editId=id;
-  $('#saveButton').textContent='Assinar e avançar';
-  $('#formFields').innerHTML=`<input type="hidden" name="opportunityId" value="${id}"><input type="hidden" name="nextStage" value="${nextStage}"><div class="field full"><p class="subtext">A oportunidade foi conferida e está apta para seguir. Esta autorização ficará registrada na Auditoria.</p></div><div class="field full"><label>Responsável que autoriza</label><input value="${actor}" disabled></div><div class="field full"><label>Assinatura de confirmação *</label><input name="signature" autocomplete="off" placeholder="Digite exatamente: ${actor}" required><small class="subtext">Enquanto o login individual não existe, esta é uma assinatura operacional provisória vinculada ao usuário selecionado na Auditoria.</small></div>`;
+  $('#saveButton').textContent=registeringInterest?'Confirmar interesse e qualificar':'Assinar e avançar';
+  $('#formFields').innerHTML=`<input type="hidden" name="opportunityId" value="${id}"><input type="hidden" name="nextStage" value="${nextStage}"><div class="field full"><p class="subtext">${registeringInterest?'Registre o interesse real do cliente para mover a oportunidade à Qualificação.':'A oportunidade foi conferida e está apta para seguir.'} Esta ação ficará registrada na Auditoria.</p></div><div class="field full"><label>Responsável pela confirmação</label><input value="${actor}" disabled></div><div class="field full"><label>Assinatura de confirmação *</label><input name="signature" autocomplete="off" aria-describedby="commercial-signature-help" placeholder="Digite exatamente: ${actor}" required><small id="commercial-signature-help" class="subtext">Enquanto o login individual não existe, esta é uma assinatura operacional provisória vinculada ao usuário selecionado na Auditoria.</small></div>`;
   $('#recordDialog').showModal();
 }
 document.addEventListener('submit',event=>{
@@ -1530,16 +1531,16 @@ document.addEventListener('submit',event=>{
   event.preventDefault();event.stopImmediatePropagation();
   const data=Object.fromEntries(new FormData(form)),opportunity=(state.data.opportunities||[]).find(item=>item.id===data.opportunityId),actor=auditActor();
   if(!opportunity)return;
-  if(actor==='Usuário do dispositivo'){toast('Selecione o responsável na Auditoria antes de autorizar.');return}
+  if(actor==='Usuário do dispositivo'){toast('Selecione o responsável na Auditoria antes de confirmar o interesse.');return}
   if(String(data.signature||'').trim().toLocaleLowerCase('pt-BR')!==actor.toLocaleLowerCase('pt-BR')){toast('A assinatura não corresponde ao responsável identificado neste aparelho.');return}
   const missing=commercialAdvanceChecklist(opportunity);
   if(missing.length){toast(`A conferência precisa ser refeita: ${missing.join(', ')}.`);return}
-  const from=opportunity.stage;
+  const from=opportunity.stage,fromLabel=ProeliumCommercialWorkflow.canonicalStage(from);
   opportunity.stage=data.nextStage;
   opportunity.advanceAuthorizations=Array.isArray(opportunity.advanceAuthorizations)?opportunity.advanceAuthorizations:[];
   opportunity.advanceAuthorizations.unshift({at:new Date().toISOString(),actor,from,to:data.nextStage,checklist:'Dados de contato, responsável, próxima ação e prazo conferidos'});
-  logAudit('Autorizou avanço','Comercial',`${opportunity.company} · ${from} → ${data.nextStage} · assinatura: ${actor}`);
-  persist();closeRecordDialog();render();toast(`Avanço autorizado por ${actor}: ${data.nextStage}.`);
+  logAudit(fromLabel==='Primeiro contato'?'Registrou interesse':'Autorizou avanço','Comercial',`${opportunity.company} · ${fromLabel} → ${data.nextStage} · assinatura: ${actor}`);
+  persist();closeRecordDialog();render();toast(fromLabel==='Primeiro contato'?`Interesse registrado por ${actor}: oportunidade qualificada.`:`Avanço autorizado por ${actor}: ${data.nextStage}.`);
 },true);
 document.addEventListener('click',event=>{const button=event.target.closest('[data-advance-opportunity]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();openOpportunityAdvanceAuthorization(button.dataset.advanceOpportunity)},true);
 
@@ -3505,9 +3506,10 @@ function commercialFlowRecordFor(opportunity){
   const client=quote?.clientId?(state.data.clients||[]).find(item=>item.id===quote.clientId):null;
   return {survey,quote,client,surveys,quotes};
 }
- function commercialFlowNextStep(opportunity,record){
-   if(!record.survey){
-     if(opportunity.stage!=='Qualificação')return {label:'Qualificar antes do levantamento',action:'qualification',detail:'A oportunidade precisa estar em Qualificação antes de iniciar o levantamento.'};
+  function commercialFlowNextStep(opportunity,record){
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Primeiro contato')return {label:'Registrar interesse → Qualificação',action:'qualification',detail:'Confirme o interesse real do cliente antes de iniciar o levantamento.'};
+    if(!record.survey){
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação')return {label:'Registrar interesse → Qualificação',action:'qualification',detail:'Confirme o interesse real do cliente antes de iniciar o levantamento.'};
      return {label:'Iniciar levantamento',action:'survey',detail:'Registre ambientes, necessidades e quantitativos.'};
    }
    if(!record.quote){
@@ -3583,6 +3585,13 @@ render=()=>{
 const removeCommercialShortcuts=()=>document.querySelectorAll('[data-advance-opportunity],[data-commercial-demo]').forEach(element=>element.remove());
 new MutationObserver(removeCommercialShortcuts).observe(document.body,{childList:true,subtree:true});
 removeCommercialShortcuts();
+const removeFirstContactActions=()=>document.querySelectorAll('.commercial-deal').forEach(card=>{
+  const opportunityId=card.querySelector('[data-delete-opportunity]')?.dataset.deleteOpportunity;
+  const opportunity=(state.data.opportunities||[]).find(item=>String(item.id)===String(opportunityId));
+  if(ProeliumCommercialWorkflow.canonicalStage(opportunity?.stage)==='Primeiro contato')card.querySelectorAll('[data-commercial-activity],[data-start-survey-opportunity]').forEach(element=>element.remove());
+});
+new MutationObserver(removeFirstContactActions).observe(document.body,{childList:true,subtree:true});
+removeFirstContactActions();
 render();
 
 // Previsão operacional: o valor comercial permanece congelado no orçamento;
@@ -3768,6 +3777,8 @@ function injectCommercialActivities(){
     if(card.querySelector('[data-commercial-activity]'))return;
     const opportunityId=card.querySelector('[data-start-survey-opportunity]')?.dataset.startSurveyOpportunity||card.querySelector('[data-delete-opportunity]')?.dataset.deleteOpportunity;
     if(!opportunityId)return;
+    const opportunity=(state.data.opportunities||[]).find(item=>String(item.id)===String(opportunityId));
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity?.stage)==='Primeiro contato')return;
     const actions=card.querySelector('.deal-actions');if(!actions)return;
     const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.commercialActivity=opportunityId;button.textContent='Nova atividade';actions.insertBefore(button,actions.firstChild);
     const items=(state.data.appointments||[]).filter(item=>item.opportunityId===opportunityId);
@@ -3937,11 +3948,29 @@ startQuoteFromSurvey=id=>{
   return workflowStartQuoteFromSurvey(id);
 };
 
+const commercialCompleteViewCanonical=views.commercial;
+views.commercial=()=>{
+  const original=state.data.opportunities||[];
+  state.data.opportunities=original.map(item=>({...item,stage:ProeliumCommercialWorkflow.canonicalStage(item.stage)}));
+  try{return commercialCompleteViewCanonical()}finally{state.data.opportunities=original}
+};
+function normalizeCommercialStageControls(){
+  document.querySelectorAll('[name="stage"]').forEach(select=>{
+    [...select.options].forEach(option=>{
+      if(option.value==='Novo contato'||option.textContent.trim()==='Novo contato'){
+        option.value='Primeiro contato';option.textContent='Primeiro contato';
+      }
+    });
+    if(select.value==='Novo contato')select.value='Primeiro contato';
+  });
+}
+
 const workflowOpenFormBase=openForm;
 openForm=(kind,editId='',prefill={})=>{
   const result=workflowOpenFormBase(kind,editId,prefill);
   if(kind==='opportunity'){
     const select=$('[name="stage"]');if(select&&!select.querySelector('option[value="Levantamento técnico"]'))select.insertAdjacentHTML('beforeend','<option value="Levantamento técnico">Levantamento técnico</option>');
+    normalizeCommercialStageControls();
   }
   if(kind==='quote'){
     const select=$('[name="opportunityId"]');if(select)[...select.options].forEach(option=>{const opportunity=workflowOpportunity(option.value);if(opportunity&&!workflowVisitFor(opportunity.id).length)option.remove()});
@@ -3951,7 +3980,7 @@ openForm=(kind,editId='',prefill={})=>{
 
 document.addEventListener('click',event=>{
   const qualify=event.target.closest('[data-qualify-opportunity]'),visit=event.target.closest('[data-start-technical-visit]');
-  if(qualify){event.preventDefault();event.stopImmediatePropagation();openForm('opportunity',qualify.dataset.qualifyOpportunity,{stage:'Qualificação'});return}
+  if(qualify){event.preventDefault();event.stopImmediatePropagation();openOpportunityAdvanceAuthorization(qualify.dataset.qualifyOpportunity);return}
   if(visit){event.preventDefault();event.stopImmediatePropagation();openTechnicalVisit(visit.dataset.startTechnicalVisit)}
 },true);
 
