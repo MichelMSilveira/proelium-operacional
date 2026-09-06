@@ -241,7 +241,7 @@ async function runFunctionalTestBot(options = {}) {
        const secondInitialPayload=parseJson(secondInitialData, '/api/data empresa nova');
        const initialState=secondInitialPayload.data||{};
        expect(secondInitialData.status===200 && [initialState.clients,initialState.projects,initialState.quotes,initialState.tasks,initialState.collaborators,initialState.evaluations].every(collection=>!Array.isArray(collection)||collection.length===0) && !String(secondInitialData.text).includes('cli-1') && !String(secondInitialData.text).includes('prj-1'), 'Empresa nova recebeu registros demonstrativos antes da primeira gravação.');
-       const firstState={companyMarker:'empresa-um',clients:[],quotes:[{id:'orc-projeto-1',status:'Aprovado',title:'Orçamento convertido em projeto'}],quoteRooms:[{id:'sala-projeto-1',quoteId:'orc-projeto-1',items:[]}],projects:[{id:'prj-convertido-1',quoteId:'orc-projeto-1',name:'Projeto convertido visível à operação',status:'Em execução'}]}, secondState={companyMarker:'empresa-dois',clients:[]};
+       const firstState={companyMarker:'empresa-um',clients:[],opportunities:[{id:'opp-projeto-1',stage:'Orçamento'}],surveys:[{id:'survey-projeto-1',opportunityId:'opp-projeto-1',status:'Validado'}],appointments:[{id:'visit-projeto-1',type:'Visita técnica',status:'Iniciada',visit:true,opportunityId:'opp-projeto-1',surveyId:'survey-projeto-1'}],quotes:[{id:'orc-projeto-1',opportunityId:'opp-projeto-1',status:'Aprovado',title:'Orçamento convertido em projeto'}],quoteRooms:[{id:'sala-projeto-1',quoteId:'orc-projeto-1',items:[]}],projects:[{id:'prj-convertido-1',quoteId:'orc-projeto-1',name:'Projeto convertido visível à operação',status:'Em execução'}]}, secondState={companyMarker:'empresa-dois',clients:[]};
       const foreignInvite=await request(baseUrl, '/api/company/invites', { method:'POST', headers:{Cookie:secondCookie}, body:{email:'outro@example.invalid',role:'leitura'} });
       const foreignInvitePayload=parseJson(foreignInvite, '/api/company/invites empresa dois');
       const foreignDelete=await request(baseUrl, `/api/company/invites?id=${encodeURIComponent(foreignInvitePayload.invite.id)}`, { method:'DELETE', headers:{Cookie:googleCookie} });
@@ -317,17 +317,27 @@ async function runFunctionalTestBot(options = {}) {
     const records = scenarioRecords(state);
     state.opportunities.push(records.opportunity);
     await save(state);
+    const blockedSurveyWrite = await companyApi('/api/data', { method: 'PUT', body: { data: { ...structuredClone(state), surveys: [{ id: 'srv-blocked', opportunityId: records.opportunity.id, title: 'Levantamento bloqueado' }] }, baseRevision: revision } });
+    expect(blockedSurveyWrite.status === 422 && blockedSurveyWrite.text.includes('Qualificação'), `O backend permitiu levantamento antes da qualificação: HTTP ${blockedSurveyWrite.status}: ${blockedSurveyWrite.text}`);
     await check('CRM', 'Criação de contato e oportunidade', 'Revisar o cadastro comercial e seus campos obrigatórios.', async () => {
       expect(state.opportunities.some(item => item.id === records.opportunity.id && item.stage === 'Novo contato'), 'Contato não permaneceu no funil.');
       return 'novo contato salvo no funil';
     });
 
+    records.opportunity.stage = 'Qualificação';
+    await save(state);
     state.products.push(records.product, records.service);
-    state.quotes.push(records.quote);
-    state.quoteRooms.push(records.room);
     state.packages.push({ id: 'pkg-bot-1', name: 'Pacote isolado', category: 'Rede', description: 'Pacote de teste', active: true, items: [{ productId: records.product.id, qty: 1 }] });
     state.surveys.push({ id: 'srv-bot-1', opportunityId: records.opportunity.id, title: 'Levantamento isolado', site: 'Sala de teste', source: 'Visita técnica', status: 'Validado', notes: 'Sem dados reais.' });
     state.surveyPoints.push({ id: 'svp-bot-1', surveyId: 'srv-bot-1', room: records.room.name, type: 'Ponto de rede', quantity: 2, status: 'Validado', notes: 'Teste' });
+    records.opportunity.stage = 'Levantamento técnico';
+    await save(state);
+    state.appointments.push({ id: 'apt-bot-1', title: 'Visita técnica isolada', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: records.opportunity.id, surveyId: 'srv-bot-1', date: records.today });
+    records.opportunity.stage = 'Visita';
+    await save(state);
+    state.quotes.push(records.quote);
+    state.quoteRooms.push(records.room);
+    records.opportunity.stage = 'Orçamento';
     await save(state);
     await check('Comercial', 'Proposta por ambiente', 'Corrigir produtos, ambientes, descontos ou cálculo total da proposta.', async () => {
       const calculated = records.room.items.reduce((sum, item) => {
@@ -362,6 +372,8 @@ async function runFunctionalTestBot(options = {}) {
         { id: 'amb-cycle-approved-2', quoteId: draftQuote.id, name: 'Infraestrutura', items: [{ productId: records.service.id, qty: 4, discount: 0 }] }
       ];
       state.opportunities.push(approvedOpportunity);
+      state.surveys.push({ id: 'srv-cycle-approved', opportunityId: approvedOpportunity.id, title: 'Levantamento ciclo aprovado', status: 'Validado' });
+      state.appointments.push({ id: 'visit-cycle-approved', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: approvedOpportunity.id, surveyId: 'srv-cycle-approved' });
       state.quotes.push(draftQuote);
       state.quoteRooms.push(...draftRooms);
       for (const [from, to, action] of [['Novo contato', 'Qualificação', 'Qualificar necessidade'], ['Qualificação', 'Visita', 'Agendar visita técnica'], ['Visita', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
@@ -392,6 +404,8 @@ async function runFunctionalTestBot(options = {}) {
       const lostOpportunity = { id: 'opp-cycle-lost', company: 'Cliente Ciclo Recusado', contact: 'Ricardo Bot', phone: '(11) 90000-2002', email: 'ciclo.recusado@example.invalid', source: 'Site — bot', owner: 'Equipe Comercial', stage: 'Orçamento', nextAction: 'Aguardar decisão', nextDue: records.today, estimatedValue: 1800, lossReason: '' };
       const lostQuote = { id: 'orc-cycle-lost', opportunityId: lostOpportunity.id, clientId: '', title: 'Proposta Ciclo Recusado', value: 1600, status: 'Recusado', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
       state.opportunities.push(lostOpportunity);
+      state.surveys.push({ id: 'srv-cycle-lost', opportunityId: lostOpportunity.id, title: 'Levantamento ciclo recusado', status: 'Validado' });
+      state.appointments.push({ id: 'visit-cycle-lost', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: lostOpportunity.id, surveyId: 'srv-cycle-lost' });
       state.quotes.push(lostQuote);
       lostOpportunity.stage = 'Perdido';
       lostOpportunity.lossReason = 'Cliente recusou a proposta.';

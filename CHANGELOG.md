@@ -2,6 +2,9 @@
 
 ## Em desenvolvimento
 
+- Fluxo comercial protegido no frontend e na persistência: levantamento exige oportunidade em Qualificação, a oportunidade avança para Levantamento técnico, a visita fica vinculada ao levantamento e o orçamento só é criado após a visita. Registros legados inalterados continuam preservados; cache web atualizado para `v340`.
+- Documentação dos módulos de regras da Bancada de Trabalho do Hell consolidada, com responsabilidades claras para Codex, Node.js, bots, Playwright, GitHub Actions e Ollama.
+
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
 

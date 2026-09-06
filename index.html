@@ -414,7 +414,8 @@
         </button>
       </div>
     </section>
-    <script src="app.js?release=20260905-survey-needs"></script>
+    <script src="commercial-workflow.js?release=20260906-commercial-flow"></script>
+    <script src="app.js?release=20260906-commercial-flow"></script>
     <script>
       // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
       setTimeout(
@@ -446,7 +447,7 @@
             window.__showAppUpdate?.(event.data.registration);
         });
         navigator.serviceWorker
-           .register("./sw.js?release=20260905-survey-needs")
+           .register("./sw.js?release=20260906-commercial-flow")
           .then((registration) => {
             const activateWaiting = async (currentRegistration) => {
               if (!currentRegistration.waiting) return;

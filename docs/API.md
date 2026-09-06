@@ -14,6 +14,8 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.
 
+As gravações que alteram o fluxo comercial são validadas no servidor: levantamentos precisam de oportunidade, a oportunidade deve respeitar Qualificação → Levantamento técnico → Visita → Orçamento, visitas precisam apontar para o levantamento e novos orçamentos precisam apontar para uma oportunidade após visita. Uma violação recebe HTTP `422`; estados legados não alterados são preservados.
+
 ## Recursos
 
 | Método | Rota | Uso |

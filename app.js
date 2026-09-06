@@ -374,7 +374,7 @@ function openAgendaQuick(date){
 function openAgendaItem(index){const item=quickAgendaEntries[index];if(!item)return;$('#agendaQuickDialog').close();$('#agendaItemType').textContent=item.type.toUpperCase();$('#agendaItemTitle').textContent=item.title;const deleteButton=item.kind==='appointment'?`<button class="button danger-outline" data-item-delete>Excluir</button>`:'';$('#agendaItemContent').innerHTML=`<div class="item-detail"><p><strong>Responsável</strong><span>${item.person||'Não informado'}</span></p><p><strong>Data e horário</strong><span>${new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'long',year:'numeric'}).format(item.date)} · ${item.time||'Sem horário'}</span></p><p><strong>Informações</strong><span>${item.detail||'Sem observações.'}</span></p></div><div class="quick-actions"><button class="button secondary" data-item-close>Fechar</button>${deleteButton}<button class="button primary" data-item-edit>Editar</button></div>`;$('#agendaItemContent').querySelector('[data-item-close]').onclick=()=>$('#agendaItemDialog').close();$('#agendaItemContent').querySelector('[data-item-edit]').onclick=()=>{ $('#agendaItemDialog').close();openForm(item.kind,item.id) };const remove=$('#agendaItemContent').querySelector('[data-item-delete]');if(remove)remove.onclick=()=>deleteAppointment(item.id);$('#agendaItemDialog').showModal()}
 function quotePartyName(quote){return quote.clientId?clientName(quote.clientId):state.data.opportunities.find(opportunity=>opportunity.id===quote.opportunityId)?.company||'Contato não vinculado'}
 function commercial(){
-  const stages=['Novo contato','Qualificação','Visita','Orçamento'];
+   const stages=ProeliumCommercialWorkflow.stages;
   const active=state.data.opportunities.filter(o=>!['Ganho','Perdido'].includes(o.stage));
   const filtered=active.filter(o=>matches(o.company,o.contact,o.source,o.owner,o.stage,o.nextAction));
   const won=state.data.opportunities.filter(o=>o.stage==='Ganho').length;
@@ -501,7 +501,7 @@ function addDeleteControl(){const actions=document.querySelector('.client-hero .
 function deleteClient(id){const client=state.data.clients.find(c=>c.id===id);if(!client)return;const projectIds=state.data.projects.filter(p=>p.clientId===id).map(p=>p.id),quoteIds=state.data.quotes.filter(q=>q.clientId===id).map(q=>q.id);if(!confirm(`Excluir ${client.name}?\n\nTambém serão removidos os projetos, tarefas, compromissos da agenda, orçamentos, instalações e todo o histórico vinculados.`))return;const before=structuredClone(state.data),byProject=item=>!projectIds.includes(item.projectId),byClientProject=item=>item.clientId!==id&&byProject(item);state.data.tasks=state.data.tasks.filter(byProject);state.data.appointments=state.data.appointments.filter(byClientProject);state.data.installations=state.data.installations.filter(byClientProject);state.data.activities=state.data.activities.filter(item=>item.clientId!==id);state.data.purchaseItems=(state.data.purchaseItems||[]).filter(byProject);state.data.serviceOrders=(state.data.serviceOrders||[]).filter(byClientProject);state.data.serviceReports=(state.data.serviceReports||[]).filter(byProject);state.data.projectChecklists=(state.data.projectChecklists||[]).filter(byProject);state.data.projectDeliveries=(state.data.projectDeliveries||[]).filter(byProject);state.data.supportTickets=(state.data.supportTickets||[]).filter(byClientProject);state.data.equipmentHistory=(state.data.equipmentHistory||[]).filter(byProject);state.data.financialEntries=(state.data.financialEntries||[]).filter(byClientProject);state.data.executionEntries=(state.data.executionEntries||[]).filter(byProject);state.data.evaluations=(state.data.evaluations||[]).filter(byProject);state.data.equipment=(state.data.equipment||[]).filter(byClientProject);state.data.procurementRequests=(state.data.procurementRequests||[]).filter(item=>!quoteIds.includes(item.quoteId));state.data.projects=state.data.projects.filter(p=>p.clientId!==id);state.data.quoteRooms=state.data.quoteRooms.filter(r=>!quoteIds.includes(r.quoteId));state.data.quotes=state.data.quotes.filter(q=>q.clientId!==id);state.data.clients=state.data.clients.filter(c=>c.id!==id);state.selectedClient=null;state.view='clients';persist();render();offerUndo(`Cliente ${client.name} e seus registros foram excluídos.`,before)}
 function deleteProduct(id){const product=productById(id);if(!product)return;const uses=state.data.quoteRooms.reduce((n,r)=>n+r.items.filter(i=>i.productId===id).length,0);const detail=uses?`\n\nEste produto aparece em ${uses} ambiente(s) de orçamento e também será removido desses ambientes.`:'';if(!confirm(`Excluir ${product.name}?${detail}`))return;const before=structuredClone(state.data);state.data.products=state.data.products.filter(p=>p.id!==id);state.data.quoteRooms.forEach(r=>r.items=r.items.filter(i=>i.productId!==id));persist();render();offerUndo(`Produto ${product.name} foi excluído.`,before)}
 function deleteAppointment(id){const appointment=state.data.appointments.find(a=>a.id===id);if(!appointment)return;if(!confirm(`Excluir o compromisso “${appointment.title}”?`))return;const before=structuredClone(state.data);state.data.appointments=state.data.appointments.filter(a=>a.id!==id);$('#agendaItemDialog').close();persist();render();offerUndo(`Compromisso ${appointment.title} foi excluído.`,before)}
-function advanceOpportunity(id){const opportunity=state.data.opportunities.find(o=>o.id===id);if(!opportunity)return;const stages=['Novo contato','Qualificação','Visita','Orçamento'];const index=stages.indexOf(opportunity.stage);opportunity.stage=stages[Math.min(index+1,stages.length-1)];persist();render();toast(`Oportunidade movida para ${opportunity.stage}.`)}
+ function advanceOpportunity(id){const opportunity=state.data.opportunities.find(o=>o.id===id);if(!opportunity)return;const stages=ProeliumCommercialWorkflow.stages;const index=stages.indexOf(opportunity.stage);opportunity.stage=stages[Math.min(index+1,stages.length-1)];persist();render();toast(`Oportunidade movida para ${opportunity.stage}.`)}
 function convertOpportunity(id){const opportunity=state.data.opportunities.find(o=>o.id===id);if(!opportunity)return;if(!['Orçamento','Ganho'].includes(opportunity.stage)){toast('Conclua o tratamento comercial até Orçamento antes de criar o cliente.');return}const existing=state.data.clients.find(c=>c.name.toLowerCase()===opportunity.company.toLowerCase());if(!existing){state.data.clients.push({id:uid('cli'),name:opportunity.company,document:'',contact:opportunity.contact,email:opportunity.email,phone:opportunity.phone,address:'',city:'',notes:`Origem: oportunidade comercial (${opportunity.source||'não informada'}).`,status:'Potencial'})}opportunity.stage='Ganho';opportunity.lossReason='';persist();render();toast(existing?'Oportunidade concluída como ganha.':'Cliente criado a partir da oportunidade comercial.')}
 function createQuoteFromOpportunity(id){const opportunity=state.data.opportunities.find(o=>o.id===id);if(!opportunity)return;let quote=state.data.quotes.find(q=>q.opportunityId===id&&q.status!=='Aprovado');if(!quote){quote={id:uid('orc'),opportunityId:id,clientId:'',title:`Proposta — ${opportunity.company}`,value:0,status:'Em elaboração'};state.data.quotes.unshift(quote);opportunity.stage='Orçamento';persist()}state.selectedQuote=quote.id;state.view='quoteDetail';render();toast('Orçamento aberto. Adicione cômodos e itens para formar o valor.')}
 function approveQuote(id){const quote=state.data.quotes.find(q=>q.id===id);if(!quote)return;const totals=state.data.quoteRooms.filter(room=>room.quoteId===id).reduce((all,room)=>{const total=roomTotals(room);all.cost+=total.cost;all.price+=total.price;return all},{cost:0,price:0});if(!totals.price){toast('Adicione ao menos um item com preço para aprovar este orçamento.');return}let client=quote.clientId?state.data.clients.find(c=>c.id===quote.clientId):null,opportunity=quote.opportunityId?state.data.opportunities.find(o=>o.id===quote.opportunityId):null;if(!client&&opportunity){client={id:uid('cli'),name:opportunity.company,document:'',contact:opportunity.contact,email:opportunity.email,phone:opportunity.phone,address:'',city:'',notes:`Origem: oportunidade comercial (${opportunity.source}).`,status:'Ativo'};state.data.clients.push(client)}if(!client){toast('Vincule um cliente ou uma oportunidade antes de aprovar.');return}quote.clientId=client.id;quote.value=totals.price;quote.status='Aprovado';if(opportunity){opportunity.stage='Ganho';opportunity.estimatedValue=totals.price;opportunity.lossReason=''}let project=state.data.projects.find(item=>item.quoteId===quote.id);if(!project){project={id:uid('prj'),quoteId:quote.id,code:`PRJ-${String(state.data.projects.length+1).padStart(3,'0')}`,name:quote.title.replace(/^Proposta — /,''),clientId:client.id,manager:opportunity?.owner||'A definir',technicalStage:'Projeto técnico',budget:totals.price,cost:totals.cost,status:'Planejamento',progress:0,due:'A definir'};state.data.projects.push(project)}else{project.budget=totals.price;project.cost=totals.cost}persist();render();toast('Orçamento aprovado: cliente e projeto criados com o valor calculado.')}
@@ -514,7 +514,7 @@ const forms={
   appointment:{title:'Novo compromisso',fields:[['title','Compromisso','text'],['clientId','Cliente vinculado (opcional)','clientOptional'],['projectId','Projeto vinculado (opcional)','projectOptional'],['assignee','Responsável','text'],['date','Data','date'],['time','Horário','time'],['note','Observação','textarea']]},
   installation:{title:'Nova instalação',fields:[['clientId','Cliente','clients'],['projectId','Projeto','projects'],['type','Tipo da instalação','text'],['site','Local / unidade','text'],['lead','Responsável técnico','text'],['due','Prazo','text']]},
   activity:{title:'Registrar no histórico',fields:[['clientId','Cliente','clients'],['type','Tipo do registro','activityType'],['title','Assunto','text'],['note','Descrição completa','textarea']]}
-  ,quote:{title:'Novo orçamento para cliente',fields:[['clientId','Cliente','clients'],['title','Nome da proposta / orçamento','text']]}
+   ,quote:{title:'Novo orçamento a partir de visita',fields:[['opportunityId','Oportunidade comercial','quoteOpportunities'],['title','Nome da proposta / orçamento','text']]}
   ,product:{title:'Novo produto ou serviço',fields:[['sku','Código / SKU','text'],['name','Nome do item','text'],['brand','Marca / linha','text'],['category','Categoria','text'],['mode','Modalidade','productMode'],['unit','Unidade','unit'],['cost','Custo unitário (R$)','number'],['price','Preço de venda (R$)','number']]}
   ,room:{title:'Novo cômodo / ambiente',fields:[['name','Nome do cômodo ou ambiente','text']]}
   ,quoteItem:{title:'Adicionar item ao ambiente',fields:[['roomId','Cômodo / ambiente','rooms'],['productId','Produto ou serviço','products'],['qty','Quantidade','number']]}
@@ -523,7 +523,7 @@ const forms={
 };
 function todayInput(){const now=new Date(),month=String(now.getMonth()+1).padStart(2,'0'),day=String(now.getDate()).padStart(2,'0');return `${now.getFullYear()}-${month}-${day}`}
 function findRecord(kind,id){const collections={client:'clients',appointment:'appointments',task:'tasks',installation:'installations',opportunity:'opportunities'};return collections[kind]?state.data[collections[kind]].find(item=>item.id===id):null}
-function openForm(kind,editId='',prefill={}){const def=forms[kind],current=editId?findRecord(kind,editId):null;$('#dialogTitle').textContent=current?`Editar ${kind==='opportunity'?'oportunidade':kind==='installation'?'instalação':kind==='task'?'tarefa':kind==='appointment'?'compromisso':'cadastro'}`:def.title;$('#recordForm').dataset.kind=kind;$('#recordForm').dataset.editId=editId;$('#saveButton').textContent=current?'Salvar ajuste':'Salvar registro';$('#formFields').innerHTML=def.fields.map(([name,label,type])=>{let input;const value=prefill[name]??current?.[name]??(state.selectedClient&&name==='clientId'?state.selectedClient:type==='date'?todayInput():'');const options=(values)=>values.map(v=>`<option value="${v}" ${v===value?'selected':''}>${v}</option>`).join('');if(type==='clients')input=`<select name="${name}" required>${state.data.clients.map(c=>`<option value="${c.id}" ${c.id===value?'selected':''}>${c.name}</option>`)}</select>`;else if(type==='clientOptional')input=`<select name="${name}"><option value="">Sem vínculo</option>${state.data.clients.map(c=>`<option value="${c.id}" ${c.id===value?'selected':''}>${c.name}</option>`)}</select>`;else if(type==='projects')input=`<select name="${name}" required>${state.data.projects.map(p=>`<option value="${p.id}" ${p.id===value?'selected':''}>${p.name}</option>`)}</select>`;else if(type==='projectOptional')input=`<select name="${name}"><option value="">Sem vínculo</option>${state.data.projects.map(p=>`<option value="${p.id}" ${p.id===value?'selected':''}>${p.name}</option>`)}</select>`;else if(type==='products')input=`<select name="${name}" required>${state.data.products.map(p=>`<option value="${p.id}">${p.name} · ${money(p.price)}</option>`)}</select>`;else if(type==='rooms'){const rooms=state.data.quoteRooms.filter(r=>r.quoteId===state.selectedQuote);input=`<select name="${name}" required>${rooms.map(r=>`<option value="${r.id}">${r.name}</option>`)}</select>`}else if(type==='priority')input=`<select name="${name}">${options(['Média','Alta','Urgente','Baixa'])}</select>`;else if(type==='technicalStage')input=`<select name="${name}">${options(['Projeto técnico','Cabeamento','Instalação'])}</select>`;else if(type==='opportunityStage')input=`<select name="${name}">${options(['Novo contato','Qualificação','Visita','Orçamento','Ganho','Perdido'])}</select>`;else if(type==='clientStatus')input=`<select name="${name}">${options(['Ativo','Potencial','Inativo'])}</select>`;else if(type==='productMode')input=`<select name="${name}">${options(['Venda','Disponibilização','Venda ou disponibilização','Serviço'])}</select>`;else if(type==='unit')input=`<select name="${name}">${options(['un','m','h','kit','mês'])}</select>`;else if(type==='activityType')input=`<select name="${name}">${options(['Contato','Visita técnica','Proposta','Pendência','Manutenção'])}</select>`;else if(type==='textarea')input=`<textarea name="${name}" required>${value}</textarea>`;else input=`<input name="${name}" type="${type}" value="${value}" min="${type==='number'?'0':''}" step="${type==='number'?'0.01':''}" required>`;return `<div class="field ${type==='textarea'||name==='address'?'full':''}"><label>${label}</label>${input}</div>`}).join('');$('#recordDialog').showModal()}
+ function openForm(kind,editId='',prefill={}){const def=forms[kind],current=editId?findRecord(kind,editId):null;$('#dialogTitle').textContent=current?`Editar ${kind==='opportunity'?'oportunidade':kind==='installation'?'instalação':kind==='task'?'tarefa':kind==='appointment'?'compromisso':'cadastro'}`:def.title;$('#recordForm').dataset.kind=kind;$('#recordForm').dataset.editId=editId;$('#saveButton').textContent=current?'Salvar ajuste':'Salvar registro';$('#formFields').innerHTML=def.fields.map(([name,label,type])=>{let input;const value=prefill[name]??current?.[name]??(state.selectedClient&&name==='clientId'?state.selectedClient:type==='date'?todayInput():'');const options=(values)=>values.map(v=>`<option value="${v}" ${v===value?'selected':''}>${v}</option>`).join('');if(type==='clients')input=`<select name="${name}" required>${state.data.clients.map(c=>`<option value="${c.id}" ${c.id===value?'selected':''}>${c.name}</option>`)}</select>`;else if(type==='clientOptional')input=`<select name="${name}"><option value="">Sem vínculo</option>${state.data.clients.map(c=>`<option value="${c.id}" ${c.id===value?'selected':''}>${c.name}</option>`)}</select>`;else if(type==='quoteOpportunities')input=`<select name="${name}" required><option value="">Selecione uma oportunidade</option>${(state.data.opportunities||[]).filter(item=>!['Ganho','Perdido'].includes(item.stage)).map(item=>`<option value="${item.id}" ${item.id===value?'selected':''}>${item.company} · ${item.stage}</option>`).join('')}</select>`;else if(type==='projects')input=`<select name="${name}" required>${state.data.projects.map(p=>`<option value="${p.id}" ${p.id===value?'selected':''}>${p.name}</option>`)}</select>`;else if(type==='projectOptional')input=`<select name="${name}"><option value="">Sem vínculo</option>${state.data.projects.map(p=>`<option value="${p.id}" ${p.id===value?'selected':''}>${p.name}</option>`)}</select>`;else if(type==='products')input=`<select name="${name}" required>${state.data.products.map(p=>`<option value="${p.id}">${p.name} · ${money(p.price)}</option>`)}</select>`;else if(type==='rooms'){const rooms=state.data.quoteRooms.filter(r=>r.quoteId===state.selectedQuote);input=`<select name="${name}" required>${rooms.map(r=>`<option value="${r.id}">${r.name}</option>`)}</select>`}else if(type==='priority')input=`<select name="${name}">${options(['Média','Alta','Urgente','Baixa'])}</select>`;else if(type==='technicalStage')input=`<select name="${name}">${options(['Projeto técnico','Cabeamento','Instalação'])}</select>`;else if(type==='opportunityStage')input=`<select name="${name}">${options(['Novo contato','Qualificação','Levantamento técnico','Visita','Orçamento','Ganho','Perdido'])}</select>`;else if(type==='clientStatus')input=`<select name="${name}">${options(['Ativo','Potencial','Inativo'])}</select>`;else if(type==='productMode')input=`<select name="${name}">${options(['Venda','Disponibilização','Venda ou disponibilização','Serviço'])}</select>`;else if(type==='unit')input=`<select name="${name}">${options(['un','m','h','kit','mês'])}</select>`;else if(type==='activityType')input=`<select name="${name}">${options(['Contato','Visita técnica','Proposta','Pendência','Manutenção'])}</select>`;else if(type==='textarea')input=`<textarea name="${name}" required>${value}</textarea>`;else input=`<input name="${name}" type="${type}" value="${value}" min="${type==='number'?'0':''}" step="${type==='number'?'0.01':''}" required>`;return `<div class="field ${type==='textarea'||name==='address'?'full':''}"><label>${label}</label>${input}</div>`}).join('');$('#recordDialog').showModal()}
 function saveRecord(kind,data,editId=''){if(kind==='client'){if(editId){const index=state.data.clients.findIndex(c=>c.id===editId);state.data.clients[index]={...state.data.clients[index],...data}}else state.data.clients.push({id:uid('cli'),...data})}if(kind==='opportunity')state.data.opportunities.unshift({id:uid('opp'),company:data.company,contact:data.contact,phone:data.phone,email:data.email,source:data.source,owner:data.owner,stage:data.stage,nextAction:data.nextAction,nextDue:data.nextDue,estimatedValue:Number(data.estimatedValue||0),lossReason:data.lossReason});if(kind==='quote'){const quote={id:uid('orc'),clientId:data.clientId,title:data.title,value:0,status:'Em elaboração'};state.data.quotes.unshift(quote);state.selectedQuote=quote.id;state.view='quoteDetail'}if(kind==='project')state.data.projects.push({id:uid('prj'),name:data.name,code:data.code,clientId:data.clientId,manager:data.manager,technicalStage:data.technicalStage,budget:Number(data.budget||0),cost:0,status:'Planejamento',progress:0,due:data.due});if(kind==='task')state.data.tasks.push({id:uid('tsk'),title:data.title,projectId:data.projectId,assignee:data.assignee,priority:data.priority,status:'Aberta',due:data.due,time:data.time});if(kind==='appointment'){const appointment={title:data.title,clientId:data.clientId||'',projectId:data.projectId||'',assignee:data.assignee,date:data.date,time:data.time,note:data.note};if(editId){const index=state.data.appointments.findIndex(a=>a.id===editId);if(index>=0)state.data.appointments[index]={...state.data.appointments[index],...appointment}}else state.data.appointments.unshift({id:uid('apt'),...appointment})}if(kind==='installation')state.data.installations.push({id:uid('ins'),clientId:data.clientId,projectId:data.projectId,type:data.type,site:data.site,lead:data.lead,stage:'Projeto técnico',progress:0,due:data.due,status:'Planejamento'});if(kind==='activity')state.data.activities.unshift({id:uid('act'),clientId:data.clientId,type:data.type,title:data.title,note:data.note,date:'Agora'});if(kind==='product')state.data.products.push({id:uid('prd'),sku:data.sku,name:data.name,brand:data.brand,category:data.category,mode:data.mode,unit:data.unit,cost:Number(data.cost),price:Number(data.price),active:true});if(kind==='room')state.data.quoteRooms.push({id:uid('amb'),quoteId:state.selectedQuote,name:data.name,items:[]});if(kind==='quoteItem'){const room=state.data.quoteRooms.find(r=>r.id===data.roomId);const existing=room?.items.find(i=>i.productId===data.productId);if(existing)existing.qty+=Number(data.qty);else room?.items.push({productId:data.productId,qty:Number(data.qty)})}persist();render();toast(kind==='quote'?'Orçamento criado. Agora adicione ambientes e itens.':editId?'Ajuste salvo com sucesso.':'Registro salvo com sucesso.')}
 function saveEditedRecord(kind,data,id){const collections={client:'clients',appointment:'appointments',task:'tasks',installation:'installations',opportunity:'opportunities'};const list=state.data[collections[kind]],index=list?.findIndex(item=>item.id===id);if(index===undefined||index<0)return;const before=['appointment','task','installation'].includes(kind)?structuredClone(state.data):null;const patch={...data};if(kind==='opportunity')patch.estimatedValue=Number(data.estimatedValue||0);list[index]={...list[index],...patch};persist();render();if(before)offerUndo('Ajuste de agenda/execução salvo.',before);else toast('Ajuste salvo com sucesso.')}
 let toastTimer=null,undoTimer=null;
@@ -3121,9 +3121,10 @@ document.addEventListener('click',event=>{
   const button=event.target.closest('[data-start-survey-opportunity]');
   if(!button)return;
   event.preventDefault();event.stopImmediatePropagation();
-  const opportunity=(state.data.opportunities||[]).find(item=>item.id===button.dataset.startSurveyOpportunity);
-  if(!opportunity)return;
-  openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Levantamento técnico — ${opportunity.company}`,site:'',source:'Visita técnica',status:'Em levantamento',notes:''});
+   const opportunity=(state.data.opportunities||[]).find(item=>item.id===button.dataset.startSurveyOpportunity);
+   if(!opportunity)return;
+   if(opportunity.stage!=='Qualificação'){toast('Qualifique a oportunidade antes de iniciar o levantamento técnico.');return}
+   openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Levantamento técnico — ${opportunity.company}`,site:'',source:'Visita técnica',status:'Em levantamento',notes:''});
 },true);
 
 // Edição da proposta preserva os itens, ambientes e cálculos já feitos.
@@ -3460,18 +3461,26 @@ function commercialFlowRecordFor(opportunity){
   const client=quote?.clientId?(state.data.clients||[]).find(item=>item.id===quote.clientId):null;
   return {survey,quote,client,surveys,quotes};
 }
-function commercialFlowNextStep(opportunity,record){
-  if(!record.survey)return {label:'Iniciar levantamento',action:'survey',detail:'Registre ambientes, necessidades e quantitativos.'};
-  if(!record.quote)return {label:'Continuar levantamento',action:'surveyExisting',detail:'Revise e valide os pontos antes de precificar.'};
+ function commercialFlowNextStep(opportunity,record){
+   if(!record.survey){
+     if(opportunity.stage!=='Qualificação')return {label:'Qualificar antes do levantamento',action:'qualification',detail:'A oportunidade precisa estar em Qualificação antes de iniciar o levantamento.'};
+     return {label:'Iniciar levantamento',action:'survey',detail:'Registre ambientes, necessidades e quantitativos.'};
+   }
+   if(!record.quote){
+     if(!ProeliumCommercialWorkflow.visitsFor(state.data,opportunity.id,record.survey.id).length)return {label:'Continuar levantamento',action:'surveyExisting',detail:'Abra o levantamento e inicie a visita técnica antes do orçamento.'};
+     return {label:'Criar orçamento',action:'quoteFromSurvey',detail:'Visita registrada. Crie o orçamento a partir deste levantamento.'};
+   }
   const status=quoteStatus(record.quote);
   if(status==='Aprovado')return record.client?{label:'Abrir cliente',action:'client',detail:'Orçamento aprovado e cliente vinculado.'}:{label:'Revisar aprovação',action:'quote',detail:'A aprovação existe, mas o vínculo do cliente precisa ser conferido.'};
   if(status==='Recusado'||status==='Vencido')return {label:'Ver orçamento',action:'quote',detail:`Proposta ${status.toLocaleLowerCase('pt-BR')}; registre a próxima decisão.`};
   if(status==='Enviado')return {label:'Acompanhar proposta',action:'quote',detail:'Proposta enviada; aguarde a decisão do cliente.'};
   return {label:'Continuar orçamento',action:'quote',detail:'Complete ambientes, itens, margem e condições comerciais.'};
 }
-function commercialFlowButton(id,step,record){
-  if(step.action==='survey')return `<button type="button" class="button primary" data-start-survey-opportunity="${id}">${step.label}</button>`;
-  if(step.action==='surveyExisting')return `<button type="button" class="button primary" data-open-commercial-survey="${record.survey.id}">${step.label}</button>`;
+ function commercialFlowButton(id,step,record){
+   if(step.action==='qualification')return `<button type="button" class="button primary" data-qualify-opportunity="${id}">${step.label}</button>`;
+   if(step.action==='survey')return `<button type="button" class="button primary" data-start-survey-opportunity="${id}">${step.label}</button>`;
+   if(step.action==='surveyExisting')return `<button type="button" class="button primary" data-open-commercial-survey="${record.survey.id}">${step.label}</button>`;
+   if(step.action==='quoteFromSurvey')return `<button type="button" class="button primary" data-survey-start-quote="${record.survey.id}">${step.label}</button>`;
   if(step.action==='quote')return `<button type="button" class="button primary" data-open-commercial-quote="${record.quote.id}">${step.label}</button>`;
   return `<button type="button" class="button primary" data-open-commercial-client="${record.client.id}">${step.label}</button>`;
 }
@@ -3496,8 +3505,8 @@ function addCommercialDemoCycles(){
   const lost=createOpportunity({company:'DEMO · Loja Central',contact:'Diego Alves',phone:'5511900001005',email:'diego.central@exemplo.invalid',source:'Prospecção',owner:'Natália Silveira',stage:'Perdido',nextAction:'Registrar aprendizado da perda',nextDue:dateOffset(10),estimatedValue:12500,lossReason:'Cliente adiou o investimento'});const lostSurvey=createSurvey(lost,'Levantamento · Loja Central','Enviado ao orçamento',[['Loja','Ponto de rede Cat6',3]]);createQuote(lost,lostSurvey,'Proposta recusada · Loja Central','Recusado',1);
   logAudit('Carregou','Ciclos comerciais demonstrativos','5 oportunidades: aberto, levantamento, proposta enviada, aprovado com cliente/projeto e recusado sem conversão.');persist();render();toast('Exemplos comerciais carregados sem alterar registros existentes.');
 }
-function commercialCompleteView(){
-  const stages=['Novo contato','Qualificação','Visita','Orçamento'];
+ function commercialCompleteView(){
+   const stages=ProeliumCommercialWorkflow.stages;
   const opportunities=(state.data.opportunities||[]),active=opportunities.filter(item=>!['Ganho','Perdido'].includes(item.stage)).filter(item=>matches(item.company,item.contact,item.source,item.owner,item.stage,item.nextAction));
   const finished=opportunities.filter(item=>['Ganho','Perdido'].includes(item.stage));
   const quotes=(state.data.quotes||[]).filter(item=>matches(item.title,quotePartyName(item),quoteStatus(item))).sort((left,right)=>String(right.createdAt||'').localeCompare(String(left.createdAt||'')));
@@ -3794,3 +3803,120 @@ document.addEventListener('click',event=>{if(event.target.closest('[data-close-s
 document.addEventListener('click',event=>{const row=event.target.closest('[data-open-survey-row]');if(row&&!event.target.closest('[data-delete-survey]')){event.preventDefault();state.selectedSurvey=row.dataset.openSurveyRow;state.selectedSurveyRoom='';state.view='survey';render()}},true);
 const surveyTreeRender=render;
 render=()=>{surveyTreeRender();document.querySelectorAll('.survey-checklist-area:not([data-survey-tree])').forEach(area=>{const header=area.querySelector('.survey-checklist-area-head');if(!header)return;const tree=document.createElement('details');tree.open=true;tree.className='survey-checklist-tree';tree.dataset.surveyTree='';const summary=document.createElement('summary');summary.innerHTML=header.innerHTML;summary.querySelector('span')?.remove();tree.append(summary,...[...area.children].filter(child=>child!==header));area.replaceWith(tree)});if(state.view==='survey'&&state.selectedSurvey){const rooms=document.querySelector('.survey-room-switcher'),checklist=document.querySelector('.survey-checklist'),toolbar=document.querySelector('.module-toolbar:has([data-add-survey-room])');if(rooms&&checklist&&toolbar)checklist.parentElement.insertBefore(toolbar,checklist)}};
+
+// Regras finais do fluxo comercial: a mesma máquina de estados protege a tela
+// e o endpoint de persistência, inclusive quando o navegador envia dados antigos.
+const workflow = ProeliumCommercialWorkflow;
+function workflowOpportunity(id){return (state.data.opportunities||[]).find(item=>String(item.id)===String(id))}
+function workflowSurvey(id){return (state.data.surveys||[]).find(item=>String(item.id)===String(id))}
+function workflowVisitFor(opportunityId,surveyId=''){return workflow.visitsFor(state.data,opportunityId,surveyId)}
+
+const workflowOpenTechnicalSurvey=openTechnicalSurvey;
+openTechnicalSurvey=(id='',prefill={})=>{
+  if(!id&&!prefill.opportunityId&&(state.data.opportunities||[]).every(item=>item.stage!=='Qualificação')){toast('Qualifique uma oportunidade antes de criar um levantamento técnico.');return}
+  workflowOpenTechnicalSurvey(id,prefill);
+  const select=$('[name="opportunityId"]');
+  if(!select)return;
+  select.required=true;
+  if(!id){[...select.options].forEach(option=>{const opportunity=workflowOpportunity(option.value);if(!opportunity||opportunity.stage!=='Qualificação')option.remove()});}
+  select.querySelector('option[value=""]')?.remove();
+};
+
+const workflowSaveRecordBase=saveRecord;
+const workflowSaveEditedRecordBase=saveEditedRecord;
+saveEditedRecord=(kind,data,editId)=>{
+  if(kind==='opportunity'){
+    const next=structuredClone(state.data),index=next.opportunities.findIndex(item=>item.id===editId);
+    if(index>=0){next.opportunities[index]={...next.opportunities[index],...data,estimatedValue:Number(data.estimatedValue||0)};const result=workflow.validate(state.data,next);if(!result.ok){toast(result.message);return false}}
+  }
+  return workflowSaveEditedRecordBase(kind,data,editId);
+};
+saveRecord=(kind,data,editId='')=>{
+  if(kind==='technicalSurvey'){
+    const previous=editId?workflowSurvey(editId):null,opportunity=workflowOpportunity(data.opportunityId);
+    if(!opportunity){toast('Todo levantamento deve estar vinculado a uma oportunidade existente.');return false}
+    if(!previous&&opportunity.stage!=='Qualificação'){toast('A oportunidade precisa estar em Qualificação antes de iniciar o levantamento.');return false}
+    if(previous&&previous.opportunityId!==data.opportunityId){toast('O levantamento não pode ser transferido para outra oportunidade nesta etapa.');return false}
+    const record={opportunityId:data.opportunityId,title:String(data.title||'').trim(),site:data.site||'',source:data.source||'Visita técnica',status:data.status||'Em levantamento',notes:data.notes||'',updatedAt:new Date().toISOString()};
+    if(!record.title){toast('Informe o nome do levantamento.');return false}
+    if(previous)Object.assign(previous,record);else{const created={id:uid('lev'),...record};state.data.surveys.unshift(created);state.selectedSurvey=created.id;opportunity.stage='Levantamento técnico'}
+    logAudit(previous?'Atualizou levantamento':'Criou levantamento','Levantamento técnico',record.title);persist();render();toast(previous?'Levantamento técnico atualizado.':'Levantamento iniciado; a oportunidade avançou para Levantamento técnico.');return true;
+  }
+  if(kind==='surveyPoint'){
+    const survey=workflowSurvey(data.surveyId),opportunity=workflowOpportunity(survey?.opportunityId);
+    if(!survey||!opportunity){toast('O item só pode ser registrado em um levantamento vinculado a uma oportunidade.');return false}
+  }
+  if(kind==='technicalVisit'){
+    const survey=workflowSurvey(data.surveyId),opportunity=workflowOpportunity(data.opportunityId||survey?.opportunityId);
+    if(!survey||!opportunity||survey.opportunityId!==opportunity.id){toast('A visita deve estar vinculada ao levantamento e à mesma oportunidade.');return false}
+    if(workflowVisitFor(opportunity.id,survey.id).length){toast('Já existe uma visita iniciada para este levantamento.');return false}
+    state.data.appointments.unshift({id:uid('apt'),title:String(data.title||`Visita técnica — ${opportunity.company}`).trim(),clientId:data.clientId||'',projectId:data.projectId||'',assignee:String(data.assignee||'').trim(),date:data.date||todayInput(),time:data.time||'',note:data.note||'',type:'Visita técnica',status:'Iniciada',visit:true,opportunityId:opportunity.id,surveyId:survey.id,createdAt:new Date().toISOString()});
+    opportunity.stage='Visita';survey.visitStartedAt=new Date().toISOString();logAudit('Iniciou visita técnica','Comercial',`${opportunity.company} · ${survey.title}`);persist();state.view='survey';render();toast('Visita técnica iniciada; o orçamento será liberado após esta etapa.');return true;
+  }
+  if(kind==='quote'){
+    const opportunity=workflowOpportunity(data.opportunityId);
+    if(!opportunity){toast('Selecione uma oportunidade comercial para criar o orçamento.');return false}
+    if(!workflowVisitFor(opportunity.id).length){toast('O orçamento só pode ser criado após a visita técnica.');return false}
+    const quote={id:uid('orc'),opportunityId:opportunity.id,clientId:'',title:String(data.title||`Proposta — ${opportunity.company}`).trim(),value:0,status:'Em elaboração',createdAt:new Date().toISOString()};
+    state.data.quotes.unshift(quote);opportunity.stage='Orçamento';state.selectedQuote=quote.id;state.view='quoteDetail';logAudit('Criou orçamento','Comercial',`${opportunity.company} · ${quote.title}`);persist();render();toast('Orçamento criado a partir da visita técnica.');return true;
+  }
+  if(kind==='opportunity'){
+    const current=editId?workflowOpportunity(editId):null,next=structuredClone(state.data);
+    const candidate={id:editId||uid('opp'),company:data.company,contact:data.contact,phone:data.phone,email:data.email,source:data.source,owner:data.owner,stage:data.stage,nextAction:data.nextAction,nextDue:data.nextDue,estimatedValue:Number(data.estimatedValue||0),lossReason:data.lossReason};
+    if(current){const index=next.opportunities.findIndex(item=>item.id===editId);next.opportunities[index]={...next.opportunities[index],...candidate}}
+    else next.opportunities.unshift(candidate);
+    const result=workflow.validate(state.data,next);if(!result.ok){toast(result.message);return false}
+  }
+  return workflowSaveRecordBase(kind,data,editId);
+};
+
+function openTechnicalVisit(surveyId){
+  const survey=workflowSurvey(surveyId),opportunity=workflowOpportunity(survey?.opportunityId);
+  if(!survey||!opportunity){toast('Abra um levantamento vinculado a uma oportunidade antes de iniciar a visita.');return}
+  if(workflowVisitFor(opportunity.id,survey.id).length){toast('A visita deste levantamento já foi iniciada.');return}
+  $('#dialogTitle').textContent='Iniciar visita técnica';$('#recordForm').dataset.kind='technicalVisit';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Iniciar visita';
+  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${survey.id}"><input type="hidden" name="opportunityId" value="${opportunity.id}"><div class="field full"><label>Levantamento</label><input value="${survey.title}" disabled></div><div class="field full"><label>Oportunidade</label><input value="${opportunity.company}" disabled></div><div class="field full"><label>Visita *</label><input name="title" value="Visita técnica — ${opportunity.company}" required></div><div class="field"><label>Responsável *</label><input name="assignee" value="${opportunity.owner||''}" required></div><div class="field"><label>Data *</label><input name="date" type="date" value="${todayInput()}" required></div><div class="field"><label>Horário</label><input name="time" type="time"></div><div class="field full"><label>Observações</label><textarea name="note" placeholder="O que será conferido ou decidido no local?"></textarea></div>`;$('#recordDialog').showModal();
+}
+
+const workflowCreateQuoteFromOpportunity=createQuoteFromOpportunity;
+createQuoteFromOpportunity=id=>{
+  const opportunity=workflowOpportunity(id),survey=(state.data.surveys||[]).find(item=>item.opportunityId===id);
+  if(!opportunity||!survey){toast('Inicie e vincule o levantamento antes de criar o orçamento.');return false}
+  if(!workflowVisitFor(id,survey.id).length){toast('Inicie a visita técnica antes de criar o orçamento.');return false}
+  return workflowCreateQuoteFromOpportunity(id);
+};
+const workflowStartQuoteFromSurvey=startQuoteFromSurvey;
+startQuoteFromSurvey=id=>{
+  const survey=workflowSurvey(id),opportunity=workflowOpportunity(survey?.opportunityId);
+  if(!survey||!opportunity||!workflowVisitFor(opportunity.id,survey.id).length){toast('Inicie a visita técnica antes de criar o orçamento.');return false}
+  return workflowStartQuoteFromSurvey(id);
+};
+
+const workflowOpenFormBase=openForm;
+openForm=(kind,editId='',prefill={})=>{
+  const result=workflowOpenFormBase(kind,editId,prefill);
+  if(kind==='opportunity'){
+    const select=$('[name="stage"]');if(select&&!select.querySelector('option[value="Levantamento técnico"]'))select.insertAdjacentHTML('beforeend','<option value="Levantamento técnico">Levantamento técnico</option>');
+  }
+  if(kind==='quote'){
+    const select=$('[name="opportunityId"]');if(select)[...select.options].forEach(option=>{const opportunity=workflowOpportunity(option.value);if(opportunity&&!workflowVisitFor(opportunity.id).length)option.remove()});
+  }
+  return result;
+};
+
+document.addEventListener('click',event=>{
+  const qualify=event.target.closest('[data-qualify-opportunity]'),visit=event.target.closest('[data-start-technical-visit]');
+  if(qualify){event.preventDefault();event.stopImmediatePropagation();openForm('opportunity',qualify.dataset.qualifyOpportunity,{stage:'Qualificação'});return}
+  if(visit){event.preventDefault();event.stopImmediatePropagation();openTechnicalVisit(visit.dataset.startTechnicalVisit)}
+},true);
+
+const workflowCommercialRender=render;
+render=()=>{
+  workflowCommercialRender();
+  if(state.view!=='survey'||!state.selectedSurvey)return;
+  const survey=workflowSurvey(state.selectedSurvey),opportunity=workflowOpportunity(survey?.opportunityId),toolbar=document.querySelector('.module-toolbar:has([data-add-survey-room])');
+  if(!survey||!opportunity||!toolbar)return;
+  const visit=workflowVisitFor(opportunity.id,survey.id).length>0,quote=(state.data.quotes||[]).find(item=>item.opportunityId===opportunity.id&&item.status!=='Aprovado');
+  if(!visit&&!quote){toolbar.querySelector('[data-survey-start-quote]')?.remove();if(!toolbar.querySelector('[data-start-technical-visit]'))toolbar.insertAdjacentHTML('beforeend',`<button class="button primary" data-start-technical-visit="${survey.id}">Iniciar visita técnica</button>`)}
+};
+render();

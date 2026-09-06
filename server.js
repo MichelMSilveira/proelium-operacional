@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { createStorage } = require('./storage');
+const commercialWorkflow = require('./commercial-workflow');
 
 // Carrega configurações locais sem depender de pacote externo; nunca imprime valores sensíveis.
 const envFile = path.join(__dirname, '.env');
@@ -31,7 +32,7 @@ const invitesFile = path.join(dataDirectory, 'company-invites.json');
 const companyDataDirectory = path.join(dataDirectory, 'company-data');
 const storage = createStorage({ dataFile, usersFile, companiesFile, routinesFile, invitesFile, companyDataDirectory });
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
-const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
+const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'commercial-workflow.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
 const presence = new Map();
 const loginAttempts = new Map();
@@ -634,6 +635,8 @@ async function handleRequest(req, res) {
       }
       const baseRevision = Number(payload.baseRevision || 0);
       const nextData = mergeWritableData(current.data || {}, payload.data, authenticatedUser);
+      const workflow = commercialWorkflow.validate(current.data || {}, nextData);
+      if (!workflow.ok) return sendJson(res, 422, { error: workflow.message });
       const result = await storage.writeSharedData(nextData, baseRevision, authenticatedUser.username, authenticatedUser.companyId || 'legacy');
       if (result.conflict) {
         return sendJson(res, 409, {

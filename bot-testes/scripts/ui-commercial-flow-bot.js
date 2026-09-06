@@ -250,7 +250,7 @@ async function run() {
     await fillField(page, 'phone', '5511999991001');
     await fillField(page, 'email', 'marina.ui.bot@example.invalid');
     await selectLabel(page, 'owner', 'Ana UI Operações');
-    await selectLabel(page, 'stage', 'Novo contato');
+    await selectLabel(page, 'stage', 'Qualificação');
     await selectLabel(page, 'source', 'Indicação');
     await fillField(page, 'nextAction', 'Agendar levantamento técnico');
     await fillField(page, 'nextDue', new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
@@ -312,6 +312,16 @@ async function run() {
     await saveDialog(page);
     await assertData(page, data => data.surveyPoints?.some(item => item.room === 'Sala principal' && Number(item.quantity) === 4), 'Ponto técnico não foi gravado pelo formulário.');
     console.log('[OK] UI — quantitativo de ambiente criado e persistido');
+
+    await page.locator(`[data-start-technical-visit]`).click();
+    await fillField(page, 'title', 'Visita técnica UI Bot · Casa Aurora');
+    await fillField(page, 'assignee', 'Ana UI Operações');
+    await fillField(page, 'date', new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10));
+    await fillField(page, 'time', '09:00');
+    await fillField(page, 'note', 'Visita iniciada após o levantamento técnico.');
+    await saveDialog(page);
+    await assertData(page, data => data.appointments?.some(item => item.type === 'Visita técnica' && item.surveyId === surveyId), 'A visita técnica não foi gravada ou perdeu o vínculo com o levantamento.');
+    console.log('[OK] UI — visita técnica iniciada após o levantamento');
 
     await page.locator(`[data-survey-start-quote="${surveyId}"]`).click();
     await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.toLocaleLowerCase().includes('orçamento'), null, { timeout: 5_000 });
