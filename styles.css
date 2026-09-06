@@ -111,6 +111,7 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 /* A alça do menu não pode se perder na rolagem: ela fica disponível em toda a leitura no telefone. */
 /* O atributo hidden do controle deve vencer qualquer regra de display, em toda plataforma. */
 #menuButton.menu-button[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body.splash-loading #menuButton{display:none!important;visibility:hidden!important;pointer-events:none!important}
 @media(min-width:721px){#menuButton.menu-button{display:none!important}}
 
 @media(max-width:720px){

@@ -2,8 +2,104 @@
 
 ## Em desenvolvimento
 
-- Fluxo comercial protegido no frontend e na persistência: levantamento exige oportunidade em Qualificação, a oportunidade avança para Levantamento técnico, a visita fica vinculada ao levantamento e o orçamento só é criado após a visita. Registros legados inalterados continuam preservados; cache web atualizado para `v340`.
+- Fluxo comercial protegido no frontend e na persistência: levantamento exige oportunidade em Qualificação, a oportunidade avança para Levantamento técnico, a visita fica vinculada ao levantamento e o orçamento só é criado após a visita. Registros legados inalterados continuam preservados; cache web atualizado para `v348`.
 - Documentação dos módulos de regras da Bancada de Trabalho do Hell consolidada, com responsabilidades claras para Codex, Node.js, bots, Playwright, GitHub Actions e Ollama.
+- O avanço de oportunidades usa o botão “Avançar processo” e exige conferência e autorização antes de mover para a próxima etapa.
+- O funil comercial passou a permitir alterar diretamente a etapa de oportunidades existentes.
+- A abertura do detalhe de orçamento ganhou fallback para sempre exibir resumo, mesmo quando um painel complementar falhar.
+- A área de compras passou a se apresentar como “Compras e materiais”, separada visualmente da lista de obras.
+- Botão “Menu” mantido oculto durante a abertura do aplicativo e liberado após o splash.
+- “Produtos” deixou de aparecer como item visualmente dependente de “Orçamentos” no menu.
+- “Minhas rotinas” foi movido para o grupo “Início” do menu principal.
+- Removidos os setores de BI Intelligence e BI Desempenho da navegação e das permissões de acesso.
+- Perfil Comercial empresarial agora expõe as permissões corrigidas também em `/api/auth/me`, sem exigir alteração manual do cadastro existente.
+- Usuários empresariais com cargo Comercial passam a receber também Clientes, Comercial, Orçamentos, Produtos e Levantamento, inclusive em convites antigos.
+- Playwright Next.js passou a aceitar autenticação opcional por variáveis de ambiente, mantendo o acesso de teste normal e sem credenciais no código.
+- Comando visual `test:ui-chrome` adicionado para abrir o Chrome real pelo Playwright.
+- Bot Playwright passou a aceitar conexão CDP com uma sessão Chrome iniciada manualmente.
+- Bot Playwright de uso da interface ganhou modo de smoke test das rotas Next.js migradas.
+- Correção do artefato Next.js para incluir os arquivos ocultos `.next` necessários ao runtime standalone.
+- Templates de serviço systemd e proxy reverso criados para revisão antes da ativação do Next.js no VPS.
+- CI passou a empacotar e disponibilizar o build standalone do frontend Next.js como artefato.
+- Plano de publicação gradual do frontend Next.js documentado, incluindo proxy, health check e rollback.
+- Total do Orçamento passou a ser calculado por item, quantidade e desconto, sem alterar a aprovação.
+- Detalhe de Orçamentos passou a permitir incluir produtos/serviços, quantidade e desconto por ambiente.
+- Detalhe de Orçamentos passou a permitir criar ambientes vinculados ao orçamento.
+- Listagem de Orçamentos conectada à tela de detalhe por links individuais.
+- Tela de detalhe de OrÃ§amento criada para consultar status, versÃ£o e ambientes vinculados.
+- README do frontend atualizado com a rota de OrÃ§amentos e seus limites funcionais atuais.
+- Rota de OrÃ§amentos adicionada com criaÃ§Ã£o de rascunhos, cliente opcional, validade e versÃ£o.
+- EdiÃ§Ã£o bÃ¡sica de oportunidades adicionada em Comercial, com tÃ­tulo, status e revisÃ£o-base.
+- Cadastro inicial de oportunidades migrado para Comercial, com título, status e controle de revisão.
+- Ciclo bÃ¡sico de Projetos concluÃ­do com exclusÃ£o confirmada e controle de revisÃ£o.
+- EdiÃ§Ã£o bÃ¡sica de Projetos adicionada para nome e status, com revisÃ£o-base da API.
+- Cadastro inicial de Projetos migrado para o frontend Next.js, com nome, status e controle de revisÃ£o.
+- DocumentaÃ§Ã£o do frontend atualizada para distinguir rotas somente leitura dos fluxos de escrita jÃ¡ validados.
+- NavegaÃ§Ã£o do shell ampliada para incluir InstalaÃ§Ãµes e Rotinas, que jÃ¡ possuem rotas migradas.
+- NavegaÃ§Ã£o do shell Next.js ampliada com entradas React controladas para os mÃ³dulos migrados.
+- EdiÃ§Ã£o de clientes ampliada para nome, e-mail e telefone, preservando a revisÃ£o-base da API.
+- Migração incremental iniciada: criado o frontend Next.js 16 + React 19 + TypeScript em `frontend/`, com shell inicial e entrada OAuth Google apontando para a API existente. A aplicação legada permanece ativa durante a validação da primeira fatia.
+- Primeira fatia funcional avançada: shell Next.js passou a consultar a sessão atual, exibir o acesso Google e oferecer o login mestre pela API legada, com proxy local para `localhost:4173`.
+- Shell autenticado ampliado com logout e resumo inicial de clientes, projetos, tarefas e lançamentos financeiros via `/api/data`, sem substituir os módulos legados.
+- Menu lateral e navegação inicial adicionados ao shell Next.js, com pontos de entrada para Visão geral, Clientes, Projetos, Comercial, Financeiro e Indicadores; módulos ainda são migrados individualmente.
+- Menu conectado às rotas migradas de Clientes e Projetos, mantendo as demais áreas como pontos de transição controlados.
+- Rota Comercial adicionada em modo somente leitura, com oportunidades e orçamentos consumidos da API atual.
+- Rota Financeiro adicionada em modo somente leitura, com lançamentos autorizados e total calculado no frontend.
+- Base visual e cliente HTTP compartilhados adicionados ao frontend Next.js, preparando os próximos módulos para componentes e estilos consistentes.
+- Rota de Indicadores adicionada em modo somente leitura, com métricas iniciais de clientes, projetos, comercial, tarefas e lançamentos usando o cliente HTTP compartilhado.
+- Menu principal conectado também às rotas migradas de Comercial, Financeiro e Indicadores.
+- Rota de Operação adicionada em modo somente leitura, com tarefas e ordens de serviço consumidas pela API atual.
+- Rota de Conhecimento adicionada em modo somente leitura, com artigos e referências técnicas da API atual.
+- Rota de Equipamentos adicionada em modo somente leitura, com catálogo técnico, fabricante, status e localização.
+- Rota de Colaboradores adicionada em modo somente leitura, com equipe, função e especialidade consumidas da API atual.
+- Rota de Levantamento técnico adicionada em modo somente leitura, com levantamentos e pontos técnicos consumidos da API atual.
+- Rota de Catálogo adicionada em modo somente leitura, com produtos e serviços consumidos da API atual.
+- Rota de Agenda adicionada em modo somente leitura, com compromissos e próximos eventos consumidos da API atual.
+- Rota de Qualidade adicionada em modo somente leitura, com avaliações, média e comentários consumidos da API atual.
+- Rota de Relatórios adicionada em modo somente leitura, com registros de serviço e entregas de projetos.
+- Rota de Compras adicionada em modo somente leitura, com itens, quantidades e status de materiais consumidos da API atual.
+- Rota de Instalações adicionada em modo somente leitura, com execuções de campo, projeto e status.
+- Rota de Rotinas adicionada em modo somente leitura, com procedimentos e checklists operacionais.
+- Rota de Configurações adicionada em modo somente leitura, com identidade, responsável, status e licença da empresa autenticada.
+- Rota de Usuários da empresa adicionada em modo somente leitura, respeitando o endpoint protegido e exibindo função e situação de cada participante.
+- Rota de Convites adicionada em modo somente leitura, exibindo destinatário, função e situação do convite.
+- Menu expandido para expor as áreas migradas disponíveis no frontend Next.js.
+- Componente de layout compartilhado criado e aplicado à tela de Clientes; o shell principal também foi formatado para facilitar a manutenção segura.
+- Tela de Projetos refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Tela Comercial refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Tela Financeiro refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Tela de Indicadores refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Tela de Operação refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Tela de Qualidade refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Biblioteca técnica refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Agenda refatorada para usar o layout compartilhado e o cliente HTTP comum.
+- Configurações da empresa refatoradas para usar o layout compartilhado e o cliente HTTP comum.
+- Usuários da empresa refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Convites da empresa refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Catálogo de produtos e serviços refatorado para usar o layout compartilhado e o cliente HTTP comum.
+- Relatórios refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Colaboradores e parceiros refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Equipamentos refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Compras e materiais consolidados no layout compartilhado e no cliente HTTP comum.
+- Instalações consolidadas no layout compartilhado e no cliente HTTP comum, usando o hook `useApi`.
+- Relatórios consolidados no layout compartilhado e no hook `useApi`.
+- Compras e materiais refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Levantamento técnico refatorado para usar o layout compartilhado e o cliente HTTP comum.
+- Instalações refatoradas para usar o layout compartilhado e o cliente HTTP comum.
+- Rotinas e checklists refatorados para usar o layout compartilhado e o cliente HTTP comum.
+- Hook `useApi` criado para centralizar carregamento, erro e cancelamento seguro de consultas; aplicado à tela de Rotinas.
+- Hook `useApi` aplicado também à tela de Qualidade, removendo carregamento manual duplicado.
+- Cliente HTTP Next.js preparado para operações de escrita via `apiPut`, mantendo autenticação e controle de revisão da API.
+- Clientes recebeu o primeiro fluxo de escrita migrado: cadastro de nome, e-mail e telefone com envio protegido por `baseRevision`.
+- Configurações recebeu edição controlada de nome, responsável, telefone e informações pelo endpoint específico da empresa.
+- Convites recebeu criação de convite com e-mail e função, mantendo autorização e geração do token no backend.
+- Clientes recebeu exclusão protegida por confirmação e `baseRevision`, mantendo controle de concorrência e autorização no backend.
+- Clientes recebeu edição inicial do nome, também protegida por `baseRevision` e autorização do backend.
+- Comandos `check:frontend` e `check:all` adicionados ao projeto para validar backend e frontend em conjunto.
+- Estado das rotas em transição documentado em `frontend/README.md`, incluindo limites atuais e comando de validação.
+- Origem da API do frontend Next.js parametrizada por `PROELIUM_API_ORIGIN`, preparando a publicação online sem alterar o código.
+- Pipeline de deploy reforçado para instalar e compilar o frontend Next.js antes de qualquer publicação no VPS.
+- Fluxo comercial publicado sobre o shell legado com cache web `v348`, incluindo o módulo compartilhado de validação no pacote offline.
 
 - Projeto do produto consolidado no `PROJECT.md`: visão, problema, público, fluxo, módulos, entidades, regras, plataformas, fronteiras e critérios de sucesso do aplicativo Proelium Operacional.
 - Separada a documentação do produto da documentação de migração: `PROJECT.md` volta a representar somente o aplicativo, enquanto `docs/MIGRACAO-REACT-NEXT.md` concentra a evolução técnica.
