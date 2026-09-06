@@ -46,7 +46,7 @@ Definir e testar os fluxos antes de ampliar o código. Cada responsável registr
 ### Mínimo funcional entregue
 
 - cadastro de nova oportunidade;
-- etapas Primeiro contato, Qualificação, Visita, Orçamento, Ganho e Perdido;
+- etapas Primeiro contato, Qualificação de serviços, Levantamento técnico, Visita técnica opcional, Orçamento, Ganho e Perdido;
 - origem, responsável, próxima ação, prazo, valor estimado e motivo de perda;
 - avanço manual de etapa;
 - conversão da oportunidade em cliente potencial;

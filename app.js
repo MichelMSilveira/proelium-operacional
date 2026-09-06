@@ -1505,11 +1505,11 @@ function commercialAdvanceChecklist(opportunity){
   if(!String(opportunity.owner||'').trim())missing.push('responsável interno');
   if(!String(opportunity.nextAction||'').trim())missing.push('próxima ação');
   if(!String(opportunity.nextDue||'').trim())missing.push('prazo da próxima ação');
-  if(opportunity.stage==='Visita'&&Number(opportunity.estimatedValue||0)<=0)missing.push('valor estimado para liberar o orçamento');
+  if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Visita técnica'&&Number(opportunity.estimatedValue||0)<=0)missing.push('valor estimado para liberar o orçamento');
   return missing;
 }
 function openOpportunityAdvanceAuthorization(id){
-  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id),stages=['Primeiro contato','Qualificação','Visita','Orçamento'];
+  const opportunity=(state.data.opportunities||[]).find(item=>item.id===id),stages=['Primeiro contato','Qualificação de serviços','Levantamento técnico','Visita técnica','Orçamento'];
   if(!opportunity)return;
   const currentStage=ProeliumCommercialWorkflow.canonicalStage(opportunity.stage),index=stages.indexOf(currentStage),nextStage=stages[index+1];
   if(!nextStage){toast('Esta oportunidade já está em Orçamento. A próxima decisão acontece dentro do orçamento: enviar, aprovar ou recusar.');return}
@@ -1522,7 +1522,7 @@ function openOpportunityAdvanceAuthorization(id){
   $('#recordForm').dataset.kind='opportunityAdvanceAuthorization';
   $('#recordForm').dataset.editId=id;
   $('#saveButton').textContent=registeringInterest?'Confirmar interesse e qualificar':'Assinar e avançar';
-  $('#formFields').innerHTML=`<input type="hidden" name="opportunityId" value="${id}"><input type="hidden" name="nextStage" value="${nextStage}"><div class="field full"><p class="subtext">${registeringInterest?'Registre o interesse real do cliente para mover a oportunidade à Qualificação.':'A oportunidade foi conferida e está apta para seguir.'} Esta ação ficará registrada na Auditoria.</p></div><div class="field full"><label>Responsável pela confirmação</label><input value="${actor}" disabled></div><div class="field full"><label>Assinatura de confirmação *</label><input name="signature" autocomplete="off" aria-describedby="commercial-signature-help" placeholder="Digite exatamente: ${actor}" required><small id="commercial-signature-help" class="subtext">Enquanto o login individual não existe, esta é uma assinatura operacional provisória vinculada ao usuário selecionado na Auditoria.</small></div>`;
+  $('#formFields').innerHTML=`<input type="hidden" name="opportunityId" value="${id}"><input type="hidden" name="nextStage" value="${nextStage}"><div class="field full"><p class="subtext">${registeringInterest?'Registre o interesse real do cliente para mover a oportunidade à Qualificação de serviços.':'A oportunidade foi conferida e está apta para seguir.'} Esta ação ficará registrada na Auditoria.</p></div>${registeringInterest?`<div class="field full"><label for="commercial-interests">Interesses do cliente *</label><textarea id="commercial-interests" name="interests" required>${opportunity.interests||''}</textarea></div><div class="field full"><label for="commercial-needs">Necessidades / dores *</label><textarea id="commercial-needs" name="needs" required>${opportunity.needs||''}</textarea></div><div class="field full"><label for="commercial-initial-scope">Escopo inicial *</label><textarea id="commercial-initial-scope" name="initialScope" required>${opportunity.initialScope||''}</textarea></div><div class="field"><label for="commercial-visit-complexity">Visita técnica necessária?</label><select id="commercial-visit-complexity" name="visitRequired"><option ${opportunity.visitRequired==='A avaliar'?'selected':''}>A avaliar</option><option ${opportunity.visitRequired==='Não'?'selected':''}>Não</option><option ${opportunity.visitRequired==='Sim'?'selected':''}>Sim</option></select></div>`:''}<div class="field full"><label>Responsável pela confirmação</label><input value="${actor}" disabled></div><div class="field full"><label for="commercial-signature">Assinatura de confirmação *</label><input id="commercial-signature" name="signature" autocomplete="off" aria-describedby="commercial-signature-help" placeholder="Digite exatamente: ${actor}" required><small id="commercial-signature-help" class="subtext">Enquanto o login individual não existe, esta é uma assinatura operacional provisória vinculada ao usuário selecionado na Auditoria.</small></div>`;
   $('#recordDialog').showModal();
 }
 document.addEventListener('submit',event=>{
@@ -1536,7 +1536,12 @@ document.addEventListener('submit',event=>{
   const missing=commercialAdvanceChecklist(opportunity);
   if(missing.length){toast(`A conferência precisa ser refeita: ${missing.join(', ')}.`);return}
   const from=opportunity.stage,fromLabel=ProeliumCommercialWorkflow.canonicalStage(from);
-  opportunity.stage=data.nextStage;
+  const next=structuredClone(state.data),index=next.opportunities.findIndex(item=>item.id===opportunity.id),candidate={...next.opportunities[index],stage:data.nextStage};
+  if(fromLabel==='Primeiro contato')Object.assign(candidate,{interests:String(data.interests||'').trim(),needs:String(data.needs||'').trim(),initialScope:String(data.initialScope||'').trim(),visitRequired:data.visitRequired||'A avaliar'});
+  if(fromLabel==='Primeiro contato'&&ProeliumCommercialWorkflow.qualificationFields.some(field=>!candidate[field])){toast('Para qualificar, informe interesses, necessidades e escopo inicial.');return}
+  next.opportunities[index]=candidate;
+  const validation=workflow.validate(state.data,next);if(!validation.ok){toast(validation.message);return}
+  Object.assign(opportunity,candidate);
   opportunity.advanceAuthorizations=Array.isArray(opportunity.advanceAuthorizations)?opportunity.advanceAuthorizations:[];
   opportunity.advanceAuthorizations.unshift({at:new Date().toISOString(),actor,from,to:data.nextStage,checklist:'Dados de contato, responsável, próxima ação e prazo conferidos'});
   logAudit(fromLabel==='Primeiro contato'?'Registrou interesse':'Autorizou avanço','Comercial',`${opportunity.company} · ${fromLabel} → ${data.nextStage} · assinatura: ${actor}`);
@@ -3168,8 +3173,8 @@ document.addEventListener('click',event=>{
   event.preventDefault();event.stopImmediatePropagation();
    const opportunity=(state.data.opportunities||[]).find(item=>item.id===button.dataset.startSurveyOpportunity);
    if(!opportunity)return;
-   if(opportunity.stage!=='Qualificação'){toast('Qualifique a oportunidade antes de iniciar o levantamento técnico.');return}
-   openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Levantamento técnico — ${opportunity.company}`,site:'',source:'Visita técnica',status:'Em levantamento',notes:''});
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços'){toast('Registre a Qualificação de serviços antes de iniciar o diagrama teórico.');return}
+    openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Diagrama teórico — ${opportunity.company}`,site:'',source:'Preenchimento manual',status:'Em levantamento',notes:''});
 },true);
 
 // Edição da proposta preserva os itens, ambientes e cálculos já feitos.
@@ -3507,14 +3512,16 @@ function commercialFlowRecordFor(opportunity){
   return {survey,quote,client,surveys,quotes};
 }
   function commercialFlowNextStep(opportunity,record){
-    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Primeiro contato')return {label:'Registrar interesse → Qualificação',action:'qualification',detail:'Confirme o interesse real do cliente antes de iniciar o levantamento.'};
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Primeiro contato')return {label:'Registrar interesse → Qualificação de serviços',action:'qualification',detail:'Confirme os interesses, necessidades e escopo inicial antes de iniciar o diagrama teórico.'};
     if(!record.survey){
-    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação')return {label:'Registrar interesse → Qualificação',action:'qualification',detail:'Confirme o interesse real do cliente antes de iniciar o levantamento.'};
-     return {label:'Iniciar levantamento',action:'survey',detail:'Registre ambientes, necessidades e quantitativos.'};
-   }
-   if(!record.quote){
-     if(!ProeliumCommercialWorkflow.visitsFor(state.data,opportunity.id,record.survey.id).length)return {label:'Continuar levantamento',action:'surveyExisting',detail:'Abra o levantamento e inicie a visita técnica antes do orçamento.'};
-     return {label:'Criar orçamento',action:'quoteFromSurvey',detail:'Visita registrada. Crie o orçamento a partir deste levantamento.'};
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços')return {label:'Registrar interesse → Qualificação de serviços',action:'qualification',detail:'Registre os interesses, necessidades e escopo inicial do cliente.'};
+      return {label:'Iniciar diagrama teórico',action:'survey',detail:'Construa o diagrama teórico das necessidades, ambientes e quantitativos.'};
+    }
+    if(!record.quote){
+      const surveyReady=['Validado','Enviado ao orçamento'].includes(record.survey.status)&&(state.data.surveyPoints||[]).some(item=>item.surveyId===record.survey.id);
+      if(!ProeliumCommercialWorkflow.visitsFor(state.data,opportunity.id,record.survey.id).length&&!surveyReady)return {label:'Continuar diagrama',action:'surveyExisting',detail:'Valide o diagrama teórico e registre os pontos antes do orçamento; a Visita técnica é opcional quando a complexidade permitir.'};
+      if(ProeliumCommercialWorkflow.visitsFor(state.data,opportunity.id,record.survey.id).length)return {label:'Criar orçamento',action:'quoteFromSurvey',detail:'Visita técnica registrada. Crie o orçamento a partir do diagrama.'};
+      return {label:'Escolher próximo caminho',action:'surveyDecision',detail:'O diagrama está validado. Escolha visita técnica se a complexidade exigir ou prossiga sem visita com justificativa.'};
    }
   const status=quoteStatus(record.quote);
   if(status==='Aprovado')return record.client?{label:'Abrir cliente',action:'client',detail:'Orçamento aprovado e cliente vinculado.'}:{label:'Revisar aprovação',action:'quote',detail:'A aprovação existe, mas o vínculo do cliente precisa ser conferido.'};
@@ -3525,7 +3532,8 @@ function commercialFlowRecordFor(opportunity){
  function commercialFlowButton(id,step,record){
    if(step.action==='qualification')return `<button type="button" class="button primary" data-qualify-opportunity="${id}">${step.label}</button>`;
    if(step.action==='survey')return `<button type="button" class="button primary" data-start-survey-opportunity="${id}">${step.label}</button>`;
-   if(step.action==='surveyExisting')return `<button type="button" class="button primary" data-open-commercial-survey="${record.survey.id}">${step.label}</button>`;
+    if(step.action==='surveyExisting')return `<button type="button" class="button primary" data-open-commercial-survey="${record.survey.id}">${step.label}</button>`;
+    if(step.action==='surveyDecision')return `<div class="commercial-next-actions" role="group" aria-label="Escolha do próximo caminho"><button type="button" class="button secondary" data-start-technical-visit="${record.survey.id}" aria-label="Solicitar ou realizar visita técnica">Solicitar / realizar Visita técnica</button><button type="button" class="button primary" data-quote-without-visit="${record.survey.id}" aria-label="Prosseguir sem visita técnica para orçamento">Prosseguir sem visita → Orçamento</button></div>`;
    if(step.action==='quoteFromSurvey')return `<button type="button" class="button primary" data-survey-start-quote="${record.survey.id}">${step.label}</button>`;
   if(step.action==='quote')return `<button type="button" class="button primary" data-open-commercial-quote="${record.quote.id}">${step.label}</button>`;
   return `<button type="button" class="button primary" data-open-commercial-client="${record.client.id}">${step.label}</button>`;
@@ -3588,10 +3596,19 @@ removeCommercialShortcuts();
 const removeFirstContactActions=()=>document.querySelectorAll('.commercial-deal').forEach(card=>{
   const opportunityId=card.querySelector('[data-delete-opportunity]')?.dataset.deleteOpportunity;
   const opportunity=(state.data.opportunities||[]).find(item=>String(item.id)===String(opportunityId));
-  if(ProeliumCommercialWorkflow.canonicalStage(opportunity?.stage)==='Primeiro contato')card.querySelectorAll('[data-commercial-activity],[data-start-survey-opportunity]').forEach(element=>element.remove());
+  if(['Primeiro contato','Levantamento técnico'].includes(ProeliumCommercialWorkflow.canonicalStage(opportunity?.stage)))card.querySelectorAll('[data-commercial-activity]').forEach(element=>element.remove());
 });
 new MutationObserver(removeFirstContactActions).observe(document.body,{childList:true,subtree:true});
 removeFirstContactActions();
+const enhanceCommercialContactCards=()=>document.querySelectorAll('.commercial-deal').forEach(card=>{
+  if(card.querySelector('.commercial-contact-details'))return;
+  const opportunityId=card.querySelector('[data-delete-opportunity]')?.dataset.deleteOpportunity,opportunity=(state.data.opportunities||[]).find(item=>String(item.id)===String(opportunityId));
+  if(!opportunity)return;
+  const details=document.createElement('div');details.className='subtext commercial-contact-details';details.setAttribute('aria-label','Dados do contato inicial');details.textContent=`Telefone: ${opportunity.phone||'Não informado'} · E-mail: ${opportunity.email||'Não informado'} · Responsável: ${opportunity.owner||'Não informado'}`;
+  card.querySelector('.commercial-deal-top')?.insertAdjacentElement('afterend',details);
+});
+new MutationObserver(enhanceCommercialContactCards).observe(document.body,{childList:true,subtree:true});
+enhanceCommercialContactCards();
 render();
 
 // Previsão operacional: o valor comercial permanece congelado no orçamento;
@@ -3778,7 +3795,7 @@ function injectCommercialActivities(){
     const opportunityId=card.querySelector('[data-start-survey-opportunity]')?.dataset.startSurveyOpportunity||card.querySelector('[data-delete-opportunity]')?.dataset.deleteOpportunity;
     if(!opportunityId)return;
     const opportunity=(state.data.opportunities||[]).find(item=>String(item.id)===String(opportunityId));
-    if(ProeliumCommercialWorkflow.canonicalStage(opportunity?.stage)==='Primeiro contato')return;
+    if(['Primeiro contato','Levantamento técnico'].includes(ProeliumCommercialWorkflow.canonicalStage(opportunity?.stage)))return;
     const actions=card.querySelector('.deal-actions');if(!actions)return;
     const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.commercialActivity=opportunityId;button.textContent='Nova atividade';actions.insertBefore(button,actions.firstChild);
     const items=(state.data.appointments||[]).filter(item=>item.opportunityId===opportunityId);
@@ -3848,6 +3865,19 @@ function removeQuoteSummaryFromProspecting(){
 }
 const commercialManualWithFounder = openCommercialOpportunityManualV2;
 openCommercialOpportunityManualV2 = (...args) => { const actor=localStorage.getItem('proelium-current-actor')||''; if(actor&&!state.data.collaborators.some(person=>person.name===actor)){state.data.collaborators.unshift({id:`founder-${actor}`,name:actor,role:'Fundador e administrador',specialty:'Condução comercial e gestão da empresa',relationship:'Conta fundadora',availability:'Gestão da empresa',compensation:'',status:'Ativo'});persist()} return commercialManualWithFounder(...args); };
+const commercialQualificationFieldsBase=openCommercialOpportunityManualV2;
+openCommercialOpportunityManualV2=(...args)=>{
+  const result=commercialQualificationFieldsBase(...args),editId=args[0]||'',prefill=args[1]||{},current=editId?(state.data.opportunities||[]).find(item=>item.id===editId):null;
+  const value=field=>prefill[field]??current?.[field]??'',stage=ProeliumCommercialWorkflow.canonicalStage(prefill.stage??current?.stage??'Primeiro contato'),source=$('#recordForm select[name="source"]');
+  if(!source||$('#commercial-qualification-fields'))return result;
+  const required=stage==='Qualificação de serviços'?' required':'';
+  source.closest('.field').insertAdjacentHTML('afterend',`<fieldset id="commercial-qualification-fields" class="field full"><legend>Qualificação de serviços</legend><p class="subtext">Registre o que o cliente busca e o escopo inicial. Esses dados orientam o levantamento técnico e não substituem o diagrama detalhado.</p><label for="commercial-opportunity-interests">Interesses do cliente${required?' *':''}</label><textarea id="commercial-opportunity-interests" name="interests"${required}>${value('interests')}</textarea><label for="commercial-opportunity-needs">Necessidades / dores${required?' *':''}</label><textarea id="commercial-opportunity-needs" name="needs"${required}>${value('needs')}</textarea><label for="commercial-opportunity-scope">Escopo inicial${required?' *':''}</label><textarea id="commercial-opportunity-scope" name="initialScope"${required}>${value('initialScope')}</textarea><label for="commercial-opportunity-visit">Visita técnica necessária?</label><select id="commercial-opportunity-visit" name="visitRequired"><option ${value('visitRequired')==='A avaliar'?'selected':''}>A avaliar</option><option ${value('visitRequired')==='Não'?'selected':''}>Não</option><option ${value('visitRequired')==='Sim'?'selected':''}>Sim</option></select></fieldset>`);
+  const stageSelect=$('#recordForm select[name="stage"]');
+  if(stageSelect)stageSelect.addEventListener('change',()=>{const isQualified=ProeliumCommercialWorkflow.canonicalStage(stageSelect.value)==='Qualificação de serviços';['interests','needs','initialScope'].forEach(field=>{const input=$(`#recordForm [name="${field}"]`);if(input)input.required=isQualified})});
+  return result;
+};
+const commercialDiagramViewBase=views.survey;
+views.survey=()=>commercialDiagramViewBase().replace('Etapa entre Comercial e Orçamentos: consolide ambientes, pontos e quantitativos antes de precificar.','Construa o diagrama teórico das necessidades do cliente, consolidando ambientes, pontos e quantitativos antes de precificar.').replace('Crie o primeiro levantamento antes de montar o orçamento.','Crie o primeiro diagrama teórico antes de montar o orçamento.').replace('Novo levantamento','Novo diagrama teórico').replace('Adicione ambientes, pontos e quantitativos desta visita.','Adicione ambientes, pontos e quantitativos do diagrama teórico.');
 const surveyListInteractiveRender=render;
 render=()=>{surveyListInteractiveRender();if(state.view==='survey'&&!state.selectedSurvey){document.querySelectorAll('[data-open-survey]').forEach(button=>{const row=button.closest('tr');if(!row)return;row.dataset.openSurveyRow=button.dataset.openSurvey;row.style.cursor='pointer';row.title='Toque para abrir este levantamento';button.remove()})}};
 const surveyChecklistNotesRender=render;
@@ -3869,12 +3899,16 @@ function workflowVisitFor(opportunityId,surveyId=''){return workflow.visitsFor(s
 
 const workflowOpenTechnicalSurvey=openTechnicalSurvey;
 openTechnicalSurvey=(id='',prefill={})=>{
-  if(!id&&!prefill.opportunityId&&(state.data.opportunities||[]).every(item=>item.stage!=='Qualificação')){toast('Qualifique uma oportunidade antes de criar um levantamento técnico.');return}
+  if(!id&&!prefill.opportunityId&&(state.data.opportunities||[]).every(item=>ProeliumCommercialWorkflow.canonicalStage(item.stage)!=='Qualificação de serviços')){toast('Registre os interesses, necessidades e escopo na Qualificação de serviços antes de criar o diagrama teórico.');return}
   workflowOpenTechnicalSurvey(id,prefill);
+  $('#dialogTitle').textContent=id?'Editar diagrama teórico':'Novo diagrama teórico';
+  [...document.querySelectorAll('#formFields label')].find(label=>label.textContent==='Nome do levantamento *')?.replaceChildren('Nome do diagrama teórico *');
+  [...document.querySelectorAll('#formFields label')].find(label=>label.textContent==='Premissas e observações')?.replaceChildren('Necessidades, premissas e observações');
+  $('#formFields [name="notes"]')?.setAttribute('aria-label','Necessidades, premissas e observações do diagrama');
   const select=$('[name="opportunityId"]');
   if(!select)return;
   select.required=true;
-  if(!id){[...select.options].forEach(option=>{const opportunity=workflowOpportunity(option.value);if(!opportunity||opportunity.stage!=='Qualificação')option.remove()});}
+  if(!id){[...select.options].forEach(option=>{const opportunity=workflowOpportunity(option.value);if(!opportunity||ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços')option.remove()});}
   select.querySelector('option[value=""]')?.remove();
 };
 
@@ -3891,7 +3925,8 @@ saveRecord=(kind,data,editId='')=>{
   if(kind==='technicalSurvey'){
     const previous=editId?workflowSurvey(editId):null,opportunity=workflowOpportunity(data.opportunityId);
     if(!opportunity){toast('Todo levantamento deve estar vinculado a uma oportunidade existente.');return false}
-    if(!previous&&opportunity.stage!=='Qualificação'){toast('A oportunidade precisa estar em Qualificação antes de iniciar o levantamento.');return false}
+    if(!previous&&ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços'){toast('A oportunidade precisa estar em Qualificação de serviços antes de iniciar o diagrama teórico.');return false}
+    if(!previous&&ProeliumCommercialWorkflow.qualificationFields.some(field=>!String(opportunity[field]||'').trim())){toast('Complete interesses, necessidades e escopo inicial na Qualificação de serviços antes de iniciar o diagrama teórico.');return false}
     if(previous&&previous.opportunityId!==data.opportunityId){toast('O levantamento não pode ser transferido para outra oportunidade nesta etapa.');return false}
     const record={opportunityId:data.opportunityId,title:String(data.title||'').trim(),site:data.site||'',source:data.source||'Visita técnica',status:data.status||'Em levantamento',notes:data.notes||'',updatedAt:new Date().toISOString()};
     if(!record.title){toast('Informe o nome do levantamento.');return false}
@@ -3906,19 +3941,21 @@ saveRecord=(kind,data,editId='')=>{
     const survey=workflowSurvey(data.surveyId),opportunity=workflowOpportunity(data.opportunityId||survey?.opportunityId);
     if(!survey||!opportunity||survey.opportunityId!==opportunity.id){toast('A visita deve estar vinculada ao levantamento e à mesma oportunidade.');return false}
     if(workflowVisitFor(opportunity.id,survey.id).length){toast('Já existe uma visita iniciada para este levantamento.');return false}
-    state.data.appointments.unshift({id:uid('apt'),title:String(data.title||`Visita técnica — ${opportunity.company}`).trim(),clientId:data.clientId||'',projectId:data.projectId||'',assignee:String(data.assignee||'').trim(),date:data.date||todayInput(),time:data.time||'',note:data.note||'',type:'Visita técnica',status:'Iniciada',visit:true,opportunityId:opportunity.id,surveyId:survey.id,createdAt:new Date().toISOString()});
-    opportunity.stage='Visita';survey.visitStartedAt=new Date().toISOString();logAudit('Iniciou visita técnica','Comercial',`${opportunity.company} · ${survey.title}`);persist();state.view='survey';render();toast('Visita técnica iniciada; o orçamento será liberado após esta etapa.');return true;
+    if(!String(data.reason||'').trim()){toast('Informe o motivo ou a complexidade que exige a Visita técnica.');return false}
+    state.data.appointments.unshift({id:uid('apt'),title:String(data.title||`Visita técnica — ${opportunity.company}`).trim(),clientId:data.clientId||'',projectId:data.projectId||'',assignee:String(data.assignee||'').trim(),date:data.date||todayInput(),time:data.time||'',note:`Motivo da visita: ${String(data.reason).trim()}${data.note?` · ${data.note}`:''}`,type:'Visita técnica',status:'Iniciada',visit:true,opportunityId:opportunity.id,surveyId:survey.id,createdAt:new Date().toISOString()});
+    opportunity.stage='Visita técnica';survey.visitStartedAt=new Date().toISOString();logAudit('Iniciou visita técnica','Comercial',`${opportunity.company} · ${survey.title} · motivo: ${String(data.reason).trim()}`);persist();state.view='survey';render();toast('Visita técnica iniciada; o orçamento será liberado após esta etapa.');return true;
   }
   if(kind==='quote'){
     const opportunity=workflowOpportunity(data.opportunityId);
     if(!opportunity){toast('Selecione uma oportunidade comercial para criar o orçamento.');return false}
-    if(!workflowVisitFor(opportunity.id).length){toast('O orçamento só pode ser criado após a visita técnica.');return false}
+    const survey=(state.data.surveys||[]).find(item=>item.opportunityId===opportunity.id),ready=survey&&['Validado','Enviado ao orçamento'].includes(survey.status)&&(state.data.surveyPoints||[]).some(item=>item.surveyId===survey.id);
+    if(!workflowVisitFor(opportunity.id).length&&!ready){toast('O orçamento exige diagrama teórico validado; a Visita técnica é opcional quando a complexidade permitir.');return false}
     const quote={id:uid('orc'),opportunityId:opportunity.id,clientId:'',title:String(data.title||`Proposta — ${opportunity.company}`).trim(),value:0,status:'Em elaboração',createdAt:new Date().toISOString()};
-    state.data.quotes.unshift(quote);opportunity.stage='Orçamento';state.selectedQuote=quote.id;state.view='quoteDetail';logAudit('Criou orçamento','Comercial',`${opportunity.company} · ${quote.title}`);persist();render();toast('Orçamento criado a partir da visita técnica.');return true;
+    state.data.quotes.unshift(quote);opportunity.stage='Orçamento';state.selectedQuote=quote.id;state.view='quoteDetail';logAudit('Criou orçamento','Comercial',`${opportunity.company} · ${quote.title}`);persist();render();toast(workflowVisitFor(opportunity.id).length?'Orçamento criado a partir da visita técnica.':'Orçamento criado a partir do diagrama teórico.');return true;
   }
   if(kind==='opportunity'){
     const current=editId?workflowOpportunity(editId):null,next=structuredClone(state.data);
-    const candidate={id:editId||uid('opp'),company:data.company,contact:data.contact,phone:data.phone,email:data.email,source:data.source,owner:data.owner,stage:data.stage,nextAction:data.nextAction,nextDue:data.nextDue,estimatedValue:Number(data.estimatedValue||0),lossReason:data.lossReason};
+    const candidate={id:editId||uid('opp'),company:data.company,contact:data.contact,phone:data.phone,email:data.email,source:data.source,owner:data.owner,stage:data.stage,nextAction:data.nextAction,nextDue:data.nextDue,estimatedValue:Number(data.estimatedValue||0),lossReason:data.lossReason,interests:String(data.interests||'').trim(),needs:String(data.needs||'').trim(),initialScope:String(data.initialScope||'').trim(),visitRequired:data.visitRequired||'A avaliar'};
     if(current){const index=next.opportunities.findIndex(item=>item.id===editId);next.opportunities[index]={...next.opportunities[index],...candidate}}
     else next.opportunities.unshift(candidate);
     const result=workflow.validate(state.data,next);if(!result.ok){toast(result.message);return false}
@@ -3926,40 +3963,59 @@ saveRecord=(kind,data,editId='')=>{
   return workflowSaveRecordBase(kind,data,editId);
 };
 
+function openCommercialQuoteWithoutVisit(surveyId){
+  const survey=workflowSurvey(surveyId),opportunity=workflowOpportunity(survey?.opportunityId);
+  if(!survey||!opportunity){toast('Abra um diagrama teórico vinculado antes de prosseguir sem visita.');return}
+  if(!['Validado','Enviado ao orçamento'].includes(survey.status)||(state.data.surveyPoints||[]).filter(item=>item.surveyId===survey.id).length===0){toast('Valide o diagrama teórico e registre ao menos um ponto antes de escolher o caminho sem visita.');return}
+  $('#dialogTitle').textContent='Prosseguir sem Visita técnica';$('#recordForm').dataset.kind='commercialQuoteWithoutVisit';$('#recordForm').dataset.editId=surveyId;$('#saveButton').textContent='Confirmar e abrir orçamento';
+  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${survey.id}"><div class="field full"><p class="subtext">O orçamento será criado após o diagrama teórico validado, sem uma Visita técnica presencial. Confirme por que a complexidade permite esse caminho.</p></div><div class="field full"><label for="commercial-no-visit-reason">Justificativa para prosseguir sem visita *</label><textarea id="commercial-no-visit-reason" name="justification" aria-describedby="commercial-no-visit-help" placeholder="Ex.: planta e medidas conferidas; escopo simples e sem instalação em campo." required></textarea><small id="commercial-no-visit-help" class="subtext">A justificativa ficará registrada na Auditoria junto com a decisão comercial.</small></div>`;$('#recordDialog').showModal();
+}
 function openTechnicalVisit(surveyId){
   const survey=workflowSurvey(surveyId),opportunity=workflowOpportunity(survey?.opportunityId);
   if(!survey||!opportunity){toast('Abra um levantamento vinculado a uma oportunidade antes de iniciar a visita.');return}
   if(workflowVisitFor(opportunity.id,survey.id).length){toast('A visita deste levantamento já foi iniciada.');return}
   $('#dialogTitle').textContent='Iniciar visita técnica';$('#recordForm').dataset.kind='technicalVisit';$('#recordForm').dataset.editId='';$('#saveButton').textContent='Iniciar visita';
-  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${survey.id}"><input type="hidden" name="opportunityId" value="${opportunity.id}"><div class="field full"><label>Levantamento</label><input value="${survey.title}" disabled></div><div class="field full"><label>Oportunidade</label><input value="${opportunity.company}" disabled></div><div class="field full"><label>Visita *</label><input name="title" value="Visita técnica — ${opportunity.company}" required></div><div class="field"><label>Responsável *</label><input name="assignee" value="${opportunity.owner||''}" required></div><div class="field"><label>Data *</label><input name="date" type="date" value="${todayInput()}" required></div><div class="field"><label>Horário</label><input name="time" type="time"></div><div class="field full"><label>Observações</label><textarea name="note" placeholder="O que será conferido ou decidido no local?"></textarea></div>`;$('#recordDialog').showModal();
+  $('#formFields').innerHTML=`<input type="hidden" name="surveyId" value="${survey.id}"><input type="hidden" name="opportunityId" value="${opportunity.id}"><div class="field full"><label>Diagrama teórico</label><input value="${survey.title}" disabled></div><div class="field full"><label>Oportunidade</label><input value="${opportunity.company}" disabled></div><div class="field full"><label>Visita técnica *</label><input name="title" value="Visita técnica — ${opportunity.company}" required></div><div class="field"><label>Responsável *</label><input name="assignee" value="${opportunity.owner||''}" required></div><div class="field"><label>Data *</label><input name="date" type="date" value="${todayInput()}" required></div><div class="field"><label>Horário</label><input name="time" type="time"></div><div class="field full"><label for="technical-visit-reason">Motivo / complexidade que exige visita *</label><textarea id="technical-visit-reason" name="reason" aria-describedby="technical-visit-help" placeholder="Ex.: medidas precisam ser conferidas no local; instalação com infraestrutura existente." required></textarea><small id="technical-visit-help" class="subtext">O motivo ficará registrado na Auditoria.</small></div><div class="field full"><label for="technical-visit-note">Observações</label><textarea id="technical-visit-note" name="note" placeholder="O que será conferido ou decidido no local?"></textarea></div>`;$('#recordDialog').showModal();
 }
 
 const workflowCreateQuoteFromOpportunity=createQuoteFromOpportunity;
 createQuoteFromOpportunity=id=>{
   const opportunity=workflowOpportunity(id),survey=(state.data.surveys||[]).find(item=>item.opportunityId===id);
-  if(!opportunity||!survey){toast('Inicie e vincule o levantamento antes de criar o orçamento.');return false}
-  if(!workflowVisitFor(id,survey.id).length){toast('Inicie a visita técnica antes de criar o orçamento.');return false}
+  if(!opportunity||!survey){toast('Inicie e vincule o diagrama teórico antes de criar o orçamento.');return false}
+  const ready=['Validado','Enviado ao orçamento'].includes(survey.status)&&(state.data.surveyPoints||[]).some(item=>item.surveyId===survey.id);
+  if(!workflowVisitFor(id,survey.id).length&&!ready){toast('Valide o diagrama teórico e registre pontos; a Visita técnica é opcional quando a complexidade permitir.');return false}
   return workflowCreateQuoteFromOpportunity(id);
 };
 const workflowStartQuoteFromSurvey=startQuoteFromSurvey;
 startQuoteFromSurvey=id=>{
   const survey=workflowSurvey(id),opportunity=workflowOpportunity(survey?.opportunityId);
-  if(!survey||!opportunity||!workflowVisitFor(opportunity.id,survey.id).length){toast('Inicie a visita técnica antes de criar o orçamento.');return false}
+  const ready=survey&&(['Validado','Enviado ao orçamento'].includes(survey.status))&&(state.data.surveyPoints||[]).some(item=>item.surveyId===survey.id);
+  if(!survey||!opportunity||(!workflowVisitFor(opportunity.id,survey.id).length&&!ready)){toast('Valide o diagrama teórico e registre pontos; a Visita técnica é opcional quando a complexidade permitir.');return false}
   return workflowStartQuoteFromSurvey(id);
 };
+document.addEventListener('submit',event=>{
+  const form=event.target;
+  if(form?.id!=='recordForm'||form.dataset.kind!=='commercialQuoteWithoutVisit')return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const data=Object.fromEntries(new FormData(form)),survey=workflowSurvey(data.surveyId),opportunity=workflowOpportunity(survey?.opportunityId),justification=String(data.justification||'').trim();
+  if(!survey||!opportunity){toast('O diagrama teórico vinculado não foi encontrado.');return}
+  if(!justification){toast('Informe a justificativa para prosseguir sem Visita técnica.');return}
+  logAudit('Prosseguiu sem visita técnica','Comercial',`${opportunity.company} · justificativa: ${justification}`);
+  closeRecordDialog();
+  startQuoteFromSurvey(survey.id);
+},true);
 
 const commercialCompleteViewCanonical=views.commercial;
 views.commercial=()=>{
   const original=state.data.opportunities||[];
   state.data.opportunities=original.map(item=>({...item,stage:ProeliumCommercialWorkflow.canonicalStage(item.stage)}));
-  try{return commercialCompleteViewCanonical()}finally{state.data.opportunities=original}
+  try{return commercialCompleteViewCanonical().replace(/Qualificação(?! de serviços)/g,'Qualificação de serviços').replace(/\bVisita\b(?! técnica)/g,'Visita técnica')}finally{state.data.opportunities=original}
 };
 function normalizeCommercialStageControls(){
   document.querySelectorAll('[name="stage"]').forEach(select=>{
     [...select.options].forEach(option=>{
-      if(option.value==='Novo contato'||option.textContent.trim()==='Novo contato'){
-        option.value='Primeiro contato';option.textContent='Primeiro contato';
-      }
+      const label=option.textContent.trim(),current=option.value,renamed={'Novo contato':'Primeiro contato','Qualificação':'Qualificação de serviços','Visita':'Visita técnica'}[current||label];
+      if(renamed){option.value=renamed;option.textContent=renamed;}
     });
     if(select.value==='Novo contato')select.value='Primeiro contato';
   });

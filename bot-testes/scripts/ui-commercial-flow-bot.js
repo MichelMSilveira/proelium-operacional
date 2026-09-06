@@ -296,11 +296,15 @@ async function run() {
     if (await firstContactCard.locator(`[data-delete-opportunity="${firstContactId}"]`).count() !== 1) throw new Error('Primeiro contato precisa manter a ação Excluir.');
     await page.evaluate(() => localStorage.setItem('proelium-current-actor', 'Ana UI Operações'));
     await qualifyButton.click();
+    await fillField(page, 'interests', 'Automação e rede');
+    await fillField(page, 'needs', 'Conectividade estável e controle de iluminação');
+    await fillField(page, 'initialScope', 'Sala principal e infraestrutura');
+    await selectLabel(page, 'visitRequired', 'Sim');
     await fillField(page, 'signature', 'Ana UI Operações');
     await saveDialog(page);
     await assertData(page, data => {
       const opportunity = data.opportunities?.find(item => item.id === firstContactId);
-      return opportunity?.stage === 'Qualificação' && data.auditLog?.some(item => item.action === 'Registrou interesse' && item.detail?.includes('Primeiro contato'));
+      return opportunity?.stage === 'Qualificação de serviços' && data.auditLog?.some(item => item.action === 'Registrou interesse' && item.detail?.includes('Primeiro contato'));
     }, 'Registrar interesse não qualificou a oportunidade nem registrou auditoria.');
     console.log('[OK] UI — interesse confirmado, transição para Qualificação e auditoria registrados');
 
@@ -312,7 +316,8 @@ async function run() {
       await fillField(page, 'email', `prospect${index}@example.invalid`);
       await selectLabel(page, 'source', index % 3 ? 'Indicação' : 'Site');
       await selectLabel(page, 'owner', 'Ana UI Operações');
-      await selectLabel(page, 'stage', index % 4 === 0 ? 'Qualificação' : 'Primeiro contato');
+      const prospectStage='Primeiro contato';
+      await selectLabel(page, 'stage', prospectStage);
       await fillField(page, 'nextAction', `Confirmar interesse do prospect ${index}`);
       await fillField(page, 'nextDue', new Date(Date.now() + index * 86_400_000).toISOString().slice(0, 10));
       await fillField(page, 'estimatedValue', String(10000 + index * 500));
@@ -357,11 +362,16 @@ async function run() {
     await assertData(page, data => data.surveyPoints?.some(item => item.room === 'Sala principal' && Number(item.quantity) === 4), 'Ponto técnico não foi gravado pelo formulário.');
     console.log('[OK] UI — quantitativo de ambiente criado e persistido');
 
-    await page.locator(`[data-start-technical-visit]`).click();
+    await openView(page, 'commercial');
+    const diagramCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
+    if (await diagramCard.locator('[data-commercial-activity]').count() !== 0) throw new Error('Levantamento técnico não deve exibir Nova atividade.');
+    if (await diagramCard.locator('[data-start-technical-visit]').count() !== 1 || await diagramCard.locator('[data-quote-without-visit]').count() !== 1) throw new Error('O levantamento validado não exibiu as escolhas com e sem Visita técnica.');
+    await diagramCard.locator('[data-start-technical-visit]').click();
     await fillField(page, 'title', 'Visita técnica UI Bot · Casa Aurora');
     await fillField(page, 'assignee', 'Ana UI Operações');
     await fillField(page, 'date', new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10));
     await fillField(page, 'time', '09:00');
+    await fillField(page, 'reason', 'A infraestrutura existente precisa ser conferida no local.');
     await fillField(page, 'note', 'Visita iniciada após o levantamento técnico.');
     await saveDialog(page);
     await assertData(page, data => data.appointments?.some(item => item.type === 'Visita técnica' && item.surveyId === surveyId), 'A visita técnica não foi gravada ou perdeu o vínculo com o levantamento.');

@@ -93,7 +93,7 @@ function scenarioRecords(state) {
   const today = new Date().toISOString().slice(0, 10);
   const product = { id: 'prd-bot-switch', sku: 'BOT-SW-01', name: 'Switch de teste isolado', brand: 'Proelium Teste', model: 'SW-24', category: 'Rede', supplier: 'Fornecedor simulado', mode: 'Venda', unit: 'un', cost: 1200, price: 2000, status: 'Ativo', active: true };
   const service = { id: 'prd-bot-service', sku: 'BOT-SRV-01', name: 'Instalação de teste isolada', brand: 'Proelium', model: 'Serviço', category: 'Serviço', supplier: 'Interno', mode: 'Serviço', unit: 'h', cost: 80, price: 160, status: 'Ativo', active: true };
-  const opportunity = { id: 'opp-bot-1', company: 'Cliente Simulado Bot', contact: 'Contato Teste', phone: '(11) 0000-0000', email: 'bot@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Primeiro contato', nextAction: 'Elaborar proposta', nextDue: today, estimatedValue: 0, lossReason: '' };
+  const opportunity = { id: 'opp-bot-1', company: 'Cliente Simulado Bot', contact: 'Contato Teste', phone: '(11) 0000-0000', email: 'bot@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Primeiro contato', nextAction: 'Elaborar proposta', nextDue: today, estimatedValue: 0, lossReason: '', interests: '', needs: '', initialScope: '', visitRequired: 'A avaliar' };
   const quote = { id: 'orc-bot-1', opportunityId: opportunity.id, clientId: '', title: 'Proposta funcional isolada', value: 0, status: 'Em elaboração', version: 1, createdAt: new Date().toISOString(), validUntil: today };
   const room = { id: 'amb-bot-1', quoteId: quote.id, name: 'Sala de teste', items: [{ productId: product.id, qty: 2, discount: 10 }, { productId: service.id, qty: 8, discount: 0 }] };
   const total = 2 * 2000 * 0.9 + 8 * 160;
@@ -327,7 +327,7 @@ async function runFunctionalTestBot(options = {}) {
       return 'primeiro contato salvo no funil';
     });
 
-    records.opportunity.stage = 'Qualificação';
+    Object.assign(records.opportunity, { stage: 'Qualificação de serviços', interests: 'Rede e automação', needs: 'Conectividade estável e controle de iluminação', initialScope: 'Sala de teste e infraestrutura principal', visitRequired: 'Sim' });
     await save(state);
     state.products.push(records.product, records.service);
     state.packages.push({ id: 'pkg-bot-1', name: 'Pacote isolado', category: 'Rede', description: 'Pacote de teste', active: true, items: [{ productId: records.product.id, qty: 1 }] });
@@ -336,7 +336,7 @@ async function runFunctionalTestBot(options = {}) {
     records.opportunity.stage = 'Levantamento técnico';
     await save(state);
     state.appointments.push({ id: 'apt-bot-1', title: 'Visita técnica isolada', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: records.opportunity.id, surveyId: 'srv-bot-1', date: records.today });
-    records.opportunity.stage = 'Visita';
+    records.opportunity.stage = 'Visita técnica';
     await save(state);
     state.quotes.push(records.quote);
     state.quoteRooms.push(records.room);
@@ -354,6 +354,20 @@ async function runFunctionalTestBot(options = {}) {
       expect(state.surveys[0].opportunityId === records.opportunity.id && state.surveyPoints[0].surveyId === state.surveys[0].id, 'Vínculo do levantamento inconsistente.');
       return 'levantamento e ponto vinculados';
     });
+    await check('Comercial', 'Caminho sem visita técnica', 'Revisar a escolha auditada entre visita técnica e orçamento após o diagrama.', async () => {
+      const noVisitOpportunity = { id: 'opp-no-visit', company: 'Cliente Sem Visita Bot', contact: 'Contato Sem Visita', phone: '(11) 90000-2999', email: 'sem.visita@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Qualificação de serviços', nextAction: 'Prosseguir com orçamento', nextDue: records.today, estimatedValue: 0, lossReason: '', interests: 'Rede', needs: 'Escopo simples', initialScope: 'Sala principal', visitRequired: 'Não' };
+      state.opportunities.push(noVisitOpportunity);
+      await save(state);
+      state.surveys.push({ id: 'srv-no-visit', opportunityId: noVisitOpportunity.id, title: 'Diagrama sem visita', status: 'Validado' });
+      state.surveyPoints.push({ id: 'svp-no-visit', surveyId: 'srv-no-visit', room: 'Sala principal', type: 'Ponto de rede', quantity: 1 });
+      noVisitOpportunity.stage = 'Levantamento técnico';
+      await save(state);
+      state.quotes.push({ id: 'orc-no-visit', opportunityId: noVisitOpportunity.id, clientId: '', title: 'Proposta sem visita', value: 0, status: 'Rascunho' });
+      noVisitOpportunity.stage = 'Orçamento';
+      await save(state);
+      expect(noVisitOpportunity.stage === 'Orçamento' && !state.appointments.some(item => item.opportunityId === noVisitOpportunity.id), 'O caminho sem visita não foi aceito corretamente.');
+      return 'orçamento criado após diagrama validado, sem visita técnica';
+    });
 
     state.clients.push(records.client);
     Object.assign(records.opportunity, { stage: 'Ganho', estimatedValue: records.total });
@@ -368,7 +382,7 @@ async function runFunctionalTestBot(options = {}) {
       return 'venda aprovada e projeto criado';
     });
     await check('Comercial', 'Ciclos completos até o fim do orçamento', 'Revisar a passagem de oportunidade, versões, situação, totais e conversão final.', async () => {
-      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Primeiro contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '' };
+      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Primeiro contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '', interests: 'Rede', needs: 'Cobertura Wi-Fi', initialScope: 'Sala principal', visitRequired: 'Sim' };
       const draftQuote = { id: 'orc-cycle-approved-v1', opportunityId: approvedOpportunity.id, clientId: '', title: 'Proposta Ciclo Aprovado', value: 0, status: 'Rascunho', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
       const draftRooms = [
         { id: 'amb-cycle-approved-1', quoteId: draftQuote.id, name: 'Sala principal', items: [{ productId: records.product.id, qty: 2, discount: 0 }] },
@@ -379,7 +393,7 @@ async function runFunctionalTestBot(options = {}) {
       state.appointments.push({ id: 'visit-cycle-approved', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: approvedOpportunity.id, surveyId: 'srv-cycle-approved' });
       state.quotes.push(draftQuote);
       state.quoteRooms.push(...draftRooms);
-      for (const [from, to, action] of [['Primeiro contato', 'Qualificação', 'Qualificar necessidade'], ['Qualificação', 'Visita', 'Agendar visita técnica'], ['Visita', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
+      for (const [from, to, action] of [['Primeiro contato', 'Qualificação de serviços', 'Qualificar necessidade'], ['Qualificação de serviços', 'Visita técnica', 'Agendar visita técnica'], ['Visita técnica', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
         approvedOpportunity.stage = to;
         approvedOpportunity.nextAction = action;
         approvedOpportunity.advanceAuthorizations = [...(approvedOpportunity.advanceAuthorizations || []), { from, to, actor: 'Equipe Comercial', at: new Date().toISOString() }];

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const workflow = require('../commercial-workflow');
 
 const base = () => ({
-  opportunities: [{ id: 'opp-1', stage: 'Qualificação' }],
+  opportunities: [{ id: 'opp-1', stage: 'Qualificação de serviços', interests: 'Rede', needs: 'Cobertura', initialScope: 'Sala' }],
   surveys: [],
   appointments: [],
   quotes: []
@@ -14,7 +14,7 @@ test('bloqueia levantamento sem oportunidade ou antes da qualificação', () => 
   assert.equal(workflow.validate(current, { ...current, surveys: [{ id: 'survey-1' }] }).ok, false);
   const primeiroContato = { ...current, opportunities: [{ id: 'opp-1', stage: 'Primeiro contato' }] };
   assert.equal(workflow.validate(primeiroContato, { ...primeiroContato, surveys: [{ id: 'survey-1', opportunityId: 'opp-1' }] }).message,
-    'A oportunidade precisa estar em Qualificação antes de iniciar um levantamento técnico.');
+    'A oportunidade precisa estar em Qualificação de serviços antes de iniciar um levantamento técnico.');
 });
 
 test('registra interesse de Primeiro contato para Qualificação e mantém o alias legado', () => {
@@ -22,11 +22,29 @@ test('registra interesse de Primeiro contato para Qualificação e mantém o ali
     opportunities: [{ id: 'opp-1', stage: 'Primeiro contato' }],
     surveys: [], appointments: [], quotes: []
   };
-  const qualified = { ...current, opportunities: [{ id: 'opp-1', stage: 'Qualificação' }] };
+  const qualified = { ...current, opportunities: [{ id: 'opp-1', stage: 'Qualificação', interests: 'Rede', needs: 'Cobertura', initialScope: 'Sala' }] };
   assert.equal(workflow.validate(current, qualified).ok, true);
   const legacy = { ...current, opportunities: [{ id: 'opp-1', stage: 'Novo contato' }] };
-  assert.equal(workflow.validate(legacy, { ...legacy, opportunities: [{ id: 'opp-1', stage: 'Qualificação' }] }).ok, true);
+  assert.equal(workflow.validate(legacy, { ...legacy, opportunities: [{ id: 'opp-1', stage: 'Qualificação', interests: 'Rede', needs: 'Cobertura', initialScope: 'Sala' }] }).ok, true);
   assert.equal(workflow.canonicalStage('Novo contato'), 'Primeiro contato');
+});
+
+test('exige interesses, necessidades e escopo para a Qualificação de serviços', () => {
+  const current = { opportunities: [{ id: 'opp-1', stage: 'Primeiro contato' }], surveys: [], appointments: [], quotes: [] };
+  const incomplete = { ...current, opportunities: [{ id: 'opp-1', stage: 'Qualificação de serviços' }] };
+  assert.equal(workflow.validate(current, incomplete).message, 'A Qualificação de serviços exige interesses, necessidades e escopo inicial.');
+  const qualified = { ...current, opportunities: [{ id: 'opp-1', stage: 'Qualificação de serviços', interests: 'Automação', needs: 'Controle de iluminação', initialScope: 'Sala e cozinha' }] };
+  assert.equal(workflow.validate(current, qualified).ok, true);
+});
+
+test('permite Orçamento após diagrama validado sem visita e exige visita quando escolhida', () => {
+  const qualified = { opportunities: [{ id: 'opp-1', stage: 'Qualificação de serviços', interests: 'Rede', needs: 'Cobertura Wi-Fi', initialScope: 'Casa térrea' }], surveys: [], surveyPoints: [], appointments: [], quotes: [] };
+  const diagram = { ...qualified, opportunities: [{ ...qualified.opportunities[0], stage: 'Levantamento técnico' }], surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Validado' }], surveyPoints: [{ id: 'point-1', surveyId: 'survey-1', room: 'Sala', type: 'Ponto de rede', quantity: 2 }] };
+  const withoutVisit = { ...diagram, opportunities: [{ ...diagram.opportunities[0], stage: 'Orçamento' }], quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
+  assert.equal(workflow.validate(diagram, withoutVisit).ok, true);
+  const invalidVisit = { ...qualified, opportunities: [{ ...qualified.opportunities[0], stage: 'Visita técnica' }], appointments: [{ id: 'visit-1', opportunityId: 'opp-1', type: 'Visita técnica' }] };
+  assert.equal(workflow.validate(qualified, invalidVisit).message, 'A visita técnica deve estar vinculada a uma oportunidade e a um levantamento.');
+  assert.equal(workflow.canonicalStage('Visita'), 'Visita técnica');
 });
 
 test('permite iniciar levantamento qualificado e exige visita antes do orçamento', () => {
@@ -38,7 +56,7 @@ test('permite iniciar levantamento qualificado e exige visita antes do orçament
   };
   assert.equal(workflow.validate(current, withSurvey).ok, true);
   const withoutVisitQuote = { ...withSurvey, opportunities: [{ id: 'opp-1', stage: 'Orçamento' }], quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
-  assert.equal(workflow.validate(withSurvey, withoutVisitQuote).message, 'O orçamento só pode ser criado após uma visita técnica.');
+  assert.equal(workflow.validate(withSurvey, withoutVisitQuote).message, 'O orçamento exige levantamento técnico validado; a Visita técnica é opcional quando a complexidade permitir.');
   const withVisit = {
     ...withSurvey,
     opportunities: [{ id: 'opp-1', stage: 'Visita' }],
@@ -80,7 +98,7 @@ test('reconcilia os sete registros legados e é idempotente', () => {
   assert.equal(first.changes.length, 7);
   assert.deepEqual(first.data.opportunities.slice(0, 7).map(item => item.stage), [
     'Levantamento técnico', 'Levantamento técnico', 'Levantamento técnico', 'Levantamento técnico',
-    'Visita', 'Visita', 'Orçamento'
+    'Visita técnica', 'Visita técnica', 'Orçamento'
   ]);
   assert.equal(first.data.opportunities.find(item => item.id === 'won-1').stage, 'Ganho');
   assert.equal(first.data.opportunities.find(item => item.id === 'lost-1').stage, 'Perdido');
