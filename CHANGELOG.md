@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A abertura do detalhe de orçamento ganhou fallback para sempre exibir resumo, mesmo quando um painel complementar falhar.
 - A área de compras passou a se apresentar como “Compras e materiais”, separada visualmente da lista de obras.
 - Botão “Menu” mantido oculto durante a abertura do aplicativo e liberado após o splash.
 - “Produtos” deixou de aparecer como item visualmente dependente de “Orçamentos” no menu.

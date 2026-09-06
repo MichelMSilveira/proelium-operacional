@@ -2457,7 +2457,7 @@ const scopeQuoteDetailView=views.quoteDetail;
 views.quoteDetail=()=>{
   const quote=(state.data.quotes||[]).find(item=>item.id===state.selectedQuote);
   const panel=quote?scopeQuantityPanel(quoteScopeQuantities(quote.id),'Visão geral do projeto','Quantitativos do projeto inteiro. Depois, os mesmos itens são alocados aos ambientes e avaliados financeiramente.'):'';
-  return scopeQuoteDetailView().replace('<div class="quote-analysis card">',panel+'<div class="quote-analysis card">');
+  try{return scopeQuoteDetailView().replace('<div class="quote-analysis card">',panel+'<div class="quote-analysis card">')}catch(error){console.error('Detalhe do orçamento indisponível:',error);return quote?`<button class="back-link" data-view="quotes">← Voltar para orçamentos</button><div class="section-heading"><div><h2>${quote.title}</h2><p>Detalhes básicos do orçamento.</p></div></div><section class="card"><div class="card-head"><h3>Resumo</h3></div><p><strong>Situação:</strong> ${quoteStatus(quote)}</p><p><strong>Valor:</strong> ${money(quoteTotals(quote.id).price||quote.value||0)}</p><p><strong>Ambientes:</strong> ${(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id).length}</p></section>`:'<div class="empty">Orçamento não encontrado.</div>'}
 };
 const scopeSurveyView=views.survey;
 views.survey=()=>{
