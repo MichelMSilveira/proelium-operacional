@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A área de compras passou a se apresentar como “Compras e materiais”, separada visualmente da lista de obras.
 - Botão “Menu” mantido oculto durante a abertura do aplicativo e liberado após o splash.
 - “Produtos” deixou de aparecer como item visualmente dependente de “Orçamentos” no menu.
 - “Minhas rotinas” foi movido para o grupo “Início” do menu principal.
