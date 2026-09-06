@@ -55,7 +55,7 @@ jobs:
         run: |
           runtime_files=(
             server.js app.js index.html styles.css quotes.css bi.css crm.css
-            danger.css sw.js manifest.webmanifest icon.svg storage.js
+            danger.css sw.js commercial-workflow.js manifest.webmanifest icon.svg storage.js
             package.json package-lock.json
           )
           rsync -az "${runtime_files[@]}" \
