@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- “Minhas rotinas” foi movido para o grupo “Início” do menu principal.
 - Removidos os setores de BI Intelligence e BI Desempenho da navegação e das permissões de acesso.
 - Perfil Comercial empresarial agora expõe as permissões corrigidas também em `/api/auth/me`, sem exigir alteração manual do cadastro existente.
 - Usuários empresariais com cargo Comercial passam a receber também Clientes, Comercial, Orçamentos, Produtos e Levantamento, inclusive em convites antigos.
