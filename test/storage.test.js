@@ -19,6 +19,10 @@ test('JSON storage preserves revision conflicts and user records', async () => {
     const conflict = await storage.writeSharedData({ clients: [{ id: 'late' }] }, 0);
     assert.equal(conflict.conflict, true);
     assert.equal(conflict.current.revision, 1);
+    const retry = await storage.writeSharedData({ clients: [{ id: 'late' }], surveyRooms: [{ id: 'room-1', technicalSurveyId: 'survey-1', opportunityId: 'opp-1', name: 'Sala de estar' }] }, conflict.current.revision);
+    assert.equal(retry.conflict, false);
+    assert.equal(retry.value.revision, 2);
+    assert.equal((await storage.readSharedData()).data.surveyRooms[0].opportunityId, 'opp-1');
     await storage.writeUsers([{ username: 'admin', name: 'Admin', role: 'admin', active: true, salt: 'salt', hash: 'hash' }]);
     assert.equal((await storage.readUsers())[0].username, 'admin');
   } finally {

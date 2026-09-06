@@ -31,7 +31,7 @@
       🔓
     </button>
     <div id="appVersionStatus" class="app-version-status">
-      App v247 · verificando atualização
+      App v248 · verificando atualização
     </div>
     <div id="splash" class="splash-screen" aria-label="Proelium Operacional">
       <img
@@ -414,8 +414,8 @@
         </button>
       </div>
     </section>
-    <script src="commercial-workflow.js?release=20260906-commercial-v6"></script>
-    <script src="app.js?release=20260906-commercial-v6"></script>
+    <script src="commercial-workflow.js?release=20260906-commercial-v7"></script>
+    <script src="app.js?release=20260906-commercial-v7"></script>
     <script>
       // Proteção: mesmo que um módulo opcional falhe, a abertura não bloqueia o acesso ao app.
       setTimeout(
@@ -447,7 +447,7 @@
             window.__showAppUpdate?.(event.data.registration);
         });
         navigator.serviceWorker
-           .register("./sw.js?release=20260906-commercial-v6")
+           .register("./sw.js?release=20260906-commercial-v7")
           .then((registration) => {
             const activateWaiting = async (currentRegistration) => {
               if (!currentRegistration.waiting) return;

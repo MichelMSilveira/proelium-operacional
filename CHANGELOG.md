@@ -11,6 +11,7 @@
 - Sincronização compartilhada passou a enfileirar alterações concorrentes, evitando bloqueio falso durante gravações; indicador de versão e cache web atualizados para `v354`.
 - O botão da Qualificação agora abre ou retoma o Levantamento técnico vinculado sem duplicar registros; a validação e a auditoria preservam o `opportunityId` até o avanço direto para Orçamento.
 - O fluxo único de Oportunidades agora filtra levantamentos e orçamentos órfãos nas abas próprias, abre os registros vinculados pelo mesmo `opportunityId`, bloqueia novos órfãos e mantém legados apenas como dados preservados; cache web atualizado para `v356`.
+- Ambientes do levantamento passam a persistir com `technicalSurveyId` e `opportunityId`; gravações consecutivas aguardam a fila compartilhada, reconexões não descartam alterações e conflitos 409 permitem nova tentativa sem duplicar ambientes; cache web atualizado para `v357`.
 - Documentação dos módulos de regras da Bancada de Trabalho do Hell consolidada, com responsabilidades claras para Codex, Node.js, bots, Playwright, GitHub Actions e Ollama.
 - O avanço de oportunidades usa o botão “Avançar processo” e exige conferência e autorização antes de mover para a próxima etapa.
 - O funil comercial passou a permitir alterar diretamente a etapa de oportunidades existentes.

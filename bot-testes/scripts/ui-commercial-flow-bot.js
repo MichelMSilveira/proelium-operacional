@@ -373,6 +373,38 @@ async function run() {
     const linkedSurveyCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
     if (await linkedSurveyCard.locator(`[data-start-survey-opportunity="${opportunityId}"]`).count() !== 0 || await linkedSurveyCard.locator(`[data-open-commercial-survey="${surveyId}"]`).count() !== 1) throw new Error('Oportunidade com levantamento existente não apontou para o registro correto.');
     await page.locator(`[data-open-commercial-survey="${surveyId}"]`).click();
+    await page.locator(`[data-add-survey-room="${surveyId}"]`).click();
+    await fillField(page, 'room', 'Sala de estar');
+    await saveDialog(page);
+    await assertData(page, data => data.surveyRooms?.some(item => item.surveyId === surveyId && item.opportunityId === opportunityId && item.name === 'Sala de estar'), 'O primeiro ambiente não foi persistido com os vínculos do levantamento.');
+    await page.locator(`[data-add-survey-room="${surveyId}"]`).click();
+    await fillField(page, 'room', 'Suíte 1-4');
+    await saveDialog(page);
+    await assertData(page, data => data.surveyRooms?.some(item => item.surveyId === surveyId && item.opportunityId === opportunityId && item.name === 'Suíte 1-4'), 'O segundo ambiente não foi persistido após gravações consecutivas.');
+    await page.evaluate(() => window.refreshSharedData(true));
+    await assertData(page, data => data.surveyRooms?.filter(item => item.surveyId === surveyId).map(item => item.name).sort().join('|') === 'Sala de estar|Suíte 1-4', 'Os ambientes não foram recarregados do servidor após a sincronização.');
+    console.log('[OK] UI — dois ambientes consecutivos persistidos, vinculados e recarregados do servidor');
+    await page.evaluate(() => {
+      window.__realProeliumFetch = window.fetch;
+      window.__forceProeliumConflict = true;
+      window.fetch = async (input, init) => {
+        if (window.__forceProeliumConflict && init?.method === 'PUT') {
+          window.__forceProeliumConflict = false;
+          return new Response(JSON.stringify({ error: 'Conflito simulado pelo teste.' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+        }
+        return window.__realProeliumFetch(input, init);
+      };
+    });
+    await page.locator(`[data-add-survey-room="${surveyId}"]`).click();
+    await fillField(page, 'room', 'Escritório');
+    await saveDialog(page);
+    await page.waitForFunction(() => document.querySelector('#toastText')?.textContent.includes('Outro aparelho alterou os dados'), null, { timeout: 5_000 });
+    await page.evaluate(() => { window.fetch = window.__realProeliumFetch; });
+    await page.locator(`[data-add-survey-room="${surveyId}"]`).click();
+    await fillField(page, 'room', 'Escritório');
+    await saveDialog(page);
+    await assertData(page, data => data.surveyRooms?.some(item => item.surveyId === surveyId && item.opportunityId === opportunityId && item.name === 'Escritório'), 'O retry após conflito não persistiu o ambiente.');
+    console.log('[OK] UI — conflito 409 recuperado e nova tentativa persistida sem duplicidade');
     await page.locator('[data-add-survey-point]').click();
     await fillField(page, 'room', 'Sala principal');
     await selectLabel(page, 'type', 'Ponto de rede Cat6');
