@@ -283,6 +283,10 @@ async function refreshSharedData(force=false){
 async function connectSharedData(){
   if(location.protocol==='file:')return;
   if(!await authenticate())return;
+  // O menu depende do usuário autenticado. Renderize-o antes da leitura remota
+  // para que uma nova aba não fique presa na visão inicial se a sincronização
+  // demorar ou falhar temporariamente.
+  render();
   // A autenticação libera a entrada assim que o shell final já foi montado.
   // A sincronização de dados é posterior e não pode deixar o usuário preso na
   // tela de autenticação nem expor um menu intermediário.

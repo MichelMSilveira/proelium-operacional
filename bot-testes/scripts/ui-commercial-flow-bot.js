@@ -117,6 +117,17 @@ async function openView(page, view) {
   await page.waitForFunction(expected => document.querySelector('#pageTitle')?.textContent.toLocaleLowerCase().includes(expected), view === 'commercial' ? 'oportunidades' : view, { timeout: 5_000 }).catch(() => {});
 }
 
+async function assertCommercialNavigationReady(page, label = 'sessão autenticada') {
+  await page.waitForFunction(() => {
+    const button = document.querySelector('#navigation [data-view="commercial"]');
+    return button && button.textContent.toLocaleLowerCase().includes('oportunidades');
+  }, null, { timeout: 10_000 });
+  if (await page.locator('#navigation [data-view="commercial"]').count() !== 1) {
+    throw new Error(`A navegação Comercial não ficou determinística na ${label}.`);
+  }
+  await openView(page, 'commercial');
+}
+
 async function run() {
   const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'proelium-ui-commercial-bot-'));
   const users = [{
@@ -178,7 +189,8 @@ async function run() {
   child.stderr.on('data', chunk => { serverError += chunk.toString(); });
   const visibleRun = process.env.PROELIUM_UI_VISIBLE === 'true';
   const browser = await chromium.launch({ headless: !visibleRun, slowMo: visibleRun ? 180 : 0 });
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('requestfailed', request => errors.push(`request ${request.url()} — ${request.failure()?.errorText || 'falhou'}`));
@@ -203,6 +215,17 @@ async function run() {
       const body = (await page.locator('body').innerText().catch(() => '')).slice(0, 600).replace(/\s+/g, ' ');
       throw new Error(`${error.message} · auth-pending=${await page.locator('body').evaluate(node => node.classList.contains('auth-pending')).catch(() => 'desconhecido')} · ${body} · page=${errors.join(' | ') || 'sem erro de página'} · server=${serverError.slice(-500) || 'sem erro do servidor'}`);
     });
+    const secondTab = await page.context().newPage();
+    try {
+      await secondTab.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10_000 });
+      await secondTab.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10_000 });
+      await assertCommercialNavigationReady(secondTab, 'nova aba');
+    } catch (error) {
+      const body = (await secondTab.locator('body').innerText().catch(() => '')).slice(0, 500).replace(/\s+/g, ' ');
+      throw new Error(`Nova aba não concluiu a navegação autenticada: ${error.message} · ${body}`);
+    }
+    await secondTab.close();
+    console.log('[OK] Boot — nova aba autenticada abriu Oportunidades de forma determinística');
     const firstVisibleMenu = await page.locator('#navigation').innerText();
     for (const group of ['Início', 'Projetos 360°', 'Pós-venda']) {
       if (!firstVisibleMenu.toLocaleLowerCase().includes(group.toLocaleLowerCase())) {
@@ -215,8 +238,7 @@ async function run() {
     // criada pelo teste. Todas as mutações comerciais seguintes acontecem por
     // cliques, preenchimento e submits reais da interface.
     await page.evaluate(() => window.refreshSharedData(true));
-    await page.locator('[data-view="commercial"]').first().waitFor({ state: 'visible', timeout: 10_000 });
-    await openView(page, 'commercial');
+    await assertCommercialNavigationReady(page);
     if (await page.locator('[data-commercial-demo]').count() !== 0) {
       const title = await page.locator('#pageTitle').innerText().catch(() => '');
       const body = (await page.locator('body').innerText().catch(() => '')).slice(0, 500).replace(/\s+/g, ' ');
