@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- O avanço de oportunidades usa o botão “Avançar processo” e exige conferência e autorização antes de mover para a próxima etapa.
 - O funil comercial passou a permitir alterar diretamente a etapa de oportunidades existentes.
 - A abertura do detalhe de orçamento ganhou fallback para sempre exibir resumo, mesmo quando um painel complementar falhar.
 - A área de compras passou a se apresentar como “Compras e materiais”, separada visualmente da lista de obras.
