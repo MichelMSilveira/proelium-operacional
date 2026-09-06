@@ -67,6 +67,15 @@ test('não duplica levantamento ao reutilizar a oportunidade', () => {
   assert.equal(workflow.validate(current, duplicate).message, 'Esta oportunidade já possui um levantamento técnico; abra o registro existente para continuar.');
 });
 
+test('bloqueia orçamento órfão ou sem levantamento concluído', () => {
+  const current = base();
+  assert.equal(workflow.validate(current, { ...current, quotes: [{ id: 'quote-1' }] }).message,
+    'O orçamento deve ser criado a partir de uma oportunidade.');
+  const linkedWithoutSurvey = { ...current, quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
+  assert.equal(workflow.validate(current, linkedWithoutSurvey).message,
+    'O orçamento exige levantamento técnico validado com ao menos um ponto técnico.');
+});
+
 test('não invalida registros legados inalterados ao salvar outra área', () => {
   const current = { opportunities: [], surveys: [{ id: 'legacy-survey', title: 'Legado' }], appointments: [], quotes: [] };
   const next = { ...current, clients: [{ id: 'client-1', name: 'Novo cliente' }] };

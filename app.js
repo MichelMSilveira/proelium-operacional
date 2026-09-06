@@ -767,7 +767,7 @@ render=()=>{commercialLegacyReconcileRender();injectCommercialLegacyReconcile()}
 render();
 const updateSharedStatusWithVersion=updateSharedStatus;
 updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v206 · sincronizado ${sync} · servidor atualizado ${server}`};
-updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v246 · sincronizado ${sync} · servidor atualizado ${server}`};
+updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v247 · sincronizado ${sync} · servidor atualizado ${server}`};
 updateSharedStatus();
 const updatePresencePanelWithDevices=updatePresencePanel;
 updatePresencePanel=users=>{presenceUsers=Array.isArray(users)?users:[];const uniqueUsers=[...new Map(presenceUsers.filter(user=>user?.username).map(user=>[user.username,user])).values()],list=$('#presenceList'),countBadge=document.querySelector('.presence-panel #presenceCount');if(!list)return;list.innerHTML=uniqueUsers.map(user=>{const devices=Array.isArray(user.devices)&&user.devices.length?user.devices:[user.device||'Navegador'],sessionCount=Math.max(1,Number(user.sessions||1)),deviceLabel=devices.join(' + ');return `<span class="presence-person ${user.available===false?'presence-person-off':''}"><i></i><span>${escapeUserText(user.name||user.username)}<small class="presence-device">${escapeUserText(deviceLabel)}${sessionCount>1?` · ${sessionCount} acessos`:''}</small></span>${user.username===authenticatedUser?.username?'<small>você</small>':user.available===false?'<small>ocupado</small>':''}</span>`}).join('')||'<small>Nenhum participante online.</small>';if(countBadge)countBadge.textContent=String(uniqueUsers.length);const me=uniqueUsers.find(user=>user.username===authenticatedUser?.username),availability=$('#availabilityButton');if(availability){availability.textContent=me?.available===false?'Indisponível para auxiliar':'Disponível para auxiliar';availability.classList.toggle('presence-off',me?.available===false)}};
@@ -1472,7 +1472,7 @@ const commercialSourceDetailSave=saveRecord;saveRecord=(kind,data,editId='')=>{c
 const commercialSourceDetailEdit=saveEditedRecord;saveEditedRecord=(kind,data,id)=>{const result=commercialSourceDetailEdit(kind,data,id);if(kind==='opportunity'&&data.sourceDetail!==undefined){const opportunity=state.data.opportunities.find(item=>item.id===id);if(opportunity){opportunity.sourceDetail=data.sourceDetail.trim();persist();render()}}return result};
 
 // Acesso unitário a cada orçamento, sem depender da página Comercial.
-function quotes(){const items=state.data.quotes||[],rows=items.map(quote=>{const rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id),totals=quoteTotals(quote.id);return `<tr class="clickable-row" data-quote="${quote.id}"><td><div class="entity">${quote.title}</div><div class="subtext">${quote.id} · versão ${quote.version||1}</div></td><td>${quotePartyName(quote)}</td><td>${rooms.length}</td><td>${money(totals.price||quote.value||0)}</td><td>${badge(quoteStatus(quote))}</td><td>→</td></tr>`});return heading('Orçamentos','Acesse, acompanhe e revise cada proposta comercial de forma individual.')+`<div class="module-toolbar"><button class="button primary" data-add="quote">+ Novo orçamento</button><span class="subtext">${items.length} orçamento(s) registrado(s)</span></div>`+table(['Orçamento','Cliente / oportunidade','Ambientes','Total líquido','Situação',''],rows)}
+function quotes(){const items=state.data.quotes||[],rows=items.map(quote=>{const rooms=(state.data.quoteRooms||[]).filter(room=>room.quoteId===quote.id),totals=quoteTotals(quote.id);return `<tr class="clickable-row" data-quote="${quote.id}"><td><div class="entity">${quote.title}</div><div class="subtext">${quote.id} · versão ${quote.version||1}</div></td><td>${quotePartyName(quote)}</td><td>${rooms.length}</td><td>${money(totals.price||quote.value||0)}</td><td>${badge(quoteStatus(quote))}</td><td>→</td></tr>`});return heading('Orçamentos','Acesse, acompanhe e revise cada proposta comercial de forma individual.')+`<div class="module-toolbar"><button class="button primary" data-add="quote">+ Novo orçamento</button><span class="subtext">${items.length} orçamento(s) vinculado(s) a oportunidades</span></div>`+(items.length?table(['Orçamento','Cliente / oportunidade','Ambientes','Total líquido','Situação',''],rows):'<div class="empty">Nenhum orçamento vinculado a uma oportunidade com levantamento técnico concluído.</div>')}
 views.quotes=quotes;validViews.add('quotes');if(!navItems.some(item=>item[0]==='quotes')){menuFlowGroup.quotes='Comercial';navItems.push(['quotes','▤','Orçamentos']);navItems.sort((left,right)=>menuFlowOrder.indexOf(left[0])-menuFlowOrder.indexOf(right[0]))}
 const directQuoteDetailView=views.quoteDetail;views.quoteDetail=()=>directQuoteDetailView().replace('data-view="commercial">← Voltar para orçamentos','data-view="quotes">← Voltar para orçamentos');
 
@@ -3976,6 +3976,32 @@ startQuoteFromSurvey=id=>{
   const ready=survey&&(['Validado','Enviado ao orçamento'].includes(survey.status))&&(state.data.surveyPoints||[]).some(item=>item.surveyId===survey.id);
   if(!survey||!opportunity||!ready){toast('Valide o diagrama teórico e registre pontos antes de criar o orçamento.');return false}
   return workflowStartQuoteFromSurvey(id);
+};
+
+// As abas intermediárias exibem somente registros pertencentes ao fluxo de Oportunidades.
+// Legados órfãos permanecem no estado sincronizado, mas não podem ser reabertos pelo fluxo novo.
+const linkedSurveyView=views.survey;
+views.survey=()=>{
+  const original=state.data.surveys||[],linked=original.filter(item=>workflowOpportunity(item.opportunityId));
+  if(state.selectedSurvey&&!linked.some(item=>String(item.id)===String(state.selectedSurvey)))state.selectedSurvey=null;
+  state.data.surveys=linked;
+  try{return linkedSurveyView().replace('Crie o primeiro diagrama teórico antes de montar o orçamento.','Nenhum levantamento técnico vinculado a uma oportunidade. Qualifique uma oportunidade para iniciar o fluxo.')}
+  finally{state.data.surveys=original}
+};
+const linkedQuotesView=views.quotes;
+views.quotes=()=>{
+  const original=state.data.quotes||[];
+  state.data.quotes=original.filter(item=>workflowOpportunity(item.opportunityId));
+  try{return linkedQuotesView()}
+  finally{state.data.quotes=original}
+};
+const linkedQuoteDetailView=views.quoteDetail;
+views.quoteDetail=()=>{
+  const quote=(state.data.quotes||[]).find(item=>String(item.id)===String(state.selectedQuote));
+  if(!quote||!workflowOpportunity(quote.opportunityId)){
+    state.selectedQuote=null;state.view='quotes';return linkedQuotesView();
+  }
+  return linkedQuoteDetailView();
 };
 
 const commercialCompleteViewCanonical=views.commercial;

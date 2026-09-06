@@ -251,6 +251,26 @@ async function run() {
       throw new Error(`registros iniciais: ${keys.map(key => `${key}=${data[key]?.length || 0}`).join(', ')}`);
     }, 'A empresa temporária já possuía registros comerciais antes do teste.');
     console.log('[OK] UI — sessão isolada autenticada sem carga prévia de dados comerciais');
+    // Fixture legada deliberadamente órfã: a UI deve preservar o registro
+    // sincronizado, mas excluí-lo das abas do fluxo novo.
+    const isolatedCompanyPath = path.join(temporaryDirectory, 'company-data', `${COMPANY_ID}.json`);
+    const legacyFixture = JSON.parse(fs.readFileSync(isolatedCompanyPath, 'utf8'));
+    legacyFixture.data.surveys.push({ id: 'legacy-orphan-survey', title: 'Levantamento órfão legado', status: 'Em levantamento' });
+    legacyFixture.data.quotes.push({ id: 'legacy-orphan-quote', title: 'Orçamento órfão legado', status: 'Em elaboração' });
+    legacyFixture.revision = Number(legacyFixture.revision || 0) + 1;
+    legacyFixture.updatedAt = new Date().toISOString();
+    fs.writeFileSync(isolatedCompanyPath, JSON.stringify(legacyFixture, null, 2));
+    await page.evaluate(() => window.refreshSharedData(true));
+    await openView(page, 'survey');
+    if (await page.locator('[data-open-survey="legacy-orphan-survey"]').count() !== 0 || !(await page.locator('body').innerText()).includes('Nenhum levantamento técnico vinculado')) {
+      throw new Error('Levantamento órfão legado apareceu na aba de Levantamento técnico.');
+    }
+    await openView(page, 'quotes');
+    if (await page.locator('[data-quote="legacy-orphan-quote"]').count() !== 0 || !(await page.locator('body').innerText()).includes('Nenhum orçamento vinculado')) {
+      throw new Error('Orçamento órfão legado apareceu na aba de Orçamentos.');
+    }
+    console.log('[OK] UI — registros órfãos legados preservados no estado e excluídos das abas do fluxo');
+    await openView(page, 'commercial');
     if (await page.locator('[data-commercial-reconcile]').count() !== 1) throw new Error('A administração da empresa não recebeu a ação de reconciliação de etapas legadas.');
     await page.locator('[data-commercial-reconcile]').click();
     await page.waitForFunction(() => document.querySelector('[data-commercial-reconcile-status]')?.textContent.includes('Nenhuma etapa'), null, { timeout: 5_000 });
@@ -349,7 +369,7 @@ async function run() {
     await assertData(page, data => data.surveys?.some(item => item.title === 'Levantamento UI Bot · Casa Aurora'), 'Levantamento não foi gravado pelo formulário.');
     console.log('[OK] UI — levantamento técnico criado e validado');
 
-    const surveyId = (await assertData(page, data => data.surveys?.length === 1, 'Mais de um levantamento apareceu sem ter sido criado pela interface.')).surveys[0].id;
+    const surveyId = (await assertData(page, data => data.surveys?.filter(item => item.opportunityId === opportunityId).length === 1, 'O levantamento vinculado não apareceu sem duplicação.')).surveys.find(item => item.opportunityId === opportunityId).id;
     const linkedSurveyCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
     if (await linkedSurveyCard.locator(`[data-start-survey-opportunity="${opportunityId}"]`).count() !== 0 || await linkedSurveyCard.locator(`[data-open-commercial-survey="${surveyId}"]`).count() !== 1) throw new Error('Oportunidade com levantamento existente não apontou para o registro correto.');
     await page.locator(`[data-open-commercial-survey="${surveyId}"]`).click();
