@@ -672,7 +672,7 @@ document.addEventListener('submit',event=>{const form=event.target;if(form?.id!=
 const authFormObserver=new MutationObserver(()=>{const form=$('#authForm');if(form?.dataset.googleOnboarding==='true')form.querySelector('.auth-submit')?.removeAttribute('hidden')});authFormObserver.observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-google-onboarding']});
 document.addEventListener('click',event=>{const asset=event.target.closest('[data-market-asset]'),close=event.target.closest('[data-market-close]');if(asset){state.biMarketAsset=asset.dataset.marketAsset;render()}if(close){state.biMarketAsset=null;render()}});
 const splash=$('#splash');let splashTimer;
-function hideSplash(delay=2300){clearTimeout(splashTimer);splashTimer=setTimeout(()=>splash?.classList.add('hide'),delay)}
+function hideSplash(delay=2300){clearTimeout(splashTimer);splashTimer=setTimeout(()=>{splash?.classList.add('hide');document.body.classList.remove('splash-loading')},delay)}
 if(splash)hideSplash();
 hideSplash();
 // Bloco 3 — catálogo comercial e pacotes reutilizáveis.

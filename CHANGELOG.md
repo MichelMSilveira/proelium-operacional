@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Botão “Menu” mantido oculto durante a abertura do aplicativo e liberado após o splash.
 - “Produtos” deixou de aparecer como item visualmente dependente de “Orçamentos” no menu.
 - “Minhas rotinas” foi movido para o grupo “Início” do menu principal.
 - Removidos os setores de BI Intelligence e BI Desempenho da navegação e das permissões de acesso.
