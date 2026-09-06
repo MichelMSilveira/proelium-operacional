@@ -93,7 +93,7 @@ function scenarioRecords(state) {
   const today = new Date().toISOString().slice(0, 10);
   const product = { id: 'prd-bot-switch', sku: 'BOT-SW-01', name: 'Switch de teste isolado', brand: 'Proelium Teste', model: 'SW-24', category: 'Rede', supplier: 'Fornecedor simulado', mode: 'Venda', unit: 'un', cost: 1200, price: 2000, status: 'Ativo', active: true };
   const service = { id: 'prd-bot-service', sku: 'BOT-SRV-01', name: 'Instalação de teste isolada', brand: 'Proelium', model: 'Serviço', category: 'Serviço', supplier: 'Interno', mode: 'Serviço', unit: 'h', cost: 80, price: 160, status: 'Ativo', active: true };
-  const opportunity = { id: 'opp-bot-1', company: 'Cliente Simulado Bot', contact: 'Contato Teste', phone: '(11) 0000-0000', email: 'bot@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Primeiro contato', nextAction: 'Elaborar proposta', nextDue: today, estimatedValue: 0, lossReason: '', interests: '', needs: '', initialScope: '', visitRequired: 'A avaliar' };
+  const opportunity = { id: 'opp-bot-1', company: 'Cliente Simulado Bot', contact: 'Contato Teste', phone: '(11) 0000-0000', email: 'bot@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Primeiro contato', nextAction: 'Elaborar proposta', nextDue: today, estimatedValue: 0, lossReason: '', interests: '', needs: '', initialScope: '' };
   const quote = { id: 'orc-bot-1', opportunityId: opportunity.id, clientId: '', title: 'Proposta funcional isolada', value: 0, status: 'Em elaboração', version: 1, createdAt: new Date().toISOString(), validUntil: today };
   const room = { id: 'amb-bot-1', quoteId: quote.id, name: 'Sala de teste', items: [{ productId: product.id, qty: 2, discount: 10 }, { productId: service.id, qty: 8, discount: 0 }] };
   const total = 2 * 2000 * 0.9 + 8 * 160;
@@ -241,7 +241,7 @@ async function runFunctionalTestBot(options = {}) {
        const secondInitialPayload=parseJson(secondInitialData, '/api/data empresa nova');
        const initialState=secondInitialPayload.data||{};
        expect(secondInitialData.status===200 && [initialState.clients,initialState.projects,initialState.quotes,initialState.tasks,initialState.collaborators,initialState.evaluations].every(collection=>!Array.isArray(collection)||collection.length===0) && !String(secondInitialData.text).includes('cli-1') && !String(secondInitialData.text).includes('prj-1'), 'Empresa nova recebeu registros demonstrativos antes da primeira gravação.');
-       const firstState={companyMarker:'empresa-um',clients:[],opportunities:[{id:'opp-projeto-1',stage:'Orçamento'}],surveys:[{id:'survey-projeto-1',opportunityId:'opp-projeto-1',status:'Validado'}],appointments:[{id:'visit-projeto-1',type:'Visita técnica',status:'Iniciada',visit:true,opportunityId:'opp-projeto-1',surveyId:'survey-projeto-1'}],quotes:[{id:'orc-projeto-1',opportunityId:'opp-projeto-1',status:'Aprovado',title:'Orçamento convertido em projeto'}],quoteRooms:[{id:'sala-projeto-1',quoteId:'orc-projeto-1',items:[]}],projects:[{id:'prj-convertido-1',quoteId:'orc-projeto-1',name:'Projeto convertido visível à operação',status:'Em execução'}]}, secondState={companyMarker:'empresa-dois',clients:[]};
+       const firstState={companyMarker:'empresa-um',clients:[],opportunities:[{id:'opp-projeto-1',stage:'Orçamento'}],surveys:[{id:'survey-projeto-1',opportunityId:'opp-projeto-1',status:'Validado'}],surveyPoints:[{id:'point-projeto-1',surveyId:'survey-projeto-1',room:'Sala',type:'Ponto de rede',quantity:1}],appointments:[{id:'visit-projeto-1',type:'Visita técnica',status:'Iniciada',visit:true,opportunityId:'opp-projeto-1',surveyId:'survey-projeto-1'}],quotes:[{id:'orc-projeto-1',opportunityId:'opp-projeto-1',status:'Aprovado',title:'Orçamento convertido em projeto'}],quoteRooms:[{id:'sala-projeto-1',quoteId:'orc-projeto-1',items:[]}],projects:[{id:'prj-convertido-1',quoteId:'orc-projeto-1',name:'Projeto convertido visível à operação',status:'Em execução'}]}, secondState={companyMarker:'empresa-dois',clients:[]};
       const foreignInvite=await request(baseUrl, '/api/company/invites', { method:'POST', headers:{Cookie:secondCookie}, body:{email:'outro@example.invalid',role:'leitura'} });
       const foreignInvitePayload=parseJson(foreignInvite, '/api/company/invites empresa dois');
       const foreignDelete=await request(baseUrl, `/api/company/invites?id=${encodeURIComponent(foreignInvitePayload.invite.id)}`, { method:'DELETE', headers:{Cookie:googleCookie} });
@@ -327,16 +327,13 @@ async function runFunctionalTestBot(options = {}) {
       return 'primeiro contato salvo no funil';
     });
 
-    Object.assign(records.opportunity, { stage: 'Qualificação de serviços', interests: 'Rede e automação', needs: 'Conectividade estável e controle de iluminação', initialScope: 'Sala de teste e infraestrutura principal', visitRequired: 'Sim' });
+    Object.assign(records.opportunity, { stage: 'Qualificação de serviços', interests: 'Rede e automação', needs: 'Conectividade estável e controle de iluminação', initialScope: 'Sala de teste e infraestrutura principal' });
     await save(state);
     state.products.push(records.product, records.service);
     state.packages.push({ id: 'pkg-bot-1', name: 'Pacote isolado', category: 'Rede', description: 'Pacote de teste', active: true, items: [{ productId: records.product.id, qty: 1 }] });
-    state.surveys.push({ id: 'srv-bot-1', opportunityId: records.opportunity.id, title: 'Levantamento isolado', site: 'Sala de teste', source: 'Visita técnica', status: 'Validado', notes: 'Sem dados reais.' });
+    state.surveys.push({ id: 'srv-bot-1', opportunityId: records.opportunity.id, title: 'Levantamento isolado', site: 'Sala de teste', source: 'Preenchimento manual', status: 'Validado', notes: 'Sem dados reais.' });
     state.surveyPoints.push({ id: 'svp-bot-1', surveyId: 'srv-bot-1', room: records.room.name, type: 'Ponto de rede', quantity: 2, status: 'Validado', notes: 'Teste' });
     records.opportunity.stage = 'Levantamento técnico';
-    await save(state);
-    state.appointments.push({ id: 'apt-bot-1', title: 'Visita técnica isolada', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: records.opportunity.id, surveyId: 'srv-bot-1', date: records.today });
-    records.opportunity.stage = 'Visita técnica';
     await save(state);
     state.quotes.push(records.quote);
     state.quoteRooms.push(records.room);
@@ -354,8 +351,8 @@ async function runFunctionalTestBot(options = {}) {
       expect(state.surveys[0].opportunityId === records.opportunity.id && state.surveyPoints[0].surveyId === state.surveys[0].id, 'Vínculo do levantamento inconsistente.');
       return 'levantamento e ponto vinculados';
     });
-    await check('Comercial', 'Caminho sem visita técnica', 'Revisar a escolha auditada entre visita técnica e orçamento após o diagrama.', async () => {
-      const noVisitOpportunity = { id: 'opp-no-visit', company: 'Cliente Sem Visita Bot', contact: 'Contato Sem Visita', phone: '(11) 90000-2999', email: 'sem.visita@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Qualificação de serviços', nextAction: 'Prosseguir com orçamento', nextDue: records.today, estimatedValue: 0, lossReason: '', interests: 'Rede', needs: 'Escopo simples', initialScope: 'Sala principal', visitRequired: 'Não' };
+    await check('Comercial', 'Caminho direto para orçamento', 'Revisar a passagem direta do levantamento técnico concluído para o orçamento.', async () => {
+      const noVisitOpportunity = { id: 'opp-direct-quote', company: 'Cliente Caminho Direto Bot', contact: 'Contato Caminho Direto', phone: '(11) 90000-2999', email: 'caminho.direto@example.invalid', source: 'Bot isolado', owner: 'Equipe de teste', stage: 'Qualificação de serviços', nextAction: 'Prosseguir com orçamento', nextDue: records.today, estimatedValue: 0, lossReason: '', interests: 'Rede', needs: 'Escopo simples', initialScope: 'Sala principal' };
       state.opportunities.push(noVisitOpportunity);
       await save(state);
       state.surveys.push({ id: 'srv-no-visit', opportunityId: noVisitOpportunity.id, title: 'Diagrama sem visita', status: 'Validado' });
@@ -366,7 +363,7 @@ async function runFunctionalTestBot(options = {}) {
       noVisitOpportunity.stage = 'Orçamento';
       await save(state);
       expect(noVisitOpportunity.stage === 'Orçamento' && !state.appointments.some(item => item.opportunityId === noVisitOpportunity.id), 'O caminho sem visita não foi aceito corretamente.');
-      return 'orçamento criado após diagrama validado, sem visita técnica';
+      return 'orçamento criado diretamente após diagrama validado';
     });
 
     state.clients.push(records.client);
@@ -382,7 +379,7 @@ async function runFunctionalTestBot(options = {}) {
       return 'venda aprovada e projeto criado';
     });
     await check('Comercial', 'Ciclos completos até o fim do orçamento', 'Revisar a passagem de oportunidade, versões, situação, totais e conversão final.', async () => {
-      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Primeiro contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '', interests: 'Rede', needs: 'Cobertura Wi-Fi', initialScope: 'Sala principal', visitRequired: 'Sim' };
+      const approvedOpportunity = { id: 'opp-cycle-approved', company: 'Cliente Ciclo Aprovado', contact: 'Patrícia Bot', phone: '(11) 90000-2001', email: 'ciclo.aprovado@example.invalid', source: 'Indicação — bot', owner: 'Equipe Comercial', stage: 'Primeiro contato', nextAction: 'Qualificar necessidade', nextDue: records.today, estimatedValue: 0, lossReason: '', interests: 'Rede', needs: 'Cobertura Wi-Fi', initialScope: 'Sala principal' };
       const draftQuote = { id: 'orc-cycle-approved-v1', opportunityId: approvedOpportunity.id, clientId: '', title: 'Proposta Ciclo Aprovado', value: 0, status: 'Rascunho', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
       const draftRooms = [
         { id: 'amb-cycle-approved-1', quoteId: draftQuote.id, name: 'Sala principal', items: [{ productId: records.product.id, qty: 2, discount: 0 }] },
@@ -390,10 +387,10 @@ async function runFunctionalTestBot(options = {}) {
       ];
       state.opportunities.push(approvedOpportunity);
       state.surveys.push({ id: 'srv-cycle-approved', opportunityId: approvedOpportunity.id, title: 'Levantamento ciclo aprovado', status: 'Validado' });
-      state.appointments.push({ id: 'visit-cycle-approved', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: approvedOpportunity.id, surveyId: 'srv-cycle-approved' });
+      state.surveyPoints.push({ id: 'pt-cycle-approved', surveyId: 'srv-cycle-approved', room: 'Sala principal', type: 'Ponto de rede', quantity: 1 });
       state.quotes.push(draftQuote);
       state.quoteRooms.push(...draftRooms);
-      for (const [from, to, action] of [['Primeiro contato', 'Qualificação de serviços', 'Qualificar necessidade'], ['Qualificação de serviços', 'Visita técnica', 'Agendar visita técnica'], ['Visita técnica', 'Orçamento', 'Consolidar escopo'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
+      for (const [from, to, action] of [['Primeiro contato', 'Qualificação de serviços', 'Qualificar necessidade'], ['Qualificação de serviços', 'Levantamento técnico', 'Iniciar levantamento técnico'], ['Levantamento técnico', 'Orçamento', 'Continuar para orçamento'], ['Orçamento', 'Orçamento', 'Enviar proposta']]) {
         approvedOpportunity.stage = to;
         approvedOpportunity.nextAction = action;
         approvedOpportunity.advanceAuthorizations = [...(approvedOpportunity.advanceAuthorizations || []), { from, to, actor: 'Equipe Comercial', at: new Date().toISOString() }];
@@ -422,6 +419,7 @@ async function runFunctionalTestBot(options = {}) {
       const lostQuote = { id: 'orc-cycle-lost', opportunityId: lostOpportunity.id, clientId: '', title: 'Proposta Ciclo Recusado', value: 1600, status: 'Recusado', version: 1, createdAt: new Date().toISOString(), validUntil: records.today };
       state.opportunities.push(lostOpportunity);
       state.surveys.push({ id: 'srv-cycle-lost', opportunityId: lostOpportunity.id, title: 'Levantamento ciclo recusado', status: 'Validado' });
+      state.surveyPoints.push({ id: 'pt-cycle-lost', surveyId: 'srv-cycle-lost', room: 'Sala principal', type: 'Ponto de rede', quantity: 1 });
       state.appointments.push({ id: 'visit-cycle-lost', type: 'Visita técnica', status: 'Iniciada', visit: true, opportunityId: lostOpportunity.id, surveyId: 'srv-cycle-lost' });
       state.quotes.push(lostQuote);
       lostOpportunity.stage = 'Perdido';

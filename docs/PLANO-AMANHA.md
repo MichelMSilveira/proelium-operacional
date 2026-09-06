@@ -30,7 +30,7 @@ Definir e testar os fluxos antes de ampliar o código. Cada responsável registr
 - entrada de contatos e oportunidades;
 - origem do contato;
 - responsável pelo atendimento;
-- etapas contato, qualificação, visita e orçamento;
+- etapas Primeiro contato, Qualificação de serviços, Levantamento técnico e Orçamento;
 - próxima ação e prazo;
 - conversão do contato em cliente;
 - motivo de perda e histórico comercial.
@@ -46,7 +46,7 @@ Definir e testar os fluxos antes de ampliar o código. Cada responsável registr
 ### Mínimo funcional entregue
 
 - cadastro de nova oportunidade;
-- etapas Primeiro contato, Qualificação de serviços, Levantamento técnico, Visita técnica opcional, Orçamento, Ganho e Perdido;
+- etapas Primeiro contato, Qualificação de serviços, Levantamento técnico, Orçamento, Ganho e Perdido; o diagrama teórico é concluído dentro do levantamento;
 - origem, responsável, próxima ação, prazo, valor estimado e motivo de perda;
 - avanço manual de etapa;
 - conversão da oportunidade em cliente potencial;

@@ -299,14 +299,13 @@ async function run() {
     await fillField(page, 'interests', 'Automação e rede');
     await fillField(page, 'needs', 'Conectividade estável e controle de iluminação');
     await fillField(page, 'initialScope', 'Sala principal e infraestrutura');
-    await selectLabel(page, 'visitRequired', 'Sim');
     await fillField(page, 'signature', 'Ana UI Operações');
     await saveDialog(page);
     await assertData(page, data => {
       const opportunity = data.opportunities?.find(item => item.id === firstContactId);
       return opportunity?.stage === 'Qualificação de serviços' && data.auditLog?.some(item => item.action === 'Registrou interesse' && item.detail?.includes('Primeiro contato'));
     }, 'Registrar interesse não qualificou a oportunidade nem registrou auditoria.');
-    console.log('[OK] UI — interesse confirmado, transição para Qualificação e auditoria registrados');
+    console.log('[OK] UI — interesse confirmado, transição para Qualificação de serviços e auditoria registrados');
 
     for (let index = 2; index <= 30; index += 1) {
       await page.locator('[data-add="opportunity"]').click();
@@ -342,9 +341,9 @@ async function run() {
     await startSurvey.click();
     await fillField(page, 'title', 'Levantamento UI Bot · Casa Aurora');
     await fillField(page, 'site', 'São Paulo · residência de teste');
-    await selectLabel(page, 'source', 'Visita técnica');
+    await selectLabel(page, 'source', 'Preenchimento manual');
     await selectLabel(page, 'status', 'Validado');
-    await fillField(page, 'notes', 'Necessidades confirmadas na visita feita pelo bot de interface.');
+    await fillField(page, 'notes', 'Necessidades confirmadas no levantamento técnico pelo bot de interface.');
     await saveDialog(page);
     await assertData(page, data => data.surveys?.some(item => item.title === 'Levantamento UI Bot · Casa Aurora'), 'Levantamento não foi gravado pelo formulário.');
     console.log('[OK] UI — levantamento técnico criado e validado');
@@ -365,19 +364,10 @@ async function run() {
     await openView(page, 'commercial');
     const diagramCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
     if (await diagramCard.locator('[data-commercial-activity]').count() !== 0) throw new Error('Levantamento técnico não deve exibir Nova atividade.');
-    if (await diagramCard.locator('[data-start-technical-visit]').count() !== 1 || await diagramCard.locator('[data-quote-without-visit]').count() !== 1) throw new Error('O levantamento validado não exibiu as escolhas com e sem Visita técnica.');
-    await diagramCard.locator('[data-start-technical-visit]').click();
-    await fillField(page, 'title', 'Visita técnica UI Bot · Casa Aurora');
-    await fillField(page, 'assignee', 'Ana UI Operações');
-    await fillField(page, 'date', new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10));
-    await fillField(page, 'time', '09:00');
-    await fillField(page, 'reason', 'A infraestrutura existente precisa ser conferida no local.');
-    await fillField(page, 'note', 'Visita iniciada após o levantamento técnico.');
-    await saveDialog(page);
-    await assertData(page, data => data.appointments?.some(item => item.type === 'Visita técnica' && item.surveyId === surveyId), 'A visita técnica não foi gravada ou perdeu o vínculo com o levantamento.');
-    console.log('[OK] UI — visita técnica iniciada após o levantamento');
-
-    await page.locator(`[data-survey-start-quote="${surveyId}"]`).click();
+    if (await diagramCard.locator('[data-start-technical-visit], [data-quote-without-visit]').count() !== 0) throw new Error('Oportunidades não devem exibir ações de Visita técnica.');
+    const directQuote=diagramCard.locator(`[data-survey-start-quote="${surveyId}"]`);
+    if (await directQuote.count() !== 1 || !(await directQuote.innerText()).includes('Continuar para orçamento')) throw new Error('O levantamento concluído não exibiu a ação direta para orçamento.');
+    await directQuote.click();
     await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.toLocaleLowerCase().includes('orçamento'), null, { timeout: 5_000 });
     if (await page.locator('.quote-analysis').count() !== 1) throw new Error('A análise do orçamento não foi aberta após o levantamento.');
     console.log('[OK] UI — orçamento criado a partir do levantamento');

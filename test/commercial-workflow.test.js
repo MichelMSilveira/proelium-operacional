@@ -37,34 +37,28 @@ test('exige interesses, necessidades e escopo para a Qualificação de serviços
   assert.equal(workflow.validate(current, qualified).ok, true);
 });
 
-test('permite Orçamento após diagrama validado sem visita e exige visita quando escolhida', () => {
+test('permite Orçamento diretamente após diagrama validado e remove Visita das oportunidades', () => {
   const qualified = { opportunities: [{ id: 'opp-1', stage: 'Qualificação de serviços', interests: 'Rede', needs: 'Cobertura Wi-Fi', initialScope: 'Casa térrea' }], surveys: [], surveyPoints: [], appointments: [], quotes: [] };
   const diagram = { ...qualified, opportunities: [{ ...qualified.opportunities[0], stage: 'Levantamento técnico' }], surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Validado' }], surveyPoints: [{ id: 'point-1', surveyId: 'survey-1', room: 'Sala', type: 'Ponto de rede', quantity: 2 }] };
   const withoutVisit = { ...diagram, opportunities: [{ ...diagram.opportunities[0], stage: 'Orçamento' }], quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
   assert.equal(workflow.validate(diagram, withoutVisit).ok, true);
-  const invalidVisit = { ...qualified, opportunities: [{ ...qualified.opportunities[0], stage: 'Visita técnica' }], appointments: [{ id: 'visit-1', opportunityId: 'opp-1', type: 'Visita técnica' }] };
-  assert.equal(workflow.validate(qualified, invalidVisit).message, 'A visita técnica deve estar vinculada a uma oportunidade e a um levantamento.');
-  assert.equal(workflow.canonicalStage('Visita'), 'Visita técnica');
+  const invalidVisit = { ...qualified, opportunities: [{ ...qualified.opportunities[0], stage: 'Visita técnica' }] };
+  assert.equal(workflow.validate(qualified, invalidVisit).message, 'Visita técnica não é uma etapa de Oportunidades; conclua o levantamento técnico antes do orçamento.');
+  assert.equal(workflow.canonicalStage('Visita'), 'Levantamento técnico');
+  assert.deepEqual(workflow.stages, ['Primeiro contato', 'Qualificação de serviços', 'Levantamento técnico', 'Orçamento']);
 });
 
-test('permite iniciar levantamento qualificado e exige visita antes do orçamento', () => {
+test('permite iniciar levantamento qualificado e seguir diretamente para orçamento', () => {
   const current = base();
   const withSurvey = {
     ...current,
     opportunities: [{ id: 'opp-1', stage: 'Levantamento técnico' }],
-    surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Validado' }]
+    surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Validado' }],
+    surveyPoints: [{ id: 'point-1', surveyId: 'survey-1', room: 'Sala', type: 'Ponto de rede', quantity: 1 }]
   };
   assert.equal(workflow.validate(current, withSurvey).ok, true);
-  const withoutVisitQuote = { ...withSurvey, opportunities: [{ id: 'opp-1', stage: 'Orçamento' }], quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
-  assert.equal(workflow.validate(withSurvey, withoutVisitQuote).message, 'O orçamento exige levantamento técnico validado; a Visita técnica é opcional quando a complexidade permitir.');
-  const withVisit = {
-    ...withSurvey,
-    opportunities: [{ id: 'opp-1', stage: 'Visita' }],
-    appointments: [{ id: 'visit-1', opportunityId: 'opp-1', surveyId: 'survey-1', type: 'Visita técnica', status: 'Iniciada' }]
-  };
-  assert.equal(workflow.validate(withSurvey, withVisit).ok, true);
-  const withQuote = { ...withVisit, opportunities: [{ id: 'opp-1', stage: 'Orçamento' }], quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
-  assert.equal(workflow.validate(withVisit, withQuote).ok, true);
+  const directQuote = { ...withSurvey, opportunities: [{ id: 'opp-1', stage: 'Orçamento' }], quotes: [{ id: 'quote-1', opportunityId: 'opp-1' }] };
+  assert.equal(workflow.validate(withSurvey, directQuote).ok, true);
 });
 
 test('não invalida registros legados inalterados ao salvar outra área', () => {
@@ -98,7 +92,7 @@ test('reconcilia os sete registros legados e é idempotente', () => {
   assert.equal(first.changes.length, 7);
   assert.deepEqual(first.data.opportunities.slice(0, 7).map(item => item.stage), [
     'Levantamento técnico', 'Levantamento técnico', 'Levantamento técnico', 'Levantamento técnico',
-    'Visita técnica', 'Visita técnica', 'Orçamento'
+    'Levantamento técnico', 'Levantamento técnico', 'Orçamento'
   ]);
   assert.equal(first.data.opportunities.find(item => item.id === 'won-1').stage, 'Ganho');
   assert.equal(first.data.opportunities.find(item => item.id === 'lost-1').stage, 'Perdido');
