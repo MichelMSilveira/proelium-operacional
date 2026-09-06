@@ -10,9 +10,12 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 |---|---|---|
 | GET | `/api/data` | carregar a base da empresa e sua revisão, filtrada pelas permissões do usuário |
 | PUT | `/api/data` | salvar a base informando `baseRevision`; domínios sem permissão não podem ser alterados |
+| POST | `/api/commercial/reconcile-legacy` | pré-visualizar ou aplicar, somente como administração, a reconciliação auditável das etapas comerciais legadas |
 | GET | `/api/events` | receber avisos de atualização em tempo real (SSE) |
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.
+
+`POST /api/commercial/reconcile-legacy` recebe `{ "apply": false }` para prévia e `{ "apply": true }` para aplicar. A aplicação promove somente etapas defasadas conforme os vínculos existentes (levantamento, visita e orçamento), preserva Ganho/Perdido e os demais campos, registra uma entrada em `auditLog` e usa a revisão central para evitar sobrescrita concorrente. A operação não é um salto normal do funil.
 
 As gravações que alteram o fluxo comercial são validadas no servidor: levantamentos precisam de oportunidade, a oportunidade deve respeitar Qualificação → Levantamento técnico → Visita → Orçamento, visitas precisam apontar para o levantamento e novos orçamentos precisam apontar para uma oportunidade após visita. Uma violação recebe HTTP `422`; estados legados não alterados são preservados.
 

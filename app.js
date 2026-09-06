@@ -721,6 +721,45 @@ updatePresencePanel=function(users=presenceUsers){renderPresencePanelWithDevice(
 const finalRender=render;
 render=()=>{finalRender();redactLegacyIdentity()};
 render();
+
+// Reconciliação explícita dos registros comerciais antigos. A operação é
+// administrativa, idempotente e só altera a etapa inferida pelos vínculos.
+function canReconcileCommercialLegacy(){
+  return Boolean(authenticatedUser && (
+    authenticatedUser.platformAdmin ||
+    (authenticatedUser.scope==='company' && (authenticatedUser.role==='admin' || authenticatedUser.accountType==='founder'))
+  ));
+}
+function injectCommercialLegacyReconcile(){
+  if(state.view!=='commercial'||!canReconcileCommercialLegacy()||document.querySelector('[data-commercial-reconcile]'))return;
+  const anchor=document.querySelector('#content>.section-heading');
+  if(!anchor)return;
+  anchor.insertAdjacentHTML('beforeend','<div class="module-toolbar commercial-reconcile-tools"><button type="button" class="button secondary" data-commercial-reconcile>Reconciliar etapas legadas</button><span class="subtext" data-commercial-reconcile-status></span></div>');
+}
+async function reconcileCommercialLegacyFromUi(button){
+  const endpoint='./api/commercial/reconcile-legacy',request=body=>fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
+  const status=document.querySelector('[data-commercial-reconcile-status]');
+  button.disabled=true;button.textContent='Verificando etapas…';
+  try{
+    const previewResponse=await request({apply:false}),preview=await previewResponse.json().catch(()=>({}));
+    if(!previewResponse.ok)throw new Error(preview.error||'Não foi possível verificar as etapas legadas.');
+    const changes=Array.isArray(preview.changes)?preview.changes:[];
+    if(!changes.length){if(status)status.textContent='Nenhuma etapa legada precisa de reconciliação.';toast('Nenhuma etapa comercial legada precisa de reconciliação.');return}
+    const summary=changes.map(change=>`${change.company}: ${change.from} → ${change.to}`).join('\n');
+    if(!confirm(`${changes.length} oportunidade(s) serão reconciliadas com base nos vínculos existentes:\n\n${summary}\n\nNenhum outro dado será alterado. Continuar?`)){if(status)status.textContent=`${changes.length} etapa(s) identificada(s); nenhuma alteração feita.`;toast('Reconciliação cancelada; nenhum registro foi alterado.');return}
+    button.textContent='Aplicando reconciliação…';
+    const applyResponse=await request({apply:true}),applied=await applyResponse.json().catch(()=>({}));
+    if(!applyResponse.ok)throw new Error(applied.error||'Não foi possível aplicar a reconciliação.');
+    await refreshSharedData(true);
+    const appliedCount=Array.isArray(applied.changes)?applied.changes.length:changes.length;
+    toast(`${appliedCount} etapa(s) comercial(is) reconciliada(s) e registrada(s) na auditoria.`);
+    const refreshedStatus=document.querySelector('[data-commercial-reconcile-status]');if(refreshedStatus)refreshedStatus.textContent=`${appliedCount} etapa(s) corrigida(s); operação registrada na auditoria.`;
+  }catch(error){if(status)status.textContent=error.message;toast(error.message)}finally{button.disabled=false;button.textContent='Reconciliar etapas legadas'}
+}
+document.addEventListener('click',event=>{const button=event.target.closest('[data-commercial-reconcile]');if(button)reconcileCommercialLegacyFromUi(button)},true);
+const commercialLegacyReconcileRender=render;
+render=()=>{commercialLegacyReconcileRender();injectCommercialLegacyReconcile()};
+render();
 const updateSharedStatusWithVersion=updateSharedStatus;
 updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v206 · sincronizado ${sync} · servidor atualizado ${server}`};
 updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v233 · sincronizado ${sync} · servidor atualizado ${server}`};

@@ -314,6 +314,9 @@ async function runFunctionalTestBot(options = {}) {
     };
 
     await save(state);
+    const reconcilePreview = await companyApi('/api/commercial/reconcile-legacy', { method: 'POST', body: { apply: false } });
+    const reconcilePreviewPayload = parseJson(reconcilePreview, '/api/commercial/reconcile-legacy prévia');
+    expect(reconcilePreview.status === 200 && reconcilePreviewPayload.ok === true && Array.isArray(reconcilePreviewPayload.changes) && reconcilePreviewPayload.changes.length === 0, `A prévia de reconciliação comercial retornou um resultado inválido: HTTP ${reconcilePreview.status}: ${reconcilePreview.text}`);
     const records = scenarioRecords(state);
     state.opportunities.push(records.opportunity);
     await save(state);

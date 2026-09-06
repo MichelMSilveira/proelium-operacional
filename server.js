@@ -590,6 +590,58 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (pathname === '/api/commercial/reconcile-legacy' && req.method === 'POST') {
+    if (!isPlatformAdmin(authenticatedUser) && !isCompanyAdmin(authenticatedUser) && !isCompanyFounder(authenticatedUser)) {
+      return sendJson(res, 403, { error: 'Apenas a administração pode reconciliar etapas comerciais legadas.' });
+    }
+    try {
+      const payload = JSON.parse(await readBody(req) || '{}');
+      const companyId = authenticatedUser.companyId || 'legacy';
+      const current = await storage.readSharedData(companyId);
+      const reconciliation = commercialWorkflow.reconcileLegacyStages(current.data || {});
+      if (payload.apply !== true || !reconciliation.changes.length) {
+        return sendJson(res, 200, {
+          ok: true,
+          applied: false,
+          revision: current.revision,
+          changes: reconciliation.changes
+        });
+      }
+      const now = new Date().toISOString();
+      const auditEntry = {
+        id: `audit-${crypto.randomUUID()}`,
+        at: now,
+        actor: authenticatedUser.name || authenticatedUser.username,
+        action: 'Reconciliou etapas comerciais legadas',
+        area: 'Comercial',
+        detail: reconciliation.changes.map(change => `${change.company}: ${change.from} → ${change.to} (${change.reason})`).join(' · ')
+      };
+      const nextData = {
+        ...reconciliation.data,
+        auditLog: [auditEntry, ...(Array.isArray(reconciliation.data.auditLog) ? reconciliation.data.auditLog : [])].slice(0, 1000)
+      };
+      const result = await storage.writeSharedData(nextData, current.revision, authenticatedUser.username, companyId);
+      if (result.conflict) {
+        return sendJson(res, 409, {
+          error: 'Os dados foram atualizados por outro aparelho. Faça uma nova verificação.',
+          revision: result.current.revision,
+          updatedAt: result.current.updatedAt
+        });
+      }
+      const saved = result.value;
+      broadcastUpdate(saved, companyId);
+      return sendJson(res, 200, {
+        ok: true,
+        applied: true,
+        revision: saved.revision,
+        updatedAt: saved.updatedAt,
+        changes: reconciliation.changes
+      });
+    } catch {
+      return sendJson(res, 400, { error: 'Não foi possível reconciliar as etapas comerciais legadas.' });
+    }
+  }
+
   if (pathname === '/api/events' && req.method === 'GET') {
     res.writeHead(200, {
       ...securityHeaders,

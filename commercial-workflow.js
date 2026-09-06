@@ -28,6 +28,32 @@
     String(quote.opportunityId || '') === String(opportunityId) && quote.status === 'Aprovado'
   ));
 
+  function reconcileLegacyStages(input = {}) {
+    const source = input && typeof input === 'object' ? input : {};
+    const changes = [];
+    const next = { ...source };
+    next.opportunities = list(source, 'opportunities').map(opportunity => {
+      if (terminalStages.includes(opportunity.stage)) return opportunity;
+      const linkedSurveys = list(source, 'surveys').filter(survey => String(survey.opportunityId || '') === String(opportunity.id));
+      const linkedVisits = visitsFor(source, opportunity.id);
+      const linkedQuotes = list(source, 'quotes').filter(quote => String(quote.opportunityId || '') === String(opportunity.id));
+      const target = linkedQuotes.length ? 'Orçamento' : linkedVisits.length ? 'Visita' : linkedSurveys.length ? 'Levantamento técnico' : '';
+      const currentIndex = stageIndex(opportunity.stage);
+      const targetIndex = stageIndex(target);
+      if (!target || (currentIndex >= 0 && targetIndex <= currentIndex)) return opportunity;
+      const reason = linkedQuotes.length ? 'orçamento vinculado' : linkedVisits.length ? 'visita técnica ativa' : 'levantamento técnico vinculado';
+      changes.push({
+        opportunityId: opportunity.id,
+        company: opportunity.company || opportunity.title || opportunity.id,
+        from: opportunity.stage || 'Sem etapa',
+        to: target,
+        reason
+      });
+      return { ...opportunity, stage: target };
+    });
+    return { data: next, changes };
+  }
+
   function validate(currentData = {}, nextData = {}) {
     const current = currentData || {};
     const next = nextData || {};
@@ -110,5 +136,5 @@
     return { ok: true };
   }
 
-  return { stages, terminalStages, isVisit, visitsFor, validate };
+  return { stages, terminalStages, isVisit, visitsFor, reconcileLegacyStages, validate };
 }));

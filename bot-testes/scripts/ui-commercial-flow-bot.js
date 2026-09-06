@@ -229,6 +229,10 @@ async function run() {
       throw new Error(`registros iniciais: ${keys.map(key => `${key}=${data[key]?.length || 0}`).join(', ')}`);
     }, 'A empresa temporária já possuía registros comerciais antes do teste.');
     console.log('[OK] UI — sessão isolada autenticada sem carga prévia de dados comerciais');
+    if (await page.locator('[data-commercial-reconcile]').count() !== 1) throw new Error('A administração da empresa não recebeu a ação de reconciliação de etapas legadas.');
+    await page.locator('[data-commercial-reconcile]').click();
+    await page.waitForFunction(() => document.querySelector('[data-commercial-reconcile-status]')?.textContent.includes('Nenhuma etapa'), null, { timeout: 5_000 });
+    console.log('[OK] UI — prévia de reconciliação legada disponível para a administração');
 
     await openView(page, 'collaborators');
     await page.locator('[data-add="collaborator"].button.primary').click();
