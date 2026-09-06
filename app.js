@@ -767,7 +767,7 @@ render=()=>{commercialLegacyReconcileRender();injectCommercialLegacyReconcile()}
 render();
 const updateSharedStatusWithVersion=updateSharedStatus;
 updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v206 · sincronizado ${sync} · servidor atualizado ${server}`};
-updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v245 · sincronizado ${sync} · servidor atualizado ${server}`};
+updateSharedStatus=()=>{updateSharedStatusWithVersion();const indicator=$('#appVersionStatus');if(!indicator)return;const sync=state.lastSyncAt?new Date(state.lastSyncAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'aguardando sincronização';const server=state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'sem atualização registrada';indicator.textContent=`App v246 · sincronizado ${sync} · servidor atualizado ${server}`};
 updateSharedStatus();
 const updatePresencePanelWithDevices=updatePresencePanel;
 updatePresencePanel=users=>{presenceUsers=Array.isArray(users)?users:[];const uniqueUsers=[...new Map(presenceUsers.filter(user=>user?.username).map(user=>[user.username,user])).values()],list=$('#presenceList'),countBadge=document.querySelector('.presence-panel #presenceCount');if(!list)return;list.innerHTML=uniqueUsers.map(user=>{const devices=Array.isArray(user.devices)&&user.devices.length?user.devices:[user.device||'Navegador'],sessionCount=Math.max(1,Number(user.sessions||1)),deviceLabel=devices.join(' + ');return `<span class="presence-person ${user.available===false?'presence-person-off':''}"><i></i><span>${escapeUserText(user.name||user.username)}<small class="presence-device">${escapeUserText(deviceLabel)}${sessionCount>1?` · ${sessionCount} acessos`:''}</small></span>${user.username===authenticatedUser?.username?'<small>você</small>':user.available===false?'<small>ocupado</small>':''}</span>`}).join('')||'<small>Nenhum participante online.</small>';if(countBadge)countBadge.textContent=String(uniqueUsers.length);const me=uniqueUsers.find(user=>user.username===authenticatedUser?.username),availability=$('#availabilityButton');if(availability){availability.textContent=me?.available===false?'Indisponível para auxiliar':'Disponível para auxiliar';availability.classList.toggle('presence-off',me?.available===false)}};
@@ -3173,8 +3173,10 @@ document.addEventListener('click',event=>{
   event.preventDefault();event.stopImmediatePropagation();
    const opportunity=(state.data.opportunities||[]).find(item=>item.id===button.dataset.startSurveyOpportunity);
    if(!opportunity)return;
-    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços'){toast('Registre a Qualificação de serviços antes de iniciar o diagrama teórico.');return}
-    openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Diagrama teórico — ${opportunity.company}`,site:'',source:'Preenchimento manual',status:'Em levantamento',notes:''});
+    if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços'){toast('Registre a Qualificação de serviços antes de iniciar o levantamento técnico.');return}
+    const existing=(state.data.surveys||[]).find(item=>String(item.opportunityId)===String(opportunity.id));
+    if(existing){state.selectedSurvey=existing.id;state.selectedSurveyRoom='';state.view='survey';render();return}
+    openTechnicalSurvey('',{opportunityId:opportunity.id,title:`Levantamento técnico — ${opportunity.company}`,site:'',source:'Preenchimento manual',status:'Em levantamento',notes:''});
 },true);
 
 // Edição da proposta preserva os itens, ambientes e cálculos já feitos.
@@ -3519,7 +3521,7 @@ function commercialFlowRecordFor(opportunity){
     }
     if(!record.quote){
       const surveyReady=['Validado','Enviado ao orçamento'].includes(record.survey.status)&&(state.data.surveyPoints||[]).some(item=>item.surveyId===record.survey.id);
-       if(!surveyReady)return {label:'Abrir levantamento técnico',action:'surveyExisting',detail:'Finalize o levantamento técnico e valide seus pontos antes de seguir para o orçamento.'};
+       if(!surveyReady)return {label:'Continuar levantamento técnico',action:'surveyExisting',detail:'Finalize o levantamento técnico e valide seus pontos antes de seguir para o orçamento.'};
        return {label:'Continuar para orçamento',action:'quoteFromSurvey',detail:'Levantamento técnico concluído. Siga diretamente para o orçamento.'};
    }
   const status=quoteStatus(record.quote);
@@ -3897,10 +3899,10 @@ function workflowVisitFor(opportunityId,surveyId=''){return workflow.visitsFor(s
 
 const workflowOpenTechnicalSurvey=openTechnicalSurvey;
 openTechnicalSurvey=(id='',prefill={})=>{
-  if(!id&&!prefill.opportunityId&&(state.data.opportunities||[]).every(item=>ProeliumCommercialWorkflow.canonicalStage(item.stage)!=='Qualificação de serviços')){toast('Registre os interesses, necessidades e escopo na Qualificação de serviços antes de criar o diagrama teórico.');return}
+  if(!id&&!prefill.opportunityId&&(state.data.opportunities||[]).every(item=>ProeliumCommercialWorkflow.canonicalStage(item.stage)!=='Qualificação de serviços')){toast('Registre os interesses, necessidades e escopo na Qualificação de serviços antes de iniciar o levantamento técnico.');return}
   workflowOpenTechnicalSurvey(id,prefill);
-  $('#dialogTitle').textContent=id?'Editar diagrama teórico':'Novo diagrama teórico';
-  [...document.querySelectorAll('#formFields label')].find(label=>label.textContent==='Nome do levantamento *')?.replaceChildren('Nome do diagrama teórico *');
+  $('#dialogTitle').textContent=id?'Editar levantamento técnico':'Novo levantamento técnico';
+  [...document.querySelectorAll('#formFields label')].find(label=>label.textContent==='Nome do levantamento *')?.replaceChildren('Nome do levantamento técnico *');
   [...document.querySelectorAll('#formFields label')].find(label=>label.textContent==='Premissas e observações')?.replaceChildren('Necessidades, premissas e observações');
   $('#formFields [name="notes"]')?.setAttribute('aria-label','Necessidades, premissas e observações do diagrama');
   const select=$('[name="opportunityId"]');
@@ -3923,12 +3925,16 @@ saveRecord=(kind,data,editId='')=>{
   if(kind==='technicalSurvey'){
     const previous=editId?workflowSurvey(editId):null,opportunity=workflowOpportunity(data.opportunityId);
     if(!opportunity){toast('Todo levantamento deve estar vinculado a uma oportunidade existente.');return false}
-    if(!previous&&ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços'){toast('A oportunidade precisa estar em Qualificação de serviços antes de iniciar o diagrama teórico.');return false}
-    if(!previous&&ProeliumCommercialWorkflow.qualificationFields.some(field=>!String(opportunity[field]||'').trim())){toast('Complete interesses, necessidades e escopo inicial na Qualificação de serviços antes de iniciar o diagrama teórico.');return false}
+    if(!previous&&ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços'){toast('A oportunidade precisa estar em Qualificação de serviços antes de iniciar o levantamento técnico.');return false}
+    if(!previous&&ProeliumCommercialWorkflow.qualificationFields.some(field=>!String(opportunity[field]||'').trim())){toast('Complete interesses, necessidades e escopo inicial na Qualificação de serviços antes de iniciar o levantamento técnico.');return false}
     if(previous&&previous.opportunityId!==data.opportunityId){toast('O levantamento não pode ser transferido para outra oportunidade nesta etapa.');return false}
     const record={opportunityId:data.opportunityId,title:String(data.title||'').trim(),site:data.site||'',source:data.source||'Preenchimento manual',status:data.status||'Em levantamento',notes:data.notes||'',updatedAt:new Date().toISOString()};
     if(!record.title){toast('Informe o nome do levantamento.');return false}
-    if(previous)Object.assign(previous,record);else{const created={id:uid('lev'),...record};state.data.surveys.unshift(created);state.selectedSurvey=created.id;opportunity.stage='Levantamento técnico'}
+    const next=structuredClone(state.data);
+    if(previous){const index=next.surveys.findIndex(item=>item.id===editId);next.surveys[index]={...next.surveys[index],...record};if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Qualificação de serviços')next.opportunities.find(item=>item.id===opportunity.id).stage='Levantamento técnico'}
+    else{if(next.surveys.some(item=>String(item.opportunityId)===String(record.opportunityId))){toast('Esta oportunidade já possui um levantamento técnico; abra o registro existente para continuar.');return false}next.surveys.unshift({id:uid('lev'),...record});next.opportunities.find(item=>item.id===opportunity.id).stage='Levantamento técnico'}
+    const validation=workflow.validate(state.data,next);if(!validation.ok){toast(validation.message);return false}
+    if(previous){Object.assign(previous,record);if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Qualificação de serviços')opportunity.stage='Levantamento técnico'}else{const created=next.surveys[0];state.data.surveys.unshift(created);state.selectedSurvey=created.id;opportunity.stage='Levantamento técnico'}
     logAudit(previous?'Atualizou levantamento':'Criou levantamento','Levantamento técnico',record.title);persist();render();toast(previous?'Levantamento técnico atualizado.':'Levantamento iniciado; a oportunidade avançou para Levantamento técnico.');return true;
   }
   if(kind==='surveyPoint'){

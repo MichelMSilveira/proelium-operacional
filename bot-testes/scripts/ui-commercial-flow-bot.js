@@ -350,6 +350,8 @@ async function run() {
     console.log('[OK] UI — levantamento técnico criado e validado');
 
     const surveyId = (await assertData(page, data => data.surveys?.length === 1, 'Mais de um levantamento apareceu sem ter sido criado pela interface.')).surveys[0].id;
+    const linkedSurveyCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
+    if (await linkedSurveyCard.locator(`[data-start-survey-opportunity="${opportunityId}"]`).count() !== 0 || await linkedSurveyCard.locator(`[data-open-commercial-survey="${surveyId}"]`).count() !== 1) throw new Error('Oportunidade com levantamento existente não apontou para o registro correto.');
     await page.locator(`[data-open-commercial-survey="${surveyId}"]`).click();
     await page.locator('[data-add-survey-point]').click();
     await fillField(page, 'room', 'Sala principal');
@@ -366,6 +368,7 @@ async function run() {
     const diagramCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
     if (await diagramCard.locator('[data-commercial-activity]').count() !== 0) throw new Error('Levantamento técnico não deve exibir Nova atividade.');
     if (await diagramCard.locator('[data-start-technical-visit], [data-quote-without-visit]').count() !== 0) throw new Error('Oportunidades não devem exibir ações de Visita técnica.');
+    if (await diagramCard.locator(`[data-start-survey-opportunity="${opportunityId}"], [data-open-commercial-survey="${surveyId}"]`).count() !== 0) throw new Error('Levantamento concluído não deve voltar à ação de criação/continuação antes do orçamento.');
     const directQuote=diagramCard.locator(`[data-survey-start-quote="${surveyId}"]`);
     if (await directQuote.count() !== 1 || !(await directQuote.innerText()).includes('Continuar para orçamento')) throw new Error('O levantamento concluído não exibiu a ação direta para orçamento.');
     await directQuote.click();

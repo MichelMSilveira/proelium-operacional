@@ -77,6 +77,9 @@
       const previousOpportunity = byId(list(current, 'opportunities'), opportunity.id);
       const previousStage = previousOpportunity?.stage;
       const isNew = !byId(list(current, 'surveys'), survey.id);
+      if (isNew && list(current, 'surveys').some(item => String(item.opportunityId || '') === String(survey.opportunityId))) {
+        return error('Esta oportunidade já possui um levantamento técnico; abra o registro existente para continuar.');
+      }
       if (isNew && !['Qualificação de serviços', 'Qualificação', 'Levantamento técnico', 'Orçamento', 'Ganho', 'Perdido'].includes(canonicalStage(previousStage || opportunity.stage))) {
         return error('A oportunidade precisa estar em Qualificação de serviços antes de iniciar um levantamento técnico.');
       }

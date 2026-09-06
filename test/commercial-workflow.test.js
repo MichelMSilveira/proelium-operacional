@@ -61,6 +61,12 @@ test('permite iniciar levantamento qualificado e seguir diretamente para orçame
   assert.equal(workflow.validate(withSurvey, directQuote).ok, true);
 });
 
+test('não duplica levantamento ao reutilizar a oportunidade', () => {
+  const current = { ...base(), surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Em levantamento' }] };
+  const duplicate = { ...current, surveys: [...current.surveys, { id: 'survey-2', opportunityId: 'opp-1', status: 'Em levantamento' }] };
+  assert.equal(workflow.validate(current, duplicate).message, 'Esta oportunidade já possui um levantamento técnico; abra o registro existente para continuar.');
+});
+
 test('não invalida registros legados inalterados ao salvar outra área', () => {
   const current = { opportunities: [], surveys: [{ id: 'legacy-survey', title: 'Legado' }], appointments: [], quotes: [] };
   const next = { ...current, clients: [{ id: 'client-1', name: 'Novo cliente' }] };

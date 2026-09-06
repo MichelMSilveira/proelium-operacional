@@ -9,6 +9,7 @@
 - Fluxo comercial atualizado: “Qualificação de serviços” registra interesses, necessidades e escopo inicial; o “Levantamento técnico” passa a orientar o diagrama teórico; “Visita técnica” torna-se opcional após o levantamento, com escolha auditada entre visita e orçamento sem visita; cache web atualizado para `v352`.
 - Oportunidades passam a seguir diretamente de Levantamento técnico concluído para Orçamento; Visita técnica deixa de ser etapa, coluna e ação do funil, enquanto aliases e registros legados continuam preservados; cache web atualizado para `v353`.
 - Sincronização compartilhada passou a enfileirar alterações concorrentes, evitando bloqueio falso durante gravações; indicador de versão e cache web atualizados para `v354`.
+- O botão da Qualificação agora abre ou retoma o Levantamento técnico vinculado sem duplicar registros; a validação e a auditoria preservam o `opportunityId` até o avanço direto para Orçamento.
 - Documentação dos módulos de regras da Bancada de Trabalho do Hell consolidada, com responsabilidades claras para Codex, Node.js, bots, Playwright, GitHub Actions e Ollama.
 - O avanço de oportunidades usa o botão “Avançar processo” e exige conferência e autorização antes de mover para a próxima etapa.
 - O funil comercial passou a permitir alterar diretamente a etapa de oportunidades existentes.
