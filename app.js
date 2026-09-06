@@ -3515,7 +3515,7 @@ function commercialFlowRecordFor(opportunity){
     if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)==='Primeiro contato')return {label:'Registrar interesse → Qualificação de serviços',action:'qualification',detail:'Confirme os interesses, necessidades e escopo inicial antes de iniciar o diagrama teórico.'};
     if(!record.survey){
     if(ProeliumCommercialWorkflow.canonicalStage(opportunity.stage)!=='Qualificação de serviços')return {label:'Registrar interesse → Qualificação de serviços',action:'qualification',detail:'Registre os interesses, necessidades e escopo inicial do cliente.'};
-      return {label:'Iniciar diagrama teórico',action:'survey',detail:'Construa o diagrama teórico das necessidades, ambientes e quantitativos.'};
+      return {label:'Iniciar levantamento técnico',action:'survey',detail:'Abra o levantamento técnico para construir o diagrama teórico das necessidades, ambientes e quantitativos.'};
     }
     if(!record.quote){
       const surveyReady=['Validado','Enviado ao orçamento'].includes(record.survey.status)&&(state.data.surveyPoints||[]).some(item=>item.surveyId===record.survey.id);

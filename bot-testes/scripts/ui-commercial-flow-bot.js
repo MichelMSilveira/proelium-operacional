@@ -338,6 +338,7 @@ async function run() {
 
     const opportunityId = (await assertData(page, data => data.opportunities?.some(item => item.company === 'Casa Aurora · UI Bot'), 'A oportunidade principal do fluxo não foi preservada.')).opportunities.find(item => item.company === 'Casa Aurora · UI Bot').id;
     const startSurvey = page.locator(`[data-start-survey-opportunity="${opportunityId}"]`);
+    if (await startSurvey.count() !== 1 || !(await startSurvey.innerText()).includes('Iniciar levantamento técnico')) throw new Error('A Qualificação não apontou para o Levantamento técnico.');
     await startSurvey.click();
     await fillField(page, 'title', 'Levantamento UI Bot · Casa Aurora');
     await fillField(page, 'site', 'São Paulo · residência de teste');
