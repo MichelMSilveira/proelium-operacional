@@ -413,20 +413,32 @@ async function run() {
     await selectLabel(page, 'status', 'Validado');
     await fillField(page, 'notes', 'Quatro pontos de rede conferidos na visita.');
     await saveDialog(page);
-    await assertData(page, data => data.surveyPoints?.some(item => item.room === 'Sala principal' && Number(item.quantity) === 4), 'Ponto técnico não foi gravado pelo formulário.');
-    console.log('[OK] UI — quantitativo de ambiente criado e persistido');
+    const validatedState = await assertData(page, data => {
+      const survey = data.surveys?.find(item => item.id === surveyId);
+      const opportunity = data.opportunities?.find(item => item.id === opportunityId);
+      return data.surveyPoints?.some(item => item.room === 'Sala principal' && Number(item.quantity) === 4)
+        && survey?.validatedBy && survey?.validatedAt && opportunity?.stage === 'Orçamento'
+        && data.quotes?.some(item => item.opportunityId === opportunityId && item.technicalSurveyId === surveyId);
+    }, 'A validação não registrou usuário/data, avançou a oportunidade ou criou o orçamento vinculado.');
+    const autoQuote = validatedState.quotes.find(item => item.opportunityId === opportunityId && item.technicalSurveyId === surveyId);
+    if (!autoQuote || !validatedState.surveys.find(item => item.id === surveyId).validatedAt) throw new Error('O orçamento automático não preservou o vínculo nem a data de validação.');
+    console.log('[OK] UI — validação registrou usuário/data, avançou para Orçamento e criou proposta vinculada');
 
     await openView(page, 'commercial');
     const diagramCard=page.locator('.commercial-deal').filter({ hasText: 'Casa Aurora · UI Bot' });
-    if (await diagramCard.locator('[data-commercial-activity]').count() !== 0) throw new Error('Levantamento técnico não deve exibir Nova atividade.');
     if (await diagramCard.locator('[data-start-technical-visit], [data-quote-without-visit]').count() !== 0) throw new Error('Oportunidades não devem exibir ações de Visita técnica.');
     if (await diagramCard.locator(`[data-start-survey-opportunity="${opportunityId}"], [data-open-commercial-survey="${surveyId}"]`).count() !== 0) throw new Error('Levantamento concluído não deve voltar à ação de criação/continuação antes do orçamento.');
-    const directQuote=diagramCard.locator(`[data-survey-start-quote="${surveyId}"]`);
-    if (await directQuote.count() !== 1 || !(await directQuote.innerText()).includes('Continuar para orçamento')) throw new Error('O levantamento concluído não exibiu a ação direta para orçamento.');
-    await directQuote.click();
+    const linkedQuoteButton=diagramCard.locator(`[data-open-commercial-quote="${autoQuote.id}"]`);
+    if (await linkedQuoteButton.count() !== 1) throw new Error('A oportunidade em Orçamento não apontou para a proposta vinculada.');
+    await linkedQuoteButton.click();
     await page.waitForFunction(() => document.querySelector('#pageTitle')?.textContent.toLocaleLowerCase().includes('orçamento'), null, { timeout: 5_000 });
     if (await page.locator('.quote-analysis').count() !== 1) throw new Error('A análise do orçamento não foi aberta após o levantamento.');
-    console.log('[OK] UI — orçamento criado a partir do levantamento');
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 10_000 });
+    await page.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10_000 });
+    await openView(page, 'quotes');
+    if (await page.locator(`[data-quote="${autoQuote.id}"]`).count() !== 1) throw new Error('O orçamento vinculado não permaneceu visível após recarregar a sessão.');
+    console.log('[OK] UI — orçamento vinculado apareceu na aba própria e permaneceu após recarregar');
+    await page.locator(`[data-quote="${autoQuote.id}"]`).click();
 
     await page.locator('[data-add="quoteItem"]').click();
     const productSearch = page.locator('#quoteProductSearch');

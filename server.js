@@ -691,7 +691,8 @@ async function handleRequest(req, res) {
         if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
       }
       const baseRevision = Number(payload.baseRevision || 0);
-      const nextData = mergeWritableData(current.data || {}, payload.data, authenticatedUser);
+      let nextData = mergeWritableData(current.data || {}, payload.data, authenticatedUser);
+      nextData = commercialWorkflow.applyValidatedSurveyTransition(current.data || {}, nextData, authenticatedUser.name || authenticatedUser.username, new Date().toISOString());
       const workflow = commercialWorkflow.validate(current.data || {}, nextData);
       if (!workflow.ok) return sendJson(res, 422, { error: workflow.message });
       const result = await storage.writeSharedData(nextData, baseRevision, authenticatedUser.username, authenticatedUser.companyId || 'legacy');

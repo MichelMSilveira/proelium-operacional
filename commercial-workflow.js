@@ -31,6 +31,43 @@
   const hasApprovedQuote = (data, opportunityId) => list(data, 'quotes').some(quote => (
     String(quote.opportunityId || '') === String(opportunityId) && quote.status === 'Aprovado'
   ));
+  const surveyReadyForQuote = (data, opportunityId) => list(data, 'surveys').some(survey => String(survey.opportunityId || '') === String(opportunityId) && (
+    survey.status === 'Validado' || survey.status === 'Enviado ao orçamento'
+  ) && list(data, 'surveyPoints').some(point => String(point.surveyId || '') === String(survey.id) && Number(point.quantity || 0) > 0));
+
+  function applyValidatedSurveyTransition(currentData = {}, nextData = {}, actor = '', validatedAt = '') {
+    const next = structuredClone(nextData || {});
+    const currentSurveys = list(currentData, 'surveys');
+    const now = validatedAt || new Date().toISOString();
+    for (const survey of list(next, 'surveys')) {
+      const previous = byId(currentSurveys, survey.id);
+      const ready = surveyReadyForQuote(next, survey.opportunityId);
+      if (!ready) continue;
+      if (previous?.validatedAt) {
+        survey.validatedBy = previous.validatedBy;
+        survey.validatedAt = previous.validatedAt;
+      } else {
+        survey.validatedBy = survey.validatedBy || actor || 'Usuário autenticado';
+        survey.validatedAt = survey.validatedAt || now;
+      }
+      const opportunity = byId(list(next, 'opportunities'), survey.opportunityId);
+      if (opportunity) {
+        opportunity.validatedBy = opportunity.validatedBy || survey.validatedBy;
+        opportunity.validatedAt = opportunity.validatedAt || survey.validatedAt;
+      }
+      if (opportunity && ['Qualificação de serviços', 'Levantamento técnico'].includes(canonicalStage(opportunity.stage))) {
+        opportunity.stage = 'Orçamento';
+      }
+      if (!Array.isArray(next.quotes)) next.quotes = [];
+      let quote = next.quotes.find(item => String(item.opportunityId || '') === String(survey.opportunityId) && item.status === 'Aprovado') ||
+        next.quotes.find(item => String(item.opportunityId || '') === String(survey.opportunityId) && item.status !== 'Aprovado');
+      if (!quote) {
+        quote = { id: `orc-${survey.id}`, opportunityId: survey.opportunityId, technicalSurveyId: survey.id, clientId: '', title: `Proposta — ${opportunity?.company || survey.title}`, value: 0, status: 'Em elaboração', createdAt: now };
+        next.quotes.unshift(quote);
+      } else if (!quote.technicalSurveyId) quote.technicalSurveyId = survey.id;
+    }
+    return next;
+  }
 
   function reconcileLegacyStages(input = {}) {
     const source = input && typeof input === 'object' ? input : {};
@@ -68,7 +105,7 @@
   const appointments = list(next, 'appointments');
   const surveyReadyForQuote = opportunityId => surveys.some(survey => String(survey.opportunityId || '') === String(opportunityId) && (
     survey.status === 'Validado' || survey.status === 'Enviado ao orçamento'
-  ) && surveyPoints.some(point => String(point.surveyId || '') === String(survey.id)));
+  ) && surveyPoints.some(point => String(point.surveyId || '') === String(survey.id) && Number(point.quantity || 0) > 0));
     const error = message => ({ ok: false, message });
 
     for (const survey of changedRecords(current, next, 'surveys')) {
@@ -138,14 +175,18 @@
       }
       if (opportunity.stage === 'Orçamento') {
         const legacyVisitPath = removedVisitStages.has(old.stage) && visitsFor(next, opportunity.id).length;
-        if (canonicalStage(old.stage) !== 'Levantamento técnico' || (!surveyReadyForQuote(opportunity.id) && !legacyVisitPath)) {
+        const surveyValidationTransition = changedRecords(current, next, 'surveys').some(survey => String(survey.opportunityId || '') === String(opportunity.id) && surveyReadyForQuote(opportunity.id));
+        if (!['Levantamento técnico', 'Qualificação de serviços'].includes(canonicalStage(old.stage)) || (!surveyReadyForQuote(opportunity.id) && !legacyVisitPath)) {
           return error('O orçamento exige levantamento técnico validado com ao menos um ponto técnico.');
+        }
+        if (canonicalStage(old.stage) === 'Qualificação de serviços' && !surveyValidationTransition) {
+          return error('O orçamento exige avanço a partir de um levantamento técnico validado.');
         }
       }
       if (opportunity.stage === 'Ganho' && !hasApprovedQuote(next, opportunity.id)) {
         return error('A oportunidade só pode ser ganha a partir de um orçamento aprovado.');
       }
-      const directQuoteAfterSurvey = opportunity.stage === 'Orçamento' && canonicalStage(old.stage) === 'Levantamento técnico' && surveyReadyForQuote(opportunity.id);
+      const directQuoteAfterSurvey = opportunity.stage === 'Orçamento' && ['Levantamento técnico', 'Qualificação de serviços'].includes(canonicalStage(old.stage)) && surveyReadyForQuote(opportunity.id);
       if (from >= 0 && to > from + 1 && opportunity.stage !== 'Ganho' && !directQuoteAfterSurvey) {
         return error('A oportunidade deve seguir as etapas comerciais na ordem definida.');
       }
@@ -154,5 +195,5 @@
     return { ok: true };
   }
 
-  return { stages, terminalStages, legacyStageAliases, qualificationFields, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, validate };
+  return { stages, terminalStages, legacyStageAliases, qualificationFields, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, applyValidatedSurveyTransition, validate };
 }));

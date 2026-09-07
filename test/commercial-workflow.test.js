@@ -61,6 +61,30 @@ test('permite iniciar levantamento qualificado e seguir diretamente para orçame
   assert.equal(workflow.validate(withSurvey, directQuote).ok, true);
 });
 
+test('validação concluída registra autoria, avança a oportunidade e cria orçamento vinculado', () => {
+  const current = base();
+  const next = workflow.applyValidatedSurveyTransition(current, {
+    ...current,
+    opportunities: [{ ...current.opportunities[0], stage: 'Levantamento técnico' }],
+    surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Validado' }],
+    surveyPoints: [{ id: 'point-1', surveyId: 'survey-1', room: 'Sala', type: 'Ponto de rede Cat6', quantity: 1 }]
+  }, 'Ana Teste', '2026-09-06T20:30:00.000Z');
+  assert.equal(next.opportunities[0].stage, 'Orçamento');
+  assert.equal(next.surveys[0].validatedBy, 'Ana Teste');
+  assert.equal(next.surveys[0].validatedAt, '2026-09-06T20:30:00.000Z');
+  assert.equal(next.opportunities[0].validatedBy, 'Ana Teste');
+  assert.equal(next.opportunities[0].validatedAt, '2026-09-06T20:30:00.000Z');
+  assert.equal(next.quotes[0].opportunityId, 'opp-1');
+  assert.equal(next.quotes[0].technicalSurveyId, 'survey-1');
+  assert.equal(workflow.validate(current, next).ok, true);
+  const reloaded = workflow.applyValidatedSurveyTransition(next, structuredClone(next), 'Outro usuário', '2026-09-06T21:00:00.000Z');
+  assert.equal(reloaded.surveys[0].validatedBy, 'Ana Teste');
+  assert.equal(reloaded.surveys[0].validatedAt, '2026-09-06T20:30:00.000Z');
+  assert.equal(reloaded.opportunities[0].validatedBy, 'Ana Teste');
+  assert.equal(reloaded.opportunities[0].validatedAt, '2026-09-06T20:30:00.000Z');
+  assert.equal(reloaded.quotes.filter(item => item.technicalSurveyId === 'survey-1').length, 1);
+});
+
 test('não duplica levantamento ao reutilizar a oportunidade', () => {
   const current = { ...base(), surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Em levantamento' }] };
   const duplicate = { ...current, surveys: [...current.surveys, { id: 'survey-2', opportunityId: 'opp-1', status: 'Em levantamento' }] };
