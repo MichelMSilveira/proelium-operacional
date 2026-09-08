@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Req, Res } from '@nestjs/common';
 
 @Controller('company')
 export class CompanyController {
@@ -38,6 +38,27 @@ export class CompanyController {
   @Put('routines')
   async updateRoutines(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
     const upstream = await this.forward('/api/company/routines', 'PUT', request, payload);
+    const body = await upstream.text();
+    response.status(upstream.status).type('application/json').send(body);
+  }
+
+  @Get('invites')
+  async invites(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.forward('/api/company/invites', 'GET', request);
+    const body = await upstream.text();
+    response.status(upstream.status).type('application/json').send(body);
+  }
+
+  @Post('invites')
+  async createInvite(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    const upstream = await this.forward('/api/company/invites', 'POST', request, payload);
+    const body = await upstream.text();
+    response.status(upstream.status).type('application/json').send(body);
+  }
+
+  @Delete('invites')
+  async deleteInvite(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    const upstream = await this.forward('/api/company/invites', 'DELETE', request, payload);
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);
   }
