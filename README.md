@@ -10,6 +10,8 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 
 ## Estado atual
 
+- backend NestJS iniciado em `backend-nest/`, em paralelo ao servidor legado; a migração será feita por módulos sem interromper o app atual;
+
 - CRM com cadastro, edição, exclusão e histórico de clientes;
 - catálogo de produtos e serviços;
 - orçamentos organizados por cômodos/ambientes;
