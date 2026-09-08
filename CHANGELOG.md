@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A ponte NestJS passou a encaminhar leitura e gravação do perfil e das rotinas da empresa.
 - A ponte NestJS de `/api/data` passou a encaminhar gravações `PUT` com sessão e corpo JSON preservados.
 - NestJS passou a expor a leitura compatível de `/api/data`, preservando o contrato agregado durante a migração.
 - NestJS passou a expor a leitura compatível do perfil da empresa em `/api/company/profile` durante a migração.
