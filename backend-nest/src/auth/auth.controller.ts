@@ -43,4 +43,18 @@ export class AuthController {
     if (setCookie) response.setHeader('set-cookie', setCookie);
     response.status(upstream.status).type('application/json').send(await upstream.text());
   }
+
+  @Get('google/pending')
+  async googlePending(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/google/pending', 'GET', request);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
+
+  @Post('consume-invite')
+  async consumeInvite(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/consume-invite', 'POST', request);
+    const setCookie = upstream.headers.get('set-cookie');
+    if (setCookie) response.setHeader('set-cookie', setCookie);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
 }
