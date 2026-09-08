@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A ponte NestJS passou a encaminhar o aceite de convite Google e o vínculo do usuário à empresa.
 - A ponte NestJS passou a encaminhar início e callback do OAuth Google, preservando redirecionamentos e cookies.
 - A ponte NestJS passou a encaminhar cadastro de empresa tradicional e cadastro de empresa iniciado pelo Google.
 - A ponte NestJS passou a encaminhar o estado de autenticação Google pendente e o consumo de convites.

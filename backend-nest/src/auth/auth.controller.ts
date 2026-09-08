@@ -101,4 +101,12 @@ export class AuthController {
     if (setCookie) response.setHeader('set-cookie', setCookie);
     response.status(upstream.status).type('application/json').send(await upstream.text());
   }
+
+  @Post('join-google-company')
+  async joinGoogleCompany(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/join-google-company', 'POST', request);
+    const setCookie = upstream.headers.get('set-cookie');
+    if (setCookie) response.setHeader('set-cookie', setCookie);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
 }
