@@ -15,6 +15,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 - leitura de usuários da empresa disponível pela ponte NestJS em `/api/auth/users`, ainda respeitando a autorização do backend legado;
 - leitura do perfil da empresa disponível pela ponte NestJS em `/api/company/profile`;
 - leitura dos dados operacionais disponível pela ponte NestJS em `/api/data`;
+- gravação compatível de `/api/data` também disponível via `PUT`, preservando o contrato atual;
 
 - CRM com cadastro, edição, exclusão e histórico de clientes;
 - catálogo de produtos e serviços;
