@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 export type Quote = { id: string; opportunityId: string; clientId: string; title: string; status: string; value: number; [key: string]: unknown };
 
@@ -13,6 +13,22 @@ export class QuotesService {
     if (!upstream.ok) throw new ServiceUnavailableException('Não foi possível carregar os orçamentos.');
     const payload = await upstream.json() as { data?: { quotes?: unknown } };
     return this.normalizeList(payload.data?.quotes);
+  }
+
+  async save(body: unknown, cookie?: string): Promise<unknown> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de gravação inválido.');
+    const input = body as { data?: { quotes?: unknown }; baseRevision?: unknown };
+    if (!input.data || typeof input.data !== 'object' || !Array.isArray(input.data.quotes)) {
+      throw new BadRequestException('A gravação precisa conter data.quotes como lista.');
+    }
+    const upstream = await fetch(`${this.legacyOrigin}/api/data`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+      body: JSON.stringify({ data: input.data, baseRevision: input.baseRevision }),
+    }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponível para gravação de orçamentos.');
+    });
+    const result = await upstream.text();
+    return { status: upstream.status, body: result };
   }
 
   private normalizeList(value: unknown): Quote[] {

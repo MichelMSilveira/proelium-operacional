@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O módulo de orçamentos do NestJS passou a aceitar `PUT /api/quotes` com validação da coleção e preservação da revisão/sessão; a persistência ainda é encaminhada ao backend legado.
+
 - O NestJS passou a expor `GET /api/quotes` com service e normalização próprios, preservando os vínculos com oportunidades e clientes durante a migração.
 
 - O NestJS passou a expor `GET /api/products` com service e normalização próprios; a leitura ainda usa a ponte legada durante a migração.
