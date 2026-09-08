@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Segundo recurso de domínio separado criado no NestJS: leitura de clientes em `GET /api/clients`.
 - Primeiro recurso de domínio separado criado no NestJS: leitura de oportunidades em `GET /api/opportunities`.
 - O build do backend NestJS foi integrado à validação do projeto por meio de `npm run check:nest` e `npm run check:all`.
 - A ponte NestJS passou a encaminhar criação e exclusão de usuários de suporte/plataforma.

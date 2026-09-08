@@ -25,6 +25,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 - cadastro de empresa tradicional e via Google também disponível pelas rotas NestJS compatíveis;
 - a validação completa do projeto também executa o build do backend NestJS com `npm run check:nest`;
 - primeiro recurso de domínio iniciado no NestJS: `GET /api/opportunities`;
+- segundo recurso de domínio iniciado no NestJS: `GET /api/clients`;
 - início e callback do OAuth Google também podem passar pela ponte NestJS;
 - aceite de convite Google e vínculo do usuário à empresa também passam pela ponte NestJS;
 - usuários de suporte/plataforma também podem ser criados e excluídos pela ponte NestJS;
