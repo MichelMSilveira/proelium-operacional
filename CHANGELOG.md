@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O módulo de clientes do NestJS passou a ter service e normalização de contrato próprios; a leitura ainda usa a ponte legada, mas o controller deixou de concentrar a regra de domínio.
+
 - O módulo de oportunidades do NestJS passou a ter service e normalização de contrato próprios; a leitura ainda usa a ponte legada, mas o controller deixou de concentrar a regra de domínio.
 
 - Segundo recurso de domínio separado criado no NestJS: leitura de clientes em `GET /api/clients`.
