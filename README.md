@@ -23,6 +23,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 - login compatível disponível em `POST /api/auth/login`, preservando o cookie de sessão;
 - entrada por convite Google compatível disponível pelas rotas NestJS de estado pendente e consumo de convite;
 - cadastro de empresa tradicional e via Google também disponível pelas rotas NestJS compatíveis;
+- a validação completa do projeto também executa o build do backend NestJS com `npm run check:nest`;
 - início e callback do OAuth Google também podem passar pela ponte NestJS;
 - aceite de convite Google e vínculo do usuário à empresa também passam pela ponte NestJS;
 - usuários de suporte/plataforma também podem ser criados e excluídos pela ponte NestJS;

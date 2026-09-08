@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- O build do backend NestJS foi integrado à validação do projeto por meio de `npm run check:nest` e `npm run check:all`.
 - A ponte NestJS passou a encaminhar criação e exclusão de usuários de suporte/plataforma.
 - A ponte NestJS passou a encaminhar o aceite de convite Google e o vínculo do usuário à empresa.
 - A ponte NestJS passou a encaminhar início e callback do OAuth Google, preservando redirecionamentos e cookies.
