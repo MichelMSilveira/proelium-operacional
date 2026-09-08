@@ -23,6 +23,18 @@ export class UsersController {
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);
   }
+
+  @Post()
+  async create(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/users', 'POST', request, payload);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
+
+  @Delete()
+  async remove(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/users', 'DELETE', request, payload);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
 }
 
 @Controller('company/users')
