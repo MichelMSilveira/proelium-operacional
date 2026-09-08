@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O NestJS passou a expor `GET /api/products` com service e normalização próprios; a leitura ainda usa a ponte legada durante a migração.
+
 - O módulo de clientes do NestJS passou a ter service e normalização de contrato próprios; a leitura ainda usa a ponte legada, mas o controller deixou de concentrar a regra de domínio.
 
 - O módulo de oportunidades do NestJS passou a ter service e normalização de contrato próprios; a leitura ainda usa a ponte legada, mas o controller deixou de concentrar a regra de domínio.

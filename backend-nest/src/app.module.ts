@@ -6,9 +6,10 @@ import { CompanyModule } from './company/company.module';
 import { DataModule } from './data/data.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { ClientsModule } from './clients/clients.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   controllers: [HealthController],
-  imports: [AuthModule, UsersModule, CompanyModule, DataModule, OpportunitiesModule, ClientsModule],
+  imports: [AuthModule, UsersModule, CompanyModule, DataModule, OpportunitiesModule, ClientsModule, ProductsModule],
 })
 export class AppModule {}
