@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O NestJS passou a expor `GET /api/tasks` com normalização própria para tarefas operacionais, preservando vínculo com projeto, responsável, prazo, status e prioridade.
+
 - O NestJS passou a expor `GET /api/projects` com service e normalização próprios para projetos, preservando vínculos, etapas, status e progresso durante a migração.
 
 - O módulo de orçamentos do NestJS passou a aceitar `PUT /api/quotes` com validação da coleção e preservação da revisão/sessão; a persistência ainda é encaminhada ao backend legado.
