@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A ponte NestJS passou a encaminhar login por usuário e senha com preservação do cookie de sessão.
 - A ponte NestJS passou a encaminhar o logout e os cabeçalhos de limpeza da sessão.
 - A ponte NestJS passou a encaminhar a administração de usuários da empresa: listar, criar e excluir.
 - A ponte NestJS passou a encaminhar o ciclo de convites da empresa: listar, criar e excluir.

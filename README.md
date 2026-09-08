@@ -20,6 +20,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 - convites da empresa também podem ser listados, criados e excluídos pela ponte NestJS;
 - usuários da empresa também podem ser listados, criados e excluídos pela ponte NestJS;
 - logout compatível disponível em `POST /api/auth/logout`, preservando a limpeza da sessão;
+- login compatível disponível em `POST /api/auth/login`, preservando o cookie de sessão;
 
 - CRM com cadastro, edição, exclusão e histórico de clientes;
 - catálogo de produtos e serviços;
