@@ -13,6 +13,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 - backend NestJS iniciado em `backend-nest/`, em paralelo ao servidor legado; a migração será feita por módulos sem interromper o app atual;
 - ponte inicial de autenticação NestJS disponível em `/api/auth/me`, preservando o cookie e o contrato do backend legado;
 - leitura de usuários da empresa disponível pela ponte NestJS em `/api/auth/users`, ainda respeitando a autorização do backend legado;
+- leitura do perfil da empresa disponível pela ponte NestJS em `/api/company/profile`;
 
 - CRM com cadastro, edição, exclusão e histórico de clientes;
 - catálogo de produtos e serviços;
