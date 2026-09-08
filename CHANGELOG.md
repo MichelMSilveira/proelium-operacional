@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O NestJS passou a expor `GET /api/operations` com normalização própria de ordens de serviço, preservando vínculos, etapa, progresso e status da execução.
+
 - O NestJS passou a expor `GET /api/agenda` com normalização própria de compromissos, preservando data, horário, responsável e vínculo com projeto.
 
 - O NestJS passou a expor `GET /api/tasks` com normalização própria para tarefas operacionais, preservando vínculo com projeto, responsável, prazo, status e prioridade.

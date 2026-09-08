@@ -11,9 +11,10 @@ import { QuotesModule } from './quotes/quotes.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AgendaModule } from './agenda/agenda.module';
+import { OperationsModule } from './operations/operations.module';
 
 @Module({
   controllers: [HealthController],
-  imports: [AuthModule, UsersModule, CompanyModule, DataModule, OpportunitiesModule, ClientsModule, ProductsModule, QuotesModule, ProjectsModule, TasksModule, AgendaModule],
+  imports: [AuthModule, UsersModule, CompanyModule, DataModule, OpportunitiesModule, ClientsModule, ProductsModule, QuotesModule, ProjectsModule, TasksModule, AgendaModule, OperationsModule],
 })
 export class AppModule {}
