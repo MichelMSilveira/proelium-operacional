@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- NestJS passou a expor a leitura compatível de usuários da empresa em `/api/auth/users`, mantendo a autorização existente durante a migração.
 - NestJS passou a expor uma ponte compatível de `/api/auth/me`, encaminhando a sessão ao backend legado durante a migração.
 - Estrutura inicial do backend NestJS criada em paralelo ao servidor legado, com endpoint de health check para validar a migração incremental.
 - Oportunidades ganhou cartões compactos no mobile: dados secundários ficam em “Detalhes”, ações destrutivas vão para o menu `⋮`, o próximo passo usa rótulo curto e os indicadores superiores ocupam menos altura; desktop preservado e cache web atualizado para `v359`.
