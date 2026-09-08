@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- NestJS passou a expor uma ponte compatível de `/api/auth/me`, encaminhando a sessão ao backend legado durante a migração.
 - Estrutura inicial do backend NestJS criada em paralelo ao servidor legado, com endpoint de health check para validar a migração incremental.
 - Oportunidades ganhou cartões compactos no mobile: dados secundários ficam em “Detalhes”, ações destrutivas vão para o menu `⋮`, o próximo passo usa rótulo curto e os indicadores superiores ocupam menos altura; desktop preservado e cache web atualizado para `v359`.
 - Fluxo comercial protegido no frontend e na persistência: levantamento exige oportunidade em Qualificação, a oportunidade avança para Levantamento técnico, a visita fica vinculada ao levantamento e o orçamento só é criado após a visita. Registros legados inalterados continuam preservados; cache web atualizado para `v348`.
