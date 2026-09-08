@@ -57,4 +57,20 @@ export class AuthController {
     if (setCookie) response.setHeader('set-cookie', setCookie);
     response.status(upstream.status).type('application/json').send(await upstream.text());
   }
+
+  @Post('register-company')
+  async registerCompany(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/register-company', 'POST', request, payload);
+    const setCookie = upstream.headers.get('set-cookie');
+    if (setCookie) response.setHeader('set-cookie', setCookie);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
+
+  @Post('register-google-company')
+  async registerGoogleCompany(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    const upstream = await this.forward('/api/auth/register-google-company', 'POST', request, payload);
+    const setCookie = upstream.headers.get('set-cookie');
+    if (setCookie) response.setHeader('set-cookie', setCookie);
+    response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
 }
