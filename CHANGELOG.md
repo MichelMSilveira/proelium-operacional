@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- NestJS passou a expor a leitura compatível de `/api/data`, preservando o contrato agregado durante a migração.
 - NestJS passou a expor a leitura compatível do perfil da empresa em `/api/company/profile` durante a migração.
 - NestJS passou a expor a leitura compatível de usuários da empresa em `/api/auth/users`, mantendo a autorização existente durante a migração.
 - NestJS passou a expor uma ponte compatível de `/api/auth/me`, encaminhando a sessão ao backend legado durante a migração.
