@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A ponte NestJS passou a encaminhar a administração de usuários da empresa: listar, criar e excluir.
 - A ponte NestJS passou a encaminhar o ciclo de convites da empresa: listar, criar e excluir.
 - A ponte NestJS passou a encaminhar leitura e gravação do perfil e das rotinas da empresa.
 - A ponte NestJS de `/api/data` passou a encaminhar gravações `PUT` com sessão e corpo JSON preservados.
