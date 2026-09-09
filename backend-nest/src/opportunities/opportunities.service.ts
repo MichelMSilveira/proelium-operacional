@@ -79,6 +79,12 @@ export class OpportunitiesService {
     return this.forwardSave({ ...current.data, opportunities }, input.baseRevision, cookie);
   }
 
+  async convert(opportunityId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!opportunityId.trim()) throw new BadRequestException('O identificador da oportunidade e obrigatorio.');
+    if (this.pool) return this.databaseConvert(opportunityId, body, cookie);
+    return this.legacyConvert(opportunityId, body, cookie);
+  }
+
   private async databaseSave(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
     const context = await this.authContext(cookie);
     this.ensureWritePermission(context);
@@ -150,6 +156,121 @@ export class OpportunitiesService {
     }
   }
 
+  private async databaseConvert(opportunityId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const input = this.record(body) as { baseRevision?: unknown } | null;
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const opportunityRevision = await this.lockRevision(client, context.companyId);
+      if (opportunityRevision !== this.revision(input?.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(opportunityRevision);
+      }
+      const opportunityResult = await client.query(
+        `select id, company, contact, phone, email, stage, source, extra_data as "extraData"
+         from opportunities_domain_entries where company_id = $1 and id = $2 for update`,
+        [context.companyId, opportunityId],
+      );
+      const opportunityRow = opportunityResult.rows[0] as RecordItem | undefined;
+      if (!opportunityRow) throw new NotFoundException('Oportunidade nao encontrada.');
+      const opportunity = this.opportunityFromRow(opportunityRow);
+      if (!['Orçamento', 'Ganho'].includes(opportunity.stage)) {
+        throw new BadRequestException('Conclua o tratamento comercial até Orçamento antes de criar o cliente.');
+      }
+      const approvedQuote = await client.query(
+        `select id from quotes_domain_entries
+         where company_id = $1 and opportunity_id = $2 and status = 'Aprovado' limit 1`,
+        [context.companyId, opportunityId],
+      );
+      if (!approvedQuote.rowCount) throw new BadRequestException('O cliente só é criado após a aprovação de um orçamento.');
+
+      const clientsRevision = await this.lockDomainRevision(client, 'clients_domain_state', 'proelium:clients', context.companyId);
+      const existingClient = await client.query(
+        `select id from clients_domain_entries
+         where company_id = $1 and lower(name) = lower($2) limit 1`,
+        [context.companyId, opportunity.company],
+      );
+      let clientId = this.text(existingClient.rows[0]?.id);
+      let clientCreated = false;
+      if (!clientId) {
+        clientId = `cli-${crypto.randomUUID()}`;
+        const extraData = {
+          contact: opportunity.contact,
+          city: '',
+          notes: `Origem: oportunidade comercial (${opportunity.source || 'nao informada'}).`,
+          status: 'Potencial',
+        };
+        await client.query(
+          `insert into clients_domain_entries
+            (company_id, id, name, document, email, phone, address, extra_data, updated_at)
+           values ($1, $2, $3, '', $4, $5, '', $6::jsonb, now())`,
+          [context.companyId, clientId, opportunity.company, opportunity.email, opportunity.phone, JSON.stringify(extraData)],
+        );
+        clientCreated = true;
+      }
+      await client.query(
+        `update opportunities_domain_entries
+         set stage = 'Ganho', loss_reason = '', updated_at = now()
+         where company_id = $1 and id = $2`,
+        [context.companyId, opportunityId],
+      );
+      const nextOpportunityRevision = await this.bumpRevision(client, context.companyId);
+      const nextClientsRevision = clientCreated
+        ? await this.bumpDomainRevision(client, 'clients_domain_state', context.companyId)
+        : clientsRevision;
+      await client.query('commit');
+      return {
+        status: 200,
+        body: JSON.stringify({ ok: true, opportunityId, clientId, clientCreated, opportunityRevision: nextOpportunityRevision, clientsRevision: nextClientsRevision }),
+      };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async legacyConvert(opportunityId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const input = this.record(body) as { baseRevision?: unknown } | null;
+    const current = await this.readAggregate(cookie);
+    const opportunities = Array.isArray(current.data.opportunities) ? current.data.opportunities : [];
+    const opportunityIndex = opportunities.findIndex((item) => this.sameId(item, opportunityId));
+    if (opportunityIndex < 0) throw new NotFoundException('Oportunidade nao encontrada.');
+    const opportunity = this.record(opportunities[opportunityIndex]) || {};
+    if (!['Orçamento', 'Ganho'].includes(this.text(opportunity.stage))) {
+      throw new BadRequestException('Conclua o tratamento comercial até Orçamento antes de criar o cliente.');
+    }
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    if (!quotes.some((item) => {
+      const quote = this.record(item);
+      return this.text(quote?.opportunityId) === opportunityId && this.text(quote?.status) === 'Aprovado';
+    })) throw new BadRequestException('O cliente só é criado após a aprovação de um orçamento.');
+    const clients = Array.isArray(current.data.clients) ? current.data.clients : [];
+    const company = this.text(opportunity.company);
+    const existing = clients.find((item) => this.text(this.record(item)?.name).toLowerCase() === company.toLowerCase());
+    const nextClients = existing ? clients : [...clients, {
+      id: `cli-${crypto.randomUUID()}`,
+      name: company,
+      document: '',
+      contact: this.text(opportunity.contact),
+      email: this.text(opportunity.email),
+      phone: this.text(opportunity.phone),
+      address: '',
+      city: '',
+      notes: `Origem: oportunidade comercial (${this.text(opportunity.source, 'nao informada')}).`,
+      status: 'Potencial',
+    }];
+    const nextOpportunities = opportunities.map((item, index) => index === opportunityIndex ? { ...opportunity, stage: 'Ganho', lossReason: '' } : item);
+    return this.forwardSave(
+      { ...current.data, opportunities: nextOpportunities, clients: nextClients },
+      input?.baseRevision ?? current.revision,
+      cookie,
+    );
+  }
+
   private async authContext(cookie?: string): Promise<AuthContext> {
     if (!cookie) throw new UnauthorizedException('Sessao obrigatoria.');
     const upstream = await fetch(`${this.legacyOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
@@ -171,6 +292,19 @@ export class OpportunitiesService {
 
   private ensureWritePermission(context: AuthContext): void {
     if (context.role !== 'admin' && context.role !== 'comercial') throw new ForbiddenException('Seu perfil nao pode alterar oportunidades.');
+  }
+
+  private async lockDomainRevision(client: PoolClient, table: string, lockKey: string, companyId: string): Promise<number> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`${lockKey}:${companyId}`]);
+    const result = await client.query(`select revision from ${table} where company_id = $1 for update`, [companyId]);
+    if (result.rowCount) return Number(result.rows[0].revision);
+    await client.query(`insert into ${table} (company_id, revision) values ($1, 0)`, [companyId]);
+    return 0;
+  }
+
+  private async bumpDomainRevision(client: PoolClient, table: string, companyId: string): Promise<number> {
+    const result = await client.query(`update ${table} set revision = revision + 1, updated_at = now() where company_id = $1 returning revision`, [companyId]);
+    return Number(result.rows[0].revision);
   }
 
   private async lockRevision(client: PoolClient, companyId: string): Promise<number> {

@@ -2,13 +2,14 @@
 
 ## Em desenvolvimento
 
+- A conversão posterior de oportunidades com orçamento aprovado passou a operar diretamente no PostgreSQL pelo NestJS, criando ou reutilizando o cliente, concluindo a oportunidade como Ganho e mantendo a ponte legada apenas como fallback sem PostgreSQL.
 - O domínio de orçamentos passou a persistir também pacotes comerciais e a fila de itens a cotar no PostgreSQL, com importação do estado existente e revisão compartilhada com propostas e ambientes.
 - O histórico técnico dos equipamentos passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o cadastro, importação do estado existente e rotas próprias para registrar, editar e excluir registros.
 - Entregas de projeto deixaram de regravar o agregado legado quando o PostgreSQL está ativo: a entrega atualiza diretamente relatório, projeto, instalação, checklist e histórico do cliente, com as revisões dos domínios relacionados preservadas.
 - O envio de levantamento para orçamento passou a operar em transação direta no PostgreSQL, criando ou reutilizando a proposta, sincronizando a oportunidade, importando ambientes faltantes e marcando o levantamento sem regravar o agregado legado.
-- A aprovação de orçamentos passou a operar diretamente no PostgreSQL, calculando custo e venda pelo catálogo, criando ou reutilizando cliente e projeto e atualizando a oportunidade na mesma transação; a conversão posterior permanece como próxima ponte comercial.
+- A aprovação de orçamentos passou a operar diretamente no PostgreSQL, calculando custo e venda pelo catálogo, criando ou reutilizando cliente e projeto e atualizando a oportunidade na mesma transação.
 - O histórico de contatos dos clientes passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o CRM, importação do estado existente e rotas próprias para registrar, editar e excluir atividades; entregas de projeto também registram o histórico direto durante a transição.
-- Orçamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com propostas, ambientes, itens, revisão própria e importação do estado existente; aprovação e conversão continuam usando a ponte de compatibilidade para atualizar os vínculos comerciais durante a transição.
+- Orçamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com propostas, ambientes, itens, revisão própria e importação do estado existente; a ponte de compatibilidade permanece somente como fallback quando o PostgreSQL não está configurado.
 - Oportunidades passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação do cadastro existente e validação do funil comercial preservada pela ponte durante a transição.
 - Diagrama técnico passou a persistir diretamente no PostgreSQL pelo NestJS, com conexões, ajustes, sobrescritas, isolamento por empresa, revisão própria, validação de projeto e importação do estado existente.
 - Execução passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de projeto e importação dos custos de campo; cada lançamento mantém seu vínculo financeiro por identificador.

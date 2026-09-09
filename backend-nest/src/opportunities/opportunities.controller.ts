@@ -21,4 +21,10 @@ export class OpportunitiesController {
     const upstream = await this.opportunities.save(body, request.headers.cookie, id);
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
+
+  @Post(':id/convert')
+  async convert(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.opportunities.convert(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
 }
