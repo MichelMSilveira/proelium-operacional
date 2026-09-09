@@ -104,6 +104,7 @@ export class QuotesService {
     const input = body as { item?: unknown; baseRevision?: unknown };
     const item = this.record(input.item);
     if (!item) throw new BadRequestException('A criacao precisa conter um item valido.');
+    if (this.pool) return this.databaseAddItem(quoteId, item, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
     if (!quotes.some((entry) => this.sameId(entry, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
@@ -140,6 +141,7 @@ export class QuotesService {
     const input = body as { item?: unknown; baseRevision?: unknown };
     const item = this.record(input.item);
     if (!item) throw new BadRequestException('A atualizacao precisa conter um item valido.');
+    if (this.pool) return this.databaseUpdateItem(quoteId, itemId, item, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
     const locations = rooms.map((entry, roomIndex) => {
@@ -169,6 +171,7 @@ export class QuotesService {
   async deleteItem(quoteId: string, itemId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim() || !itemId.trim()) throw new BadRequestException('O identificador do item e obrigatorio.');
     const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    if (this.pool) return this.databaseDeleteItem(quoteId, itemId, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
     let foundRoomIndex = -1;
@@ -707,6 +710,132 @@ export class QuotesService {
       const nextRevision = await this.bumpRevision(client, context.companyId);
       await client.query('commit');
       return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, room: nextRoom }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseAddItem(quoteId: string, item: RecordItem, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const quote = await client.query('select id from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]);
+      if (!quote.rowCount) throw new NotFoundException('Orcamento nao encontrado.');
+      const roomId = this.text(item.roomId);
+      const roomResult = await client.query('select id, items from quotes_domain_rooms where company_id = $1 and id = $2 and quote_id = $3 for update', [context.companyId, roomId, quoteId]);
+      const room = roomResult.rows[0] as RecordItem | undefined;
+      if (!room) throw new NotFoundException('Ambiente do orcamento nao encontrado.');
+      const productId = this.text(item.productId);
+      const product = await client.query('select id from products_domain_entries where company_id = $1 and id = $2', [context.companyId, productId]);
+      if (!product.rowCount) throw new NotFoundException('Produto ou servico nao encontrado.');
+      const qty = this.number(item.qty);
+      const discount = this.number(item.discount);
+      if (qty <= 0) throw new BadRequestException('A quantidade do item deve ser maior que zero.');
+      if (discount > 100) throw new BadRequestException('O desconto do item deve estar entre zero e cem por cento.');
+      const nextItem: QuoteItem = { ...item, id: this.text(item.id, `item-${crypto.randomUUID()}`), quoteId, roomId, productId, qty, discount };
+      const existingItems: unknown[] = Array.isArray(room.items) ? room.items : [];
+      if (existingItems.some((entry) => this.text(this.record(entry)?.id) === nextItem.id)) throw new BadRequestException('Ja existe um item com este identificador.');
+      await client.query('update quotes_domain_rooms set items = $1::jsonb, updated_at = now() where company_id = $2 and id = $3 and quote_id = $4', [JSON.stringify([...existingItems, nextItem]), context.companyId, roomId, quoteId]);
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, item: nextItem }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseUpdateItem(quoteId: string, itemId: string, item: RecordItem, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const rooms = await client.query('select id, items from quotes_domain_rooms where company_id = $1 and quote_id = $2 for update', [context.companyId, quoteId]);
+      let selectedRoom: RecordItem | undefined;
+      let selectedIndex = -1;
+      let selectedItems: unknown[] = [];
+      for (const row of rooms.rows as RecordItem[]) {
+        const items: unknown[] = Array.isArray(row.items) ? row.items : [];
+        const index = items.findIndex((entry, entryIndex) => this.normalizeItem(entry, quoteId, this.text(row.id), entryIndex).id === itemId);
+        if (index >= 0) {
+          selectedRoom = row;
+          selectedIndex = index;
+          selectedItems = items;
+          break;
+        }
+      }
+      if (!selectedRoom || selectedIndex < 0) throw new NotFoundException('Item do orcamento nao encontrado.');
+      const existing = this.normalizeItem(selectedItems[selectedIndex], quoteId, this.text(selectedRoom.id), selectedIndex);
+      const productId = this.text(item.productId, existing.productId);
+      const product = await client.query('select id from products_domain_entries where company_id = $1 and id = $2', [context.companyId, productId]);
+      if (!product.rowCount) throw new NotFoundException('Produto ou servico nao encontrado.');
+      const qty = this.number(item.qty ?? existing.qty);
+      const discount = this.number(item.discount ?? existing.discount);
+      if (qty <= 0) throw new BadRequestException('A quantidade do item deve ser maior que zero.');
+      if (discount > 100) throw new BadRequestException('O desconto do item deve estar entre zero e cem por cento.');
+      const nextItem: QuoteItem = { ...existing, ...item, id: itemId, quoteId, roomId: this.text(selectedRoom.id), productId, qty, discount };
+      const nextItems = selectedItems.map((entry, index) => index === selectedIndex ? nextItem : entry);
+      await client.query('update quotes_domain_rooms set items = $1::jsonb, updated_at = now() where company_id = $2 and id = $3 and quote_id = $4', [JSON.stringify(nextItems), context.companyId, selectedRoom.id, quoteId]);
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, item: nextItem }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseDeleteItem(quoteId: string, itemId: string, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const rooms = await client.query('select id, items from quotes_domain_rooms where company_id = $1 and quote_id = $2 for update', [context.companyId, quoteId]);
+      let selectedRoom: RecordItem | undefined;
+      let selectedIndex = -1;
+      let selectedItems: unknown[] = [];
+      for (const row of rooms.rows as RecordItem[]) {
+        const items: unknown[] = Array.isArray(row.items) ? row.items : [];
+        const index = items.findIndex((entry, entryIndex) => this.normalizeItem(entry, quoteId, this.text(row.id), entryIndex).id === itemId);
+        if (index >= 0) {
+          selectedRoom = row;
+          selectedIndex = index;
+          selectedItems = items;
+          break;
+        }
+      }
+      if (!selectedRoom || selectedIndex < 0) throw new NotFoundException('Item do orcamento nao encontrado.');
+      const nextItems = selectedItems.filter((_, index) => index !== selectedIndex);
+      await client.query('update quotes_domain_rooms set items = $1::jsonb, updated_at = now() where company_id = $2 and id = $3 and quote_id = $4', [JSON.stringify(nextItems), context.companyId, selectedRoom.id, quoteId]);
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, id: itemId }) };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
       throw error;
