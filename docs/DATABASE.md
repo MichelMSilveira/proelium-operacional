@@ -105,7 +105,7 @@ npm run db:migrate
 O deploy automático executa esse passo antes de reiniciar o serviço.
 Cada arquivo e seu registro em `schema_migrations` são confirmados na mesma transação; uma falha deixa a migração pendente para uma nova tentativa segura.
 
-O deploy também compila e instala o backend NestJS em `/opt/proelium-operacional/backend-nest`, mantendo o serviço `proelium-nest` na porta interna `4174`. A API NestJS usa o mesmo `DATABASE_URL` de `/etc/proelium/database.env` e valida as sessões pelo serviço legado local.
+O deploy também compila e instala o backend NestJS em `/opt/proelium-operacional/backend-nest`, mantendo o serviço `proelium-nest` na porta interna `4174`. Com PostgreSQL ativo, o servidor público encaminha `auth/me` e `auth/login` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 ## Backup
 

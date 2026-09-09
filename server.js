@@ -139,6 +139,28 @@ function addSetCookie(res, value) {
   const cookies = current ? (Array.isArray(current) ? current : [current]) : [];
   res.setHeader('Set-Cookie', [...cookies, value]);
 }
+function nestAuthEnabled() {
+  return Boolean(process.env.DATABASE_URL) && !isolatedTestDirectory;
+}
+async function forwardNestAuth(req, res, pathname, body) {
+  const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
+  const upstream = await fetch(`${origin}${pathname}`, {
+    method: req.method,
+    headers: {
+      ...(req.headers.cookie ? { cookie: req.headers.cookie } : {}),
+      ...(req.headers['content-type'] ? { 'content-type': req.headers['content-type'] } : {}),
+      ...(req.headers['x-forwarded-for'] ? { 'x-forwarded-for': req.headers['x-forwarded-for'] } : {}),
+      ...(req.headers['x-forwarded-proto'] ? { 'x-forwarded-proto': req.headers['x-forwarded-proto'] } : {}),
+      ...(req.headers.host ? { host: req.headers.host } : {}),
+    },
+    ...(body === undefined ? {} : { body }),
+  });
+  const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
+  const setCookie = upstream.headers.get('set-cookie');
+  if (setCookie) res.setHeader('Set-Cookie', setCookie);
+  res.writeHead(upstream.status, { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': 'no-store' });
+  res.end(await upstream.text());
+}
 function clearGoogleStateCookie(res, secure = false) {
   addSetCookie(res, `proelium_google_state=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
 }
@@ -308,6 +330,13 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/auth/me' && req.method === 'GET') {
+    if (nestAuthEnabled()) {
+      try { return await forwardNestAuth(req, res, pathname); }
+      catch (error) {
+        console.error('Falha ao encaminhar sessÃ£o ao NestJS:', error.message);
+        return sendJson(res, 503, { authenticated: false, error: 'NÃ£o foi possÃ­vel validar a sessÃ£o agora.' });
+      }
+    }
     try {
       const user = await storedUserFromSession(req);
       return user ? sendJson(res, 200, { authenticated: true, user: publicUser(user) })
@@ -387,6 +416,13 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/auth/login' && req.method === 'POST') {
+    if (nestAuthEnabled()) {
+      try { return await forwardNestAuth(req, res, pathname, await readBody(req)); }
+      catch (error) {
+        console.error('Falha ao encaminhar login ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'NÃ£o foi possÃ­vel autenticar agora.' });
+      }
+    }
     try {
       const payload = JSON.parse(await readBody(req));
       const username = String(payload.username || '').trim().toLowerCase();
