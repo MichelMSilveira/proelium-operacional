@@ -10,6 +10,7 @@
 - O ciclo de ambientes de orçamento passou a criar, editar, excluir e substituir listas diretamente no PostgreSQL, com nomes únicos, vínculo ao orçamento e proteção dos itens existentes.
 - Itens de orçamento passaram a ser adicionados, editados e excluídos diretamente nas salas PostgreSQL, com validação do catálogo, quantidade, desconto e revisão de conflito.
 - A criação de propostas passou a validar e gravar diretamente oportunidade, cliente, status, valor e metadados no PostgreSQL, sem preparar o agregado legado.
+- O serviço de orçamentos deixou de manter uma leitura híbrida quando o PostgreSQL está ativo; o agregado legado ficou restrito ao fallback sem banco.
 - O domínio de orçamentos passou a persistir também pacotes comerciais e a fila de itens a cotar no PostgreSQL, com importação do estado existente e revisão compartilhada com propostas e ambientes.
 - O histórico técnico dos equipamentos passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o cadastro, importação do estado existente e rotas próprias para registrar, editar e excluir registros.
 - Entregas de projeto deixaram de regravar o agregado legado quando o PostgreSQL está ativo: a entrega atualiza diretamente relatório, projeto, instalação, checklist e histórico do cliente, com as revisões dos domínios relacionados preservadas.

@@ -1028,44 +1028,6 @@ export class QuotesService {
   }
 
   private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
-    if (this.pool) {
-      const context = await this.authContext(cookie);
-      const legacy = await this.readLegacyAggregate(cookie);
-      const [quotes, rooms, packages, procurementRequests, state] = await Promise.all([
-        this.pool.query(
-          `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
-           from quotes_domain_entries where company_id = $1 order by updated_at desc, title asc`,
-          [context.companyId],
-        ),
-        this.pool.query(
-          `select id, quote_id as "quoteId", name, items, extra_data as "extraData"
-           from quotes_domain_rooms where company_id = $1 order by updated_at asc, name asc`,
-          [context.companyId],
-        ),
-        this.pool.query(
-          `select id, name, category, description, active, items, extra_data as "extraData"
-           from quotes_domain_packages where company_id = $1 order by updated_at desc, name asc`,
-          [context.companyId],
-        ),
-        this.pool.query(
-          `select id, quote_id as "quoteId", room_id as "roomId", product_id as "productId", name, category, brand, status,
-                  request_date as "createdAt", extra_data as "extraData"
-           from quotes_domain_procurement_requests where company_id = $1 order by updated_at desc, request_date desc`,
-          [context.companyId],
-        ),
-        this.pool.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]),
-      ]);
-      return {
-        data: {
-          ...legacy.data,
-          quotes: quotes.rows.map((row) => this.quoteFromRow(row)),
-          quoteRooms: rooms.rows.map((row) => this.roomFromRow(row)),
-          packages: packages.rows.map((row) => this.packageFromRow(row)),
-          procurementRequests: procurementRequests.rows.map((row) => this.procurementFromRow(row)),
-        },
-        revision: Number(state.rows[0]?.revision || 0),
-      };
-    }
     return this.readLegacyAggregate(cookie);
   }
 
