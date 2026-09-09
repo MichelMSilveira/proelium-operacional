@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
       { source: '/api/finance/accounts/:id', destination: `${nestApiOrigin}/api/finance/accounts/:id` },
       { source: '/api/knowledge', destination: `${nestApiOrigin}/api/knowledge` },
       { source: '/api/knowledge/:id', destination: `${nestApiOrigin}/api/knowledge/:id` },
+      { source: '/api/company/users', destination: `${nestApiOrigin}/api/company/users` },
       { source: '/api/collaborators', destination: `${nestApiOrigin}/api/collaborators` },
       { source: '/api/installations', destination: `${nestApiOrigin}/api/installations` },
       { source: '/api/operations', destination: `${nestApiOrigin}/api/operations` },

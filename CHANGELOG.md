@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Usuarios da empresa agora podem ser ativados, desativados e removidos pela tela Next.js, usando o proxy NestJS e preservando a conta administradora e o fluxo de convites.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v384` apos a migracao das acoes de usuarios da empresa.
+
 - Conhecimento agora permite cadastrar, editar e excluir artigos por `POST/PATCH/DELETE /api/knowledge`; a gravacao valida titulo, revisao e permissao do perfil operacional/admin.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v383` apos a migracao da biblioteca de conhecimento para o NestJS.

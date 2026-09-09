@@ -65,7 +65,8 @@ export class CompanyUsersController {
 
   @Delete()
   async remove(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
-    const upstream = await this.forward('/api/company/users', 'DELETE', request, payload);
+    const username = payload && typeof payload === 'object' ? String((payload as { username?: unknown }).username || '') : '';
+    const upstream = await this.forward(`/api/company/users?username=${encodeURIComponent(username)}`, 'DELETE', request, payload);
     response.status(upstream.status).type('application/json').send(await upstream.text());
   }
 }
