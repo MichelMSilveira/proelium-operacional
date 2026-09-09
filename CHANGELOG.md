@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Biblioteca de conhecimento passou a persistir artigos diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação dos registros existentes; a autenticação continua compatível com a sessão legada.
+
 - Documentação do frontend e do estado do projeto atualizada para refletir os recursos NestJS já migrados e identificar corretamente a persistência ainda dependente da ponte legada.
 
 - Usuarios da empresa agora podem ser ativados, desativados e removidos pela tela Next.js, usando o proxy NestJS e preservando a conta administradora e o fluxo de convites.

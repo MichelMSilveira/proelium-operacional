@@ -14,8 +14,11 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - `companies`: empresas e a referência `founder_username` da conta que iniciou cada cadastro;
 - `schema_migrations`: migrações já aplicadas.
 - A migração `002_user_roles.sql` amplia os papéis de acesso sem invalidar contas legadas `operador`.
+- A migração `011_knowledge_domain.sql` cria a persistência própria da biblioteca de conhecimento, separada de `app_state`, e importa os artigos existentes por empresa.
 
 Essa primeira etapa prioriza transações, histórico e recuperação sem exigir mudanças simultâneas em todas as telas. O modelo normalizado de `database/schema.sql` permanece como evolução posterior.
+
+O domínio de conhecimento usa `knowledge_domain_articles` e `knowledge_domain_state`. A revisão do domínio é independente da revisão agregada, e os artigos são isolados por `company_id`; a sessão ainda é validada pela API de autenticação durante a migração gradual.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
