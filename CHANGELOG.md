@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Tarefas passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, controle de concorrência e importação das pendências existentes; o contrato `GET/POST/PATCH/DELETE /api/tasks` permanece compatível com a tela de Operação.
 - Colaboradores passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação do cadastro profissional existente; contas, convites e permissões permanecem nos domínios de identidade.
 
 - Equipamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação do cadastro existente; o histórico técnico separado permanece preservado durante a transição.
