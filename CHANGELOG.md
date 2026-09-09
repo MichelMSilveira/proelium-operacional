@@ -32,6 +32,10 @@
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v369` após a migração do acompanhamento de instalações.
 
+- Agenda passou a permitir criação, edição e exclusão de compromissos por `POST/PATCH/DELETE /api/agenda`, preservando vínculos opcionais de cliente/projeto e revisão do agregado.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v370` após a migração da agenda operacional.
+
 - Criada a rota Next.js `/product-connections` para consulta do modelo tecnico de Produtos, usando `GET /api/products` e exibindo compatibilidades, requisitos, limites e fonte oficial sem duplicar armazenamento.
 - Biblioteca Tecnica passou a permitir criacao e edicao de fabricantes por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias em produtos e conexoes.
 - Catalogo passou a permitir criacao e edicao de servicos por `POST/PATCH /api/services`, mantendo produtos e servicos separados na interface e classificados no mesmo armazenamento durante a transicao.

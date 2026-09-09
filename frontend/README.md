@@ -42,7 +42,7 @@ O detalhe tambem le o catalogo pelo recurso `GET /api/products`; servicos e grav
 A gravacao de ambientes e itens agora usa `PUT /api/quotes/{id}/rooms`; o NestJS recompõe a colecao no legado usando a revisao informada.
 A aprovacao agora usa `POST /api/quotes/{id}/approve` com `baseRevision`; o NestJS carrega os dados relacionados, calcula o total, cria ou vincula cliente e projeto e preserva a revisao.
 Operacoes le tarefas por `GET /api/tasks`, com criacao, edicao e exclusao em `POST/PATCH/DELETE /api/tasks`; ordens de servico continuam vindo do recurso separado `GET /api/operations` em modo de consulta.
-Agenda le compromissos por `GET /api/agenda`, usando a normalizacao do recurso separado no NestJS.
+Agenda le e grava compromissos por `GET/POST/PATCH/DELETE /api/agenda`, com revisao de conflito e normalizacao no NestJS.
 Operacoes agora le tarefas e ordens de servico pelos recursos `GET /api/tasks` e `GET /api/operations`, sem depender de `/api/data` para a consulta; tarefas e ordens usam `POST/PATCH/DELETE` nos respectivos recursos.
 Relatorios le Relatorios de Servico e Entregas de Projetos por `GET /api/reports`, com normalizacao das duas colecoes no NestJS.
 Instalacoes agora le e grava pelo recurso `GET/POST/PATCH /api/installations`, com contrato normalizado no NestJS; a edicao preserva o historico sem exclusao fisica.
