@@ -14,7 +14,8 @@ Indicadores e o resumo inicial são consultas compostas por recursos separados. 
 
 ## Estado da migração
 
-Relatórios e entregas usam `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `026_reports_domain.sql`. O serviço atualiza diretamente OS, agenda, instalação e checklist; projetos e atividades continuam usando a ponte legada até a migração dos projetos.
+Projetos usam `projects_domain_entries` e `projects_domain_state`, com isolamento por `companyId`, revisão própria, progresso entre 0 e 100, orçamento não negativo e importação inicial durante a migração `027_projects_domain.sql`. Os vínculos dos demais domínios continuam por `projectId` durante a migração gradual.
+Relatórios e entregas usam `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `026_reports_domain.sql`. O serviço atualiza diretamente OS, agenda, instalação, checklist e projetos; atividades continuam usando a ponte legada durante a transição.
 
 Rotinas usam a tabela existente `routines` e `routines_domain_state`, com isolamento por `companyId`, revisão própria e gravação direta pelo NestJS. Checklists usam `project_checklists_domain_entries` e `project_checklists_domain_state`, com revisão própria; Relatórios valida a entrega consultando essa coleção durante a transição.
 

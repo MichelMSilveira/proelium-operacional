@@ -214,7 +214,12 @@ export class ReportsService {
     if (!['Aceite confirmado', 'Aceite pendente'].includes(acceptance)) throw new BadRequestException('Aceite de entrega invalido.');
     const current = await this.readAggregate(cookie, 'validacao da entrega');
     const projects = Array.isArray(current.data.projects) ? current.data.projects : [];
-    if (!projects.some((item) => this.sameId(item, projectId))) throw new NotFoundException('Projeto nao encontrado.');
+    const directProject = await this.pool!.query(
+      `select id, name, client_id as "clientId" from projects_domain_entries where company_id = $1 and id = $2`,
+      [context.companyId, projectId],
+    );
+    const project = directProject.rows[0] || projects.find((item) => this.sameId(item, projectId));
+    if (!project) throw new NotFoundException('Projeto nao encontrado.');
     const checklistPayload = await this.routines.listChecklists(cookie);
     const projectChecklist = checklistPayload.projectChecklists.filter((item) => this.text(item.projectId) === projectId);
     if (!projectChecklist.length) throw new BadRequestException('Aplique o checklist do projeto antes de registrar a entrega.');
@@ -255,9 +260,14 @@ export class ReportsService {
          where company_id = $3 and project_id = $4`,
         [acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite', date, context.companyId, projectId],
       );
+      await client.query(
+        `update projects_domain_entries
+         set technical_stage = 'Entrega', progress = 100, status = $1, updated_at = now()
+         where company_id = $2 and id = $3`,
+        [acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite', context.companyId, projectId],
+      );
       const nextRevision = await this.bumpRevision(client, context.companyId);
       await client.query('commit');
-      const project = projects.find((item) => this.sameId(item, projectId));
       const projectRecord = this.record(project);
       const clientId = this.text(projectRecord?.clientId);
       const activities = Array.isArray(current.data.activities) ? current.data.activities : [];

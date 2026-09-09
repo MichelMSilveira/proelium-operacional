@@ -15,6 +15,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `024_routines_domain.sql` cria a revisão própria das rotinas empresariais, usando a tabela `routines` já existente.
 - A migração `025_project_checklists_domain.sql` cria a persistência própria dos checklists de projeto e importa os itens existentes por empresa.
 - A migração `026_reports_domain.sql` cria a persistência própria de relatórios de serviço e entregas de projeto, separada de `app_state`, e importa os registros existentes por empresa.
+- A migração `027_projects_domain.sql` cria a persistência própria do cadastro de projetos, separada de `app_state`, e importa os registros existentes por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -65,6 +66,8 @@ O domínio de rotinas usa `routines` e `routines_domain_state`. A coleção de p
 O domínio de checklists usa `project_checklists_domain_entries` e `project_checklists_domain_state`. Os itens são isolados por `company_id`, aceitam revisão de conflito e o serviço de Relatórios consulta essa tabela para bloquear entregas incompletas; relatórios e entregas continuam híbridos enquanto seus registros principais não forem migrados.
 
 O domínio de relatórios usa `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`. Relatórios atualizam diretamente ordens de serviço, compromissos e instalações quando os vínculos já foram migrados; a atualização de projetos e atividades permanece temporariamente na ponte legada.
+
+O domínio de projetos usa `projects_domain_entries` e `projects_domain_state`. Cliente e demais vínculos permanecem como referências textuais; progresso e orçamento possuem limites no banco, e a revisão é independente por empresa.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
