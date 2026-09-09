@@ -9,7 +9,7 @@ Environment=NODE_ENV=production
 Environment=PORT=4174
 Environment=LEGACY_API_ORIGIN=http://127.0.0.1:4173
 EnvironmentFile=-/etc/proelium/database.env
-ExecStart=/usr/bin/node /opt/proelium-operacional/backend-nest/dist/main.js
+ExecStart=/usr/bin/env node /opt/proelium-operacional/backend-nest/dist/main.js
 Restart=always
 RestartSec=5
 
