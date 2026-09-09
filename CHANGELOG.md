@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Compras e materiais passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de quantidade e importação dos itens existentes; vínculos com projetos permanecem por identificador durante a transição.
 - Projetos passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de progresso/orçamento e importação do cadastro existente; tarefas, agenda, instalações, OS, relatórios e financeiro preservam seus vínculos por identificador durante a transição.
 - Relatórios de serviço e entregas passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, atualização dos vínculos diretos de OS/agenda/instalação e validação de checklist concluído antes da entrega; projetos e atividades ainda recebem a atualização pela ponte legada.
 

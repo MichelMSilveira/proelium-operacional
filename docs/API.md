@@ -44,6 +44,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | PATCH/DELETE | `/projects/{id}` | alterar ou excluir projeto |
 | GET/POST | `/reports` | relatórios de serviço |
 | POST | `/reports/deliveries` | registrar entrega após checklist completo |
+| GET/POST | `/purchases` | materiais e itens de compra |
+| PATCH/DELETE | `/purchases/{id}` | alterar status ou excluir item |
 | GET/POST | `/quotes` | orçamentos e versões |
 | GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
 | GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |
