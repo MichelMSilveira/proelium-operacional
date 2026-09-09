@@ -6,8 +6,13 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api';
 
 type Task = { id: string; title: string; projectId: string; responsible: string; due: string; time: string; status: string; priority: string };
 type ServiceOrder = { id: string; code: string; clientId: string; projectId: string; equipmentId: string; type: string; date: string; time: string; assignee: string; status: string; description: string };
+type SupportTicket = { id: string; openedAt: string; clientId: string; equipmentId: string; type: string; priority: string; status: string; description: string };
 type TaskPayload = { tasks?: Task[]; revision?: number };
 type OperationsPayload = { serviceOrders?: ServiceOrder[]; revision?: number };
+type SupportTicketsPayload = { supportTickets?: SupportTicket[]; revision?: number };
+const ticketTypes = ['Manutenção preventiva', 'Manutenção corretiva', 'Dúvida técnica', 'Garantia', 'Troca / retirada'];
+const ticketPriorities = ['Baixa', 'Média', 'Alta', 'Urgente'];
+const ticketStatuses = ['Aberto', 'Em atendimento', 'Resolvido', 'Cancelado'];
 const taskStatuses = ['Aberta', 'Em andamento', 'Concluída', 'Bloqueada'];
 const priorities = ['Baixa', 'Média', 'Alta', 'Urgente'];
 const orderTypes = ['Visita técnica', 'Instalação', 'Manutenção', 'Chamado', 'Troca', 'Retirada'];
@@ -21,21 +26,28 @@ function emptyOrder(): ServiceOrder {
   return { id: '', code: '', clientId: '', projectId: '', equipmentId: '', type: 'Visita técnica', date: new Date().toISOString().slice(0, 10), time: '', assignee: '', status: 'Agendada', description: '' };
 }
 
+function emptyTicket(): SupportTicket {
+  return { id: '', openedAt: new Date().toISOString().slice(0, 10), clientId: '', equipmentId: '', type: 'Manutenção corretiva', priority: 'Média', status: 'Aberto', description: '' };
+}
+
 export default function OperationsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [revision, setRevision] = useState<number>();
   const [taskDraft, setTaskDraft] = useState<Task>(emptyTask);
   const [orderDraft, setOrderDraft] = useState<ServiceOrder>(emptyOrder);
+  const [ticketDraft, setTicketDraft] = useState<SupportTicket>(emptyTicket);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   async function load() {
     try {
-      const [taskPayload, operationPayload] = await Promise.all([apiGet<TaskPayload>('/api/tasks'), apiGet<OperationsPayload>('/api/operations')]);
+      const [taskPayload, operationPayload, ticketPayload] = await Promise.all([apiGet<TaskPayload>('/api/tasks'), apiGet<OperationsPayload>('/api/operations'), apiGet<SupportTicketsPayload>('/api/support-tickets')]);
       setTasks(taskPayload.tasks || []);
       setServiceOrders(operationPayload.serviceOrders || []);
-      setRevision(taskPayload.revision ?? operationPayload.revision);
+      setSupportTickets(ticketPayload.supportTickets || []);
+      setRevision(taskPayload.revision ?? operationPayload.revision ?? ticketPayload.revision);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Falha ao carregar operacao.');
     }
@@ -76,6 +88,25 @@ export default function OperationsPage() {
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Nao foi possivel salvar a ordem de servico.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveTicket(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const id = ticketDraft.id || `tic-${Date.now()}`;
+      const result = ticketDraft.id
+        ? await apiPatch<{ revision?: number }>(`/api/support-tickets/${encodeURIComponent(id)}`, { supportTicket: { ...ticketDraft, id }, baseRevision: revision })
+        : await apiPost<{ revision?: number }>('/api/support-tickets', { supportTicket: { ...ticketDraft, id }, baseRevision: revision });
+      setRevision(result.revision ?? revision);
+      setTicketDraft(emptyTicket());
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel salvar o chamado.');
     } finally {
       setSaving(false);
     }
@@ -123,6 +154,19 @@ export default function OperationsPage() {
         <select value={taskDraft.status} onChange={(event) => setTaskDraft({ ...taskDraft, status: event.target.value })}>{taskStatuses.map((status) => <option key={status}>{status}</option>)}</select>
         <div><button disabled={saving}>{saving ? 'Salvando...' : taskDraft.id ? 'Salvar tarefa' : 'Adicionar tarefa'}</button>{taskDraft.id && <button type="button" className="secondary" onClick={() => setTaskDraft(emptyTask())}>Cancelar</button>}</div>
       </form>
+    </section>
+    <section className="card">
+      <div className="section-head"><h2>{ticketDraft.id ? 'Editar chamado' : 'Novo chamado / manutenção'}</h2><span>Cliente e descrição são obrigatórios</span></div>
+      <form className="form-grid" onSubmit={saveTicket}>
+        <input value={ticketDraft.clientId} onChange={(event) => setTicketDraft({ ...ticketDraft, clientId: event.target.value })} placeholder="ID do cliente" required />
+        <input value={ticketDraft.equipmentId} onChange={(event) => setTicketDraft({ ...ticketDraft, equipmentId: event.target.value })} placeholder="ID do equipamento (opcional)" />
+        <select value={ticketDraft.type} onChange={(event) => setTicketDraft({ ...ticketDraft, type: event.target.value })}>{ticketTypes.map((type) => <option key={type}>{type}</option>)}</select>
+        <select value={ticketDraft.priority} onChange={(event) => setTicketDraft({ ...ticketDraft, priority: event.target.value })}>{ticketPriorities.map((priority) => <option key={priority}>{priority}</option>)}</select>
+        <select value={ticketDraft.status} onChange={(event) => setTicketDraft({ ...ticketDraft, status: event.target.value })}>{ticketStatuses.map((status) => <option key={status}>{status}</option>)}</select>
+        <textarea className="wide" value={ticketDraft.description} onChange={(event) => setTicketDraft({ ...ticketDraft, description: event.target.value })} placeholder="Descrição do chamado" required />
+        <div><button disabled={saving}>{saving ? 'Salvando...' : ticketDraft.id ? 'Salvar chamado' : 'Registrar chamado'}</button>{ticketDraft.id && <button type="button" className="secondary" onClick={() => setTicketDraft(emptyTicket())}>Cancelar</button>}</div>
+      </form>
+      <div className="group"><h3>Chamados registrados</h3>{supportTickets.map((ticket) => <article className="card" key={ticket.id}><div className="section-head"><div><strong>{ticket.type}</strong><span>{ticket.clientId} Â· {ticket.openedAt || 'Sem data'} Â· {ticket.equipmentId || 'Sem equipamento'}</span></div><strong>{ticket.status}</strong></div><span>{ticket.description} · Prioridade: {ticket.priority}</span><div><button type="button" className="secondary" onClick={() => setTicketDraft({ ...ticket })} disabled={saving}>Editar</button></div></article>)}{!error && !supportTickets.length && <p>Nenhum chamado disponÃ­vel.</p>}</div>
     </section>
     <section className="card">
       <div className="section-head"><h2>{orderDraft.id ? 'Editar ordem de serviço' : 'Nova ordem de serviço'}</h2><span>Cliente e descrição são obrigatórios</span></div>

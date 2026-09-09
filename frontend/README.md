@@ -53,6 +53,8 @@ Conexoes de produtos le o modelo tecnico selecionado pelo recurso `GET /api/prod
 
 Na raiz do projeto, execute `npm run check:all` para validar o backend legado e o frontend Next.js juntos.
 
+Chamados de pos-venda leem e gravam pelo recurso `GET/POST/PATCH /api/support-tickets`, com normalizacao de cliente, equipamento, tipo, prioridade e situacao no NestJS; a exclusao fisica permanece fora deste fluxo.
+
 ## Origem da API
 
 O Levantamento Tecnico agora permite criar e editar levantamentos, ambientes e pontos, alem de excluir pontos e ambientes vazios, pela API NestJS. A persistencia ainda e encaminhada ao agregado legado com `baseRevision`, preservando o controle de concorrencia durante a migracao.

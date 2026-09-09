@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Chamados de pós-venda passaram a ser lidos, criados e editados pela tela de Operação usando `GET/POST/PATCH /api/support-tickets`, com normalização de cliente, equipamento, tipo, prioridade e situação no NestJS.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v374` após a migração dos chamados de pós-venda para o NestJS.
+
 - Levantamentos validados agora podem ser enviados ao orçamento por `POST /api/survey/{id}/send-to-quote`; o NestJS cria ou reutiliza a proposta, inclui ambientes faltantes e abre o detalhe pelo `quoteId` retornado.
 
 - Ambientes de Levantamento Tecnico passaram a ser lidos e gravados pelo NestJS em `GET/PUT /api/survey/{id}/rooms`, com renomeacao sincronizada aos pontos e bloqueio de duplicidade.

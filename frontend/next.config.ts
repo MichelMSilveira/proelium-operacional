@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
       { source: '/api/collaborators', destination: `${nestApiOrigin}/api/collaborators` },
       { source: '/api/installations', destination: `${nestApiOrigin}/api/installations` },
       { source: '/api/operations', destination: `${nestApiOrigin}/api/operations` },
+      { source: '/api/support-tickets', destination: `${nestApiOrigin}/api/support-tickets` },
+      { source: '/api/support-tickets/:id', destination: `${nestApiOrigin}/api/support-tickets/:id` },
       { source: '/api/opportunities', destination: `${nestApiOrigin}/api/opportunities` },
       { source: '/api/opportunities/:id', destination: `${nestApiOrigin}/api/opportunities/:id` },
       { source: '/api/products', destination: `${nestApiOrigin}/api/products` },
