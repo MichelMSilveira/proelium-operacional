@@ -38,6 +38,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | PATCH | `/installations/{id}` | etapa, progresso, prazo e entrega |
 | GET/POST | `/routines` | procedimentos e rotinas da empresa |
 | PATCH/DELETE | `/routines/{id}` | alterar ou excluir rotina |
+| POST | `/routines/checklists` | criar checklist de projeto |
+| PATCH | `/routines/checklists/{id}` | atualizar conclusão do checklist |
 | GET/POST | `/quotes` | orçamentos e versões |
 | GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
 | GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |

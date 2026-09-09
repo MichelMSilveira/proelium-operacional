@@ -2,7 +2,7 @@
 
 ## Em desenvolvimento
 
-- Rotinas da empresa passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e controle de concorrência; checklists de projeto continuam temporariamente no agregado legado porque relatórios e entregas ainda dependem dessa coleção.
+- Rotinas da empresa e checklists de projeto passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisões próprias e controle de concorrência; Relatórios agora valida a entrega pela tabela de checklists durante a transição.
 
 - Instalações passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de progresso e importação dos registros existentes; checklists, entregas e relatórios vinculados permanecem nos domínios operacionais próprios durante a transição.
 

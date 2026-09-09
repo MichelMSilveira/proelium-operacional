@@ -23,18 +23,23 @@ export class RoutinesService {
   async list(cookie?: string): Promise<{ routines: RecordItem[]; projectChecklists: RecordItem[]; revision?: number }> {
     if (this.pool) {
       const context = await this.authContext(cookie);
-      const [routines, checklists] = await Promise.all([
+      const [routines, checklists, state] = await Promise.all([
         this.pool.query(
           `select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt"
            from routines where company_id = $1 order by updated_at desc, name asc`,
           [context.companyId],
         ),
-        this.readAggregate(cookie, 'leitura dos checklists'),
+        this.pool.query(
+          `select id, project_id as "projectId", title, phase, done, standard, extra_data as "extraData"
+           from project_checklists_domain_entries where company_id = $1 order by project_id asc, phase asc, title asc`,
+          [context.companyId],
+        ),
+        this.pool.query('select revision from project_checklists_domain_state where company_id = $1', [context.companyId]),
       ]);
       return {
         routines: this.normalizeList(routines.rows),
-        projectChecklists: this.normalizeList(checklists.data.projectChecklists),
-        revision: checklists.revision,
+        projectChecklists: checklists.rows.map((row) => this.checklistFromRow(row)),
+        revision: Number(state.rows[0]?.revision || 0),
       };
     }
     const headers: Record<string, string> = cookie ? { cookie } : {};
@@ -52,6 +57,23 @@ export class RoutinesService {
       projectChecklists: this.normalizeList(dataPayload.data?.projectChecklists),
       revision: dataPayload.revision,
     };
+  }
+
+  async listChecklists(cookie?: string): Promise<{ projectChecklists: RecordItem[]; revision?: number }> {
+    if (this.pool) {
+      const context = await this.authContext(cookie, ['routines', 'projects', 'reports']);
+      const [checklists, state] = await Promise.all([
+        this.pool.query(
+          `select id, project_id as "projectId", title, phase, done, standard, extra_data as "extraData"
+           from project_checklists_domain_entries where company_id = $1 order by project_id asc, phase asc, title asc`,
+          [context.companyId],
+        ),
+        this.pool.query('select revision from project_checklists_domain_state where company_id = $1', [context.companyId]),
+      ]);
+      return { projectChecklists: checklists.rows.map((row) => this.checklistFromRow(row)), revision: Number(state.rows[0]?.revision || 0) };
+    }
+    const current = await this.readAggregate(cookie, 'leitura dos checklists');
+    return { projectChecklists: this.normalizeList(current.data.projectChecklists), revision: current.revision };
   }
 
   async save(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
@@ -151,7 +173,7 @@ export class RoutinesService {
     }
   }
 
-  private async authContext(cookie?: string): Promise<AuthContext> {
+  private async authContext(cookie?: string, allowedModules = ['routines']): Promise<AuthContext> {
     if (!cookie) throw new UnauthorizedException('Sessao obrigatoria.');
     const upstream = await fetch(`${this.legacyOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
       throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
@@ -163,7 +185,7 @@ export class RoutinesService {
     if (!user) throw new UnauthorizedException('Sessao invalida.');
     const permissions = Array.isArray(user.permissions) ? user.permissions.map((item) => this.text(item)) : [];
     const modules = Array.isArray(user.modules) ? user.modules.map((item) => this.text(item)) : [];
-    if (this.text(user.role) !== 'admin' && !permissions.includes('routines') && !modules.includes('routines')) {
+    if (this.text(user.role) !== 'admin' && !allowedModules.some((module) => permissions.includes(module) || modules.includes(module))) {
       throw new ForbiddenException('Seu perfil nao possui acesso as rotinas.');
     }
     return {
@@ -194,7 +216,52 @@ export class RoutinesService {
     return Number(result.rows[0].revision);
   }
 
+  private async lockChecklistRevision(client: PoolClient, companyId: string): Promise<number> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:checklists:${companyId}`]);
+    const result = await client.query('select revision from project_checklists_domain_state where company_id = $1 for update', [companyId]);
+    if (result.rowCount) return Number(result.rows[0].revision);
+    await client.query('insert into project_checklists_domain_state (company_id, revision) values ($1, 0)', [companyId]);
+    return 0;
+  }
+
+  private async bumpChecklistRevision(client: PoolClient, companyId: string): Promise<number> {
+    const result = await client.query(
+      'update project_checklists_domain_state set revision = revision + 1, updated_at = now() where company_id = $1 returning revision',
+      [companyId],
+    );
+    return Number(result.rows[0].revision);
+  }
+
+  private conflict(revision: number): { status: number; body: string } {
+    return { status: 409, body: JSON.stringify({ conflict: true, revision, error: 'Os dados foram alterados por outro usuario.' }) };
+  }
+
+  private checklistFromRow(row: RecordItem): RecordItem {
+    return {
+      ...(this.record(row.extraData) || {}),
+      id: this.text(row.id),
+      projectId: this.text(row.projectId),
+      title: this.text(row.title, 'Verificação sem título'),
+      phase: this.text(row.phase, 'Projeto técnico'),
+      done: row.done === true,
+      standard: row.standard === true,
+    };
+  }
+
+  private extraData(checklist: RecordItem): RecordItem {
+    const { id, projectId, title, name, phase, done, standard, updatedAt, createdAt, ...extra } = checklist;
+    void id; void projectId; void title; void name; void phase; void done; void standard; void updatedAt; void createdAt;
+    return extra;
+  }
+
+  private revision(value: unknown): number {
+    const result = Number(value ?? 0);
+    if (!Number.isInteger(result) || result < 0) throw new BadRequestException('Revisao invalida.');
+    return result;
+  }
+
   async saveChecklist(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
+    if (this.pool) return this.databaseSaveChecklist(body, cookie, expectedId);
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de checklist invalido.');
     const input = body as { checklist?: unknown; baseRevision?: unknown };
     const checklist = this.record(input.checklist);
@@ -223,6 +290,63 @@ export class RoutinesService {
       ? checklists.map((entry, entryIndex) => entryIndex === index ? { ...this.record(entry), ...normalized, id: expectedId } : entry)
       : [...checklists, normalized];
     return this.forwardAggregate({ ...current.data, projectChecklists: nextChecklists }, input.baseRevision, cookie);
+  }
+
+  private async databaseSaveChecklist(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de checklist invalido.');
+    const input = body as { checklist?: unknown; baseRevision?: unknown };
+    const checklist = this.record(input.checklist);
+    if (!checklist) throw new BadRequestException('Checklist invalido.');
+    const projectId = this.text(checklist.projectId);
+    const title = this.text(checklist.title ?? checklist.name);
+    if (!projectId || !title) throw new BadRequestException('O checklist precisa conter projeto e verificacao.');
+    const checklistId = this.text(checklist.id) || `chk-${crypto.randomUUID()}`;
+    if (expectedId && checklistId !== expectedId) throw new BadRequestException('O identificador do checklist nao confere.');
+    const normalized = {
+      ...checklist,
+      id: expectedId || checklistId,
+      projectId,
+      title,
+      phase: this.text(checklist.phase, 'Projeto técnico'),
+      done: Boolean(checklist.done),
+      standard: Boolean(checklist.standard),
+    };
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockChecklistRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const existing = await client.query(
+        'select id, extra_data as "extraData" from project_checklists_domain_entries where company_id = $1 and id = $2',
+        [context.companyId, normalized.id],
+      );
+      if (expectedId && !existing.rowCount) throw new NotFoundException('Checklist nao encontrado.');
+      if (!expectedId && existing.rowCount) throw new BadRequestException('Ja existe um checklist com este identificador.');
+      const extraData = { ...(this.record(existing.rows[0]?.extraData) || {}), ...this.extraData(checklist) };
+      await client.query(
+        `insert into project_checklists_domain_entries
+          (company_id, id, project_id, title, phase, done, standard, extra_data, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())
+         on conflict (company_id, id) do update set
+           project_id = excluded.project_id, title = excluded.title, phase = excluded.phase,
+           done = excluded.done, standard = excluded.standard, extra_data = excluded.extra_data, updated_at = now()`,
+        [context.companyId, normalized.id, normalized.projectId, normalized.title, normalized.phase,
+          normalized.done, normalized.standard, JSON.stringify(extraData)],
+      );
+      const nextRevision = await this.bumpChecklistRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: expectedId ? 200 : 201, body: JSON.stringify({ ok: true, revision: nextRevision, checklist: normalized }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   private async readCompanyRoutines(cookie?: string): Promise<RecordItem[]> {

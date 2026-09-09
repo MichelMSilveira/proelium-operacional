@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { RoutinesService } from '../routines/routines.service';
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
@@ -9,6 +10,8 @@ export type ProjectDelivery = { id: string; projectId: string; status: string; d
 @Injectable()
 export class ReportsService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+
+  constructor(private readonly routines: RoutinesService) {}
 
   async list(cookie?: string): Promise<{ serviceReports: ServiceReport[]; projectDeliveries: ProjectDelivery[]; revision?: number }> {
     const current = await this.readAggregate(cookie, 'leitura de relatorios');
@@ -66,7 +69,8 @@ export class ReportsService {
     const projects = Array.isArray(current.data.projects) ? current.data.projects : [];
     const project = projects.find((item) => this.sameId(item, projectId));
     if (!project) throw new NotFoundException('Projeto nao encontrado.');
-    const checklists = Array.isArray(current.data.projectChecklists) ? current.data.projectChecklists : [];
+    const checklistPayload = await this.routines.listChecklists(cookie);
+    const checklists = checklistPayload.projectChecklists;
     const projectChecklist = checklists.filter((item) => this.record(item)?.projectId === projectId);
     if (!projectChecklist.length) throw new BadRequestException('Aplique o checklist do projeto antes de registrar a entrega.');
     if (projectChecklist.some((item) => this.record(item)?.done !== true)) throw new BadRequestException('Conclua todos os itens do checklist antes de registrar a entrega.');

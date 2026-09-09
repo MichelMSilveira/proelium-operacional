@@ -12,7 +12,8 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `021_appointments_domain.sql` cria a persistência própria da agenda operacional, separada de `app_state`, e importa os compromissos existentes por empresa.
 - A migração `022_service_orders_domain.sql` cria a persistência própria das ordens de serviço, separada de `app_state`, e importa os registros existentes por empresa.
 - A migração `023_installations_domain.sql` cria a persistência própria do cronograma de instalações, separada de `app_state`, e importa os registros existentes por empresa.
-- A migração `024_routines_domain.sql` cria a revisão própria das rotinas empresariais, usando a tabela `routines` já existente e mantendo os checklists de projeto no agregado durante a transição.
+- A migração `024_routines_domain.sql` cria a revisão própria das rotinas empresariais, usando a tabela `routines` já existente.
+- A migração `025_project_checklists_domain.sql` cria a persistência própria dos checklists de projeto e importa os itens existentes por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -58,7 +59,9 @@ O domínio de ordens de serviço usa `service_orders_domain_entries` e `service_
 
 O domínio de instalações usa `installations_domain_entries` e `installations_domain_state`. Cliente e projeto permanecem como referências textuais, o progresso respeita o intervalo de 0 a 100 e a revisão é independente por empresa; checklists, entregas e relatórios continuam em transição.
 
-O domínio de rotinas usa `routines` e `routines_domain_state`. A coleção de procedimentos é isolada por `company_id` e possui revisão própria; `projectChecklists` permanece no agregado legado até a migração conjunta com relatórios e entregas.
+O domínio de rotinas usa `routines` e `routines_domain_state`. A coleção de procedimentos é isolada por `company_id` e possui revisão própria.
+
+O domínio de checklists usa `project_checklists_domain_entries` e `project_checklists_domain_state`. Os itens são isolados por `company_id`, aceitam revisão de conflito e o serviço de Relatórios consulta essa tabela para bloquear entregas incompletas; relatórios e entregas continuam híbridos enquanto seus registros principais não forem migrados.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
