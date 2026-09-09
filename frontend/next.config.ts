@@ -5,7 +5,41 @@ const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   async rewrites() {
     const apiOrigin = process.env.PROELIUM_API_ORIGIN || 'http://localhost:4173';
-    return [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }];
+    const nestApiOrigin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://localhost:4174';
+    return [
+      { source: '/api/agenda', destination: `${nestApiOrigin}/api/agenda` },
+      { source: '/api/clients', destination: `${nestApiOrigin}/api/clients` },
+      { source: '/api/clients/:id', destination: `${nestApiOrigin}/api/clients/:id` },
+      { source: '/api/equipment', destination: `${nestApiOrigin}/api/equipment` },
+      { source: '/api/equipment/:id', destination: `${nestApiOrigin}/api/equipment/:id` },
+      { source: '/api/finance', destination: `${nestApiOrigin}/api/finance` },
+      { source: '/api/knowledge', destination: `${nestApiOrigin}/api/knowledge` },
+      { source: '/api/collaborators', destination: `${nestApiOrigin}/api/collaborators` },
+      { source: '/api/installations', destination: `${nestApiOrigin}/api/installations` },
+      { source: '/api/operations', destination: `${nestApiOrigin}/api/operations` },
+      { source: '/api/opportunities', destination: `${nestApiOrigin}/api/opportunities` },
+      { source: '/api/opportunities/:id', destination: `${nestApiOrigin}/api/opportunities/:id` },
+      { source: '/api/products', destination: `${nestApiOrigin}/api/products` },
+      { source: '/api/products/:id', destination: `${nestApiOrigin}/api/products/:id` },
+      { source: '/api/services/:id', destination: `${nestApiOrigin}/api/products/services/:id` },
+      { source: '/api/product-library', destination: `${nestApiOrigin}/api/product-library` },
+      { source: '/api/product-library/:id', destination: `${nestApiOrigin}/api/product-library/:id` },
+      { source: '/api/purchases', destination: `${nestApiOrigin}/api/purchases` },
+      { source: '/api/services', destination: `${nestApiOrigin}/api/products/services` },
+      { source: '/api/survey', destination: `${nestApiOrigin}/api/survey` },
+      { source: '/api/quality', destination: `${nestApiOrigin}/api/quality` },
+      { source: '/api/quotes', destination: `${nestApiOrigin}/api/quotes` },
+      { source: '/api/quotes/:id', destination: `${nestApiOrigin}/api/quotes/:id` },
+      { source: '/api/quotes/:id/rooms', destination: `${nestApiOrigin}/api/quotes/:id/rooms` },
+      { source: '/api/quotes/:id/approve', destination: `${nestApiOrigin}/api/quotes/:id/approve` },
+      { source: '/api/reports', destination: `${nestApiOrigin}/api/reports` },
+      { source: '/api/routines', destination: `${nestApiOrigin}/api/routines` },
+      { source: '/api/routines/:id', destination: `${nestApiOrigin}/api/routines/:id` },
+      { source: '/api/tasks', destination: `${nestApiOrigin}/api/tasks` },
+      { source: '/api/projects', destination: `${nestApiOrigin}/api/projects` },
+      { source: '/api/projects/:id', destination: `${nestApiOrigin}/api/projects/:id` },
+      { source: '/api/:path*', destination: `${apiOrigin}/api/:path*` },
+    ];
   },
 };
 

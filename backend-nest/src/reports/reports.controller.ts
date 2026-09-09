@@ -7,6 +7,6 @@ export class ReportsController {
 
   @Get()
   list(@Req() request: { headers: { cookie?: string } }) {
-    return this.reports.list(request.headers.cookie).then((items) => ({ serviceReports: items }));
+    return this.reports.list(request.headers.cookie);
   }
 }

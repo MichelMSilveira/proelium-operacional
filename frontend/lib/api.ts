@@ -18,3 +18,17 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   if (!response.ok) throw new Error(payload.error || 'Não foi possível concluir a operação.');
   return payload as T;
 }
+
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || 'Nao foi possivel atualizar o registro.');
+  return payload as T;
+}
+
+export async function apiDelete<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || 'Nao foi possivel excluir o registro.');
+  return payload as T;
+}

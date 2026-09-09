@@ -2,6 +2,105 @@
 
 ## Em desenvolvimento
 
+- Incrementado o cache do shell do PWA para `proelium-shell-v360` após a atualização das telas Next.js e dos recursos NestJS.
+
+- Criada a rota Next.js `/product-connections` para consulta do modelo tecnico de Produtos, usando `GET /api/products` e exibindo compatibilidades, requisitos, limites e fonte oficial sem duplicar armazenamento.
+- Biblioteca Tecnica passou a permitir criacao e edicao de fabricantes por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias em produtos e conexoes.
+- Catalogo passou a permitir criacao e edicao de servicos por `POST/PATCH /api/services`, mantendo produtos e servicos separados na interface e classificados no mesmo armazenamento durante a transicao.
+- Equipamentos passaram a permitir criacao e edicao por `POST/PATCH /api/equipment`; a exclusao fisica permanece bloqueada para preservar historico e rastreabilidade operacional.
+
+- Criada a rota Next.js `/product-library` e o recurso NestJS `GET /api/product-library` para consulta normalizada de fabricantes e areas tecnicas; a gravacao permanece no legado.
+
+- Incluida a rota Next.js `/processes` para o fluxo estatico de sete etapas operacionais, com entrada no menu de Projetos 360; nenhuma persistencia nova foi criada.
+
+- Rotinas passaram a permitir criacao, edicao e exclusao pelo NestJS em `POST/PATCH/DELETE /api/routines`; checklists de projetos continuam somente leitura.
+
+- O catalogo de Produtos passou a permitir criacao e edicao pelo contrato NestJS `POST/PATCH /api/products`; a tela envia somente o produto alterado e a revisao, enquanto Servicos permanecem em consulta.
+
+- O resumo operacional da pagina inicial deixou de usar `/api/data` e passou a compor clientes, projetos, tarefas e lancamentos pelos recursos NestJS ja migrados.
+
+- O detalhe de Orcamentos passou a receber a revisao em `GET /api/quotes/{id}` e a aprovacao envia somente `baseRevision`; o Nest carrega internamente os dados relacionados antes de aplicar as regras comerciais.
+
+- A listagem e a criacao de Orcamentos no Next.js deixaram de consultar `/api/data`: clientes sao carregados por `GET /api/clients` e `POST /api/quotes` recebe somente o orcamento novo e a revisao; a ponte de persistencia continua no NestJS.
+
+- Oportunidades deixou de depender de `/api/data` no frontend: `GET /api/opportunities` informa a revisao e `POST` e `PATCH` recebem somente a oportunidade alterada; o Nest recompÃµe o agregado apenas na ponte temporaria com o legado.
+
+- Projetos deixou de depender de `/api/data` no frontend: `GET /api/projects` informa a revisao e `POST`, `PATCH` e `DELETE` recebem somente o projeto ou a operacao solicitada; o Nest recompÃµe o agregado apenas na ponte temporaria com o legado.
+
+- Clientes deixou de depender de `/api/data` no frontend: `GET /api/clients` informa a revisao e `POST`, `PATCH` e `DELETE` recebem somente o cliente ou a operacao solicitada; o Nest recompÃµe o agregado apenas na ponte temporaria com o legado.
+
+- O recurso `GET /api/reports` passou a devolver tambem entregas de projetos normalizadas; a tela Next.js deixou de consultar diretamente o agregado legado para essa segunda colecao.
+
+- Criado o recurso NestJS de Rotinas, combinando rotinas da empresa e checklists de projetos no `GET /api/routines`; a tela Next.js deixou de consultar diretamente o agregado legado.
+
+- Criado o recurso NestJS de Equipamentos e conectada a tela Next.js ao `GET /api/equipment`, com normalizacao de identificacao, fabricante, modelo, numero de serie, localizacao e status; a escrita permanece no fluxo legado.
+
+- A criacao de rascunhos de Orcamento no Next.js passou a usar `POST /api/quotes`; o NestJS passou a preservar o status HTTP da ponte, incluindo conflitos e permissoes.
+
+- A criacao de oportunidades no Next.js passou a usar `POST /api/opportunities`; o NestJS preserva a revisao e encaminha as validacoes comerciais do servidor legado.
+
+- A criacao de projetos no Next.js passou a usar `POST /api/projects`; o NestJS valida `data.projects`, encaminha a revisao ao legado e preserva os status de conflito e permissao.
+
+- A criacao de clientes no Next.js passou a usar `POST /api/clients`; o NestJS valida `data.clients`, encaminha a revisao ao legado e preserva os status de conflito e permissao.
+
+- A edicao de clientes no Next.js passou a usar `PATCH /api/clients/{id}`; o NestJS valida a identidade do recurso e preserva revisao, permissoes e conflitos.
+
+- A exclusao de clientes no Next.js passou a usar `DELETE /api/clients/{id}`; o recurso preserva a sessao e encaminha a revisao ao armazenamento legado.
+
+- O detalhe de Orcamentos no Next.js passou a carregar o registro por `GET /api/quotes/{id}`; ambientes, itens e aprovacao continuam na etapa seguinte da migracao.
+
+- O detalhe de Orcamentos passou a ler os ambientes por `GET /api/quotes/{id}/rooms`, com normalizacao propria no NestJS; a gravacao ainda usa o contrato agregado legado.
+
+- O detalhe de Orcamentos passou a ler o catalogo por `GET /api/products`; a gravacao dos itens continua temporariamente no contrato agregado.
+
+- A gravacao de ambientes e itens do detalhe de Orcamentos passou a usar `PUT /api/quotes/{id}/rooms`; o NestJS recompõe a colecao no legado e preserva a revisao-base.
+
+- A aprovacao de Orcamentos passou a usar `POST /api/quotes/{id}/approve`; o NestJS calcula o total, cria ou vincula cliente e projeto e encaminha a revisao ao legado.
+
+- A edicao de projetos no Next.js passou a usar `PATCH /api/projects/{id}`; o NestJS valida a identidade do recurso e preserva revisao, permissoes e conflitos.
+
+- A edicao de oportunidades no Next.js passou a usar `PATCH /api/opportunities/{id}`; o NestJS valida a identidade do recurso e preserva revisao, permissoes e conflitos.
+
+- A tela Next.js de Produtos passou a ler Produtos e Servicos pelos recursos `GET /api/products` e `GET /api/services`, sem depender do agregado para a consulta.
+
+- A tela Next.js de Comercial passou a ler oportunidades e orcamentos pelos recursos `GET /api/opportunities` e `GET /api/quotes`, sem depender do agregado para essas listagens.
+
+- Criado o recurso NestJS de Colaboradores e conectada a tela Next.js ao `GET /api/collaborators`, com normalizacao de funcao, especialidade, vinculo, disponibilidade, compensacao e status.
+
+- Criado o recurso NestJS de Financeiro e conectada a tela Next.js ao `GET /api/finance`, com normalizacao de valor, data, categoria, vinculacoes e status dos lancamentos.
+
+- A tela Next.js de Indicadores passou a compor suas metricas usando os recursos separados de clientes, projetos, oportunidades, orcamentos, tarefas e financeiro, sem consultar diretamente `/api/data`.
+
+- Criado o recurso NestJS de Compras e conectada a tela Next.js ao `GET /api/purchases`, com normalizacao de material, projeto, ambiente, quantidade, fornecedor e situacao.
+
+- Criado o recurso NestJS de Conhecimento e conectada a tela Next.js ao `GET /api/knowledge`, com normalizacao de titulo, categoria, resumo e base de referencia.
+
+- Criado o recurso NestJS de Levantamento e conectada a tela Next.js ao `GET /api/survey`, retornando pesquisas e pontos tecnicos normalizados; a gravacao permanece no fluxo legado.
+
+- A exclusao de projetos no Next.js passou a usar `DELETE /api/projects/{id}`; a remocao preserva a revisao e nao executa cascata sobre tarefas ou entregas.
+
+- Criado o recurso NestJS de Qualidade para avaliacoes e conectada a tela Next.js ao `GET /api/quality`, com normalizacao de fonte, avaliador, pessoa, criterios, observacao e data.
+
+- Criado o recurso NestJS de Instalacoes e conectada a tela Next.js ao `GET /api/installations`, com normalizacao de cliente, projeto, etapa, progresso, prazo e status.
+
+- A tela Next.js de Relatorios passou a ler Relatorios de Servico pelo recurso separado `GET /api/reports`, com proxy local para o NestJS; Entregas de Projetos continuam temporariamente no contrato agregado.
+
+- A tela Next.js de Operacoes passou a ler tarefas e ordens de servico pelos recursos separados `GET /api/tasks` e `GET /api/operations`, sem depender do contrato agregado para a consulta.
+
+- A tela Next.js de Agenda passou a ler compromissos pelo recurso separado `GET /api/agenda`, com proxy local para o NestJS.
+
+- A tela Next.js de Operacoes passou a ler tarefas pelo recurso separado `GET /api/tasks`, com proxy local para o NestJS; ordens de servico continuam temporariamente no contrato agregado.
+
+- A listagem Next.js de Orcamentos passou a ler pelo recurso separado `GET /api/quotes`, com proxy local para o NestJS; a criacao de rascunhos continua temporariamente no contrato agregado.
+
+- A tela Next.js de Produtos passou a ler o catalogo pelo recurso separado `GET /api/products`, com proxy local para o NestJS; a colecao de servicos continua temporariamente no contrato agregado.
+
+- A tela Next.js de Comercial passou a ler oportunidades pelo recurso separado `GET /api/opportunities`, com proxy local para o NestJS; as gravacoes permanecem temporariamente no contrato agregado para preservar a compatibilidade.
+
+- A tela Next.js de Clientes passou a ler pelo recurso separado `GET /api/clients`, com proxy local para o NestJS; as gravacoes permanecem temporariamente no contrato agregado para preservar a compatibilidade.
+
+- A tela Next.js de Projetos passou a ler pelo recurso separado `GET /api/projects`, com proxy local para o NestJS; as gravacoes permanecem temporariamente no contrato agregado para preservar a compatibilidade.
+
 - O NestJS passou a expor `GET /api/reports` com normalização própria de relatórios de serviço, preservando vínculos, responsável, tipo, data e status.
 
 - O NestJS passou a expor `GET /api/operations` com normalização própria de ordens de serviço, preservando vínculos, etapa, progresso e status da execução.

@@ -1,9 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { apiGet } from "../lib/api";
 
 type User = { name?: string; username?: string; email?: string };
 type Data = { data?: Record<string, unknown[]> };
+type ClientsPayload = { clients?: unknown[] };
+type ProjectsPayload = { projects?: unknown[] };
+type TasksPayload = { tasks?: unknown[] };
+type FinancePayload = { entries?: unknown[] };
 
 export default function Page() {
   const [user, setUser] = useState<User | null>(null);
@@ -114,6 +119,7 @@ export default function Page() {
       ["dashboard", "Visão geral"],
       ["clients", "Clientes"],
       ["projects", "Projetos"],
+      ["processes", "Processos", "/processes"],
       ["commercial", "Comercial"],
       ["quotes", "OrÃ§amentos", "/quotes"],
       ["finance", "Financeiro"],
@@ -121,6 +127,8 @@ export default function Page() {
       ["operations", "OperaÃ§Ã£o", "/operations"],
       ["agenda", "Agenda", "/agenda"],
       ["products", "CatÃ¡logo", "/products"],
+      ["productLibrary", "Biblioteca tecnica", "/product-library"],
+      ["productConnections", "Conexoes de produtos", "/product-connections"],
       ["quality", "Qualidade", "/quality"],
       ["knowledge", "Conhecimento", "/knowledge"],
       ["equipment", "Equipamentos", "/equipment"],
@@ -194,10 +202,19 @@ export default function Page() {
                     setDataLoading(true);
                     setDataError("");
                     try {
-                      const response = await fetch("/api/data", {
-                        credentials: "include",
-                      });
-                      const payload = await response.json().catch(() => ({}));
+                      const response = { ok: true };
+                      const [clients, projects, tasks, finance] = await Promise.all([
+                        apiGet<ClientsPayload>("/api/clients"),
+                        apiGet<ProjectsPayload>("/api/projects"),
+                        apiGet<TasksPayload>("/api/tasks"),
+                        apiGet<FinancePayload>("/api/finance"),
+                      ]);
+                      const payload: { data: Record<string, unknown[]>; error?: string } = { data: {
+                        clients: clients.clients || [],
+                        projects: projects.projects || [],
+                        tasks: tasks.tasks || [],
+                        financialEntries: finance.entries || [],
+                      } };
                       if (!response.ok)
                         throw new Error(
                           payload.error ||

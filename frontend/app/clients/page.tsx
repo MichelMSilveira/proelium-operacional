@@ -2,17 +2,18 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { ModuleLayout } from "../components/ModuleLayout";
-import { apiGet, apiPut } from "../../lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../../lib/api";
 
 type Client = Record<string, unknown>;
-type Payload = { revision?: number; data?: Record<string, Client[]> };
+type Payload = { revision?: number; data?: { clients?: Client[] } };
+type ClientsPayload = { clients?: Client[]; revision?: number };
 export default function ClientsPage() {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   useEffect(() => {
-    apiGet<Payload>("/api/data")
-      .then(setPayload)
+    apiGet<ClientsPayload>("/api/clients")
+      .then((resource) => setPayload({ revision: resource.revision, data: { clients: resource.clients || [] } }))
       .catch((reason: unknown) =>
         setError(
           reason instanceof Error
@@ -23,7 +24,8 @@ export default function ClientsPage() {
   }, []);
   async function createClient(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!payload?.data) return;
+    if (!payload) return;
+    const currentClients = payload.data?.clients || [];
     setSaving(true);
     setError("");
     const form = new FormData(event.currentTarget);
@@ -35,19 +37,15 @@ export default function ClientsPage() {
       createdAt: new Date().toISOString(),
     };
     try {
-      const result = await apiPut<{ revision?: number }>("/api/data", {
-        data: {
-          ...payload.data,
-          clients: [...(payload.data.clients || []), client],
-        },
+      const result = await apiPost<{ revision?: number }>("/api/clients", {
+        client,
         baseRevision: payload.revision || 0,
       });
       setPayload({
         ...payload,
         revision: result.revision,
         data: {
-          ...payload.data,
-          clients: [...(payload.data.clients || []), client],
+          clients: [...currentClients, client],
         },
       });
       event.currentTarget.reset();
@@ -62,21 +60,21 @@ export default function ClientsPage() {
     }
   }
   async function removeClient(id: unknown) {
-    if (!payload?.data || !window.confirm("Excluir este cliente?")) return;
+    if (!payload || !window.confirm("Excluir este cliente?")) return;
+    const currentClients = payload.data?.clients || [];
     setSaving(true);
     setError("");
-    const clients = (payload.data.clients || []).filter(
+    const clients = currentClients.filter(
       (client) => client.id !== id,
     );
     try {
-      const result = await apiPut<{ revision?: number }>("/api/data", {
-        data: { ...payload.data, clients },
+      const result = await apiDelete<{ revision?: number }>(`/api/clients/${String(id)}`, {
         baseRevision: payload.revision || 0,
       });
       setPayload({
         ...payload,
         revision: result.revision,
-        data: { ...payload.data, clients },
+        data: { clients },
       });
     } catch (reason) {
       setError(
@@ -90,16 +88,17 @@ export default function ClientsPage() {
   }
 
   async function editClient(client: Client) {
-    if (!payload?.data) return;
+    if (!payload) return;
+    const currentClients = payload.data?.clients || [];
     const name = window.prompt("Nome do cliente", String(client.name || client.nome || ""));
     if (!name?.trim()) return;
     const email = window.prompt("E-mail do cliente", String(client.email || ""));
     if (email === null) return;
     const phone = window.prompt("Telefone do cliente", String(client.phone || client.telefone || ""));
     if (phone === null) return;
-    const clients = (payload.data.clients || []).map((item) => item.id === client.id ? { ...item, name: name.trim(), email: email.trim(), phone: phone.trim() } : item);
+    const clients = currentClients.map((item) => item.id === client.id ? { ...item, name: name.trim(), email: email.trim(), phone: phone.trim() } : item);
     setSaving(true); setError("");
-    try { const result = await apiPut<{ revision?: number }>("/api/data", { data: { ...payload.data, clients }, baseRevision: payload.revision || 0 }); setPayload({ ...payload, revision: result.revision, data: { ...payload.data, clients } }); } catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível editar o cliente."); } finally { setSaving(false); }
+    try { const updated = clients.find((item) => item.id === client.id); const result = await apiPatch<{ revision?: number }>(`/api/clients/${String(client.id)}`, { client: updated, baseRevision: payload.revision || 0 }); setPayload({ ...payload, revision: result.revision, data: { clients } }); } catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível editar o cliente."); } finally { setSaving(false); }
   }
   const clients = payload?.data?.clients || [];
   return (

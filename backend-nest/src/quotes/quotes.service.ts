@@ -1,21 +1,181 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 
 export type Quote = { id: string; opportunityId: string; clientId: string; title: string; status: string; value: number; [key: string]: unknown };
+export type QuoteRoom = { id: string; quoteId: string; name: string; items: Record<string, unknown>[]; [key: string]: unknown };
 
 @Injectable()
 export class QuotesService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
 
-  async list(cookie?: string): Promise<Quote[]> {
+  async list(cookie?: string): Promise<{ quotes: Quote[]; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponível para leitura de orçamentos.');
     });
     if (!upstream.ok) throw new ServiceUnavailableException('Não foi possível carregar os orçamentos.');
-    const payload = await upstream.json() as { data?: { quotes?: unknown } };
-    return this.normalizeList(payload.data?.quotes);
+    const payload = await upstream.json() as { revision?: number; data?: { quotes?: unknown } };
+    return { quotes: this.normalizeList(payload.data?.quotes), revision: payload.revision };
   }
 
-  async save(body: unknown, cookie?: string): Promise<unknown> {
+  async detail(id: string, cookie?: string): Promise<{ quote: Quote; revision?: number }> {
+    if (!id.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    const result = await this.list(cookie);
+    const quote = result.quotes.find((item) => item.id === id);
+    if (!quote) throw new NotFoundException('Orcamento nao encontrado.');
+    return { quote, revision: result.revision };
+  }
+
+  async rooms(quoteId: string, cookie?: string): Promise<QuoteRoom[]> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponivel para leitura dos ambientes.');
+    });
+    if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel carregar os ambientes do orcamento.');
+    const payload = await upstream.json() as { data?: { quoteRooms?: unknown } };
+    return this.normalizeRooms(payload.data?.quoteRooms).filter((room) => room.quoteId === quoteId);
+  }
+
+  async saveRooms(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de ambientes invalido.');
+    const input = body as { rooms?: unknown; baseRevision?: unknown };
+    if (!Array.isArray(input.rooms)) throw new BadRequestException('A gravacao precisa conter rooms como lista.');
+    if (input.rooms.some((room) => !room || typeof room !== 'object' || String((room as { quoteId?: unknown }).quoteId || '') !== quoteId)) {
+      throw new BadRequestException('Todos os ambientes precisam pertencer ao orcamento informado.');
+    }
+    const currentResponse = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponivel para gravacao dos ambientes.');
+    });
+    const currentBody = await currentResponse.text();
+    if (!currentResponse.ok) return { status: currentResponse.status, body: currentBody };
+    let currentPayload: { data?: Record<string, unknown> };
+    try {
+      currentPayload = JSON.parse(currentBody) as { data?: Record<string, unknown> };
+    } catch {
+      throw new ServiceUnavailableException('Resposta invalida do backend legado.');
+    }
+    const currentData = currentPayload.data && typeof currentPayload.data === 'object' ? currentPayload.data : {};
+    const currentRooms = Array.isArray(currentData.quoteRooms) ? currentData.quoteRooms : [];
+    const otherRooms = currentRooms.filter((room) => !room || typeof room !== 'object' || String((room as { quoteId?: unknown }).quoteId || '') !== quoteId);
+    const upstream = await fetch(`${this.legacyOrigin}/api/data`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+      body: JSON.stringify({ data: { ...currentData, quoteRooms: [...otherRooms, ...input.rooms] }, baseRevision: input.baseRevision }),
+    }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponivel para gravacao dos ambientes.');
+    });
+    return { status: upstream.status, body: await upstream.text() };
+  }
+
+  async approve(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de aprovacao invalido.');
+    const input = body as { data?: Record<string, unknown>; baseRevision?: unknown };
+    const data = input.data || (await this.readAggregate(cookie)).data;
+    const quotes = Array.isArray(data.quotes) ? data.quotes : [];
+    const rooms = Array.isArray(data.quoteRooms) ? data.quoteRooms : [];
+    const products = Array.isArray(data.products) ? data.products : [];
+    const clients = Array.isArray(data.clients) ? data.clients : [];
+    const opportunities = Array.isArray(data.opportunities) ? data.opportunities : [];
+    const projects = Array.isArray(data.projects) ? data.projects : [];
+    const quote = quotes.find((item) => Boolean(item) && typeof item === 'object' && String((item as { id?: unknown }).id || '') === quoteId) as Record<string, unknown> | undefined;
+    if (!quote) throw new NotFoundException('Orcamento nao encontrado.');
+    const quoteRooms = rooms.filter((item) => Boolean(item) && typeof item === 'object' && String((item as { quoteId?: unknown }).quoteId || '') === quoteId) as Record<string, unknown>[];
+    let cost = 0;
+    let price = 0;
+    quoteRooms.forEach((room) => {
+      const items = Array.isArray(room.items) ? room.items : [];
+      items.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        const product = products.find((entry) => Boolean(entry) && typeof entry === 'object' && String((entry as { id?: unknown }).id || '') === String((item as { productId?: unknown }).productId || '')) as Record<string, unknown> | undefined;
+        if (!product) return;
+        const quantity = this.number((item as { qty?: unknown }).qty);
+        const discount = Math.min(100, this.number((item as { discount?: unknown }).discount));
+        const productCost = this.number(product.cost);
+        const productPrice = this.number(product.price || product.salePrice || product.valor);
+        cost += productCost * quantity;
+        price += productPrice * quantity * (1 - discount / 100);
+      });
+    });
+    if (!price) throw new BadRequestException('Adicione ao menos um item com preco para aprovar este orcamento.');
+    let client = quote.clientId ? clients.find((item) => Boolean(item) && typeof item === 'object' && String((item as { id?: unknown }).id || '') === String(quote.clientId)) as Record<string, unknown> | undefined : undefined;
+    const opportunity = quote.opportunityId ? opportunities.find((item) => Boolean(item) && typeof item === 'object' && String((item as { id?: unknown }).id || '') === String(quote.opportunityId)) as Record<string, unknown> | undefined : undefined;
+    if (!client && opportunity) {
+      client = {
+        id: `cli-${crypto.randomUUID()}`,
+        name: this.text(opportunity.company, 'Cliente sem nome'),
+        document: '',
+        contact: this.text(opportunity.contact),
+        email: this.text(opportunity.email),
+        phone: this.text(opportunity.phone),
+        address: '',
+        city: '',
+        notes: `Origem: oportunidade comercial (${this.text(opportunity.source, 'nao informada')}).`,
+        status: 'Ativo',
+      };
+      clients.push(client);
+    }
+    if (!client) throw new BadRequestException('Vincule um cliente ou uma oportunidade antes de aprovar.');
+    quote.clientId = client.id;
+    quote.value = Number(price.toFixed(2));
+    quote.status = 'Aprovado';
+    if (opportunity) {
+      opportunity.stage = 'Ganho';
+      opportunity.estimatedValue = Number(price.toFixed(2));
+      opportunity.lossReason = '';
+    }
+    let project = projects.find((item) => Boolean(item) && typeof item === 'object' && String((item as { quoteId?: unknown }).quoteId || '') === quoteId) as Record<string, unknown> | undefined;
+    if (!project) {
+      project = {
+        id: `prj-${crypto.randomUUID()}`,
+        quoteId,
+        code: `PRJ-${String(projects.length + 1).padStart(3, '0')}`,
+        name: this.text(quote.title, 'Projeto').replace(/^Proposta\s+[—-]\s*/, ''),
+        clientId: client.id,
+        manager: this.text(opportunity?.owner, 'A definir'),
+        technicalStage: 'Projeto t\u00e9cnico',
+        budget: Number(price.toFixed(2)),
+        cost: Number(cost.toFixed(2)),
+        status: 'Planejamento',
+        progress: 0,
+        due: 'A definir',
+      };
+      projects.push(project);
+    } else {
+      project.budget = Number(price.toFixed(2));
+      project.cost = Number(cost.toFixed(2));
+    }
+    return this.save({ data, baseRevision: input.baseRevision }, cookie);
+  }
+
+  async createFromResource(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de criacao invalido.');
+    const input = body as { quote?: unknown; baseRevision?: unknown };
+    const quote = this.record(input.quote);
+    if (!quote || !String(quote.id || '')) throw new BadRequestException('A criacao precisa conter um orcamento valido.');
+    const current = await this.readAggregate(cookie);
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    if (quotes.some((item) => this.sameId(item, String(quote.id)))) throw new BadRequestException('Ja existe um orcamento com este identificador.');
+    return this.save({ data: { ...current.data, quotes: [...quotes, quote] }, baseRevision: input.baseRevision }, cookie);
+  }
+
+  private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown> }> {
+    const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponivel para leitura de orcamentos.');
+    });
+    if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel preparar a criacao de orcamentos.');
+    const payload = await upstream.json() as { data?: Record<string, unknown> };
+    return { data: payload.data || {} };
+  }
+
+  private record(value: unknown): Record<string, unknown> | null {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  }
+
+  private sameId(value: unknown, expectedId: string): boolean {
+    const item = this.record(value);
+    return item !== null && String(item.id || '') === expectedId;
+  }
+
+  async save(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de gravação inválido.');
     const input = body as { data?: { quotes?: unknown }; baseRevision?: unknown };
     if (!input.data || typeof input.data !== 'object' || !Array.isArray(input.data.quotes)) {
@@ -37,6 +197,17 @@ export class QuotesService {
       ...item, id: this.text(item.id, `legacy-quote-${index + 1}`), opportunityId: this.text(item.opportunityId),
       clientId: this.text(item.clientId), title: this.text(item.title, 'Orçamento sem título'),
       status: this.text(item.status, 'Em elaboração'), value: this.number(item.value),
+    }));
+  }
+
+  private normalizeRooms(value: unknown): QuoteRoom[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object').map((item, index) => ({
+      ...item,
+      id: this.text(item.id, `legacy-room-${index + 1}`),
+      quoteId: this.text(item.quoteId),
+      name: this.text(item.name, 'Ambiente sem nome'),
+      items: Array.isArray(item.items) ? item.items.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object') : [],
     }));
   }
 
