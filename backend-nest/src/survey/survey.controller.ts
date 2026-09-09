@@ -52,8 +52,8 @@ export class SurveyController {
   }
 
   @Delete('points/:id')
-  async removePoint(@Param('id') id: string, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
-    const upstream = await this.survey.removePoint(id, request.headers.cookie);
+  async removePoint(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.survey.removePoint(id, request.headers.cookie, body);
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
 }

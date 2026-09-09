@@ -15,10 +15,13 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - `schema_migrations`: migrações já aplicadas.
 - A migração `002_user_roles.sql` amplia os papéis de acesso sem invalidar contas legadas `operador`.
 - A migração `011_knowledge_domain.sql` cria a persistência própria da biblioteca de conhecimento, separada de `app_state`, e importa os artigos existentes por empresa.
+- A migração `012_survey_domain.sql` cria a persistência própria de levantamentos, pontos e ambientes, separada de `app_state`, e importa os registros existentes por empresa.
 
 Essa primeira etapa prioriza transações, histórico e recuperação sem exigir mudanças simultâneas em todas as telas. O modelo normalizado de `database/schema.sql` permanece como evolução posterior.
 
 O domínio de conhecimento usa `knowledge_domain_articles` e `knowledge_domain_state`. A revisão do domínio é independente da revisão agregada, e os artigos são isolados por `company_id`; a sessão ainda é validada pela API de autenticação durante a migração gradual.
+
+O domínio de levantamento usa `survey_domain_surveys`, `survey_domain_points`, `survey_domain_rooms` e `survey_domain_state`. O envio para orçamento permanece temporariamente híbrido porque ainda atualiza oportunidades, orçamentos e ambientes do agregado legado.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
@@ -34,6 +37,8 @@ npm run db:migrate
 
 O deploy automático executa esse passo antes de reiniciar o serviço.
 Cada arquivo e seu registro em `schema_migrations` são confirmados na mesma transação; uma falha deixa a migração pendente para uma nova tentativa segura.
+
+O deploy também compila e instala o backend NestJS em `/opt/proelium-operacional/backend-nest`, mantendo o serviço `proelium-nest` na porta interna `4174`. A API NestJS usa o mesmo `DATABASE_URL` de `/etc/proelium/database.env` e valida as sessões pelo serviço legado local.
 
 ## Backup
 

@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Pipeline de deploy passou a compilar, instalar e reiniciar o serviço NestJS no VPS, além de validar sua rota de saúde em `4174`, garantindo que as migrações de domínio cheguem à API publicada.
+
+- Levantamento técnico passou a persistir diretamente no PostgreSQL pelo NestJS, com tabelas separadas para levantamentos, pontos e ambientes, isolamento por empresa, revisão própria e importação dos registros existentes; o envio para orçamento permanece híbrido para atualizar os domínios ainda legados.
+
 - Biblioteca de conhecimento passou a persistir artigos diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação dos registros existentes; a autenticação continua compatível com a sessão legada.
 
 - Documentação do frontend e do estado do projeto atualizada para refletir os recursos NestJS já migrados e identificar corretamente a persistência ainda dependente da ponte legada.
