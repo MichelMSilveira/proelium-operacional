@@ -4,6 +4,7 @@
 
 - O domínio de orçamentos passou a persistir também pacotes comerciais e a fila de itens a cotar no PostgreSQL, com importação do estado existente e revisão compartilhada com propostas e ambientes.
 - O histórico técnico dos equipamentos passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o cadastro, importação do estado existente e rotas próprias para registrar, editar e excluir registros.
+- Entregas de projeto deixaram de regravar o agregado legado quando o PostgreSQL está ativo: a entrega atualiza diretamente relatório, projeto, instalação, checklist e histórico do cliente, com as revisões dos domínios relacionados preservadas.
 - O histórico de contatos dos clientes passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o CRM, importação do estado existente e rotas próprias para registrar, editar e excluir atividades; entregas de projeto também registram o histórico direto durante a transição.
 - Orçamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com propostas, ambientes, itens, revisão própria e importação do estado existente; aprovação e conversão continuam usando a ponte de compatibilidade para atualizar os vínculos comerciais durante a transição.
 - Oportunidades passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação do cadastro existente e validação do funil comercial preservada pela ponte durante a transição.
@@ -12,7 +13,7 @@
 - Financeiro passou a persistir diretamente no PostgreSQL pelo NestJS, com lançamentos, contas, isolamento por empresa, revisão própria, validação de valores e importação do estado existente; custos gerados pela Execução também são sincronizados e vínculos de cliente e projeto permanecem por identificador durante a transição.
 - Compras e materiais passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de quantidade e importação dos itens existentes; vínculos com projetos permanecem por identificador durante a transição.
 - Projetos passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de progresso/orçamento e importação do cadastro existente; tarefas, agenda, instalações, OS, relatórios e financeiro preservam seus vínculos por identificador durante a transição.
-- Relatórios de serviço e entregas passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, atualização dos vínculos diretos de OS/agenda/instalação e validação de checklist concluído antes da entrega; projetos e atividades ainda recebem a atualização pela ponte legada.
+- Relatórios de serviço e entregas passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, atualização dos vínculos diretos de OS/agenda/instalação e validação de checklist concluído antes da entrega.
 
 - Rotinas da empresa e checklists de projeto passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisões próprias e controle de concorrência; Relatórios agora valida a entrega pela tabela de checklists durante a transição.
 

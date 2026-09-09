@@ -212,13 +212,11 @@ export class ReportsService {
     const note = this.text(delivery.note);
     if (!projectId || !date || !responsible || !note) throw new BadRequestException('A entrega precisa conter projeto, data, responsavel e resumo.');
     if (!['Aceite confirmado', 'Aceite pendente'].includes(acceptance)) throw new BadRequestException('Aceite de entrega invalido.');
-    const current = await this.readAggregate(cookie, 'validacao da entrega');
-    const projects = Array.isArray(current.data.projects) ? current.data.projects : [];
     const directProject = await this.pool!.query(
       `select id, name, client_id as "clientId" from projects_domain_entries where company_id = $1 and id = $2`,
       [context.companyId, projectId],
     );
-    const project = directProject.rows[0] || projects.find((item) => this.sameId(item, projectId));
+    const project = directProject.rows[0];
     if (!project) throw new NotFoundException('Projeto nao encontrado.');
     const checklistPayload = await this.routines.listChecklists(cookie);
     const projectChecklist = checklistPayload.projectChecklists.filter((item) => this.text(item.projectId) === projectId);
@@ -266,6 +264,16 @@ export class ReportsService {
          where company_id = $2 and id = $3`,
         [acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite', context.companyId, projectId],
       );
+      await client.query(
+        `insert into projects_domain_state (company_id, revision) values ($1, 1)
+         on conflict (company_id) do update set revision = projects_domain_state.revision + 1, updated_at = now()`,
+        [context.companyId],
+      );
+      await client.query(
+        `insert into installations_domain_state (company_id, revision) values ($1, 1)
+         on conflict (company_id) do update set revision = installations_domain_state.revision + 1, updated_at = now()`,
+        [context.companyId],
+      );
       const projectRecord = this.record(project);
       const clientId = this.text(projectRecord?.clientId);
       const activity = clientId ? {
@@ -279,15 +287,6 @@ export class ReportsService {
       if (activity) await this.appendClientActivity(client, context.companyId, activity);
       const nextRevision = await this.bumpRevision(client, context.companyId);
       await client.query('commit');
-      const activities = Array.isArray(current.data.activities) ? current.data.activities : [];
-      const nextData: Record<string, unknown> = {
-        ...current.data,
-        projects: projects.map((item) => this.sameId(item, projectId) ? {
-          ...this.record(item), technicalStage: 'Entrega', progress: 100, status: acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite',
-        } : item),
-        activities: activity ? [activity, ...activities] : activities,
-      };
-      await this.forward(nextData, current.revision, cookie);
       return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, projectDelivery: normalized }) };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);

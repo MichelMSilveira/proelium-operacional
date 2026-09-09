@@ -72,9 +72,9 @@ O domínio de instalações usa `installations_domain_entries` e `installations_
 
 O domínio de rotinas usa `routines` e `routines_domain_state`. A coleção de procedimentos é isolada por `company_id` e possui revisão própria.
 
-O domínio de checklists usa `project_checklists_domain_entries` e `project_checklists_domain_state`. Os itens são isolados por `company_id`, aceitam revisão de conflito e o serviço de Relatórios consulta essa tabela para bloquear entregas incompletas; relatórios e entregas continuam híbridos enquanto seus registros principais não forem migrados.
+O domínio de checklists usa `project_checklists_domain_entries` e `project_checklists_domain_state`. Os itens são isolados por `company_id`, aceitam revisão de conflito e o serviço de Relatórios consulta essa tabela para bloquear entregas incompletas antes da gravação direta da entrega.
 
-O domínio de relatórios usa `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`. Relatórios atualizam diretamente ordens de serviço, compromissos e instalações quando os vínculos já foram migrados; entregas também registram a atividade do CRM diretamente, mantendo a atualização legada como ponte de compatibilidade.
+O domínio de relatórios usa `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`. Relatórios e entregas atualizam diretamente os domínios operacionais já migrados, incluindo ordens de serviço, compromissos, instalações, projetos e atividades do CRM; o agregado legado permanece apenas como fallback quando o PostgreSQL não está configurado.
 
 O domínio de projetos usa `projects_domain_entries` e `projects_domain_state`. Cliente e demais vínculos permanecem como referências textuais; progresso e orçamento possuem limites no banco, e a revisão é independente por empresa.
 
