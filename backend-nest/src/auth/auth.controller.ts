@@ -192,7 +192,7 @@ export class AuthController {
 
   private async databaseLogin(request: { headers: { cookie?: string; [key: string]: string | undefined } }, payload: unknown, response: any) {
     try {
-      const input = payload && typeof payload === 'object' ? payload as RecordItem : {};
+      const input = this.payloadRecord(payload);
       const username = String(input.username || '').trim().toLowerCase();
       const password = String(input.password || '');
       if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username) || !password) {
@@ -260,6 +260,17 @@ export class AuthController {
       const actual = scryptSync(password, salt, expected.length);
       return actual.length === expected.length && timingSafeEqual(actual, expected);
     } catch { return false; }
+  }
+
+  private payloadRecord(payload: unknown): RecordItem {
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) return payload as RecordItem;
+    if (typeof payload === 'string') {
+      try {
+        const parsed = JSON.parse(payload);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as RecordItem : {};
+      } catch { return {}; }
+    }
+    return {};
   }
 
   private signedSession(payload: RecordItem): string {
