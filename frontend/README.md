@@ -55,5 +55,7 @@ Na raiz do projeto, execute `npm run check:all` para validar o backend legado e 
 
 ## Origem da API
 
+O Levantamento Tecnico agora permite criar e editar levantamentos e pontos, alem de excluir pontos, pela API NestJS. A persistencia ainda e encaminhada ao agregado legado com `baseRevision`, preservando o controle de concorrencia durante a migracao.
+
 Em desenvolvimento, o proxy usa `http://localhost:4173`. No ambiente online, configure `PROELIUM_API_ORIGIN` com a origem HTTPS do servidor antes de iniciar o Next.js.
 Para ativar o recurso separado de Projetos, configure tambem `PROELIUM_NEST_API_ORIGIN` com a origem do NestJS; localmente o padrao e `http://localhost:4174`.

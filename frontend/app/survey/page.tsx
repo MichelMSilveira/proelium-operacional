@@ -1,15 +1,163 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { ModuleLayout } from '../components/ModuleLayout';
-import { apiGet } from '../../lib/api';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api';
 
-type Item = Record<string, unknown>;
+type Survey = {
+  id: string;
+  opportunityId?: string;
+  title: string;
+  site?: string;
+  source?: string;
+  status: string;
+  notes?: string;
+};
+
+type SurveyPoint = {
+  id: string;
+  surveyId: string;
+  room?: string;
+  type: string;
+  technology?: string;
+  quantity?: number;
+  status?: string;
+  notes?: string;
+};
+
+type SurveyPayload = { surveys?: Survey[]; points?: SurveyPoint[]; revision?: number };
+
+const emptySurvey = { id: '', opportunityId: '', title: '', site: '', source: 'Preenchimento manual', status: 'Em levantamento', notes: '' };
+const emptyPoint = { id: '', surveyId: '', room: '', type: '', technology: '', quantity: 1, status: 'Em levantamento', notes: '' };
+
 export default function SurveyPage() {
-  const [data, setData] = useState<Record<string, Item[]>>({});
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [points, setPoints] = useState<SurveyPoint[]>([]);
+  const [revision, setRevision] = useState<number>();
+  const [surveyDraft, setSurveyDraft] = useState(emptySurvey);
+  const [pointDraft, setPointDraft] = useState(emptyPoint);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  useEffect(() => { apiGet<{ surveys?: Item[]; points?: Item[] }>('/api/survey').then((payload) => setData({ surveys: payload.surveys || [], surveyPoints: payload.points || [] })).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Falha ao carregar levantamento.')); }, []);
-  const surveys = data.surveys || [];
-  const points = data.surveyPoints || [];
-  return <ModuleLayout eyebrow="LEVANTAMENTO TÉCNICO" title="Necessidades e pontos" description="Levantamentos técnicos disponíveis para consulta.">{error && <p className="error">{error}</p>}<div className="summary"><article><span>Levantamentos</span><strong>{surveys.length}</strong></article><article><span>Pontos técnicos</span><strong>{points.length}</strong></article></div><div className="record-list">{surveys.map((item, index) => <article key={String(item.id || index)}><strong>{String(item.name || item.title || `Levantamento ${index + 1}`)}</strong><span>{String(item.status || item.category || item.categoria || 'Sem status informado')}</span></article>)}{!error && !surveys.length && <p>Nenhum levantamento disponível.</p>}</div><style jsx>{`.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0}.summary article,.record-list article{display:grid;gap:8px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.summary span,.record-list span,.record-list>p{font-size:12px;color:var(--proelium-muted)}.summary strong{font-size:28px;color:var(--proelium-olive)}.record-list{display:grid;gap:10px}`}</style></ModuleLayout>;
+
+  async function load() {
+    try {
+      const payload = await apiGet<SurveyPayload>('/api/survey');
+      setSurveys(payload.surveys || []);
+      setPoints(payload.points || []);
+      setRevision(payload.revision);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Falha ao carregar levantamento.');
+    }
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  async function saveSurvey(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const id = surveyDraft.id || `lev-${Date.now()}`;
+      const path = surveyDraft.id ? `/api/survey/${encodeURIComponent(id)}` : '/api/survey';
+      const request = { survey: { ...surveyDraft, id }, baseRevision: revision };
+      const result = surveyDraft.id
+        ? await apiPatch<{ revision?: number }>(path, request)
+        : await apiPost<{ revision?: number }>(path, request);
+      setRevision(result.revision ?? revision);
+      setSurveyDraft(emptySurvey);
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel salvar o levantamento.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function savePoint(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const id = pointDraft.id || `ptl-${Date.now()}`;
+      const path = pointDraft.id ? `/api/survey/points/${encodeURIComponent(id)}` : '/api/survey/points';
+      const request = { point: { ...pointDraft, id, quantity: Number(pointDraft.quantity) || 0 }, baseRevision: revision };
+      const result = pointDraft.id
+        ? await apiPatch<{ revision?: number }>(path, request)
+        : await apiPost<{ revision?: number }>(path, request);
+      setRevision(result.revision ?? revision);
+      setPointDraft({ ...emptyPoint, surveyId: pointDraft.surveyId });
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel salvar o ponto tecnico.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removePoint(id: string) {
+    if (!window.confirm('Excluir este ponto tecnico?')) return;
+    setSaving(true);
+    setError('');
+    try {
+      await apiDelete(`/api/survey/points/${encodeURIComponent(id)}`, {});
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel excluir o ponto tecnico.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModuleLayout eyebrow="LEVANTAMENTO TÉCNICO" title="Necessidades e pontos" description="Construa ambientes, pontos e quantitativos antes de enviar o levantamento para orçamento.">
+      {error && <p className="error">{error}</p>}
+      <div className="summary">
+        <article><span>Levantamentos</span><strong>{surveys.length}</strong></article>
+        <article><span>Pontos técnicos</span><strong>{points.length}</strong></article>
+      </div>
+
+      <section className="card">
+        <h2>{surveyDraft.id ? 'Editar levantamento' : 'Novo levantamento'}</h2>
+        <form className="form-grid" onSubmit={saveSurvey}>
+          <input value={surveyDraft.title} onChange={(event) => setSurveyDraft({ ...surveyDraft, title: event.target.value })} placeholder="Título do levantamento" required />
+          <input value={surveyDraft.opportunityId} onChange={(event) => setSurveyDraft({ ...surveyDraft, opportunityId: event.target.value })} placeholder="ID da oportunidade (opcional)" />
+          <input value={surveyDraft.site} onChange={(event) => setSurveyDraft({ ...surveyDraft, site: event.target.value })} placeholder="Local / obra" />
+          <input value={surveyDraft.source} onChange={(event) => setSurveyDraft({ ...surveyDraft, source: event.target.value })} placeholder="Origem" />
+          <select value={surveyDraft.status} onChange={(event) => setSurveyDraft({ ...surveyDraft, status: event.target.value })}><option>Em levantamento</option><option>Validado</option><option>Enviado ao orçamento</option></select>
+          <textarea value={surveyDraft.notes} onChange={(event) => setSurveyDraft({ ...surveyDraft, notes: event.target.value })} placeholder="Premissas e observações" />
+          <div><button disabled={saving}>{saving ? 'Salvando...' : surveyDraft.id ? 'Salvar levantamento' : 'Criar levantamento'}</button>{surveyDraft.id && <button type="button" className="secondary" onClick={() => setSurveyDraft(emptySurvey)}>Cancelar</button>}</div>
+        </form>
+      </section>
+
+      <section className="card">
+        <div className="section-head"><h2>Novo ponto técnico</h2><span>Revisão {revision ?? '—'}</span></div>
+        <form className="form-grid" onSubmit={savePoint}>
+          <select value={pointDraft.surveyId} onChange={(event) => setPointDraft({ ...pointDraft, surveyId: event.target.value })} required><option value="">Selecione o levantamento</option>{surveys.map((survey) => <option key={survey.id} value={survey.id}>{survey.title}</option>)}</select>
+          <input value={pointDraft.room} onChange={(event) => setPointDraft({ ...pointDraft, room: event.target.value })} placeholder="Ambiente" />
+          <input value={pointDraft.type} onChange={(event) => setPointDraft({ ...pointDraft, type: event.target.value })} placeholder="Tipo do ponto" required />
+          <input type="number" min="0" step="1" value={pointDraft.quantity} onChange={(event) => setPointDraft({ ...pointDraft, quantity: Number(event.target.value) })} placeholder="Quantidade" />
+          <input value={pointDraft.technology} onChange={(event) => setPointDraft({ ...pointDraft, technology: event.target.value })} placeholder="Tecnologia" />
+          <input value={pointDraft.notes} onChange={(event) => setPointDraft({ ...pointDraft, notes: event.target.value })} placeholder="Observação" />
+          <button disabled={saving || !surveys.length}>{saving ? 'Salvando...' : pointDraft.id ? 'Salvar ponto' : 'Adicionar ponto'}</button>
+        </form>
+      </section>
+
+      <div className="record-list">
+        {surveys.map((survey) => {
+          const surveyPoints = points.filter((point) => point.surveyId === survey.id);
+          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s)</span></div><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button></div>{survey.notes && <p>{survey.notes}</p>}{surveyPoints.length > 0 && <div className="point-list">{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
+        })}
+        {!error && !surveys.length && <p>Nenhum levantamento disponível.</p>}
+      </div>
+      <style jsx>{`.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0}.summary article,.record-list .card{display:grid;gap:8px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.summary span,.section-head span,.record-list p{font-size:12px;color:var(--proelium-muted)}.summary strong{font-size:28px;color:var(--proelium-olive)}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.form-grid input,.form-grid select,.form-grid textarea{min-width:0;padding:11px;border:1px solid var(--proelium-line);border-radius:7px;background:var(--proelium-card);color:inherit}.form-grid textarea{min-height:44px}.form-grid button,.section-head button,.point button{border:0;border-radius:7px;padding:10px 14px;background:var(--proelium-orange);color:#fff;font-weight:700;cursor:pointer}.form-grid button:disabled,.point button:disabled{opacity:.6}.secondary{background:transparent!important;color:var(--proelium-olive)!important;border:1px solid var(--proelium-line)!important}.danger{background:#a33!important}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-head h2{margin:0}.record-list{display:grid;gap:12px;margin-top:28px}.point-list{display:grid;gap:8px;margin-top:10px}.point{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border-top:1px solid var(--proelium-line);font-size:13px}.point button{margin-left:6px;padding:6px 10px;font-size:12px}@media(max-width:900px){.form-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.form-grid{grid-template-columns:1fr}.point{align-items:flex-start;flex-direction:column}}`}</style>
+    </ModuleLayout>
+  );
+}
+
+function surveyDraftFrom(survey: Survey) {
+  return { id: survey.id, opportunityId: survey.opportunityId || '', title: survey.title, site: survey.site || '', source: survey.source || '', status: survey.status, notes: survey.notes || '' };
+}
+
+function pointDraftFrom(point: SurveyPoint) {
+  return { id: point.id, surveyId: point.surveyId, room: point.room || '', type: point.type, technology: point.technology || '', quantity: point.quantity ?? 0, status: point.status || 'Em levantamento', notes: point.notes || '' };
 }
