@@ -4,6 +4,7 @@
 
 - A conversão posterior de oportunidades com orçamento aprovado passou a operar diretamente no PostgreSQL pelo NestJS, criando ou reutilizando o cliente, concluindo a oportunidade como Ganho e mantendo a ponte legada apenas como fallback sem PostgreSQL.
 - A gravação de oportunidades deixou de consultar e regravar o agregado legado quando o PostgreSQL está ativo; a validação do funil agora usa diretamente levantamentos, pontos, orçamentos e compromissos migrados.
+- As mutações de orçamentos, ambientes, pacotes e solicitações de cotação deixaram de regravar o agregado legado quando o PostgreSQL está ativo; a transação atualiza somente as tabelas do domínio e mantém o fallback sem banco.
 - O domínio de orçamentos passou a persistir também pacotes comerciais e a fila de itens a cotar no PostgreSQL, com importação do estado existente e revisão compartilhada com propostas e ambientes.
 - O histórico técnico dos equipamentos passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o cadastro, importação do estado existente e rotas próprias para registrar, editar e excluir registros.
 - Entregas de projeto deixaram de regravar o agregado legado quando o PostgreSQL está ativo: a entrega atualiza diretamente relatório, projeto, instalação, checklist e histórico do cliente, com as revisões dos domínios relacionados preservadas.

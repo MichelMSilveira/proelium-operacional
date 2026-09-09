@@ -657,10 +657,6 @@ export class QuotesService {
     ]);
     const packages = Array.isArray(data.packages) ? data.packages : existingPackages.rows.map((row) => this.packageFromRow(row));
     const procurementRequests = Array.isArray(data.procurementRequests) ? data.procurementRequests : existingProcurementRequests.rows.map((row) => this.procurementFromRow(row));
-    const legacy = await this.readLegacyAggregate(cookie);
-    const legacyData = { ...legacy.data, quotes: data.quotes, quoteRooms: data.quoteRooms, packages, procurementRequests };
-    const legacyResult = await this.forwardLegacy(legacyData, legacy.revision, cookie);
-    if (legacyResult.status >= 400) return legacyResult;
     const quotes = Array.isArray(data.quotes) ? data.quotes : [];
     const rooms = Array.isArray(data.quoteRooms) ? data.quoteRooms : [];
     const client = await this.pool!.connect();
@@ -721,16 +717,6 @@ export class QuotesService {
     } finally {
       client.release();
     }
-  }
-
-  private async forwardLegacy(data: Record<string, unknown>, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
-    const upstream = await fetch(`${this.legacyOrigin}/api/data`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
-      body: JSON.stringify({ data, baseRevision }),
-    }).catch(() => {
-      throw new ServiceUnavailableException('Backend legado indisponivel para gravacao do orcamento.');
-    });
-    return { status: upstream.status, body: await upstream.text() };
   }
 
   private async authContext(cookie?: string): Promise<AuthContext> {
