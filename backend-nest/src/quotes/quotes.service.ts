@@ -541,6 +541,7 @@ export class QuotesService {
     const input = body as { quote?: unknown; baseRevision?: unknown };
     const quote = this.record(input.quote);
     if (!quote || !String(quote.id || '')) throw new BadRequestException('A criacao precisa conter um orcamento valido.');
+    if (this.pool) return this.databaseCreateQuote(quote, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
     if (quotes.some((item) => this.sameId(item, String(quote.id)))) throw new BadRequestException('Ja existe um orcamento com este identificador.');
@@ -642,6 +643,48 @@ export class QuotesService {
       const nextRevision = await this.bumpRevision(client, context.companyId);
       await client.query('commit');
       return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, quote: this.normalizeQuote(nextQuote, quoteId) }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseCreateQuote(quote: RecordItem, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const quoteId = this.text(quote.id);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const existing = await client.query('select id from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]);
+      if (existing.rowCount) throw new BadRequestException('Ja existe um orcamento com este identificador.');
+      const opportunityId = this.text(quote.opportunityId);
+      if (opportunityId) {
+        const opportunity = await client.query('select id from opportunities_domain_entries where company_id = $1 and id = $2', [context.companyId, opportunityId]);
+        if (!opportunity.rowCount) throw new NotFoundException('Oportunidade nao encontrada.');
+      }
+      const clientId = this.text(quote.clientId);
+      if (clientId) {
+        const owner = await client.query('select id from clients_domain_entries where company_id = $1 and id = $2', [context.companyId, clientId]);
+        if (!owner.rowCount) throw new NotFoundException('Cliente nao encontrado.');
+      }
+      const normalized = this.normalizeQuote(quote, quoteId);
+      await client.query(
+        `insert into quotes_domain_entries
+          (company_id, id, opportunity_id, client_id, title, status, value, extra_data, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())`,
+        [context.companyId, normalized.id, normalized.opportunityId, normalized.clientId, normalized.title, normalized.status, normalized.value, JSON.stringify(this.extraQuote(quote))],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, quote: normalized }) };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
       throw error;
