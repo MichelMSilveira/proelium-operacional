@@ -547,6 +547,7 @@ export class QuotesService {
   async updateQuote(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de orcamento invalido.');
+    if (this.pool) return this.databaseUpdateQuote(quoteId, body, cookie);
     const input = body as { quote?: unknown; baseRevision?: unknown };
     const quote = this.record(input.quote);
     if (!quote) throw new BadRequestException('A atualizacao precisa conter um orcamento valido.');
@@ -578,6 +579,7 @@ export class QuotesService {
   async deleteQuote(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
     const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    if (this.pool) return this.databaseDeleteQuote(quoteId, input, cookie);
     const current = await this.readAggregate(cookie);
     const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
     const quote = quotes.find((entry) => this.sameId(entry, quoteId));
@@ -588,6 +590,93 @@ export class QuotesService {
     const relatedRooms = rooms.filter((entry) => this.text(this.record(entry)?.quoteId) === quoteId);
     if (relatedRooms.some((entry) => Array.isArray(this.record(entry)?.items) && (this.record(entry)?.items as unknown[]).length)) throw new BadRequestException('Remova os itens antes de excluir o orcamento.');
     return this.forward({ ...current.data, quotes: quotes.filter((entry) => !this.sameId(entry, quoteId)), quoteRooms: rooms.filter((entry) => this.text(this.record(entry)?.quoteId) !== quoteId) }, input.baseRevision ?? current.revision, cookie);
+  }
+
+  private async databaseUpdateQuote(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const input = body as { quote?: unknown; baseRevision?: unknown };
+    const quote = this.record(input.quote);
+    if (!quote) throw new BadRequestException('A atualizacao precisa conter um orcamento valido.');
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const existingResult = await client.query(
+        `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
+         from quotes_domain_entries where company_id = $1 and id = $2 for update`,
+        [context.companyId, quoteId],
+      );
+      const existingRow = existingResult.rows[0] as RecordItem | undefined;
+      if (!existingRow) throw new NotFoundException('Orcamento nao encontrado.');
+      const existing = this.quoteFromRow(existingRow);
+      const title = this.text(quote.title, existing.title);
+      if (!title) throw new BadRequestException('O orcamento precisa conter um titulo.');
+      const clientId = this.text(quote.clientId, existing.clientId);
+      if (clientId) {
+        const owner = await client.query('select id from clients_domain_entries where company_id = $1 and id = $2', [context.companyId, clientId]);
+        if (!owner.rowCount) throw new NotFoundException('Cliente nao encontrado.');
+      }
+      const nextQuote = {
+        ...existing,
+        id: quoteId,
+        title,
+        clientId,
+        validUntil: this.text(quote.validUntil, this.text(existing.validUntil)),
+        version: Math.max(1, this.number(existing.version) + 1),
+        updatedAt: new Date().toISOString(),
+      };
+      await client.query(
+        `update quotes_domain_entries
+         set client_id = $1, title = $2, extra_data = $3::jsonb, updated_at = now()
+         where company_id = $4 and id = $5`,
+        [clientId, title, JSON.stringify(this.extraQuote(nextQuote)), context.companyId, quoteId],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, quote: this.normalizeQuote(nextQuote, quoteId) }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseDeleteQuote(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const input = body as { baseRevision?: unknown };
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const quote = await client.query('select id, status from quotes_domain_entries where company_id = $1 and id = $2 for update', [context.companyId, quoteId]);
+      if (!quote.rowCount) throw new NotFoundException('Orcamento nao encontrado.');
+      if (this.text(quote.rows[0].status).toLowerCase() === 'aprovado') throw new BadRequestException('Orcamentos aprovados nao podem ser excluidos.');
+      const rooms = await client.query('select id, items from quotes_domain_rooms where company_id = $1 and quote_id = $2', [context.companyId, quoteId]);
+      if (rooms.rows.some((room) => Array.isArray(room.items) && room.items.length)) {
+        throw new BadRequestException('Remova os itens antes de excluir o orcamento.');
+      }
+      await client.query('delete from quotes_domain_rooms where company_id = $1 and quote_id = $2', [context.companyId, quoteId]);
+      await client.query('delete from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]);
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, id: quoteId }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   private async databaseList(cookie?: string): Promise<{ quotes: Quote[]; packages: QuotePackage[]; procurementRequests: ProcurementRequest[]; revision?: number }> {
