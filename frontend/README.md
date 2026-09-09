@@ -46,7 +46,7 @@ Agenda le compromissos por `GET /api/agenda`, usando a normalizacao do recurso s
 Operacoes agora le tarefas e ordens de servico pelos recursos `GET /api/tasks` e `GET /api/operations`, sem depender de `/api/data` para a consulta; tarefas e ordens usam `POST/PATCH/DELETE` nos respectivos recursos.
 Relatorios le Relatorios de Servico e Entregas de Projetos por `GET /api/reports`, com normalizacao das duas colecoes no NestJS.
 Instalacoes agora le pelo novo recurso `GET /api/installations`, com contrato normalizado no NestJS.
-Qualidade le avaliacoes pelo novo recurso `GET /api/quality`; a media considera a nota direta ou os quatro criterios normalizados.
+Qualidade le avaliacoes pelo recurso `GET /api/quality` e registra novas avaliações por `POST /api/quality`; a media considera os quatro criterios normalizados e o historico não possui exclusao fisica.
 Processos ganhou a rota Next.js `/processes` com as sete etapas operacionais padrao; como o fluxo e estatico, nao depende de consulta ou gravacao no agregado.
 Biblioteca tecnica le fabricantes pelo recurso `GET /api/product-library` e permite criacao/edicao por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias.
 Conexoes de produtos le o modelo tecnico selecionado pelo recurso `GET /api/products`, sem duplicar a colecao de produtos.

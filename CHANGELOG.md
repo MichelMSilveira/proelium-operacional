@@ -24,6 +24,10 @@
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v367` após a migração das ordens de serviço para NestJS.
 
+- Qualidade passou a registrar avaliações pela tela Next.js usando `POST /api/quality`, com validação das quatro notas, fonte e evidências; o histórico permanece sem exclusão física.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v368` após a migração do registro de avaliações.
+
 - Criada a rota Next.js `/product-connections` para consulta do modelo tecnico de Produtos, usando `GET /api/products` e exibindo compatibilidades, requisitos, limites e fonte oficial sem duplicar armazenamento.
 - Biblioteca Tecnica passou a permitir criacao e edicao de fabricantes por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias em produtos e conexoes.
 - Catalogo passou a permitir criacao e edicao de servicos por `POST/PATCH /api/services`, mantendo produtos e servicos separados na interface e classificados no mesmo armazenamento durante a transicao.
