@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Conhecimento agora permite cadastrar, editar e excluir artigos por `POST/PATCH/DELETE /api/knowledge`; a gravacao valida titulo, revisao e permissao do perfil operacional/admin.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v383` apos a migracao da biblioteca de conhecimento para o NestJS.
+
 - Orcamentos agora podem ser editados por `PATCH /api/quotes/{id}` e excluidos com protecao para aprovados ou registros que ainda possuem itens; a tela comercial ganhou as duas acoes.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v382` apos a migracao do ciclo de vida dos orcamentos.
