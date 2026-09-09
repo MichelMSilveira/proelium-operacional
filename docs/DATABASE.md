@@ -24,6 +24,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `033_quotes_domain.sql` cria a persistência própria de orçamentos, ambientes e itens, separada de `app_state`, e importa o estado existente por empresa.
 - A migração `034_client_activities_domain.sql` cria a persistência própria do histórico de contatos dos clientes, vinculada ao domínio de Clientes, e importa as atividades existentes por empresa.
 - A migração `035_quotes_auxiliary_domain.sql` cria a persistência própria de pacotes comerciais e solicitações de cotação, vinculada ao domínio de Orçamentos, e importa os registros existentes por empresa.
+- A migração `036_equipment_history_domain.sql` cria a persistência própria do histórico técnico de equipamentos, vinculada ao domínio de Equipamentos, e importa os registros existentes por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -57,7 +58,7 @@ O domínio de qualidade usa `quality_domain_evaluations` e `quality_domain_state
 
 O domínio de chamados usa `support_tickets_domain_entries` e `support_tickets_domain_state`. Cliente e equipamento são referências textuais sem foreign keys para preservar o histórico durante a migração gradual; a revisão é independente e os registros são isolados por `company_id`.
 
-O domínio de equipamentos usa `equipment_domain_entries` e `equipment_domain_state`. O cadastro não possui foreign keys para preservar referências históricas e o histórico técnico separado permanece em transição; a revisão é independente e os registros são isolados por `company_id`.
+O domínio de equipamentos usa `equipment_domain_entries`, `equipment_domain_history` e `equipment_domain_state`. O cadastro e o histórico técnico não possuem foreign keys para preservar referências históricas; ambos compartilham a revisão independente do domínio e são isolados por `company_id`.
 
 O domínio de colaboradores usa `collaborators_domain_entries` e `collaborators_domain_state`. Ele guarda o cadastro profissional operacional; contas de acesso, convites e permissões continuam nos domínios de identidade e empresa.
 

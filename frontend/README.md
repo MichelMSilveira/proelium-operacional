@@ -53,7 +53,7 @@ Avaliações de qualidade usam `quality_domain_evaluations` e `quality_domain_st
 
 Chamados de pós-venda usam `support_tickets_domain_entries` e `support_tickets_domain_state`, com isolamento por `companyId`, revisão própria, validação de cliente/descrição e referências livres a cliente e equipamento durante a migração `017_support_tickets_domain.sql`.
 
-Equipamentos usam `equipment_domain_entries` e `equipment_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `018_equipment_domain.sql`. O histórico técnico separado continua preservado durante a migração gradual.
+Equipamentos usam `equipment_domain_entries`, `equipment_domain_history` e `equipment_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante as migrações `018_equipment_domain.sql` e `036_equipment_history_domain.sql`. O histórico técnico possui rotas próprias por equipamento e preserva referências textuais durante a migração gradual.
 
 Colaboradores usam `collaborators_domain_entries` e `collaborators_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `019_collaborators_domain.sql`. Contas, convites e permissões continuam pertencendo aos recursos de identidade da empresa.
 

@@ -72,6 +72,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST | `/clients/{id}/activities` | histórico cronológico do cliente |
 | GET/POST | `/transactions` | receitas e despesas |
 | GET/POST/PATCH | `/equipment` e `/equipment/{id}` | cadastro de equipamentos com revisão de conflito |
+| GET | `/equipment/{id}/history` | histórico técnico do equipamento |
+| POST/PATCH/DELETE | `/equipment/{id}/history` e `/equipment/{id}/history/{historyId}` | registrar, alterar ou excluir histórico técnico com revisão de conflito |
 | GET/POST/PATCH | `/collaborators` e `/collaborators/{id}` | cadastro de colaboradores com revisão de conflito |
 | GET/POST | `/knowledge` | artigos e documentos |
 | PATCH/DELETE | `/knowledge/{id}` | editar ou remover artigo com `baseRevision` |
