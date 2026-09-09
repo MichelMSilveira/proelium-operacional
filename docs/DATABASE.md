@@ -21,6 +21,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `015_clients_domain.sql` cria a persistência própria de clientes, separada de `app_state`, e importa os registros existentes por empresa.
 - A migração `016_quality_domain.sql` cria a persistência própria de avaliações de qualidade, separada de `app_state`, e importa os registros existentes por empresa.
 - A migração `017_support_tickets_domain.sql` cria a persistência própria de chamados de pós-venda, separada de `app_state`, e importa os registros existentes por empresa.
+- A migração `018_equipment_domain.sql` cria a persistência própria do cadastro de equipamentos, separada de `app_state`, e importa os registros existentes por empresa.
 
 Essa primeira etapa prioriza transações, histórico e recuperação sem exigir mudanças simultâneas em todas as telas. O modelo normalizado de `database/schema.sql` permanece como evolução posterior.
 
@@ -37,6 +38,8 @@ O domínio de clientes usa `clients_domain_entries` e `clients_domain_state`. A 
 O domínio de qualidade usa `quality_domain_evaluations` e `quality_domain_state`. As quatro notas são armazenadas com limites de 1 a 5, a revisão é independente da revisão agregada e os registros são isolados por `company_id`.
 
 O domínio de chamados usa `support_tickets_domain_entries` e `support_tickets_domain_state`. Cliente e equipamento são referências textuais sem foreign keys para preservar o histórico durante a migração gradual; a revisão é independente e os registros são isolados por `company_id`.
+
+O domínio de equipamentos usa `equipment_domain_entries` e `equipment_domain_state`. O cadastro não possui foreign keys para preservar referências históricas e o histórico técnico separado permanece em transição; a revisão é independente e os registros são isolados por `company_id`.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 

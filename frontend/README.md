@@ -14,7 +14,7 @@ Indicadores e o resumo inicial são consultas compostas por recursos separados. 
 
 ## Estado da migração
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes, as avaliações de qualidade e os chamados de pós-venda são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes, as avaliações de qualidade, os chamados de pós-venda e os equipamentos são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento ainda usa a ponte legada somente para atualizar a oportunidade, o orçamento e seus ambientes relacionados.
 
@@ -33,6 +33,8 @@ Clientes usam `clients_domain_entries` e `clients_domain_state`, com isolamento 
 Avaliações de qualidade usam `quality_domain_evaluations` e `quality_domain_state`, com isolamento por `companyId`, revisão própria, validação das quatro notas e importação inicial durante a migração `016_quality_domain.sql`.
 
 Chamados de pós-venda usam `support_tickets_domain_entries` e `support_tickets_domain_state`, com isolamento por `companyId`, revisão própria, validação de cliente/descrição e referências livres a cliente e equipamento durante a migração `017_support_tickets_domain.sql`.
+
+Equipamentos usam `equipment_domain_entries` e `equipment_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `018_equipment_domain.sql`. O histórico técnico separado continua preservado durante a migração gradual.
 
 ## Próximas etapas
 
