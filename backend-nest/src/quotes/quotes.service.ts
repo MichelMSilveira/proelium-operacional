@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableE
 
 export type Quote = { id: string; opportunityId: string; clientId: string; title: string; status: string; value: number; [key: string]: unknown };
 export type QuoteRoom = { id: string; quoteId: string; name: string; items: Record<string, unknown>[]; [key: string]: unknown };
+export type QuoteItem = { id: string; quoteId: string; roomId: string; productId: string; qty: number; discount: number; [key: string]: unknown };
 
 @Injectable()
 export class QuotesService {
@@ -32,6 +33,52 @@ export class QuotesService {
     if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel carregar os ambientes do orcamento.');
     const payload = await upstream.json() as { data?: { quoteRooms?: unknown } };
     return this.normalizeRooms(payload.data?.quoteRooms).filter((room) => room.quoteId === quoteId);
+  }
+
+  async items(quoteId: string, cookie?: string): Promise<{ items: QuoteItem[]; revision?: number }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    const current = await this.readAggregate(cookie);
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    if (!quotes.some((item) => this.sameId(item, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
+    const rooms = this.normalizeRooms(current.data.quoteRooms).filter((room) => room.quoteId === quoteId);
+    const items = rooms.flatMap((room) => room.items.map((item, index) => this.normalizeItem(item, quoteId, room.id, index)));
+    return { items, revision: current.revision };
+  }
+
+  async addItem(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de item invalido.');
+    const input = body as { item?: unknown; baseRevision?: unknown };
+    const item = this.record(input.item);
+    if (!item) throw new BadRequestException('A criacao precisa conter um item valido.');
+    const current = await this.readAggregate(cookie);
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    if (!quotes.some((entry) => this.sameId(entry, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
+    const roomId = this.text(item.roomId);
+    const productId = this.text(item.productId);
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const roomIndex = rooms.findIndex((entry) => this.sameId(entry, roomId) && this.text(this.record(entry)?.quoteId) === quoteId);
+    if (roomIndex < 0) throw new NotFoundException('Ambiente do orcamento nao encontrado.');
+    const products = Array.isArray(current.data.products) ? current.data.products : [];
+    if (!products.some((entry) => this.sameId(entry, productId))) throw new NotFoundException('Produto ou servico nao encontrado.');
+    const qty = this.number(item.qty);
+    const discount = this.number(item.discount);
+    if (qty <= 0) throw new BadRequestException('A quantidade do item deve ser maior que zero.');
+    if (discount > 100) throw new BadRequestException('O desconto do item deve estar entre zero e cem por cento.');
+    const nextItem: QuoteItem = {
+      ...item,
+      id: this.text(item.id, `item-${crypto.randomUUID()}`),
+      quoteId,
+      roomId,
+      productId,
+      qty,
+      discount,
+    };
+    const room = this.record(rooms[roomIndex]) || {};
+    const existingItems = Array.isArray(room.items) ? room.items : [];
+    if (existingItems.some((entry) => this.text(this.record(entry)?.id) === nextItem.id)) throw new BadRequestException('Ja existe um item com este identificador.');
+    const nextRooms = rooms.map((entry, index) => index === roomIndex ? { ...this.record(entry), items: [...existingItems, nextItem] } : entry);
+    return this.forward({ ...current.data, quoteRooms: nextRooms }, input.baseRevision ?? current.revision, cookie);
   }
 
   async saveRooms(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
@@ -157,13 +204,23 @@ export class QuotesService {
     return this.save({ data: { ...current.data, quotes: [...quotes, quote] }, baseRevision: input.baseRevision }, cookie);
   }
 
-  private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown> }> {
+  private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura de orcamentos.');
     });
     if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel preparar a criacao de orcamentos.');
-    const payload = await upstream.json() as { data?: Record<string, unknown> };
-    return { data: payload.data || {} };
+    const payload = await upstream.json() as { data?: Record<string, unknown>; revision?: number };
+    return { data: payload.data || {}, revision: payload.revision };
+  }
+
+  private async forward(data: Record<string, unknown>, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const upstream = await fetch(`${this.legacyOrigin}/api/data`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+      body: JSON.stringify({ data, baseRevision }),
+    }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponivel para gravacao do item.');
+    });
+    return { status: upstream.status, body: await upstream.text() };
   }
 
   private record(value: unknown): Record<string, unknown> | null {
@@ -209,6 +266,19 @@ export class QuotesService {
       name: this.text(item.name, 'Ambiente sem nome'),
       items: Array.isArray(item.items) ? item.items.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object') : [],
     }));
+  }
+
+  private normalizeItem(value: unknown, quoteId: string, roomId: string, index: number): QuoteItem {
+    const item = this.record(value) || {};
+    return {
+      ...item,
+      id: this.text(item.id, `legacy-item-${roomId}-${index + 1}`),
+      quoteId,
+      roomId,
+      productId: this.text(item.productId),
+      qty: this.number(item.qty),
+      discount: Math.min(100, this.number(item.discount)),
+    };
   }
 
   private text(value: unknown, fallback = ''): string { return typeof value === 'string' ? value.trim() : value == null ? fallback : String(value); }

@@ -40,6 +40,7 @@ const nextConfig: NextConfig = {
       { source: '/api/quotes', destination: `${nestApiOrigin}/api/quotes` },
       { source: '/api/quotes/:id', destination: `${nestApiOrigin}/api/quotes/:id` },
       { source: '/api/quotes/:id/rooms', destination: `${nestApiOrigin}/api/quotes/:id/rooms` },
+      { source: '/api/quotes/:id/items', destination: `${nestApiOrigin}/api/quotes/:id/items` },
       { source: '/api/quotes/:id/approve', destination: `${nestApiOrigin}/api/quotes/:id/approve` },
       { source: '/api/reports', destination: `${nestApiOrigin}/api/reports` },
       { source: '/api/routines', destination: `${nestApiOrigin}/api/routines` },

@@ -20,6 +20,17 @@ export class QuotesController {
     return this.quotes.rooms(id, request.headers.cookie).then((items) => ({ rooms: items }));
   }
 
+  @Get(':id/items')
+  items(@Param('id') id: string, @Req() request: { headers: { cookie?: string } }) {
+    return this.quotes.items(id, request.headers.cookie);
+  }
+
+  @Post(':id/items')
+  async addItem(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.addItem(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
   @Put(':id/rooms')
   async saveRooms(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.quotes.saveRooms(id, body, request.headers.cookie);

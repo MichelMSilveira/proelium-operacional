@@ -38,7 +38,7 @@ Levantamento le pesquisas, ambientes e pontos tecnicos por `GET /api/survey` e `
 Equipamentos le ativos fisicos pelo recurso `GET /api/equipment`, com normalizacao de fabricante, modelo, numero de serie, localizacao e status; criacao e edicao usam `POST/PATCH /api/equipment` com revisao, enquanto a exclusao fisica permanece bloqueada para preservar historico.
 Rotinas le rotinas da empresa e checklists de projetos pelo recurso `GET /api/routines`; rotinas usam `POST/PATCH/DELETE /api/routines` e checklists usam `POST/PATCH /api/routines/checklists`, com revisao de conflito.
 O detalhe tambem le os ambientes pelo recurso `GET /api/quotes/{id}/rooms`.
-O detalhe tambem le o catalogo pelo recurso `GET /api/products`; servicos e gravacao de itens continuam na etapa seguinte.
+O detalhe le produtos por `GET /api/products`, servicos por `GET /api/services` e itens do orcamento por `GET /api/quotes/{id}/items`; a inclusao usa `POST /api/quotes/{id}/items` com validacao de ambiente, produto, quantidade, desconto e revisao.
 A gravacao de ambientes e itens agora usa `PUT /api/quotes/{id}/rooms`; o NestJS recompõe a colecao no legado usando a revisao informada.
 A aprovacao agora usa `POST /api/quotes/{id}/approve` com `baseRevision`; o NestJS carrega os dados relacionados, calcula o total, cria ou vincula cliente e projeto e preserva a revisao.
 Operacoes le tarefas por `GET /api/tasks`, com criacao, edicao e exclusao em `POST/PATCH/DELETE /api/tasks`; ordens de servico continuam vindo do recurso separado `GET /api/operations` em modo de consulta.

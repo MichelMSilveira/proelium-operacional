@@ -19,14 +19,18 @@ export default function QuoteDetailPage() {
       apiGet<{ quote?: Item; revision?: number }>(`/api/quotes/${id}`),
       apiGet<{ rooms?: Item[] }>(`/api/quotes/${id}/rooms`),
       apiGet<{ products?: Item[] }>("/api/products"),
+      apiGet<{ services?: Item[] }>("/api/services"),
+      apiGet<{ items?: Item[]; revision?: number }>(`/api/quotes/${id}/items`),
     ])
-      .then(([resource, roomsResource, productsResource]) =>
+      .then(([resource, roomsResource, productsResource, servicesResource, itemsResource]) =>
         setPayload({
-          revision: resource.revision,
+          revision: itemsResource.revision ?? resource.revision,
           data: {
             quotes: resource.quote ? [resource.quote] : [],
             quoteRooms: roomsResource.rooms || [],
             products: productsResource.products || [],
+            services: servicesResource.services || [],
+            items: itemsResource.items || [],
           },
         }),
       )
@@ -43,28 +47,15 @@ export default function QuoteDetailPage() {
   const rooms = (payload?.data?.quoteRooms || []).filter(
     (item) => String(item.quoteId) === id,
   );
-  const products = payload?.data?.products || [];
-  const total = rooms.reduce(
-    (sum, room) =>
-      sum +
-      (Array.isArray(room.items)
-        ? room.items.reduce((subtotal, item) => {
-            const product = products.find(
-              (entry) => String(entry.id) === String(item.productId),
-            );
-            const price = Number(
-              product?.price || product?.salePrice || product?.valor || 0,
-            );
-            const qty = Math.max(0, Number(item.qty || 0));
-            const discount = Math.min(
-              100,
-              Math.max(0, Number(item.discount || 0)),
-            );
-            return subtotal + price * qty * (1 - discount / 100);
-          }, 0)
-        : 0),
-    0,
-  );
+  const products = [...(payload?.data?.products || []), ...(payload?.data?.services || [])].filter((item, index, list) => list.findIndex((entry) => String(entry.id) === String(item.id)) === index);
+  const items = payload?.data?.items || [];
+  const total = items.reduce((sum, item) => {
+    const product = products.find((entry) => String(entry.id) === String(item.productId));
+    const price = Number(product?.price || product?.salePrice || product?.valor || 0);
+    const qty = Math.max(0, Number(item.qty || 0));
+    const discount = Math.min(100, Math.max(0, Number(item.discount || 0)));
+    return sum + price * qty * (1 - discount / 100);
+  }, 0);
 
   async function persist(quoteRooms: Item[]) {
     if (!payload?.data) return;
@@ -115,19 +106,18 @@ export default function QuoteDetailPage() {
       100,
       Math.max(0, Number(values.discount || 0)),
     );
-    const quoteRooms = (payload.data.quoteRooms || []).map((room) =>
-      room.id === roomId
-        ? {
-            ...room,
-            items: [
-              ...(Array.isArray(room.items) ? room.items : []),
-              { productId, qty, discount },
-            ],
-          }
-        : room,
-    );
-    await persist(quoteRooms);
-    event.currentTarget.reset();
+    const item = { id: `item-next-${crypto.randomUUID()}`, quoteId: id, roomId, productId, qty, discount };
+    setSaving(true);
+    setError("");
+    try {
+      const result = await apiPost<{ revision?: number }>(`/api/quotes/${id}/items`, { item, baseRevision: payload.revision || 0 });
+      setPayload({ revision: result.revision, data: { ...payload.data, items: [...(payload.data.items || []), item] } });
+      event.currentTarget.reset();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nao foi possivel adicionar o item.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function approveQuote() {
@@ -230,9 +220,7 @@ export default function QuoteDetailPage() {
               <article key={String(room.id || index)}>
                 <strong>{String(room.name || `Ambiente ${index + 1}`)}</strong>
                 <span>
-                  {Array.isArray(room.items)
-                    ? `${room.items.length} item(ns)`
-                    : "Nenhum item"}
+                  {`${items.filter((item) => String(item.roomId) === String(room.id)).length} item(ns)`}
                 </span>
               </article>
             ))}

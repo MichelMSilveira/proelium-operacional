@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Itens de orcamentos passaram a ser carregados por `GET /api/quotes/{id}/items` e registrados por `POST /api/quotes/{id}/items`; o detalhe agora combina produtos e servicos e calcula o total a partir do recurso validado de itens.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v379` apos a migracao dos itens de orcamento para o NestJS.
+
 - Conexoes tecnicas passaram a ter rota NestJS em `GET /api/diagram` e gravacao manual por `POST/PATCH /api/diagram/connections`; a tela de Conexoes de produtos agora registra origem, portas, cabo, destino e situacao sem automatizar compatibilidades.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v378` apos a migracao da gravacao de conexoes tecnicas para o NestJS.
