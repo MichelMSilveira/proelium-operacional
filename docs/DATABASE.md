@@ -18,6 +18,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `012_survey_domain.sql` cria a persistência própria de levantamentos, pontos e ambientes, separada de `app_state`, e importa os registros existentes por empresa.
 - A migração `013_product_library_domain.sql` cria a persistência própria da biblioteca técnica de fabricantes, separada de `app_state`, e importa os registros existentes por empresa.
 - A migração `014_products_domain.sql` cria a persistência própria do catálogo de produtos e serviços, separada de `app_state`, e importa os registros existentes por empresa.
+- A migração `015_clients_domain.sql` cria a persistência própria de clientes, separada de `app_state`, e importa os registros existentes por empresa.
 
 Essa primeira etapa prioriza transações, histórico e recuperação sem exigir mudanças simultâneas em todas as telas. O modelo normalizado de `database/schema.sql` permanece como evolução posterior.
 
@@ -28,6 +29,8 @@ O domínio de levantamento usa `survey_domain_surveys`, `survey_domain_points`, 
 O domínio da biblioteca técnica usa `product_library_domain_entries` e `product_library_domain_state`. A revisão do domínio é independente da revisão agregada, e os fabricantes são isolados por `company_id`; a sessão e as permissões ainda são validadas pela API de autenticação durante a migração gradual.
 
 O domínio de produtos usa `products_domain_entries` e `products_domain_state`. Produtos e serviços permanecem na mesma tabela, com `catalog_type` distinguindo os dois tipos; a revisão é independente da revisão agregada e os registros são isolados por `company_id`.
+
+O domínio de clientes usa `clients_domain_entries` e `clients_domain_state`. A revisão é independente da revisão agregada, os clientes são isolados por `company_id` e a exclusão não remove entidades relacionadas de outros domínios.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 

@@ -23,9 +23,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 
 | Método | Rota | Uso |
 |---|---|---|
-| GET/POST | `/clients` | listar/criar clientes |
-| GET/PATCH | `/clients/{id}` | detalhe/alteração |
-| DELETE | `/clients/{id}` | excluir cliente e registros vinculados após confirmação |
+| GET/POST/PATCH | `/clients` e `/clients/{id}` | listar, criar e alterar clientes com revisão de conflito |
+| DELETE | `/clients/{id}` | excluir cliente após confirmação |
 | GET/POST | `/projects` | listar/criar projetos |
 | GET/PATCH | `/projects/{id}` | detalhe/alteração |
 | GET/POST | `/tasks` | pendências e tarefas |

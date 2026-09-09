@@ -14,7 +14,7 @@ Indicadores e o resumo inicial são consultas compostas por recursos separados. 
 
 ## Estado da migração
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes e o catálogo de produtos/serviços são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços e os clientes são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento ainda usa a ponte legada somente para atualizar a oportunidade, o orçamento e seus ambientes relacionados.
 
@@ -27,6 +27,8 @@ A biblioteca de conhecimento usa isolamento por `companyId`, revisão própria e
 A biblioteca técnica usa isolamento por `companyId`, revisão própria e importação inicial dos fabricantes existentes durante a migração `013_product_library_domain.sql`. A sessão e as permissões continuam sendo validadas pela API de autenticação legada durante a migração gradual.
 
 O catálogo de produtos e serviços usa a tabela `products_domain_entries`, mantém produtos e serviços na mesma coleção compatível com o legado e importa os registros durante a migração `014_products_domain.sql`. A sessão e as permissões continuam sendo validadas pela API de autenticação legada durante a migração gradual.
+
+Clientes usam `clients_domain_entries` e `clients_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `015_clients_domain.sql`. A exclusão mantém a mesma semântica do legado e não remove registros relacionados de outros domínios.
 
 ## Próximas etapas
 

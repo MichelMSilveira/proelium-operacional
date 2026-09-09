@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Clientes passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação dos registros existentes e exclusão compatível com o legado.
+
 - Catálogo de produtos e serviços passou a persistir diretamente no PostgreSQL pelo NestJS, com tabela compartilhada por tipo, isolamento por empresa, revisão própria e importação dos registros existentes.
 
 - Biblioteca técnica de fabricantes passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação dos registros existentes; a autenticação continua compatível com a sessão legada.
