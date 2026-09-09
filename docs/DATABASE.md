@@ -23,6 +23,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `032_opportunities_domain.sql` cria a persistência própria das oportunidades comerciais, separada de `app_state`, e importa o cadastro existente por empresa.
 - A migração `033_quotes_domain.sql` cria a persistência própria de orçamentos, ambientes e itens, separada de `app_state`, e importa o estado existente por empresa.
 - A migração `034_client_activities_domain.sql` cria a persistência própria do histórico de contatos dos clientes, vinculada ao domínio de Clientes, e importa as atividades existentes por empresa.
+- A migração `035_quotes_auxiliary_domain.sql` cria a persistência própria de pacotes comerciais e solicitações de cotação, vinculada ao domínio de Orçamentos, e importa os registros existentes por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -72,7 +73,7 @@ O domínio de rotinas usa `routines` e `routines_domain_state`. A coleção de p
 
 O domínio de checklists usa `project_checklists_domain_entries` e `project_checklists_domain_state`. Os itens são isolados por `company_id`, aceitam revisão de conflito e o serviço de Relatórios consulta essa tabela para bloquear entregas incompletas; relatórios e entregas continuam híbridos enquanto seus registros principais não forem migrados.
 
-O domínio de relatórios usa `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`. Relatórios atualizam diretamente ordens de serviço, compromissos e instalações quando os vínculos já foram migrados; a atualização de projetos e atividades permanece temporariamente na ponte legada.
+O domínio de relatórios usa `reports_domain_service_entries`, `reports_domain_delivery_entries` e `reports_domain_state`. Relatórios atualizam diretamente ordens de serviço, compromissos e instalações quando os vínculos já foram migrados; entregas também registram a atividade do CRM diretamente, mantendo a atualização legada como ponte de compatibilidade.
 
 O domínio de projetos usa `projects_domain_entries` e `projects_domain_state`. Cliente e demais vínculos permanecem como referências textuais; progresso e orçamento possuem limites no banco, e a revisão é independente por empresa.
 
@@ -86,7 +87,7 @@ O domínio de diagrama usa `diagram_domain_connections`, `diagram_domain_aux_rec
 
 O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições continua passando pela ponte do fluxo comercial até a migração dos levantamentos e orçamentos relacionados.
 
-O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms` e `quotes_domain_state`. As propostas são isoladas por `company_id`, a revisão é independente e os itens dos ambientes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação e conversão ainda atualizam vínculos pela ponte legada.
+O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms`, `quotes_domain_packages`, `quotes_domain_procurement_requests` e `quotes_domain_state`. Propostas, pacotes e fila de cotação são isolados por `company_id` e compartilham a revisão comercial; os itens dos ambientes e dos pacotes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação e conversão ainda atualizam vínculos pela ponte legada.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 

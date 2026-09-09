@@ -4,6 +4,8 @@ import { Pool, PoolClient } from 'pg';
 export type Quote = { id: string; opportunityId: string; clientId: string; title: string; status: string; value: number; [key: string]: unknown };
 export type QuoteRoom = { id: string; quoteId: string; name: string; items: Record<string, unknown>[]; [key: string]: unknown };
 export type QuoteItem = { id: string; quoteId: string; roomId: string; productId: string; qty: number; discount: number; [key: string]: unknown };
+export type QuotePackage = { id: string; name: string; category: string; description: string; active: boolean; items: Record<string, unknown>[]; [key: string]: unknown };
+export type ProcurementRequest = { id: string; quoteId: string; roomId: string; productId: string; name: string; category: string; brand: string; status: string; createdAt: string; [key: string]: unknown };
 type RecordItem = Record<string, unknown>;
 type AuthContext = { username: string; companyId: string; role: string; permissions: string[]; modules: string[] };
 
@@ -22,17 +24,27 @@ export class QuotesService {
     }
   }
 
-  async list(cookie?: string): Promise<{ quotes: Quote[]; revision?: number }> {
+  async list(cookie?: string): Promise<{ quotes: Quote[]; packages: QuotePackage[]; procurementRequests: ProcurementRequest[]; revision?: number }> {
     if (this.pool) {
       const current = await this.readAggregate(cookie);
-      return { quotes: this.normalizeList(current.data.quotes), revision: current.revision };
+      return {
+        quotes: this.normalizeList(current.data.quotes),
+        packages: this.normalizePackages(current.data.packages),
+        procurementRequests: this.normalizeProcurementRequests(current.data.procurementRequests),
+        revision: current.revision,
+      };
     }
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponível para leitura de orçamentos.');
     });
     if (!upstream.ok) throw new ServiceUnavailableException('Não foi possível carregar os orçamentos.');
-    const payload = await upstream.json() as { revision?: number; data?: { quotes?: unknown } };
-    return { quotes: this.normalizeList(payload.data?.quotes), revision: payload.revision };
+    const payload = await upstream.json() as { revision?: number; data?: { quotes?: unknown; packages?: unknown; procurementRequests?: unknown } };
+    return {
+      quotes: this.normalizeList(payload.data?.quotes),
+      packages: this.normalizePackages(payload.data?.packages),
+      procurementRequests: this.normalizeProcurementRequests(payload.data?.procurementRequests),
+      revision: payload.revision,
+    };
   }
 
   async detail(id: string, cookie?: string): Promise<{ quote: Quote; revision?: number }> {
@@ -387,7 +399,7 @@ export class QuotesService {
     if (this.pool) {
       const context = await this.authContext(cookie);
       const legacy = await this.readLegacyAggregate(cookie);
-      const [quotes, rooms, state] = await Promise.all([
+      const [quotes, rooms, packages, procurementRequests, state] = await Promise.all([
         this.pool.query(
           `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
            from quotes_domain_entries where company_id = $1 order by updated_at desc, title asc`,
@@ -398,6 +410,17 @@ export class QuotesService {
            from quotes_domain_rooms where company_id = $1 order by updated_at asc, name asc`,
           [context.companyId],
         ),
+        this.pool.query(
+          `select id, name, category, description, active, items, extra_data as "extraData"
+           from quotes_domain_packages where company_id = $1 order by updated_at desc, name asc`,
+          [context.companyId],
+        ),
+        this.pool.query(
+          `select id, quote_id as "quoteId", room_id as "roomId", product_id as "productId", name, category, brand, status,
+                  request_date as "createdAt", extra_data as "extraData"
+           from quotes_domain_procurement_requests where company_id = $1 order by updated_at desc, request_date desc`,
+          [context.companyId],
+        ),
         this.pool.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]),
       ]);
       return {
@@ -405,6 +428,8 @@ export class QuotesService {
           ...legacy.data,
           quotes: quotes.rows.map((row) => this.quoteFromRow(row)),
           quoteRooms: rooms.rows.map((row) => this.roomFromRow(row)),
+          packages: packages.rows.map((row) => this.packageFromRow(row)),
+          procurementRequests: procurementRequests.rows.map((row) => this.procurementFromRow(row)),
         },
         revision: Number(state.rows[0]?.revision || 0),
       };
@@ -439,8 +464,23 @@ export class QuotesService {
     const state = await this.pool!.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]);
     const currentRevision = Number(state.rows[0]?.revision || 0);
     if (currentRevision !== expectedRevision) return this.conflict(currentRevision);
+    const [existingPackages, existingProcurementRequests] = await Promise.all([
+      this.pool!.query(
+        `select id, name, category, description, active, items, extra_data as "extraData"
+         from quotes_domain_packages where company_id = $1 order by updated_at desc, name asc`,
+        [context.companyId],
+      ),
+      this.pool!.query(
+        `select id, quote_id as "quoteId", room_id as "roomId", product_id as "productId", name, category, brand, status,
+                request_date as "createdAt", extra_data as "extraData"
+         from quotes_domain_procurement_requests where company_id = $1 order by updated_at desc, request_date desc`,
+        [context.companyId],
+      ),
+    ]);
+    const packages = Array.isArray(data.packages) ? data.packages : existingPackages.rows.map((row) => this.packageFromRow(row));
+    const procurementRequests = Array.isArray(data.procurementRequests) ? data.procurementRequests : existingProcurementRequests.rows.map((row) => this.procurementFromRow(row));
     const legacy = await this.readLegacyAggregate(cookie);
-    const legacyData = { ...legacy.data, quotes: data.quotes, quoteRooms: data.quoteRooms };
+    const legacyData = { ...legacy.data, quotes: data.quotes, quoteRooms: data.quoteRooms, packages, procurementRequests };
     const legacyResult = await this.forwardLegacy(legacyData, legacy.revision, cookie);
     if (legacyResult.status >= 400) return legacyResult;
     const quotes = Array.isArray(data.quotes) ? data.quotes : [];
@@ -455,6 +495,8 @@ export class QuotesService {
       }
       await client.query('delete from quotes_domain_rooms where company_id = $1', [context.companyId]);
       await client.query('delete from quotes_domain_entries where company_id = $1', [context.companyId]);
+      await client.query('delete from quotes_domain_packages where company_id = $1', [context.companyId]);
+      await client.query('delete from quotes_domain_procurement_requests where company_id = $1', [context.companyId]);
       for (const item of quotes) {
         const quote = this.normalizeQuote(this.record(item) || {}, this.text(this.record(item)?.id));
         if (!quote.id) continue;
@@ -471,6 +513,25 @@ export class QuotesService {
           `insert into quotes_domain_rooms (company_id, id, quote_id, name, items, extra_data, updated_at)
            values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, now())`,
           [context.companyId, room.id, room.quoteId, room.name, JSON.stringify(room.items), JSON.stringify(this.extraRoom(this.record(item) || {}))],
+        );
+      }
+      for (const item of packages) {
+        const pack = this.normalizePackage(this.record(item) || {}, this.text(this.record(item)?.id));
+        if (!pack.id) continue;
+        await client.query(
+          `insert into quotes_domain_packages (company_id, id, name, category, description, active, items, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, now())`,
+          [context.companyId, pack.id, pack.name, pack.category, pack.description, pack.active, JSON.stringify(pack.items), JSON.stringify(this.extraPackage(this.record(item) || {}))],
+        );
+      }
+      for (const item of procurementRequests) {
+        const request = this.normalizeProcurement(this.record(item) || {}, this.text(this.record(item)?.id));
+        if (!request.id) continue;
+        await client.query(
+          `insert into quotes_domain_procurement_requests
+            (company_id, id, quote_id, room_id, product_id, name, category, brand, status, request_date, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, now())`,
+          [context.companyId, request.id, request.quoteId, request.roomId, request.productId, request.name, request.category, request.brand, request.status, request.createdAt, JSON.stringify(this.extraProcurement(this.record(item) || {}))],
         );
       }
       const nextRevision = await this.bumpRevision(client, context.companyId);
@@ -574,6 +635,14 @@ export class QuotesService {
     return this.normalizeRoom({ ...(this.record(row.extraData) || {}), id: row.id, quoteId: row.quoteId, name: row.name, items: row.items }, this.text(row.id));
   }
 
+  private packageFromRow(row: RecordItem): QuotePackage {
+    return this.normalizePackage({ ...(this.record(row.extraData) || {}), id: row.id, name: row.name, category: row.category, description: row.description, active: row.active, items: row.items }, this.text(row.id));
+  }
+
+  private procurementFromRow(row: RecordItem): ProcurementRequest {
+    return this.normalizeProcurement({ ...(this.record(row.extraData) || {}), id: row.id, quoteId: row.quoteId, roomId: row.roomId, productId: row.productId, name: row.name, category: row.category, brand: row.brand, status: row.status, createdAt: row.createdAt }, this.text(row.id));
+  }
+
   private normalizeQuote(item: RecordItem, id: string): Quote {
     return {
       ...item,
@@ -596,6 +665,33 @@ export class QuotesService {
     };
   }
 
+  private normalizePackage(item: RecordItem, id: string): QuotePackage {
+    return {
+      ...item,
+      id,
+      name: this.text(item.name, 'Pacote sem nome'),
+      category: this.text(item.category),
+      description: this.text(item.description),
+      active: item.active !== false,
+      items: Array.isArray(item.items) ? item.items.filter((entry): entry is RecordItem => Boolean(entry) && typeof entry === 'object') : [],
+    };
+  }
+
+  private normalizeProcurement(item: RecordItem, id: string): ProcurementRequest {
+    return {
+      ...item,
+      id,
+      quoteId: this.text(item.quoteId),
+      roomId: this.text(item.roomId),
+      productId: this.text(item.productId),
+      name: this.text(item.name, 'Item a cotar'),
+      category: this.text(item.category, 'A cotar'),
+      brand: this.text(item.brand),
+      status: this.text(item.status, 'A cotar'),
+      createdAt: this.text(item.createdAt, new Date().toISOString()),
+    };
+  }
+
   private extraQuote(item: RecordItem): RecordItem {
     const { id, opportunityId, clientId, title, status, value, updatedAt, createdAt, ...extra } = item;
     void id; void opportunityId; void clientId; void title; void status; void value; void updatedAt; void createdAt;
@@ -605,6 +701,18 @@ export class QuotesService {
   private extraRoom(item: RecordItem): RecordItem {
     const { id, quoteId, name, items, updatedAt, createdAt, ...extra } = item;
     void id; void quoteId; void name; void items; void updatedAt; void createdAt;
+    return extra;
+  }
+
+  private extraPackage(item: RecordItem): RecordItem {
+    const { id, name, category, description, active, items, updatedAt, createdAt, ...extra } = item;
+    void id; void name; void category; void description; void active; void items; void updatedAt; void createdAt;
+    return extra;
+  }
+
+  private extraProcurement(item: RecordItem): RecordItem {
+    const { id, quoteId, roomId, productId, name, category, brand, status, createdAt, updatedAt, ...extra } = item;
+    void id; void quoteId; void roomId; void productId; void name; void category; void brand; void status; void createdAt; void updatedAt;
     return extra;
   }
 
@@ -626,6 +734,18 @@ export class QuotesService {
       name: this.text(item.name, 'Ambiente sem nome'),
       items: Array.isArray(item.items) ? item.items.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object') : [],
     }));
+  }
+
+  private normalizePackages(value: unknown): QuotePackage[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is RecordItem => Boolean(item) && typeof item === 'object')
+      .map((item, index) => this.normalizePackage(item, this.text(item.id, `legacy-package-${index + 1}`)));
+  }
+
+  private normalizeProcurementRequests(value: unknown): ProcurementRequest[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is RecordItem => Boolean(item) && typeof item === 'object')
+      .map((item, index) => this.normalizeProcurement(item, this.text(item.id, `legacy-procurement-${index + 1}`)));
   }
 
   private normalizeItem(value: unknown, quoteId: string, roomId: string, index: number): QuoteItem {

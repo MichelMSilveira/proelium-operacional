@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- O domínio de orçamentos passou a persistir também pacotes comerciais e a fila de itens a cotar no PostgreSQL, com importação do estado existente e revisão compartilhada com propostas e ambientes.
 - O histórico de contatos dos clientes passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o CRM, importação do estado existente e rotas próprias para registrar, editar e excluir atividades; entregas de projeto também registram o histórico direto durante a transição.
 - Orçamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com propostas, ambientes, itens, revisão própria e importação do estado existente; aprovação e conversão continuam usando a ponte de compatibilidade para atualizar os vínculos comerciais durante a transição.
 - Oportunidades passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação do cadastro existente e validação do funil comercial preservada pela ponte durante a transição.

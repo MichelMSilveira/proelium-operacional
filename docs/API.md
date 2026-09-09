@@ -57,7 +57,7 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | POST/PATCH | `/diagram/connections` e `/diagram/connections/{id}` | registrar ou alterar conexão técnica |
 | GET/POST | `/opportunities` | listar e criar oportunidades |
 | PATCH | `/opportunities/{id}` | alterar oportunidade com validação do funil |
-| GET/POST | `/quotes` | orçamentos e versões |
+| GET/POST | `/quotes` | orçamentos, versões, pacotes e fila de cotação |
 | GET/PATCH/DELETE | `/quotes/{id}` | detalhe, alteração ou exclusão de orçamento |
 | GET/POST/PATCH/DELETE | `/quotes/{id}/rooms` | ambientes do orçamento |
 | GET/POST/PATCH/DELETE | `/quotes/{id}/items` | itens de catálogo por ambiente |
