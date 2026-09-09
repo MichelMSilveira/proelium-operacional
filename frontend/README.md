@@ -14,11 +14,13 @@ Indicadores e o resumo inicial são consultas compostas por recursos separados. 
 
 ## Estado da migração
 
+Ordens de serviço usam `service_orders_domain_entries` e `service_orders_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial dos registros existentes durante a migração `022_service_orders_domain.sql` e referências textuais a cliente, projeto e equipamento para preservar dados durante a transição.
+
 Agenda usa `appointments_domain_entries` e `appointments_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial dos compromissos existentes durante a migração `021_appointments_domain.sql` e referências textuais opcionais a clientes e projetos para preservar dados durante a transição.
 
 Tarefas usam `tasks_domain_entries` e `tasks_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial das pendências existentes durante a migração `020_tasks_domain.sql` e referências textuais aos projetos para preservar dados durante a transição.
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes, as avaliações de qualidade, os chamados de pós-venda, os equipamentos, os colaboradores, as tarefas e a agenda são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes, as avaliações de qualidade, os chamados de pós-venda, os equipamentos, os colaboradores, as tarefas, a agenda e as ordens de serviço são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento ainda usa a ponte legada somente para atualizar a oportunidade, o orçamento e seus ambientes relacionados.
 
