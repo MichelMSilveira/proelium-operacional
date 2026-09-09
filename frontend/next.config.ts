@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     const apiOrigin = process.env.PROELIUM_API_ORIGIN || 'http://localhost:4173';
     const nestApiOrigin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://localhost:4174';
     return [
+      { source: '/api/auth/me', destination: `${nestApiOrigin}/api/auth/me` },
       { source: '/api/agenda', destination: `${nestApiOrigin}/api/agenda` },
       { source: '/api/clients', destination: `${nestApiOrigin}/api/clients` },
       { source: '/api/clients/:id', destination: `${nestApiOrigin}/api/clients/:id` },

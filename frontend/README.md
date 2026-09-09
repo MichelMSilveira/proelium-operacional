@@ -33,7 +33,7 @@ Agenda usa `appointments_domain_entries` e `appointments_domain_state`, com isol
 
 Tarefas usam `tasks_domain_entries` e `tasks_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial das pendências existentes durante a migração `020_tasks_domain.sql` e referências textuais aos projetos para preservar dados durante a transição.
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS; o contrato agregado legado `/api/data` fica restrito ao modo de compatibilidade sem banco.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS; a consulta de sessão também é validada pelo NestJS, enquanto login, OAuth e o contrato agregado legado permanecem compatíveis com o servidor raiz durante a transição.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento também atualiza diretamente a oportunidade, o orçamento, os ambientes relacionados e o status do levantamento; a ponte legada fica como fallback sem PostgreSQL.
 
@@ -59,7 +59,7 @@ Colaboradores usam `collaborators_domain_entries` e `collaborators_domain_state`
 
 ## Próximas etapas
 
-- substituir gradualmente a validação de sessão pela autenticação própria do NestJS, preservando cookies e permissões existentes;
+- mover gradualmente login, OAuth e gestão de identidade para a autenticação própria do NestJS, preservando cookies e permissões existentes;
 - retirar gradualmente `PUT /api/data` e as rotas coletivas antigas depois que nenhum consumidor do app legado depender delas;
 - adicionar testes de integração autenticados por perfil e concluir a substituição visual do legado.
 
