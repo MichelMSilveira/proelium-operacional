@@ -11,6 +11,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `020_tasks_domain.sql` cria a persistência própria das tarefas operacionais, separada de `app_state`, e importa as pendências existentes por empresa.
 - A migração `021_appointments_domain.sql` cria a persistência própria da agenda operacional, separada de `app_state`, e importa os compromissos existentes por empresa.
 - A migração `022_service_orders_domain.sql` cria a persistência própria das ordens de serviço, separada de `app_state`, e importa os registros existentes por empresa.
+- A migração `023_installations_domain.sql` cria a persistência própria do cronograma de instalações, separada de `app_state`, e importa os registros existentes por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -53,6 +54,8 @@ O domínio de tarefas usa `tasks_domain_entries` e `tasks_domain_state`. Projeto
 O domínio de agenda usa `appointments_domain_entries` e `appointments_domain_state`. Cliente e projeto permanecem como referências textuais opcionais; a revisão é independente e os registros são isolados por `company_id`.
 
 O domínio de ordens de serviço usa `service_orders_domain_entries` e `service_orders_domain_state`. Cliente, projeto e equipamento permanecem como referências textuais; a exclusão continua bloqueada quando há relatório vinculado, e a revisão é independente por empresa.
+
+O domínio de instalações usa `installations_domain_entries` e `installations_domain_state`. Cliente e projeto permanecem como referências textuais, o progresso respeita o intervalo de 0 a 100 e a revisão é independente por empresa; checklists, entregas e relatórios continuam em transição.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
