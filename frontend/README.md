@@ -49,7 +49,7 @@ Instalacoes agora le e grava pelo recurso `GET/POST/PATCH /api/installations`, c
 Qualidade le avaliacoes pelo recurso `GET /api/quality` e registra novas avaliações por `POST /api/quality`; a media considera os quatro criterios normalizados e o historico não possui exclusao fisica.
 Processos ganhou a rota Next.js `/processes` com as sete etapas operacionais padrao; como o fluxo e estatico, nao depende de consulta ou gravacao no agregado.
 Biblioteca tecnica le fabricantes pelo recurso `GET /api/product-library` e permite criacao/edicao por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias.
-Conexoes de produtos le o modelo tecnico selecionado pelo recurso `GET /api/products`, sem duplicar a colecao de produtos.
+Conexoes de produtos le o modelo tecnico pelo recurso `GET /api/products` e as ligacoes do projeto por `GET /api/diagram`; a gravacao manual usa `POST/PATCH /api/diagram/connections` com origem, portas, cabo, destino e revisao de conflito.
 
 Na raiz do projeto, execute `npm run check:all` para validar o backend legado e o frontend Next.js juntos.
 

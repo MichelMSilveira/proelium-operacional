@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Conexoes tecnicas passaram a ter rota NestJS em `GET /api/diagram` e gravacao manual por `POST/PATCH /api/diagram/connections`; a tela de Conexoes de produtos agora registra origem, portas, cabo, destino e situacao sem automatizar compatibilidades.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v378` apos a migracao da gravacao de conexoes tecnicas para o NestJS.
+
 - Execucao e mao de obra passaram a ter rota Next.js e recurso NestJS em `GET/POST/PATCH /api/execution`; cada lancamento valida o projeto, sincroniza uma despesa no Financeiro e preserva revisao de conflito.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v377` apos a migracao da execucao de campo para o NestJS.

@@ -50,14 +50,14 @@ const rolePermissions = {
   admin: ['*'],
   suporte: [],
   comercial: ['dashboard', 'clients', 'commercial', 'quotes', 'products', 'survey'],
-  operacao: ['dashboard', 'projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'quality', 'collaborators', 'equipment', 'knowledge'],
+  operacao: ['dashboard', 'projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'diagram', 'quality', 'collaborators', 'equipment', 'knowledge'],
   financeiro: ['dashboard', 'clients', 'projects', 'commercial', 'finance', 'bi', 'biMarket', 'knowledge'],
   leitura: ['dashboard', 'projects', 'installations', 'knowledge', 'bi', 'biMarket']
 };
 const normalizeRole = role => role === 'operador' ? 'operacao' : (rolePermissions[role] ? role : 'operacao');
 const permissionsFor = role => rolePermissions[normalizeRole(role)] || rolePermissions.operacao;
-const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
-const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', execution: 'executionEntries', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries', purchases: 'purchaseItems' };
+const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'diagram', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
+const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', execution: 'executionEntries', diagram: 'technicalConnections', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries', purchases: 'purchaseItems' };
 const dataAccessScopes = {
   clients: ['clients', 'activities'], projects: ['projects', 'projectChecklists', 'projectDeliveries', 'supportTickets', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides', 'schedulePhases'],
   processes: ['processes'], tasks: ['tasks'], agenda: ['appointments'], commercial: ['opportunities'],
@@ -676,7 +676,9 @@ async function handleRequest(req, res) {
         .filter(([, keys]) => keys.some(key => Object.prototype.hasOwnProperty.call(payload.data, key)
           && JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null)))
         .map(([view]) => view);
-      const deniedScopes = changedScopes.filter(view => !fullDataAccess && !dataViews.has(view) && !(resource === 'execution' && view === 'finance' && dataViews.has('execution')));
+      const deniedScopes = changedScopes.filter(view => !fullDataAccess && !dataViews.has(view)
+        && !(resource === 'execution' && view === 'finance' && dataViews.has('execution'))
+        && !(resource === 'diagram' && view === 'diagram' && dataViews.has('projects')));
       if (deniedScopes.length) return sendJson(res, 403, { error: `Seu perfil não pode acessar: ${deniedScopes.join(', ')}.` });
       const role = normalizeRole(authenticatedUser.role);
       const roleAllowed = writableRoles[role];
@@ -689,7 +691,9 @@ async function handleRequest(req, res) {
           return Object.prototype.hasOwnProperty.call(payload.data, key)
             && JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
         });
-        const denied = changedDomains.filter(view => !allowed.has(view) && !(resource === 'execution' && view === 'finance' && allowed.has('execution')));
+        const denied = changedDomains.filter(view => !allowed.has(view)
+          && !(resource === 'execution' && view === 'finance' && allowed.has('execution'))
+          && !(resource === 'diagram' && view === 'diagram' && allowed.has('projects')));
         if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
       }
       const baseRevision = Number(payload.baseRevision || 0);
