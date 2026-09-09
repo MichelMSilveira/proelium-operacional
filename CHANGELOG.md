@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Orcamentos agora podem ser editados por `PATCH /api/quotes/{id}` e excluidos com protecao para aprovados ou registros que ainda possuem itens; a tela comercial ganhou as duas acoes.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v382` apos a migracao do ciclo de vida dos orcamentos.
+
 - Itens de orcamento agora podem ser editados e excluidos por `PATCH/DELETE /api/quotes/{id}/items/{itemId}`; o detalhe exibe cada item por ambiente e mantem a aprovacao baseada no conjunto atual.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v381` apos a migracao do ciclo de vida dos itens de orcamento.

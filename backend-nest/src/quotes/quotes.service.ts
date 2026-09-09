@@ -307,6 +307,52 @@ export class QuotesService {
     return this.save({ data: { ...current.data, quotes: [...quotes, quote] }, baseRevision: input.baseRevision }, cookie);
   }
 
+  async updateQuote(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de orcamento invalido.');
+    const input = body as { quote?: unknown; baseRevision?: unknown };
+    const quote = this.record(input.quote);
+    if (!quote) throw new BadRequestException('A atualizacao precisa conter um orcamento valido.');
+    const current = await this.readAggregate(cookie);
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    const index = quotes.findIndex((entry) => this.sameId(entry, quoteId));
+    if (index < 0) throw new NotFoundException('Orcamento nao encontrado.');
+    const existing = this.record(quotes[index]) || {};
+    const title = this.text(quote.title, this.text(existing.title));
+    if (!title) throw new BadRequestException('O orcamento precisa conter um titulo.');
+    const clientId = this.text(quote.clientId, this.text(existing.clientId));
+    if (clientId) {
+      const clients = Array.isArray(current.data.clients) ? current.data.clients : [];
+      if (!clients.some((entry) => this.sameId(entry, clientId))) throw new NotFoundException('Cliente nao encontrado.');
+    }
+    const nextQuote = {
+      ...existing,
+      id: quoteId,
+      title,
+      clientId,
+      validUntil: this.text(quote.validUntil, this.text(existing.validUntil)),
+      version: Math.max(1, this.number(existing.version) + 1),
+      updatedAt: new Date().toISOString(),
+    };
+    const nextQuotes = quotes.map((entry, entryIndex) => entryIndex === index ? nextQuote : entry);
+    return this.forward({ ...current.data, quotes: nextQuotes }, input.baseRevision ?? current.revision, cookie);
+  }
+
+  async deleteQuote(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    const current = await this.readAggregate(cookie);
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    const quote = quotes.find((entry) => this.sameId(entry, quoteId));
+    if (!quote) throw new NotFoundException('Orcamento nao encontrado.');
+    const quoteRecord = this.record(quote) || {};
+    if (this.text(quoteRecord.status).toLowerCase() === 'aprovado') throw new BadRequestException('Orcamentos aprovados nao podem ser excluidos.');
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const relatedRooms = rooms.filter((entry) => this.text(this.record(entry)?.quoteId) === quoteId);
+    if (relatedRooms.some((entry) => Array.isArray(this.record(entry)?.items) && (this.record(entry)?.items as unknown[]).length)) throw new BadRequestException('Remova os itens antes de excluir o orcamento.');
+    return this.forward({ ...current.data, quotes: quotes.filter((entry) => !this.sameId(entry, quoteId)), quoteRooms: rooms.filter((entry) => this.text(this.record(entry)?.quoteId) !== quoteId) }, input.baseRevision ?? current.revision, cookie);
+  }
+
   private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura de orcamentos.');

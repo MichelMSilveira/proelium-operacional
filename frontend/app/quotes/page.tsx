@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ModuleLayout } from '../components/ModuleLayout';
-import { apiGet, apiPost } from '../../lib/api';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api';
 
 type Item = Record<string, unknown>;
 type Payload = { revision?: number; clients: Item[]; quotes: Item[] };
@@ -50,6 +50,32 @@ export default function QuotesPage() {
     } finally { setSaving(false); }
   }
 
+  async function editQuote(quote: Item) {
+    if (!payload) return;
+    const title = window.prompt('Titulo do orcamento', String(quote.title || quote.name || ''))?.trim();
+    if (!title) return;
+    const validUntil = window.prompt('Validade (AAAA-MM-DD)', String(quote.validUntil || ''));
+    if (validUntil === null) return;
+    setSaving(true); setError('');
+    try {
+      const result = await apiPatch<{ revision?: number }>(`/api/quotes/${String(quote.id)}`, { quote: { id: quote.id, title, clientId: String(quote.clientId || ''), validUntil }, baseRevision: payload.revision || 0 });
+      setPayload({ ...payload, revision: result.revision, quotes: payload.quotes.map((item) => item.id === quote.id ? { ...item, title, validUntil, version: Number(item.version || 1) + 1 } : item) });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel editar o orcamento.');
+    } finally { setSaving(false); }
+  }
+
+  async function deleteQuote(quote: Item) {
+    if (!payload || !window.confirm(`Excluir o orcamento ${String(quote.title || quote.name || 'sem titulo')}?`)) return;
+    setSaving(true); setError('');
+    try {
+      const result = await apiDelete<{ revision?: number }>(`/api/quotes/${String(quote.id)}`, { baseRevision: payload.revision || 0 });
+      setPayload({ ...payload, revision: result.revision, quotes: payload.quotes.filter((item) => item.id !== quote.id) });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel excluir o orcamento.');
+    } finally { setSaving(false); }
+  }
+
   const clients = payload?.clients || [];
   const quotes = payload?.quotes || [];
   return <ModuleLayout eyebrow="COMERCIAL" title="Orcamentos" description="Criacao de rascunhos preservando cliente, validade e versao.">
@@ -63,6 +89,8 @@ export default function QuotesPage() {
     <div className="record-list">{quotes.map((quote, index) => <article key={String(quote.id || index)}>
       <a href={`/quotes/${String(quote.id)}`}><strong>{String(quote.title || quote.name || `Orcamento ${index + 1}`)}</strong></a>
       <span>{String(quote.status || 'Rascunho')} · v{String(quote.version || 1)}</span>
+      <button type="button" disabled={saving} onClick={() => editQuote(quote)}>Editar</button>
+      <button type="button" disabled={saving} onClick={() => deleteQuote(quote)}>Excluir</button>
     </article>)}{!error && quotes.length === 0 && <p>Nenhum orcamento disponivel.</p>}</div>
   </ModuleLayout>;
 }

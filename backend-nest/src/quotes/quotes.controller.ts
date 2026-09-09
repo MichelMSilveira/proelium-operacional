@@ -73,6 +73,18 @@ export class QuotesController {
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
 
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.updateQuote(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.deleteQuote(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
   @Put()
   async save(@Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.quotes.save(body, request.headers.cookie);

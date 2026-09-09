@@ -26,7 +26,7 @@ A criacao e edicao de oportunidades usam `POST /api/opportunities` e `PATCH /api
 Comercial le oportunidades e orcamentos pelos recursos `GET /api/opportunities` e `GET /api/quotes`; criacao e edicao seguem nos endpoints proprios migrados.
 Produtos e servicos leem os catalogos pelos recursos `GET /api/products` e `GET /api/services`; ambos podem ser criados e editados por `POST/PATCH` nos recursos correspondentes, com payload especifico e revisao de conflito.
 Orcamentos le a listagem por `GET /api/quotes` e clientes por `GET /api/clients`; a criacao de rascunhos usa `POST /api/quotes` com payload especifico do recurso.
-A criacao de rascunhos de Orcamento usa `POST /api/quotes`; o detalhe, ambientes, itens e aprovacao usam os recursos NestJS correspondentes.
+A criacao e edicao de rascunhos de Orcamento usam `POST/PATCH /api/quotes`; a exclusao remove somente rascunhos sem itens. O detalhe, ambientes, itens e aprovacao usam os recursos NestJS correspondentes.
 O detalhe de Orcamento agora carrega o registro e a revisao por `GET /api/quotes/{id}`; ambientes e itens continuam em `GET/PUT /api/quotes/{id}/rooms`.
 Colaboradores leem e gravam pelo recurso `GET/POST/PATCH /api/collaborators`, com normalizacao propria no NestJS; a edicao preserva campos de pagamento e o historico sem exclusao fisica.
 Financeiro le lancamentos pelo recurso `GET /api/finance`, com normalizacao de valor, data, categoria, vinculacoes e status; criacao, edicao e exclusao usam `POST/PATCH/DELETE /api/finance` com revisao de conflito.
