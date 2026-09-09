@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Documentação do frontend e do estado do projeto atualizada para refletir os recursos NestJS já migrados e identificar corretamente a persistência ainda dependente da ponte legada.
+
 - Usuarios da empresa agora podem ser ativados, desativados e removidos pela tela Next.js, usando o proxy NestJS e preservando a conta administradora e o fluxo de convites.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v384` apos a migracao das acoes de usuarios da empresa.
