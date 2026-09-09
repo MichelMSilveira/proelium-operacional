@@ -88,8 +88,8 @@ Execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"`. O comando valid
 
 ## Limites conhecidos
 
-- a interface já usa recursos versionados por domínio, mas parte da persistência do NestJS ainda passa temporariamente pelo contrato agregado `/api/data`;
-- a remoção completa da ponte legada exige migrar a persistência dos módulos para serviços e tabelas PostgreSQL próprios;
+- a interface já usa recursos versionados por domínio; com PostgreSQL ativo, a persistência operacional do NestJS não regrava o agregado `/api/data`;
+- a ponte legada restante atende o modo sem banco, a validação de sessão e o app legado enquanto a autenticação e a interface são substituídas gradualmente;
 - cada requisição protegida confirma que o usuário ainda existe e está ativo; exclusões e desativações revogam imediatamente sessões antigas;
 - o modo `file:` existe para demonstrações locais e não deve ser usado como ambiente de produção;
 - a implantação exige configurar os secrets do VPS no GitHub Actions.

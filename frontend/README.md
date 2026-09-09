@@ -33,7 +33,7 @@ Agenda usa `appointments_domain_entries` e `appointments_domain_state`, com isol
 
 Tarefas usam `tasks_domain_entries` e `tasks_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial das pendências existentes durante a migração `020_tasks_domain.sql` e referências textuais aos projetos para preservar dados durante a transição.
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes e seu histórico de atividades, as avaliações de qualidade, os chamados de pós-venda, os equipamentos, os colaboradores, as tarefas, a agenda, as ordens de serviço, as instalações, as compras, o financeiro, a execução, o diagrama técnico, as oportunidades e os orçamentos são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS; o contrato agregado legado `/api/data` fica restrito ao modo de compatibilidade sem banco.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento também atualiza diretamente a oportunidade, o orçamento, os ambientes relacionados e o status do levantamento; a ponte legada fica como fallback sem PostgreSQL.
 
@@ -59,9 +59,8 @@ Colaboradores usam `collaborators_domain_entries` e `collaborators_domain_state`
 
 ## Próximas etapas
 
-- migrar a persistência dos módulos do agregado legado para tabelas e serviços PostgreSQL do NestJS;
-- iniciar pelos módulos com contrato mais isolado e preservar leitura, revisão e permissões durante a transição;
-- retirar gradualmente `PUT /api/data` e as rotas coletivas antigas depois que nenhum consumidor depender delas;
+- substituir gradualmente a validação de sessão pela autenticação própria do NestJS, preservando cookies e permissões existentes;
+- retirar gradualmente `PUT /api/data` e as rotas coletivas antigas depois que nenhum consumidor do app legado depender delas;
 - adicionar testes de integração autenticados por perfil e concluir a substituição visual do legado.
 
 ## Validação

@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Documentação operacional alinhada ao estado atual da migração: com PostgreSQL ativo, os módulos operacionais persistem diretamente no NestJS; a compatibilidade restante está concentrada no modo sem banco, na autenticação legada e no app antigo.
 - A conversão posterior de oportunidades com orçamento aprovado passou a operar diretamente no PostgreSQL pelo NestJS, criando ou reutilizando o cliente, concluindo a oportunidade como Ganho e mantendo a ponte legada apenas como fallback sem PostgreSQL.
 - A gravação de oportunidades deixou de consultar e regravar o agregado legado quando o PostgreSQL está ativo; a validação do funil agora usa diretamente levantamentos, pontos, orçamentos e compromissos migrados.
 - As mutações de orçamentos, ambientes, pacotes e solicitações de cotação deixaram de regravar o agregado legado quando o PostgreSQL está ativo; a transação atualiza somente as tabelas do domínio e mantém o fallback sem banco.

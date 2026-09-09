@@ -86,9 +86,9 @@ O domínio de execução usa `execution_domain_entries` e `execution_domain_stat
 
 O domínio de diagrama usa `diagram_domain_connections`, `diagram_domain_aux_records` e `diagram_domain_state`. As conexões, edições e sobrescritas são isoladas por `company_id`, a revisão é independente e o projeto permanece como referência textual durante a migração gradual.
 
-O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições do fluxo comercial continua passando pela ponte de compatibilidade; o envio do levantamento para orçamento já atualiza a oportunidade diretamente.
+O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições do fluxo comercial consulta diretamente os domínios migrados; o envio do levantamento e a conversão posterior também atualizam o PostgreSQL diretamente.
 
-O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms`, `quotes_domain_packages`, `quotes_domain_procurement_requests` e `quotes_domain_state`. Propostas, pacotes e fila de cotação são isolados por `company_id` e compartilham a revisão comercial; os itens dos ambientes e dos pacotes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação já atualiza diretamente clientes, projetos e oportunidades, enquanto a conversão posterior permanece na ponte comercial.
+O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms`, `quotes_domain_packages`, `quotes_domain_procurement_requests` e `quotes_domain_state`. Propostas, pacotes e fila de cotação são isolados por `company_id` e compartilham a revisão comercial; os itens dos ambientes e dos pacotes permanecem em JSONB para manter o cálculo atual; aprovação e conversão posterior atualizam diretamente clientes, projetos e oportunidades. O fallback legado só é usado sem PostgreSQL.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
