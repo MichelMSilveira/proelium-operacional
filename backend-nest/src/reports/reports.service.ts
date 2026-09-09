@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Pool, PoolClient } from 'pg';
 import { RoutinesService } from '../routines/routines.service';
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
+type AuthContext = { username: string; companyId: string; role: string; permissions: string[]; modules: string[] };
 
 export type ServiceReport = { id: string; projectId: string; serviceOrderId: string; appointmentId: string; type: string; technician: string; responsible: string; date: string; status: string; execution: string; tests: string; pending: string; nextActionDate: string; media: string; [key: string]: unknown };
 export type ProjectDelivery = { id: string; projectId: string; status: string; date: string; [key: string]: unknown };
@@ -10,10 +12,42 @@ export type ProjectDelivery = { id: string; projectId: string; status: string; d
 @Injectable()
 export class ReportsService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+  private readonly pool?: Pool;
 
-  constructor(private readonly routines: RoutinesService) {}
+  constructor(private readonly routines: RoutinesService) {
+    if (process.env.DATABASE_URL) {
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: Number(process.env.PGPOOL_MAX || 10),
+        connectionTimeoutMillis: 5000,
+      });
+    }
+  }
 
   async list(cookie?: string): Promise<{ serviceReports: ServiceReport[]; projectDeliveries: ProjectDelivery[]; revision?: number }> {
+    if (this.pool) {
+      const context = await this.authContext(cookie);
+      const [reports, deliveries, state] = await Promise.all([
+        this.pool.query(
+          `select id, project_id as "projectId", service_order_id as "serviceOrderId", appointment_id as "appointmentId",
+                  type, technician, responsible, report_date as date, status, execution, tests, pending,
+                  next_action_date as "nextActionDate", media, extra_data as "extraData"
+           from reports_domain_service_entries where company_id = $1 order by report_date desc, updated_at desc`,
+          [context.companyId],
+        ),
+        this.pool.query(
+          `select id, project_id as "projectId", status, delivery_date as date, responsible, acceptance, note, extra_data as "extraData"
+           from reports_domain_delivery_entries where company_id = $1 order by delivery_date desc, updated_at desc`,
+          [context.companyId],
+        ),
+        this.pool.query('select revision from reports_domain_state where company_id = $1', [context.companyId]),
+      ]);
+      return {
+        serviceReports: reports.rows.map((row) => this.reportFromRow(row)),
+        projectDeliveries: deliveries.rows.map((row) => this.deliveryFromRow(row)),
+        revision: Number(state.rows[0]?.revision || 0),
+      };
+    }
     const current = await this.readAggregate(cookie, 'leitura de relatorios');
     return {
       serviceReports: this.normalizeReports(current.data.serviceReports),
@@ -23,6 +57,7 @@ export class ReportsService {
   }
 
   async save(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (this.pool) return this.databaseSave(body, cookie);
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de relatorio invalido.');
     const input = body as { serviceReport?: unknown; baseRevision?: unknown };
     const report = this.record(input.serviceReport);
@@ -53,6 +88,7 @@ export class ReportsService {
   }
 
   async saveDelivery(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (this.pool) return this.databaseSaveDelivery(body, cookie);
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de entrega invalido.');
     const input = body as { projectDelivery?: unknown; baseRevision?: unknown };
     const delivery = this.record(input.projectDelivery);
@@ -101,6 +137,209 @@ export class ReportsService {
     const activities = Array.isArray(current.data.activities) ? current.data.activities : [];
     nextData.activities = clientId ? [{ id: `act-${crypto.randomUUID()}`, clientId, type: 'Entrega', title: `Entrega do projeto ${this.text(projectRecord?.name, projectId)}`, note, date }, ...activities] : activities;
     return this.forward(nextData, input.baseRevision, cookie);
+  }
+
+  private async databaseSave(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de relatorio invalido.');
+    const input = body as { serviceReport?: unknown; baseRevision?: unknown };
+    const report = this.record(input.serviceReport);
+    if (!report) throw new BadRequestException('Relatorio invalido.');
+    const projectId = this.text(report.projectId);
+    const technician = this.text(report.technician ?? report.responsible);
+    const date = this.text(report.date);
+    const execution = this.text(report.execution);
+    if (!projectId || !technician || !date || !execution) throw new BadRequestException('O relatorio precisa conter projeto, data, responsavel e execucao.');
+    const reportId = this.text(report.id) || `rpt-${crypto.randomUUID()}`;
+    const normalized = this.normalizeReport(report, reportId);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const existing = await client.query('select id from reports_domain_service_entries where company_id = $1 and id = $2', [context.companyId, reportId]);
+      if (existing.rowCount) throw new BadRequestException('Ja existe um relatorio com este identificador.');
+      const extraData = this.extraData(report, 'serviceReport');
+      await client.query(
+        `insert into reports_domain_service_entries
+          (company_id, id, project_id, service_order_id, appointment_id, type, technician, responsible, report_date, status,
+           execution, tests, pending, next_action_date, media, extra_data, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, now())`,
+        [context.companyId, normalized.id, normalized.projectId, normalized.serviceOrderId, normalized.appointmentId, normalized.type,
+          normalized.technician, normalized.responsible, normalized.date, normalized.status, normalized.execution, normalized.tests,
+          normalized.pending, normalized.nextActionDate, normalized.media, JSON.stringify(extraData)],
+      );
+      if (normalized.serviceOrderId && normalized.status === 'Concluído') {
+        await client.query(
+          'update service_orders_domain_entries set status = $1, updated_at = now() where company_id = $2 and id = $3',
+          ['Concluída', context.companyId, normalized.serviceOrderId],
+        );
+      }
+      if (normalized.appointmentId) {
+        await client.query(
+          `update appointments_domain_entries
+           set extra_data = extra_data || $1::jsonb, updated_at = now()
+           where company_id = $2 and id = $3`,
+          [JSON.stringify({ reportId: normalized.id, reportStatus: normalized.status, reportedAt: new Date().toISOString() }), context.companyId, normalized.appointmentId],
+        );
+      }
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, serviceReport: normalized }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseSaveDelivery(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de entrega invalido.');
+    const input = body as { projectDelivery?: unknown; baseRevision?: unknown };
+    const delivery = this.record(input.projectDelivery);
+    if (!delivery) throw new BadRequestException('Entrega invalida.');
+    const projectId = this.text(delivery.projectId);
+    const date = this.text(delivery.date);
+    const responsible = this.text(delivery.responsible);
+    const acceptance = this.text(delivery.acceptance, 'Aceite pendente');
+    const note = this.text(delivery.note);
+    if (!projectId || !date || !responsible || !note) throw new BadRequestException('A entrega precisa conter projeto, data, responsavel e resumo.');
+    if (!['Aceite confirmado', 'Aceite pendente'].includes(acceptance)) throw new BadRequestException('Aceite de entrega invalido.');
+    const current = await this.readAggregate(cookie, 'validacao da entrega');
+    const projects = Array.isArray(current.data.projects) ? current.data.projects : [];
+    if (!projects.some((item) => this.sameId(item, projectId))) throw new NotFoundException('Projeto nao encontrado.');
+    const checklistPayload = await this.routines.listChecklists(cookie);
+    const projectChecklist = checklistPayload.projectChecklists.filter((item) => this.text(item.projectId) === projectId);
+    if (!projectChecklist.length) throw new BadRequestException('Aplique o checklist do projeto antes de registrar a entrega.');
+    if (projectChecklist.some((item) => item.done !== true)) throw new BadRequestException('Conclua todos os itens do checklist antes de registrar a entrega.');
+    const normalized = {
+      ...delivery,
+      id: this.text(delivery.id, `del-${crypto.randomUUID()}`),
+      projectId,
+      status: acceptance,
+      date,
+      responsible,
+      acceptance,
+      note,
+    };
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const extraData = this.extraData(delivery, 'projectDelivery');
+      await client.query(
+        `insert into reports_domain_delivery_entries
+          (company_id, id, project_id, status, delivery_date, responsible, acceptance, note, extra_data, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, now())
+         on conflict (company_id, project_id) do update set
+           id = excluded.id, status = excluded.status, delivery_date = excluded.delivery_date,
+           responsible = excluded.responsible, acceptance = excluded.acceptance, note = excluded.note,
+           extra_data = excluded.extra_data, updated_at = now()`,
+        [context.companyId, normalized.id, normalized.projectId, normalized.status, normalized.date, normalized.responsible,
+          normalized.acceptance, normalized.note, JSON.stringify(extraData)],
+      );
+      await client.query(
+        `update installations_domain_entries
+         set stage = 'Entrega', progress = 100, status = $1, due = $2, updated_at = now()
+         where company_id = $3 and project_id = $4`,
+        [acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite', date, context.companyId, projectId],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      const project = projects.find((item) => this.sameId(item, projectId));
+      const projectRecord = this.record(project);
+      const clientId = this.text(projectRecord?.clientId);
+      const activities = Array.isArray(current.data.activities) ? current.data.activities : [];
+      const nextData: Record<string, unknown> = {
+        ...current.data,
+        projects: projects.map((item) => this.sameId(item, projectId) ? {
+          ...this.record(item), technicalStage: 'Entrega', progress: 100, status: acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite',
+        } : item),
+        activities: clientId ? [{ id: `act-${crypto.randomUUID()}`, clientId, type: 'Entrega', title: `Entrega do projeto ${this.text(projectRecord?.name, projectId)}`, note, date }, ...activities] : activities,
+      };
+      await this.forward(nextData, current.revision, cookie);
+      return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, projectDelivery: normalized }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async authContext(cookie?: string): Promise<AuthContext> {
+    if (!cookie) throw new UnauthorizedException('Sessao obrigatoria.');
+    const upstream = await fetch(`${this.legacyOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
+      throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
+    });
+    if (upstream.status === 401) throw new UnauthorizedException('Sessao expirada.');
+    if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
+    const payload = await upstream.json() as { user?: RecordItem };
+    const user = payload.user;
+    if (!user) throw new UnauthorizedException('Sessao invalida.');
+    const permissions = Array.isArray(user.permissions) ? user.permissions.map((item) => this.text(item)) : [];
+    const modules = Array.isArray(user.modules) ? user.modules.map((item) => this.text(item)) : [];
+    if (this.text(user.role) !== 'admin' && !permissions.includes('reports') && !modules.includes('reports')) {
+      throw new ForbiddenException('Seu perfil nao possui acesso aos relatorios.');
+    }
+    return { username: this.text(user.username, 'unknown'), companyId: this.text(user.companyId, 'legacy') || 'legacy', role: this.text(user.role, 'leitura'), permissions, modules };
+  }
+
+  private ensureWritePermission(context: AuthContext): void {
+    if (context.role !== 'admin' && context.role !== 'operacao') throw new ForbiddenException('Seu perfil nao pode alterar relatorios.');
+  }
+
+  private async lockRevision(client: PoolClient, companyId: string): Promise<number> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:reports:${companyId}`]);
+    const result = await client.query('select revision from reports_domain_state where company_id = $1 for update', [companyId]);
+    if (result.rowCount) return Number(result.rows[0].revision);
+    await client.query('insert into reports_domain_state (company_id, revision) values ($1, 0)', [companyId]);
+    return 0;
+  }
+
+  private async bumpRevision(client: PoolClient, companyId: string): Promise<number> {
+    const result = await client.query('update reports_domain_state set revision = revision + 1, updated_at = now() where company_id = $1 returning revision', [companyId]);
+    return Number(result.rows[0].revision);
+  }
+
+  private conflict(revision: number): { status: number; body: string } {
+    return { status: 409, body: JSON.stringify({ conflict: true, revision, error: 'Os dados foram alterados por outro usuario.' }) };
+  }
+
+  private reportFromRow(row: RecordItem): ServiceReport {
+    return this.normalizeReport({ ...(this.record(row.extraData) || {}), id: row.id, projectId: row.projectId, serviceOrderId: row.serviceOrderId, appointmentId: row.appointmentId, type: row.type, technician: row.technician, responsible: row.responsible, date: row.date, status: row.status, execution: row.execution, tests: row.tests, pending: row.pending, nextActionDate: row.nextActionDate, media: row.media }, this.text(row.id));
+  }
+
+  private deliveryFromRow(row: RecordItem): ProjectDelivery {
+    return { ...(this.record(row.extraData) || {}), id: this.text(row.id), projectId: this.text(row.projectId), status: this.text(row.status), date: this.text(row.date), responsible: this.text(row.responsible), acceptance: this.text(row.acceptance), note: this.text(row.note) };
+  }
+
+  private extraData(item: RecordItem, kind: 'serviceReport' | 'projectDelivery'): RecordItem {
+    if (kind === 'serviceReport') {
+      const { id, projectId, serviceOrderId, appointmentId, type, technician, responsible, date, status, execution, tests, pending, nextActionDate, media, updatedAt, createdAt, ...extra } = item;
+      void id; void projectId; void serviceOrderId; void appointmentId; void type; void technician; void responsible; void date; void status; void execution; void tests; void pending; void nextActionDate; void media; void updatedAt; void createdAt;
+      return extra;
+    }
+    const { id, projectId, status, date, responsible, acceptance, note, updatedAt, createdAt, ...extra } = item;
+    void id; void projectId; void status; void date; void responsible; void acceptance; void note; void updatedAt; void createdAt;
+    return extra;
+  }
+
+  private revision(value: unknown): number {
+    const result = Number(value ?? 0);
+    if (!Number.isInteger(result) || result < 0) throw new BadRequestException('Revisao invalida.');
+    return result;
   }
 
   private async readAggregate(cookie: string | undefined, action: string): Promise<AggregateResponse & { data: Record<string, unknown> }> {

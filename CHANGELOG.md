@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Relatórios de serviço e entregas passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, atualização dos vínculos diretos de OS/agenda/instalação e validação de checklist concluído antes da entrega; projetos e atividades ainda recebem a atualização pela ponte legada.
+
 - Rotinas da empresa e checklists de projeto passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisões próprias e controle de concorrência; Relatórios agora valida a entrega pela tabela de checklists durante a transição.
 
 - Instalações passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de progresso e importação dos registros existentes; checklists, entregas e relatórios vinculados permanecem nos domínios operacionais próprios durante a transição.
