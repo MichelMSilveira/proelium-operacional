@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Agenda passou a persistir compromissos diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, controle de concorrência e importação dos registros existentes; o contrato `GET/POST/PATCH/DELETE /api/agenda` permanece compatível com a tela de Agenda.
+
 - Tarefas passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, controle de concorrência e importação das pendências existentes; o contrato `GET/POST/PATCH/DELETE /api/tasks` permanece compatível com a tela de Operação.
 - Colaboradores passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação do cadastro profissional existente; contas, convites e permissões permanecem nos domínios de identidade.
 

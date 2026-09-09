@@ -30,6 +30,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST | `/tasks` | pendências e tarefas |
 | PATCH | `/tasks/{id}` | responsável, prazo, prioridade, status |
 | DELETE | `/tasks/{id}` | excluir tarefa com revisão de conflito |
+| GET/POST | `/agenda` | compromissos operacionais |
+| PATCH/DELETE | `/agenda/{id}` | alterar ou excluir compromisso |
 | GET/POST | `/quotes` | orçamentos e versões |
 | GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
 | GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |
