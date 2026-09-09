@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Chamados de pós-venda passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de cliente/descrição e importação dos registros existentes.
+
 - Avaliações de qualidade passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação das quatro notas e importação dos registros existentes.
 
 - Clientes passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação dos registros existentes e exclusão compatível com o legado.
