@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { FinanceService } from '../finance/finance.service';
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
@@ -28,6 +29,8 @@ const categories: Record<string, string> = {
 @Injectable()
 export class ExecutionService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+
+  constructor(private readonly finance: FinanceService) {}
 
   async list(cookie?: string): Promise<{ entries: ExecutionEntry[]; revision?: number }> {
     const current = await this.readAggregate(cookie, 'leitura da execucao');
@@ -92,7 +95,9 @@ export class ExecutionService {
     const nextFinancialEntries = financialIndex >= 0
       ? financialEntries.map((item, itemIndex) => itemIndex === financialIndex ? { ...this.record(item), ...financial } : item)
       : [financial, ...financialEntries];
-    return this.forward({ ...current.data, executionEntries: nextEntries, financialEntries: nextFinancialEntries }, input.baseRevision, cookie);
+    const result = await this.forward({ ...current.data, executionEntries: nextEntries, financialEntries: nextFinancialEntries }, input.baseRevision, cookie);
+    if (result.status < 400) await this.finance.syncExecutionEntry(financial, cookie);
+    return result;
   }
 
   private async readAggregate(cookie: string | undefined, action: string): Promise<AggregateResponse & { data: Record<string, unknown> }> {
