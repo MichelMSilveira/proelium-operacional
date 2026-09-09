@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
 import { Pool } from 'pg';
 
 type RecordItem = Record<string, any>;
@@ -26,6 +26,8 @@ const allCompanyTrialModules = ['dashboard', 'commercial', 'survey', 'quotes', '
 export class AuthController {
   private readonly pool?: Pool;
   private readonly sessionSecret = process.env.SESSION_SECRET || 'proelium-development-session-secret-change-me';
+  private readonly loginAttempts = new Map<string, { failures: number; lockedUntil: number }>();
+  private readonly sessionTtlSeconds = 30 * 24 * 60 * 60;
 
   constructor() {
     if (process.env.DATABASE_URL) this.pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PGPOOL_MAX || 10), connectionTimeoutMillis: 5000 });
@@ -180,11 +182,90 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+  async login(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined } }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) return this.databaseLogin(request, payload, response);
     const upstream = await this.forward('/api/auth/login', 'POST', request, payload);
     const setCookie = upstream.headers.get('set-cookie');
     if (setCookie) response.setHeader('set-cookie', setCookie);
     response.status(upstream.status).type('application/json').send(await upstream.text());
+  }
+
+  private async databaseLogin(request: { headers: { cookie?: string; [key: string]: string | undefined } }, payload: unknown, response: any) {
+    try {
+      const input = payload && typeof payload === 'object' ? payload as RecordItem : {};
+      const username = String(input.username || '').trim().toLowerCase();
+      const password = String(input.password || '');
+      if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username) || !password) {
+        return response.status(400).type('application/json').send(JSON.stringify({ error: 'Informe usuário e senha válidos.' }));
+      }
+      const address = request.headers['x-forwarded-for'] || 'unknown';
+      const attemptKey = `${address}:${username}`;
+      const attempt = this.loginAttempts.get(attemptKey);
+      if (attempt && attempt.lockedUntil > Date.now()) {
+        return response.status(429).type('application/json').send(JSON.stringify({ error: 'Muitas tentativas. Aguarde alguns minutos.' }));
+      }
+      const result = await this.pool!.query(
+        `select username, name, role, active, email, company_id as "companyId", salt,
+                password_hash as "passwordHash", account_type as "accountType", founder,
+                profile_info as "profileInfo", portfolio, modules,
+                company_access_override as "companyAccessOverride"
+         from app_users where username = $1 and active = true`,
+        [username],
+      );
+      const stored = result.rows[0] as RecordItem | undefined;
+      if (!stored || !this.passwordMatches(password, stored)) {
+        const next = attempt && attempt.lockedUntil <= Date.now() ? { failures: 0, lockedUntil: 0 } : (attempt || { failures: 0, lockedUntil: 0 });
+        next.failures += 1;
+        next.lockedUntil = next.failures >= 5 ? Date.now() + 5 * 60 * 1000 : 0;
+        this.loginAttempts.set(attemptKey, next);
+        return response.status(401).type('application/json').send(JSON.stringify({ error: 'Usuário ou senha inválidos.' }));
+      }
+      this.loginAttempts.delete(attemptKey);
+      const companyId = stored.companyId || 'legacy';
+      let company: RecordItem | undefined;
+      if (companyId !== 'legacy') {
+        const companyResult = await this.pool!.query(
+          `select id, status, access_level as "accessLevel", license_status as "licenseStatus", company_type as "companyType", modules
+           from companies where id = $1`,
+          [companyId],
+        );
+        company = companyResult.rows[0] as RecordItem | undefined;
+      }
+      const modules = this.membershipModules(stored, company, []);
+      const accountType = stored.accountType || (this.isPlatformAdmin(stored) ? 'support' : (companyId === 'legacy' ? 'support' : 'member'));
+      const session = {
+        username: stored.username, role: stored.role || 'operador', name: stored.name || stored.username,
+        email: stored.email || '', companyId, companyStatus: company?.status || (companyId === 'legacy' ? 'approved' : 'pending'),
+        accessLevel: company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited'),
+        licenseStatus: company?.licenseStatus || (companyId === 'legacy' ? 'approved' : 'pending'),
+        modules, accountType, founder: stored.founder === true, profileInfo: stored.profileInfo || '',
+        portfolio: Array.isArray(stored.portfolio) ? stored.portfolio : [], expiresAt: Date.now() + this.sessionTtlSeconds * 1000,
+      };
+      const merged = { ...session, ...stored, companyId, modules, accountType };
+      const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+      const token = this.signedSession(session);
+      response.setHeader('set-cookie', `proelium_session=${encodeURIComponent(token)}; Path=/; Max-Age=${this.sessionTtlSeconds}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+      return response.status(200).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser(merged) }));
+    } catch (error) {
+      console.error('Falha ao autenticar usuário no PostgreSQL:', error instanceof Error ? error.message : error);
+      return response.status(400).type('application/json').send(JSON.stringify({ error: 'Solicitação de login inválida.' }));
+    }
+  }
+
+  private passwordMatches(password: string, user: RecordItem): boolean {
+    try {
+      const expected = Buffer.from(String(user.passwordHash || ''), 'base64');
+      const salt = Buffer.from(String(user.salt || ''), 'base64');
+      if (!expected.length || !salt.length) return false;
+      const actual = scryptSync(password, salt, expected.length);
+      return actual.length === expected.length && timingSafeEqual(actual, expected);
+    } catch { return false; }
+  }
+
+  private signedSession(payload: RecordItem): string {
+    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const signature = createHmac('sha256', this.sessionSecret).update(encoded).digest('base64url');
+    return `${encoded}.${signature}`;
   }
 
   @Get('google')
