@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Colaboradores passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação do cadastro profissional existente; contas, convites e permissões permanecem nos domínios de identidade.
+
 - Equipamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação do cadastro existente; o histórico técnico separado permanece preservado durante a transição.
 
 - Chamados de pós-venda passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de cliente/descrição e importação dos registros existentes.
