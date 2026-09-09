@@ -14,6 +14,8 @@ Indicadores e o resumo inicial são consultas compostas por recursos separados. 
 
 ## Estado da migração
 
+Rotinas usam a tabela existente `routines` e `routines_domain_state`, com isolamento por `companyId`, revisão própria e gravação direta pelo NestJS. Checklists de projeto ainda são lidos e gravados pelo agregado legado para preservar o fluxo de validação usado por relatórios e entregas.
+
 Instalações usam `installations_domain_entries` e `installations_domain_state`, com isolamento por `companyId`, revisão própria, progresso limitado entre 0 e 100 e importação inicial dos registros existentes durante a migração `023_installations_domain.sql`. Checklists, entregas e relatórios vinculados continuam nos recursos operacionais legados até suas migrações específicas.
 
 Ordens de serviço usam `service_orders_domain_entries` e `service_orders_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial dos registros existentes durante a migração `022_service_orders_domain.sql` e referências textuais a cliente, projeto e equipamento para preservar dados durante a transição.

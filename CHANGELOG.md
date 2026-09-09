@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Rotinas da empresa passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e controle de concorrência; checklists de projeto continuam temporariamente no agregado legado porque relatórios e entregas ainda dependem dessa coleção.
+
 - Instalações passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de progresso e importação dos registros existentes; checklists, entregas e relatórios vinculados permanecem nos domínios operacionais próprios durante a transição.
 
 - Ordens de serviço passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, proteção contra exclusão com relatório vinculado e importação dos registros existentes; o contrato `GET/POST/PATCH/DELETE /api/operations` permanece compatível com a tela de Operação.

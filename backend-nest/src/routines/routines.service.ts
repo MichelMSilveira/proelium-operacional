@@ -1,13 +1,42 @@
-import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Pool, PoolClient } from 'pg';
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
+type AuthContext = { username: string; companyId: string; role: string; permissions: string[]; modules: string[] };
 
 @Injectable()
 export class RoutinesService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+  private readonly pool?: Pool;
+
+  constructor() {
+    if (process.env.DATABASE_URL) {
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: Number(process.env.PGPOOL_MAX || 10),
+        connectionTimeoutMillis: 5000,
+      });
+    }
+  }
 
   async list(cookie?: string): Promise<{ routines: RecordItem[]; projectChecklists: RecordItem[]; revision?: number }> {
+    if (this.pool) {
+      const context = await this.authContext(cookie);
+      const [routines, checklists] = await Promise.all([
+        this.pool.query(
+          `select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt"
+           from routines where company_id = $1 order by updated_at desc, name asc`,
+          [context.companyId],
+        ),
+        this.readAggregate(cookie, 'leitura dos checklists'),
+      ]);
+      return {
+        routines: this.normalizeList(routines.rows),
+        projectChecklists: this.normalizeList(checklists.data.projectChecklists),
+        revision: checklists.revision,
+      };
+    }
     const headers: Record<string, string> = cookie ? { cookie } : {};
     const [routinesResponse, dataResponse] = await Promise.all([
       fetch(`${this.legacyOrigin}/api/company/routines`, { headers }).catch(() => null),
@@ -26,6 +55,7 @@ export class RoutinesService {
   }
 
   async save(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
+    if (this.pool) return this.databaseSave(body, cookie, expectedId);
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de rotina invalido.');
     const input = body as { routine?: unknown };
     const routine = this.record(input.routine);
@@ -51,9 +81,117 @@ export class RoutinesService {
 
   async remove(cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
     if (!expectedId) throw new BadRequestException('O identificador da rotina e obrigatorio.');
+    if (this.pool) return this.databaseRemove(cookie, expectedId);
     const current = await this.readCompanyRoutines(cookie);
     if (!current.some((item) => this.sameId(item, expectedId))) throw new NotFoundException('Rotina nao encontrada.');
     return this.forwardCompanyRoutines(current.filter((item) => !this.sameId(item, expectedId)), cookie);
+  }
+
+  private async databaseSave(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de rotina invalido.');
+    const input = body as { routine?: unknown };
+    const routine = this.record(input.routine);
+    if (!routine || !this.text(routine.name)) throw new BadRequestException('A rotina precisa conter nome.');
+    const routineId = this.text(routine.id) || `routine-${crypto.randomUUID()}`;
+    if (expectedId && routineId !== expectedId) throw new BadRequestException('O identificador da rotina nao confere.');
+    const normalized = {
+      id: expectedId || routineId,
+      name: this.text(routine.name),
+      description: this.text(routine.description),
+      periodicity: this.text(routine.periodicity, 'Sem periodicidade'),
+      steps: Array.isArray(routine.steps) ? routine.steps.filter((step) => typeof step === 'string').map((step) => step.trim()).filter(Boolean) : [],
+    };
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:routines:${context.companyId}`]);
+      await this.ensureRevisionRow(client, context.companyId);
+      const existing = await client.query('select id, company_id as "companyId" from routines where id = $1', [normalized.id]);
+      if (existing.rowCount && this.text(existing.rows[0].companyId) !== context.companyId) throw new BadRequestException('Ja existe uma rotina com este identificador.');
+      if (expectedId && !existing.rowCount) throw new NotFoundException('Rotina nao encontrada.');
+      if (!expectedId && existing.rowCount) throw new BadRequestException('Ja existe uma rotina com este identificador.');
+      await client.query(
+        `insert into routines (id, company_id, name, description, periodicity, steps, updated_at)
+         values ($1, $2, $3, $4, $5, $6::jsonb, now())
+         on conflict (id) do update set name = excluded.name, description = excluded.description,
+           periodicity = excluded.periodicity, steps = excluded.steps, updated_at = now()`,
+        [normalized.id, context.companyId, normalized.name, normalized.description, normalized.periodicity, JSON.stringify(normalized.steps)],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: expectedId ? 200 : 201, body: JSON.stringify({ ok: true, revision: nextRevision, routine: normalized }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseRemove(cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:routines:${context.companyId}`]);
+      await this.ensureRevisionRow(client, context.companyId);
+      const deleted = await client.query('delete from routines where company_id = $1 and id = $2 returning id', [context.companyId, expectedId]);
+      if (!deleted.rowCount) throw new NotFoundException('Rotina nao encontrada.');
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, id: expectedId }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async authContext(cookie?: string): Promise<AuthContext> {
+    if (!cookie) throw new UnauthorizedException('Sessao obrigatoria.');
+    const upstream = await fetch(`${this.legacyOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
+      throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
+    });
+    if (upstream.status === 401) throw new UnauthorizedException('Sessao expirada.');
+    if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
+    const payload = await upstream.json() as { user?: RecordItem };
+    const user = payload.user;
+    if (!user) throw new UnauthorizedException('Sessao invalida.');
+    const permissions = Array.isArray(user.permissions) ? user.permissions.map((item) => this.text(item)) : [];
+    const modules = Array.isArray(user.modules) ? user.modules.map((item) => this.text(item)) : [];
+    if (this.text(user.role) !== 'admin' && !permissions.includes('routines') && !modules.includes('routines')) {
+      throw new ForbiddenException('Seu perfil nao possui acesso as rotinas.');
+    }
+    return {
+      username: this.text(user.username, 'unknown'),
+      companyId: this.text(user.companyId, 'legacy') || 'legacy',
+      role: this.text(user.role, 'leitura'),
+      permissions,
+      modules,
+    };
+  }
+
+  private ensureWritePermission(context: AuthContext): void {
+    if (context.role !== 'admin' && context.role !== 'operacao') {
+      throw new ForbiddenException('Seu perfil nao pode alterar rotinas.');
+    }
+  }
+
+  private async ensureRevisionRow(client: PoolClient, companyId: string): Promise<void> {
+    const result = await client.query('select revision from routines_domain_state where company_id = $1 for update', [companyId]);
+    if (!result.rowCount) await client.query('insert into routines_domain_state (company_id, revision) values ($1, 0)', [companyId]);
+  }
+
+  private async bumpRevision(client: PoolClient, companyId: string): Promise<number> {
+    const result = await client.query(
+      'update routines_domain_state set revision = revision + 1, updated_at = now() where company_id = $1 returning revision',
+      [companyId],
+    );
+    return Number(result.rows[0].revision);
   }
 
   async saveChecklist(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
