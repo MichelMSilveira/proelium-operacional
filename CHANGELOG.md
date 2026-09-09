@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Diagrama técnico passou a persistir diretamente no PostgreSQL pelo NestJS, com conexões, ajustes, sobrescritas, isolamento por empresa, revisão própria, validação de projeto e importação do estado existente.
 - Execução passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de projeto e importação dos custos de campo; cada lançamento mantém seu vínculo financeiro por identificador.
 - Financeiro passou a persistir diretamente no PostgreSQL pelo NestJS, com lançamentos, contas, isolamento por empresa, revisão própria, validação de valores e importação do estado existente; custos gerados pela Execução também são sincronizados e vínculos de cliente e projeto permanecem por identificador durante a transição.
 - Compras e materiais passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de quantidade e importação dos itens existentes; vínculos com projetos permanecem por identificador durante a transição.

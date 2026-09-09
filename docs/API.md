@@ -51,6 +51,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | POST/PATCH | `/finance/accounts` e `/finance/accounts/{id}` | cadastrar ou alterar conta financeira |
 | GET/POST | `/execution` | custos de execução por projeto |
 | PATCH | `/execution/{id}` | alterar lançamento de execução |
+| GET | `/diagram` | conexões, ajustes e sobrescritas técnicas |
+| POST/PATCH | `/diagram/connections` e `/diagram/connections/{id}` | registrar ou alterar conexão técnica |
 | GET/POST | `/quotes` | orçamentos e versões |
 | GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
 | GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |
