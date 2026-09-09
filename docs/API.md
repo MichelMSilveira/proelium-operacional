@@ -53,6 +53,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | PATCH | `/execution/{id}` | alterar lançamento de execução |
 | GET | `/diagram` | conexões, ajustes e sobrescritas técnicas |
 | POST/PATCH | `/diagram/connections` e `/diagram/connections/{id}` | registrar ou alterar conexão técnica |
+| GET/POST | `/opportunities` | listar e criar oportunidades |
+| PATCH | `/opportunities/{id}` | alterar oportunidade com validação do funil |
 | GET/POST | `/quotes` | orçamentos e versões |
 | GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
 | GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |
