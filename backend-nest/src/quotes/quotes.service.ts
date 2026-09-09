@@ -259,6 +259,7 @@ export class QuotesService {
 
   async approve(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (this.pool) return this.databaseApprove(quoteId, body, cookie);
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de aprovacao invalido.');
     const input = body as { data?: Record<string, unknown>; baseRevision?: unknown };
     const data = input.data || (await this.readAggregate(cookie)).data;
@@ -336,6 +337,183 @@ export class QuotesService {
       project.cost = Number(cost.toFixed(2));
     }
     return this.save({ data, baseRevision: input.baseRevision }, cookie);
+  }
+
+  private async databaseApprove(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de aprovacao invalido.');
+    const input = body as { baseRevision?: unknown };
+    const expectedRevision = this.revision(input.baseRevision);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== expectedRevision) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const quoteResult = await client.query(
+        `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
+         from quotes_domain_entries where company_id = $1 and id = $2`,
+        [context.companyId, quoteId],
+      );
+      const quote = quoteResult.rows[0] as RecordItem | undefined;
+      if (!quote) throw new NotFoundException('Orcamento nao encontrado.');
+      const roomResult = await client.query(
+        `select id, quote_id as "quoteId", name, items, extra_data as "extraData"
+         from quotes_domain_rooms where company_id = $1 and quote_id = $2`,
+        [context.companyId, quoteId],
+      );
+      const rooms = roomResult.rows as RecordItem[];
+      const productIds = [...new Set(rooms.flatMap((room) => Array.isArray(room.items)
+        ? room.items.map((item) => this.text(this.record(item)?.productId)).filter(Boolean)
+        : []))];
+      const productsResult = productIds.length
+        ? await client.query(
+          `select id, price, extra_data as "extraData" from products_domain_entries
+           where company_id = $1 and id = any($2::text[])`,
+          [context.companyId, productIds],
+        )
+        : { rows: [] as RecordItem[] };
+      const products = new Map(productsResult.rows.map((row) => [this.text(row.id), row]));
+      let cost = 0;
+      let price = 0;
+      for (const room of rooms) {
+        const items = Array.isArray(room.items) ? room.items : [];
+        for (const item of items) {
+          const record = this.record(item);
+          if (!record) continue;
+          const product = products.get(this.text(record.productId));
+          if (!product) continue;
+          const extra = this.record(product.extraData) || {};
+          const quantity = this.number(record.qty);
+          const discount = Math.min(100, this.number(record.discount));
+          const productCost = this.number(extra.cost ?? extra.costPrice ?? extra.custo);
+          const productPrice = this.number(product.price ?? extra.price ?? extra.salePrice ?? extra.valor);
+          cost += productCost * quantity;
+          price += productPrice * quantity * (1 - discount / 100);
+        }
+      }
+      if (!price) throw new BadRequestException('Adicione ao menos um item com preco para aprovar este orcamento.');
+
+      const opportunityId = this.text(quote.opportunityId);
+      const opportunityRevision = opportunityId
+        ? await this.lockDomainRevision(client, 'opportunities_domain_state', 'proelium:opportunities', context.companyId)
+        : 0;
+      const opportunityResult = opportunityId
+        ? await client.query(
+          `select id, company, contact, phone, email, owner, source, extra_data as "extraData"
+           from opportunities_domain_entries where company_id = $1 and id = $2`,
+          [context.companyId, opportunityId],
+        )
+        : { rows: [] as RecordItem[] };
+      const opportunity = opportunityResult.rows[0] as RecordItem | undefined;
+      const requestedClientId = this.text(quote.clientId);
+      const existingClientResult = requestedClientId
+        ? await client.query(
+          `select id, name, document, email, phone, address, extra_data as "extraData"
+           from clients_domain_entries where company_id = $1 and id = $2`,
+          [context.companyId, requestedClientId],
+        )
+        : { rows: [] as RecordItem[] };
+      let clientRecord = existingClientResult.rows[0] as RecordItem | undefined;
+      let clientCreated = false;
+      if (!clientRecord && opportunity) {
+        const clientId = `cli-${crypto.randomUUID()}`;
+        clientRecord = {
+          id: clientId,
+          name: this.text(opportunity.company, 'Cliente sem nome'),
+          document: '',
+          email: this.text(opportunity.email),
+          phone: this.text(opportunity.phone),
+          address: '',
+          extraData: {
+            contact: this.text(opportunity.contact),
+            city: '',
+            notes: `Origem: oportunidade comercial (${this.text(opportunity.source, 'nao informada')}).`,
+            status: 'Ativo',
+          },
+        };
+        await this.lockDomainRevision(client, 'clients_domain_state', 'proelium:clients', context.companyId);
+        await client.query(
+          `insert into clients_domain_entries
+            (company_id, id, name, document, email, phone, address, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())`,
+          [context.companyId, clientRecord.id, clientRecord.name, clientRecord.document, clientRecord.email,
+            clientRecord.phone, clientRecord.address, JSON.stringify(clientRecord.extraData)],
+        );
+        clientCreated = true;
+      }
+      if (!clientRecord) throw new BadRequestException('Vincule um cliente ou uma oportunidade antes de aprovar.');
+      const clientId = this.text(clientRecord.id);
+
+      await client.query(
+        `update quotes_domain_entries
+         set client_id = $1, value = $2, status = 'Aprovado', updated_at = now()
+         where company_id = $3 and id = $4`,
+        [clientId, Number(price.toFixed(2)), context.companyId, quoteId],
+      );
+      if (opportunity) {
+        await client.query(
+          `update opportunities_domain_entries
+           set stage = 'Ganho', estimated_value = $1, loss_reason = '', updated_at = now()
+           where company_id = $2 and id = $3`,
+          [Number(price.toFixed(2)), context.companyId, opportunity.id],
+        );
+      }
+
+      await this.lockDomainRevision(client, 'projects_domain_state', 'proelium:projects', context.companyId);
+      const projectResult = await client.query(
+        `select id, name, client_id as "clientId", budget, extra_data as "extraData"
+         from projects_domain_entries where company_id = $1 and extra_data->>'quoteId' = $2 limit 1`,
+        [context.companyId, quoteId],
+      );
+      let project = projectResult.rows[0] as RecordItem | undefined;
+      let projectCreated = false;
+      const projectBudget = Number(price.toFixed(2));
+      const projectCost = Number(cost.toFixed(2));
+      if (!project) {
+        const countResult = await client.query('select count(*)::int as count from projects_domain_entries where company_id = $1', [context.companyId]);
+        const code = `PRJ-${String(Number(countResult.rows[0]?.count || 0) + 1).padStart(3, '0')}`;
+        const projectId = `prj-${crypto.randomUUID()}`;
+        const projectName = this.text(quote.title, 'Projeto').replace(/^Proposta\s+[—-]\s*/, '');
+        const extraData = { quoteId, code, cost: projectCost, due: 'A definir' };
+        await client.query(
+          `insert into projects_domain_entries
+            (company_id, id, name, client_id, technical_stage, status, manager, progress, budget, extra_data, updated_at)
+           values ($1, $2, $3, $4, 'Projeto técnico', 'Planejamento', $5, 0, $6, $7::jsonb, now())`,
+          [context.companyId, projectId, projectName, clientId, this.text(opportunity?.owner, 'A definir'), projectBudget, JSON.stringify(extraData)],
+        );
+        project = { id: projectId, name: projectName, clientId, budget: projectBudget, extraData };
+        projectCreated = true;
+      } else {
+        const extraData = { ...(this.record(project.extraData) || {}), cost: projectCost };
+        await client.query(
+          `update projects_domain_entries set budget = $1, client_id = $2, extra_data = $3::jsonb, updated_at = now()
+           where company_id = $4 and id = $5`,
+          [projectBudget, clientId, JSON.stringify(extraData), context.companyId, project.id],
+        );
+      }
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      const nextOpportunityRevision = opportunity
+        ? await this.bumpDomainRevision(client, 'opportunities_domain_state', context.companyId)
+        : opportunityRevision;
+      const nextClientsRevision = clientCreated
+        ? await this.bumpDomainRevision(client, 'clients_domain_state', context.companyId)
+        : undefined;
+      const nextProjectsRevision = await this.bumpDomainRevision(client, 'projects_domain_state', context.companyId);
+      await client.query('commit');
+      return {
+        status: 200,
+        body: JSON.stringify({ ok: true, revision: nextRevision, quoteId, clientId, projectId: this.text(project.id), cost: projectCost, price: projectBudget, opportunityRevision: nextOpportunityRevision, clientsRevision: nextClientsRevision, projectsRevision: nextProjectsRevision, projectCreated }),
+      };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async createFromResource(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
@@ -588,6 +766,19 @@ export class QuotesService {
 
   private async bumpRevision(client: PoolClient, companyId: string): Promise<number> {
     const result = await client.query('update quotes_domain_state set revision = revision + 1, updated_at = now() where company_id = $1 returning revision', [companyId]);
+    return Number(result.rows[0].revision);
+  }
+
+  private async lockDomainRevision(client: PoolClient, tableName: string, lockKey: string, companyId: string): Promise<number> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`${lockKey}:${companyId}`]);
+    const result = await client.query(`select revision from ${tableName} where company_id = $1 for update`, [companyId]);
+    if (result.rowCount) return Number(result.rows[0].revision);
+    await client.query(`insert into ${tableName} (company_id, revision) values ($1, 0)`, [companyId]);
+    return 0;
+  }
+
+  private async bumpDomainRevision(client: PoolClient, tableName: string, companyId: string): Promise<number> {
+    const result = await client.query(`update ${tableName} set revision = revision + 1, updated_at = now() where company_id = $1 returning revision`, [companyId]);
     return Number(result.rows[0].revision);
   }
 

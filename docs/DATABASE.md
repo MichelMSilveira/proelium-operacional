@@ -88,7 +88,7 @@ O domínio de diagrama usa `diagram_domain_connections`, `diagram_domain_aux_rec
 
 O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições do fluxo comercial continua passando pela ponte de compatibilidade; o envio do levantamento para orçamento já atualiza a oportunidade diretamente.
 
-O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms`, `quotes_domain_packages`, `quotes_domain_procurement_requests` e `quotes_domain_state`. Propostas, pacotes e fila de cotação são isolados por `company_id` e compartilham a revisão comercial; os itens dos ambientes e dos pacotes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação e conversão ainda atualizam vínculos pela ponte legada.
+O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms`, `quotes_domain_packages`, `quotes_domain_procurement_requests` e `quotes_domain_state`. Propostas, pacotes e fila de cotação são isolados por `company_id` e compartilham a revisão comercial; os itens dos ambientes e dos pacotes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação já atualiza diretamente clientes, projetos e oportunidades, enquanto a conversão posterior permanece na ponte comercial.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 
