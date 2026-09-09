@@ -16,6 +16,18 @@ export class FinanceController {
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
 
+  @Post('accounts')
+  async createAccount(@Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.finance.saveAccount(body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Patch('accounts/:id')
+  async updateAccount(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.finance.saveAccount(body, request.headers.cookie, id);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
   @Patch(':id')
   async update(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.finance.save(body, request.headers.cookie, id);

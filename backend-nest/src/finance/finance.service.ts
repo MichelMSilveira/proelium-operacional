@@ -17,18 +17,19 @@ export type FinancialEntry = {
   accountId: string;
   [key: string]: unknown;
 };
+export type FinancialAccount = { id: string; name: string; institution: string; type: string; initialBalance: number; status: string; notes: string; [key: string]: unknown };
 
 @Injectable()
 export class FinanceService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
 
-  async list(cookie?: string): Promise<{ entries: FinancialEntry[]; revision?: number }> {
+  async list(cookie?: string): Promise<{ entries: FinancialEntry[]; accounts: FinancialAccount[]; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura do financeiro.');
     });
     if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel carregar os lancamentos financeiros.');
     const payload = await upstream.json() as AggregateResponse;
-    return { entries: this.normalizeList(payload.data?.financialEntries), revision: payload.revision };
+    return { entries: this.normalizeList(payload.data?.financialEntries), accounts: this.normalizeAccounts(payload.data?.financialAccounts), revision: payload.revision };
   }
 
   async save(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
@@ -74,6 +75,36 @@ export class FinanceService {
     return this.forward({ ...current.data, financialEntries: entries.filter((item) => !this.sameId(item, id)) }, current.revision, cookie);
   }
 
+  async saveAccount(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de conta invalido.');
+    const input = body as { account?: unknown; baseRevision?: unknown };
+    const account = this.record(input.account);
+    if (!account) throw new BadRequestException('Conta financeira invalida.');
+    const name = this.text(account.name);
+    if (!name) throw new BadRequestException('A conta precisa conter nome.');
+    const accountId = this.text(account.id) || `acc-${crypto.randomUUID()}`;
+    if (expectedId && accountId !== expectedId) throw new BadRequestException('O identificador da conta nao confere.');
+    const current = await this.readAggregate(cookie);
+    const accounts = Array.isArray(current.data.financialAccounts) ? current.data.financialAccounts : [];
+    const index = accounts.findIndex((item) => this.sameId(item, expectedId || accountId));
+    if (expectedId && index < 0) throw new NotFoundException('Conta financeira nao encontrada.');
+    if (!expectedId && index >= 0) throw new BadRequestException('Ja existe uma conta com este identificador.');
+    const normalized = {
+      ...account,
+      id: expectedId || accountId,
+      name,
+      institution: this.text(account.institution),
+      type: ['Corrente', 'Poupança', 'Carteira digital'].includes(this.text(account.type)) ? this.text(account.type) : 'Corrente',
+      initialBalance: this.number(account.initialBalance),
+      status: ['Ativa', 'Inativa'].includes(this.text(account.status)) ? this.text(account.status) : 'Ativa',
+      notes: this.text(account.notes),
+    };
+    const nextAccounts = expectedId
+      ? accounts.map((item, itemIndex) => itemIndex === index ? { ...this.record(item), ...normalized, id: expectedId } : item)
+      : [normalized, ...accounts];
+    return this.forward({ ...current.data, financialAccounts: nextAccounts }, input.baseRevision, cookie);
+  }
+
   private async readAggregate(cookie?: string): Promise<AggregateResponse & { data: Record<string, unknown> }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para gravacao do financeiro.');
@@ -113,6 +144,20 @@ export class FinanceService {
       clientId: this.text(item.clientId),
       projectId: this.text(item.projectId),
       accountId: this.text(item.accountId),
+    }));
+  }
+
+  private normalizeAccounts(value: unknown): FinancialAccount[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is RecordItem => Boolean(item) && typeof item === 'object').map((item, index) => ({
+      ...item,
+      id: this.text(item.id, `legacy-financial-account-${index + 1}`),
+      name: this.text(item.name, 'Conta sem nome'),
+      institution: this.text(item.institution),
+      type: this.text(item.type, 'Corrente'),
+      initialBalance: this.number(item.initialBalance),
+      status: this.text(item.status, 'Ativa'),
+      notes: this.text(item.notes),
     }));
   }
 

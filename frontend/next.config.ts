@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
       { source: '/api/equipment', destination: `${nestApiOrigin}/api/equipment` },
       { source: '/api/equipment/:id', destination: `${nestApiOrigin}/api/equipment/:id` },
       { source: '/api/finance', destination: `${nestApiOrigin}/api/finance` },
+      { source: '/api/finance/accounts', destination: `${nestApiOrigin}/api/finance/accounts` },
+      { source: '/api/finance/accounts/:id', destination: `${nestApiOrigin}/api/finance/accounts/:id` },
       { source: '/api/knowledge', destination: `${nestApiOrigin}/api/knowledge` },
       { source: '/api/collaborators', destination: `${nestApiOrigin}/api/collaborators` },
       { source: '/api/installations', destination: `${nestApiOrigin}/api/installations` },

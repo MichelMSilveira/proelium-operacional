@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Contas financeiras passaram a ser lidas, cadastradas e editadas pela tela de Financeiro usando `GET /api/finance` e `POST/PATCH /api/finance/accounts`; lançamentos agora selecionam contas ativas e exibem saldo projetado.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v376` após a migração das contas financeiras para o NestJS.
+
 - Entregas de projetos passaram a ser registradas pela tela de Relatorios usando `POST /api/reports/deliveries`, com validacao do checklist completo e atualizacao do projeto, instalacao e atividade do cliente.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v375` apos a migracao do registro de entregas para o NestJS.

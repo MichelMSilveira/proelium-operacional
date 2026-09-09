@@ -57,6 +57,8 @@ Chamados de pos-venda leem e gravam pelo recurso `GET/POST/PATCH /api/support-ti
 
 Entregas de projetos podem ser registradas por `POST /api/reports/deliveries`; o NestJS exige checklist completo e sincroniza projeto, instalação e atividade do cliente.
 
+Financeiro também carrega contas pelo `GET /api/finance`; cadastro e edição usam `POST/PATCH /api/finance/accounts`, e os lançamentos vinculam uma conta ativa por seleção.
+
 ## Origem da API
 
 O Levantamento Tecnico agora permite criar e editar levantamentos, ambientes e pontos, alem de excluir pontos e ambientes vazios, pela API NestJS. A persistencia ainda e encaminhada ao agregado legado com `baseRevision`, preservando o controle de concorrencia durante a migracao.
