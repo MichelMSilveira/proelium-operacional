@@ -59,6 +59,8 @@ Entregas de projetos podem ser registradas por `POST /api/reports/deliveries`; o
 
 Financeiro também carrega contas pelo `GET /api/finance`; cadastro e edição usam `POST/PATCH /api/finance/accounts`, e os lançamentos vinculam uma conta ativa por seleção.
 
+Execucao e mao de obra le e grava pelo recurso `GET/POST/PATCH /api/execution`; cada registro fica vinculado a um projeto e gera ou atualiza a despesa correspondente no Financeiro.
+
 ## Origem da API
 
 O Levantamento Tecnico agora permite criar e editar levantamentos, ambientes e pontos, alem de excluir pontos e ambientes vazios, pela API NestJS. A persistencia ainda e encaminhada ao agregado legado com `baseRevision`, preservando o controle de concorrencia durante a migracao.

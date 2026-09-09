@@ -50,14 +50,14 @@ const rolePermissions = {
   admin: ['*'],
   suporte: [],
   comercial: ['dashboard', 'clients', 'commercial', 'quotes', 'products', 'survey'],
-  operacao: ['dashboard', 'projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'quality', 'collaborators', 'equipment', 'knowledge'],
+  operacao: ['dashboard', 'projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'quality', 'collaborators', 'equipment', 'knowledge'],
   financeiro: ['dashboard', 'clients', 'projects', 'commercial', 'finance', 'bi', 'biMarket', 'knowledge'],
   leitura: ['dashboard', 'projects', 'installations', 'knowledge', 'bi', 'biMarket']
 };
 const normalizeRole = role => role === 'operador' ? 'operacao' : (rolePermissions[role] ? role : 'operacao');
 const permissionsFor = role => rolePermissions[normalizeRole(role)] || rolePermissions.operacao;
-const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
-const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries', purchases: 'purchaseItems' };
+const writableRoles = { admin: null, comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']), operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'quality', 'collaborators', 'equipment']), financeiro: new Set(['finance']), leitura: new Set() };
+const dataDomains = { clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', execution: 'executionEntries', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', finance: 'financialEntries', purchases: 'purchaseItems' };
 const dataAccessScopes = {
   clients: ['clients', 'activities'], projects: ['projects', 'projectChecklists', 'projectDeliveries', 'supportTickets', 'technicalConnections', 'technicalConnectionEdits', 'technicalConnectionOverrides', 'schedulePhases'],
   processes: ['processes'], tasks: ['tasks'], agenda: ['appointments'], commercial: ['opportunities'],
@@ -183,7 +183,7 @@ function visibleDataForUser(data, user) {
     return [key, scopedKeys.has(key) && !full && !allowed.has(scope) ? [] : value];
   }));
 }
-function mergeWritableData(current, incoming, user) {
+function mergeWritableData(current, incoming, user, resource = '') {
   const allowed = dataViewsForUser(user), full = allowed.has('*'), merged = { ...current, ...Object.fromEntries(Object.entries(incoming || {}).filter(([, value]) => !Array.isArray(value))) };
   for (const [scope, keys] of Object.entries(dataAccessScopes)) {
     if (!full && !allowed.has(scope)) continue;
@@ -194,6 +194,7 @@ function mergeWritableData(current, incoming, user) {
       if (Object.prototype.hasOwnProperty.call(incoming || {}, key)) merged[key] = incoming[key];
     }
   }
+  if (!full && resource === 'execution' && allowed.has('execution') && Object.prototype.hasOwnProperty.call(incoming || {}, 'financialEntries')) merged.financialEntries = incoming.financialEntries;
   return merged;
 }
 function validCnpj(value) { const digits=String(value||'').replace(/\D/g,''); if(digits.length!==14||/^([0-9])\1+$/.test(digits))return false; const calc=(length)=>{let sum=0,factor=5+(length-12);for(let i=0;i<length;i++){sum+=Number(digits[i])*factor--;if(factor===1)factor=9}const digit=(sum%11<2?0:11-sum%11);return digit};return calc(12)===Number(digits[12])&&calc(13)===Number(digits[13]); }
@@ -669,12 +670,13 @@ async function handleRequest(req, res) {
       if (!payload || typeof payload.data !== 'object') return sendJson(res, 400, { error: 'Dados inválidos.' });
       const current = await storage.readSharedData(authenticatedUser.companyId || 'legacy');
       const dataViews = dataViewsForUser(authenticatedUser);
+      const resource = String(payload.resource || '');
       const fullDataAccess = dataViews.has('*');
       const changedScopes = Object.entries(dataAccessScopes)
         .filter(([, keys]) => keys.some(key => Object.prototype.hasOwnProperty.call(payload.data, key)
           && JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null)))
         .map(([view]) => view);
-      const deniedScopes = changedScopes.filter(view => !fullDataAccess && !dataViews.has(view));
+      const deniedScopes = changedScopes.filter(view => !fullDataAccess && !dataViews.has(view) && !(resource === 'execution' && view === 'finance' && dataViews.has('execution')));
       if (deniedScopes.length) return sendJson(res, 403, { error: `Seu perfil não pode acessar: ${deniedScopes.join(', ')}.` });
       const role = normalizeRole(authenticatedUser.role);
       const roleAllowed = writableRoles[role];
@@ -687,11 +689,11 @@ async function handleRequest(req, res) {
           return Object.prototype.hasOwnProperty.call(payload.data, key)
             && JSON.stringify(current.data?.[key] ?? null) !== JSON.stringify(payload.data[key] ?? null);
         });
-        const denied = changedDomains.filter(view => !allowed.has(view));
+        const denied = changedDomains.filter(view => !allowed.has(view) && !(resource === 'execution' && view === 'finance' && allowed.has('execution')));
         if (denied.length) return sendJson(res, 403, { error: `Seu perfil não pode alterar: ${denied.join(', ')}.` });
       }
       const baseRevision = Number(payload.baseRevision || 0);
-      let nextData = mergeWritableData(current.data || {}, payload.data, authenticatedUser);
+      let nextData = mergeWritableData(current.data || {}, payload.data, authenticatedUser, resource);
       nextData = commercialWorkflow.applyValidatedSurveyTransition(current.data || {}, nextData, authenticatedUser.name || authenticatedUser.username, new Date().toISOString());
       const workflow = commercialWorkflow.validate(current.data || {}, nextData);
       if (!workflow.ok) return sendJson(res, 422, { error: workflow.message });

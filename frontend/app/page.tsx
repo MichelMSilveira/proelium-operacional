@@ -140,6 +140,7 @@ export default function Page() {
       ["invites", "Convites", "/invites"],
       ["settings", "ConfiguraÃ§Ãµes", "/settings"],
       ["installations", "InstalaÃ§Ãµes", "/installations"],
+      ["execution", "Execução", "/execution"],
       ["routines", "Rotinas", "/routines"],
     ];
     const statDefinitions = [

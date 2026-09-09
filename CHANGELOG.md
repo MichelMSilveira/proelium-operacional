@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Execucao e mao de obra passaram a ter rota Next.js e recurso NestJS em `GET/POST/PATCH /api/execution`; cada lancamento valida o projeto, sincroniza uma despesa no Financeiro e preserva revisao de conflito.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v377` apos a migracao da execucao de campo para o NestJS.
+
 - Contas financeiras passaram a ser lidas, cadastradas e editadas pela tela de Financeiro usando `GET /api/finance` e `POST/PATCH /api/finance/accounts`; lançamentos agora selecionam contas ativas e exibem saldo projetado.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v376` após a migração das contas financeiras para o NestJS.
