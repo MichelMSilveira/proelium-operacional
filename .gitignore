@@ -9,6 +9,12 @@ frontend/.next
 frontend/*.tsbuildinfo
 desktop/dist
 desktop/dist-release
+desktop/dist-release-v*/
+android/.gradle-local/
+android/.gradle-user-home/
+android/release/
+test-results/
+**/__pycache__/
 .tools
 /*.exe
 /*.apk
