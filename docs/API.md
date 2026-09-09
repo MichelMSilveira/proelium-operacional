@@ -44,6 +44,7 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST | `/equipment` | estoque e equipamentos instalados |
 | GET/POST | `/knowledge` | artigos e documentos |
 | PATCH/DELETE | `/knowledge/{id}` | editar ou remover artigo com `baseRevision` |
+| GET/POST | `/quality` | avaliações de qualidade com revisão de conflito |
 | GET/POST/PATCH | `/survey` | levantamentos técnicos e revisão |
 | GET/PUT | `/survey/{id}/rooms` | ambientes do levantamento |
 | POST/PATCH/DELETE | `/survey/points` | pontos técnicos e quantitativos |
