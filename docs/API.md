@@ -31,7 +31,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST | `/tasks` | pendências e tarefas |
 | PATCH | `/tasks/{id}` | responsável, prazo, prioridade, status |
 | GET/POST | `/quotes` | orçamentos e versões |
-| GET/POST | `/products` | catálogo de produtos, materiais e serviços |
+| GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
+| GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |
 | GET/POST | `/quotes/{id}/rooms` | cômodos ou ambientes do orçamento |
 | POST | `/quotes/{id}/rooms/{roomId}/items` | adicionar item do catálogo ao ambiente |
 | GET | `/quotes/{id}/analysis` | custo, venda e margem por ambiente |

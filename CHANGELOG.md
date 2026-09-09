@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Catálogo de produtos e serviços passou a persistir diretamente no PostgreSQL pelo NestJS, com tabela compartilhada por tipo, isolamento por empresa, revisão própria e importação dos registros existentes.
+
 - Biblioteca técnica de fabricantes passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação dos registros existentes; a autenticação continua compatível com a sessão legada.
 
 - Pipeline de deploy passou a compilar, instalar e reiniciar o serviço NestJS no VPS, além de validar sua rota de saúde em `4174`, garantindo que as migrações de domínio cheguem à API publicada.
