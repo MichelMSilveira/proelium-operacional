@@ -2,9 +2,11 @@
 
 ## Em desenvolvimento
 
+- Ambientes de Levantamento Tecnico passaram a ser lidos e gravados pelo NestJS em `GET/PUT /api/survey/{id}/rooms`, com renomeacao sincronizada aos pontos e bloqueio de duplicidade.
+
 - Levantamento Tecnico passou a permitir criacao e edicao de levantamentos por `POST/PATCH /api/survey` e de pontos por `POST/PATCH/DELETE /api/survey/points`; a ponte de persistencia continua protegendo a revisao no legado.
 
-- Incrementado o cache do shell do PWA para `proelium-shell-v361` após a atualização das telas Next.js e dos recursos NestJS.
+- Incrementado o cache do shell do PWA para `proelium-shell-v362` após a atualização das telas Next.js e dos recursos NestJS.
 
 - Criada a rota Next.js `/product-connections` para consulta do modelo tecnico de Produtos, usando `GET /api/products` e exibindo compatibilidades, requisitos, limites e fonte oficial sem duplicar armazenamento.
 - Biblioteca Tecnica passou a permitir criacao e edicao de fabricantes por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias em produtos e conexoes.

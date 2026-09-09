@@ -26,7 +26,7 @@ A criacao e edicao de oportunidades usam `POST /api/opportunities` e `PATCH /api
 Comercial le oportunidades e orcamentos pelos recursos `GET /api/opportunities` e `GET /api/quotes`; criacao e edicao seguem nos endpoints proprios migrados.
 Produtos e servicos leem os catalogos pelos recursos `GET /api/products` e `GET /api/services`; ambos podem ser criados e editados por `POST/PATCH` nos recursos correspondentes, com payload especifico e revisao de conflito.
 Orcamentos le a listagem por `GET /api/quotes` e clientes por `GET /api/clients`; a criacao de rascunhos usa `POST /api/quotes` com payload especifico do recurso.
-A criacao de rascunhos de Orcamento agora usa `POST /api/quotes`; o detalhe, itens e aprovacao ainda permanecem na etapa seguinte.
+A criacao de rascunhos de Orcamento usa `POST /api/quotes`; o detalhe, ambientes, itens e aprovacao usam os recursos NestJS correspondentes.
 O detalhe de Orcamento agora carrega o registro e a revisao por `GET /api/quotes/{id}`; ambientes e itens continuam em `GET/PUT /api/quotes/{id}/rooms`.
 Colaboradores leem pelo recurso `GET /api/collaborators`, com normalizacao propria no NestJS.
 Financeiro le lancamentos pelo recurso `GET /api/finance`, com normalizacao de valor, data, categoria, vinculacoes e status.
@@ -34,10 +34,10 @@ Indicadores compoe suas metricas a partir de `GET /api/clients`, `GET /api/proje
 O resumo da pagina inicial compoe seus quatro indicadores por `GET /api/clients`, `GET /api/projects`, `GET /api/tasks` e `GET /api/finance`, sem consultar o agregado diretamente.
 Compras le a lista de materiais pelo recurso `GET /api/purchases`, com normalizacao de projeto, ambiente, quantidade, fornecedor e situacao.
 Conhecimento le artigos pelo recurso `GET /api/knowledge`, com normalizacao de titulo, categoria, resumo e base de referencia.
-Levantamento le pesquisas e pontos tecnicos pelo recurso `GET /api/survey`; a gravacao continua no fluxo legado.
+Levantamento le pesquisas, ambientes e pontos tecnicos por `GET /api/survey` e `GET /api/survey/{id}/rooms`; a gravacao usa `POST/PATCH /api/survey`, `POST/PATCH/DELETE /api/survey/points` e `PUT /api/survey/{id}/rooms`, com persistencia temporaria no legado.
 Equipamentos le ativos fisicos pelo recurso `GET /api/equipment`, com normalizacao de fabricante, modelo, numero de serie, localizacao e status; criacao e edicao usam `POST/PATCH /api/equipment` com revisao, enquanto a exclusao fisica permanece bloqueada para preservar historico.
 Rotinas le rotinas da empresa e checklists de projetos pelo recurso `GET /api/routines`, com normalizacao propria no NestJS; rotinas podem ser criadas, editadas e excluidas por `POST/PATCH/DELETE /api/routines`.
-O detalhe tambem le os ambientes pelo recurso `GET /api/quotes/{id}/rooms`; a gravacao de ambientes e itens continua temporariamente em `PUT /api/data`.
+O detalhe tambem le os ambientes pelo recurso `GET /api/quotes/{id}/rooms`.
 O detalhe tambem le o catalogo pelo recurso `GET /api/products`; servicos e gravacao de itens continuam na etapa seguinte.
 A gravacao de ambientes e itens agora usa `PUT /api/quotes/{id}/rooms`; o NestJS recompõe a colecao no legado usando a revisao informada.
 A aprovacao agora usa `POST /api/quotes/{id}/approve` com `baseRevision`; o NestJS carrega os dados relacionados, calcula o total, cria ou vincula cliente e projeto e preserva a revisao.
@@ -55,7 +55,7 @@ Na raiz do projeto, execute `npm run check:all` para validar o backend legado e 
 
 ## Origem da API
 
-O Levantamento Tecnico agora permite criar e editar levantamentos e pontos, alem de excluir pontos, pela API NestJS. A persistencia ainda e encaminhada ao agregado legado com `baseRevision`, preservando o controle de concorrencia durante a migracao.
+O Levantamento Tecnico agora permite criar e editar levantamentos, ambientes e pontos, alem de excluir pontos e ambientes vazios, pela API NestJS. A persistencia ainda e encaminhada ao agregado legado com `baseRevision`, preservando o controle de concorrencia durante a migracao.
 
 Em desenvolvimento, o proxy usa `http://localhost:4173`. No ambiente online, configure `PROELIUM_API_ORIGIN` com a origem HTTPS do servidor antes de iniciar o Next.js.
 Para ativar o recurso separado de Projetos, configure tambem `PROELIUM_NEST_API_ORIGIN` com a origem do NestJS; localmente o padrao e `http://localhost:4174`.

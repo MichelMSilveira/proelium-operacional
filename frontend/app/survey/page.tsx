@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ModuleLayout } from '../components/ModuleLayout';
-import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../../lib/api';
 
 type Survey = {
   id: string;
@@ -25,7 +25,8 @@ type SurveyPoint = {
   notes?: string;
 };
 
-type SurveyPayload = { surveys?: Survey[]; points?: SurveyPoint[]; revision?: number };
+type SurveyRoom = { id: string; surveyId: string; name: string };
+type SurveyPayload = { surveys?: Survey[]; points?: SurveyPoint[]; rooms?: SurveyRoom[]; revision?: number };
 
 const emptySurvey = { id: '', opportunityId: '', title: '', site: '', source: 'Preenchimento manual', status: 'Em levantamento', notes: '' };
 const emptyPoint = { id: '', surveyId: '', room: '', type: '', technology: '', quantity: 1, status: 'Em levantamento', notes: '' };
@@ -33,9 +34,11 @@ const emptyPoint = { id: '', surveyId: '', room: '', type: '', technology: '', q
 export default function SurveyPage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [points, setPoints] = useState<SurveyPoint[]>([]);
+  const [rooms, setRooms] = useState<SurveyRoom[]>([]);
   const [revision, setRevision] = useState<number>();
   const [surveyDraft, setSurveyDraft] = useState(emptySurvey);
   const [pointDraft, setPointDraft] = useState(emptyPoint);
+  const [roomDraft, setRoomDraft] = useState({ id: '', surveyId: '', name: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,6 +47,7 @@ export default function SurveyPage() {
       const payload = await apiGet<SurveyPayload>('/api/survey');
       setSurveys(payload.surveys || []);
       setPoints(payload.points || []);
+      setRooms(payload.rooms || []);
       setRevision(payload.revision);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Falha ao carregar levantamento.');
@@ -108,6 +112,47 @@ export default function SurveyPage() {
     }
   }
 
+  async function saveRoom(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!roomDraft.surveyId || !roomDraft.name.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      const id = roomDraft.id || `room-${Date.now()}`;
+      const current = rooms.filter((room) => room.surveyId === roomDraft.surveyId && room.id !== roomDraft.id);
+      const result = await apiPut<{ revision?: number }>(`/api/survey/${encodeURIComponent(roomDraft.surveyId)}/rooms`, {
+        rooms: [...current, { id, surveyId: roomDraft.surveyId, name: roomDraft.name.trim() }],
+        baseRevision: revision,
+      });
+      setRevision(result.revision ?? revision);
+      setRoomDraft({ id: '', surveyId: roomDraft.surveyId, name: '' });
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel salvar o ambiente.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeRoom(room: SurveyRoom) {
+    if (points.some((point) => point.surveyId === room.surveyId && point.room === room.name)) {
+      setError('Remova ou mova os pontos deste ambiente antes de exclui-lo.');
+      return;
+    }
+    if (!window.confirm(`Excluir o ambiente ${room.name}?`)) return;
+    setSaving(true);
+    setError('');
+    try {
+      const nextRooms = rooms.filter((item) => item.surveyId === room.surveyId && item.id !== room.id);
+      await apiPut(`/api/survey/${encodeURIComponent(room.surveyId)}/rooms`, { rooms: nextRooms, baseRevision: revision });
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel excluir o ambiente.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <ModuleLayout eyebrow="LEVANTAMENTO TÉCNICO" title="Necessidades e pontos" description="Construa ambientes, pontos e quantitativos antes de enviar o levantamento para orçamento.">
       {error && <p className="error">{error}</p>}
@@ -130,6 +175,15 @@ export default function SurveyPage() {
       </section>
 
       <section className="card">
+        <h2>{roomDraft.id ? 'Editar ambiente' : 'Novo ambiente'}</h2>
+        <form className="form-grid" onSubmit={saveRoom}>
+          <select value={roomDraft.surveyId} onChange={(event) => setRoomDraft({ ...roomDraft, surveyId: event.target.value })} required><option value="">Selecione o levantamento</option>{surveys.map((survey) => <option key={survey.id} value={survey.id}>{survey.title}</option>)}</select>
+          <input value={roomDraft.name} onChange={(event) => setRoomDraft({ ...roomDraft, name: event.target.value })} placeholder="Nome do ambiente" required />
+          <div><button disabled={saving}>{saving ? 'Salvando...' : roomDraft.id ? 'Salvar ambiente' : 'Adicionar ambiente'}</button>{roomDraft.id && <button type="button" className="secondary" onClick={() => setRoomDraft({ id: '', surveyId: '', name: '' })}>Cancelar</button>}</div>
+        </form>
+      </section>
+
+      <section className="card">
         <div className="section-head"><h2>Novo ponto técnico</h2><span>Revisão {revision ?? '—'}</span></div>
         <form className="form-grid" onSubmit={savePoint}>
           <select value={pointDraft.surveyId} onChange={(event) => setPointDraft({ ...pointDraft, surveyId: event.target.value })} required><option value="">Selecione o levantamento</option>{surveys.map((survey) => <option key={survey.id} value={survey.id}>{survey.title}</option>)}</select>
@@ -145,7 +199,8 @@ export default function SurveyPage() {
       <div className="record-list">
         {surveys.map((survey) => {
           const surveyPoints = points.filter((point) => point.surveyId === survey.id);
-          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s)</span></div><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button></div>{survey.notes && <p>{survey.notes}</p>}{surveyPoints.length > 0 && <div className="point-list">{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
+          const surveyRooms = rooms.filter((room) => room.surveyId === survey.id);
+          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button></div>{survey.notes && <p>{survey.notes}</p>}{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
         })}
         {!error && !surveys.length && <p>Nenhum levantamento disponível.</p>}
       </div>

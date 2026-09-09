@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, Res } from '@nestjs/common';
 import { SurveyService } from './survey.service';
 
 @Controller('survey')
@@ -8,6 +8,17 @@ export class SurveyController {
   @Get()
   list(@Req() request: { headers: { cookie?: string } }) {
     return this.survey.list(request.headers.cookie);
+  }
+
+  @Get(':id/rooms')
+  rooms(@Param('id') id: string, @Req() request: { headers: { cookie?: string } }) {
+    return this.survey.rooms(id, request.headers.cookie);
+  }
+
+  @Put(':id/rooms')
+  async saveRooms(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.survey.saveRooms(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
   }
 
   @Post()

@@ -5,12 +5,13 @@ type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
 
 export type Survey = { id: string; opportunityId: string; title: string; status: string; [key: string]: unknown };
 export type SurveyPoint = { id: string; surveyId: string; name: string; type: string; [key: string]: unknown };
+export type SurveyRoom = { id: string; surveyId: string; name: string; [key: string]: unknown };
 
 @Injectable()
 export class SurveyService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
 
-  async list(cookie?: string): Promise<{ surveys: Survey[]; points: SurveyPoint[]; revision?: number }> {
+  async list(cookie?: string): Promise<{ surveys: Survey[]; points: SurveyPoint[]; rooms: SurveyRoom[]; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura do levantamento.');
     });
@@ -19,8 +20,46 @@ export class SurveyService {
     return {
       surveys: this.normalizeSurveys(payload.data?.surveys),
       points: this.normalizePoints(payload.data?.surveyPoints),
+      rooms: this.normalizeRooms(payload.data?.surveyRooms),
       revision: payload.revision,
     };
+  }
+
+  async rooms(surveyId: string, cookie?: string): Promise<{ rooms: SurveyRoom[]; revision?: number }> {
+    if (!surveyId.trim()) throw new BadRequestException('O identificador do levantamento e obrigatorio.');
+    const current = await this.readAggregate(cookie);
+    const surveys = Array.isArray(current.data.surveys) ? current.data.surveys : [];
+    if (!surveys.some((item) => this.sameId(item, surveyId))) throw new NotFoundException('Levantamento nao encontrado.');
+    return { rooms: this.normalizeRooms(current.data.surveyRooms).filter((room) => room.surveyId === surveyId), revision: current.revision };
+  }
+
+  async saveRooms(surveyId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!surveyId.trim()) throw new BadRequestException('O identificador do levantamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de ambientes invalido.');
+    const input = body as { rooms?: unknown; baseRevision?: unknown };
+    if (!Array.isArray(input.rooms)) throw new BadRequestException('A gravacao precisa conter rooms como lista.');
+    const current = await this.readAggregate(cookie);
+    const surveys = Array.isArray(current.data.surveys) ? current.data.surveys : [];
+    if (!surveys.some((item) => this.sameId(item, surveyId))) throw new NotFoundException('Levantamento nao encontrado.');
+    const rooms = input.rooms.map((item, index) => {
+      const room = this.record(item);
+      if (!room || this.text(room.surveyId, surveyId) !== surveyId) throw new BadRequestException('Todos os ambientes precisam pertencer ao levantamento informado.');
+      const name = this.text(room.name);
+      if (!name) throw new BadRequestException('Todo ambiente precisa conter nome.');
+      return { ...room, id: this.text(room.id, `room-${crypto.randomUUID()}-${index}`), surveyId, name };
+    });
+    if (new Set(rooms.map((room) => room.name.toLocaleLowerCase())).size !== rooms.length) throw new BadRequestException('Nao e permitido repetir ambiente no levantamento.');
+    const currentRooms = this.normalizeRooms(current.data.surveyRooms).filter((room) => room.surveyId === surveyId);
+    const points = Array.isArray(current.data.surveyPoints) ? current.data.surveyPoints.map((item) => {
+      const point = this.record(item);
+      if (!point || this.text(point.surveyId) !== surveyId) return item;
+      const previous = currentRooms.find((room) => room.id === this.text(point.roomId) || room.name === this.text(point.room));
+      const next = previous ? rooms.find((room) => room.id === previous.id) : undefined;
+      if (previous && next && previous.name !== next.name) return { ...point, room: next.name, roomId: next.id };
+      return item;
+    }) : [];
+    const otherRooms = (Array.isArray(current.data.surveyRooms) ? current.data.surveyRooms : []).filter((item) => !this.sameSurvey(item, surveyId));
+    return this.forward({ ...current.data, surveyRooms: [...otherRooms, ...rooms], surveyPoints: points }, input.baseRevision, cookie);
   }
 
   async saveSurvey(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
@@ -127,6 +166,11 @@ export class SurveyService {
     return item !== null && this.text(item.id) === expectedId;
   }
 
+  private sameSurvey(value: unknown, surveyId: string): boolean {
+    const item = this.record(value);
+    return item !== null && this.text(item.surveyId ?? item.technicalSurveyId) === surveyId;
+  }
+
   private normalizeSurveys(value: unknown): Survey[] {
     if (!Array.isArray(value)) return [];
     return value.filter((item): item is RecordItem => Boolean(item) && typeof item === 'object').map((item, index) => ({
@@ -146,6 +190,16 @@ export class SurveyService {
       surveyId: this.text(item.surveyId),
       name: this.text(item.name ?? item.title ?? item.type, 'Ponto sem nome'),
       type: this.text(item.type, 'Ponto tecnico'),
+    }));
+  }
+
+  private normalizeRooms(value: unknown): SurveyRoom[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is RecordItem => Boolean(item) && typeof item === 'object').map((item, index) => ({
+      ...item,
+      id: this.text(item.id, `legacy-survey-room-${index + 1}`),
+      surveyId: this.text(item.surveyId ?? item.technicalSurveyId),
+      name: this.text(item.name ?? item.room, `Ambiente ${index + 1}`),
     }));
   }
 
