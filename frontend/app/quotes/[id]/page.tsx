@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ModuleLayout } from "../../components/ModuleLayout";
-import { apiGet, apiPost, apiPut } from "../../../lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../lib/api";
 
 type Item = Record<string, unknown>;
 type Payload = { revision?: number; data?: Record<string, Item[]> };
@@ -88,11 +88,48 @@ export default function QuoteDetailPage() {
       new FormData(event.currentTarget).get("name") || "",
     ).trim();
     if (!name) return;
-    await persist([
-      ...(payload.data.quoteRooms || []),
-      { id: `amb-next-${crypto.randomUUID()}`, quoteId: id, name, items: [] },
-    ]);
-    event.currentTarget.reset();
+    const room = { id: `amb-next-${crypto.randomUUID()}`, quoteId: id, name, items: [] };
+    setSaving(true);
+    setError("");
+    try {
+      const result = await apiPost<{ revision?: number }>(`/api/quotes/${id}/rooms`, { room, baseRevision: payload.revision || 0 });
+      setPayload({ revision: result.revision, data: { ...payload.data, quoteRooms: [...(payload.data.quoteRooms || []), room] } });
+      event.currentTarget.reset();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nao foi possivel criar o ambiente.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function editRoom(room: Item) {
+    if (!payload?.data) return;
+    const name = window.prompt("Nome do ambiente", String(room.name || ""))?.trim();
+    if (!name || name === String(room.name || "")) return;
+    setSaving(true);
+    setError("");
+    try {
+      const result = await apiPatch<{ revision?: number }>(`/api/quotes/${id}/rooms/${encodeURIComponent(String(room.id))}`, { room: { id: room.id, quoteId: id, name }, baseRevision: payload.revision || 0 });
+      setPayload({ revision: result.revision, data: { ...payload.data, quoteRooms: (payload.data.quoteRooms || []).map((entry) => entry.id === room.id ? { ...entry, name } : entry) } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nao foi possivel renomear o ambiente.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteRoom(room: Item) {
+    if (!payload?.data || !window.confirm(`Excluir o ambiente ${String(room.name || "sem nome")}?`)) return;
+    setSaving(true);
+    setError("");
+    try {
+      const result = await apiDelete<{ revision?: number }>(`/api/quotes/${id}/rooms/${encodeURIComponent(String(room.id))}`, { baseRevision: payload.revision || 0 });
+      setPayload({ revision: result.revision, data: { ...payload.data, quoteRooms: (payload.data.quoteRooms || []).filter((entry) => entry.id !== room.id) } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nao foi possivel excluir o ambiente.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
@@ -222,6 +259,8 @@ export default function QuoteDetailPage() {
                 <span>
                   {`${items.filter((item) => String(item.roomId) === String(room.id)).length} item(ns)`}
                 </span>
+                <button type="button" disabled={saving} onClick={() => editRoom(room)}>Renomear</button>
+                <button type="button" disabled={saving} onClick={() => deleteRoom(room)}>Excluir</button>
               </article>
             ))}
             {rooms.length === 0 && <p>Nenhum ambiente cadastrado.</p>}

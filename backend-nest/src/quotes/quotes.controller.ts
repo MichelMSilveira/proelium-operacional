@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, Res } from '@nestjs/common';
 import { QuotesService } from './quotes.service';
 
 @Controller('quotes')
@@ -28,6 +28,24 @@ export class QuotesController {
   @Post(':id/items')
   async addItem(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.quotes.addItem(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Post(':id/rooms')
+  async createRoom(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.createRoom(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Patch(':id/rooms/:roomId')
+  async updateRoom(@Param('id') id: string, @Param('roomId') roomId: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.updateRoom(id, roomId, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Delete(':id/rooms/:roomId')
+  async deleteRoom(@Param('id') id: string, @Param('roomId') roomId: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.deleteRoom(id, roomId, body, request.headers.cookie);
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
 

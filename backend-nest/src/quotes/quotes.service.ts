@@ -81,6 +81,56 @@ export class QuotesService {
     return this.forward({ ...current.data, quoteRooms: nextRooms }, input.baseRevision ?? current.revision, cookie);
   }
 
+  async createRoom(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de ambiente invalido.');
+    const input = body as { room?: unknown; baseRevision?: unknown };
+    const room = this.record(input.room);
+    if (!room) throw new BadRequestException('A criacao precisa conter um ambiente valido.');
+    const name = this.text(room.name);
+    if (!name) throw new BadRequestException('O ambiente precisa conter um nome.');
+    const current = await this.readAggregate(cookie);
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    if (!quotes.some((entry) => this.sameId(entry, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const quoteRooms = rooms.filter((entry) => this.text(this.record(entry)?.quoteId) === quoteId);
+    if (quoteRooms.some((entry) => this.text(this.record(entry)?.name).toLowerCase() === name.toLowerCase())) throw new BadRequestException('Ja existe um ambiente com este nome no orcamento.');
+    const roomId = this.text(room.id, `amb-${crypto.randomUUID()}`);
+    if (rooms.some((entry) => this.sameId(entry, roomId))) throw new BadRequestException('Ja existe um ambiente com este identificador.');
+    const nextRoom: QuoteRoom = { ...room, id: roomId, quoteId, name, items: [] };
+    return this.forward({ ...current.data, quoteRooms: [...rooms, nextRoom] }, input.baseRevision ?? current.revision, cookie);
+  }
+
+  async updateRoom(quoteId: string, roomId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim() || !roomId.trim()) throw new BadRequestException('O identificador do ambiente e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de ambiente invalido.');
+    const input = body as { room?: unknown; baseRevision?: unknown };
+    const room = this.record(input.room);
+    if (!room) throw new BadRequestException('A atualizacao precisa conter um ambiente valido.');
+    const name = this.text(room.name);
+    if (!name) throw new BadRequestException('O ambiente precisa conter um nome.');
+    const current = await this.readAggregate(cookie);
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const index = rooms.findIndex((entry) => this.sameId(entry, roomId) && this.text(this.record(entry)?.quoteId) === quoteId);
+    if (index < 0) throw new NotFoundException('Ambiente nao encontrado.');
+    if (rooms.some((entry, entryIndex) => entryIndex !== index && this.text(this.record(entry)?.quoteId) === quoteId && this.text(this.record(entry)?.name).toLowerCase() === name.toLowerCase())) throw new BadRequestException('Ja existe um ambiente com este nome no orcamento.');
+    const existing = this.record(rooms[index]) || {};
+    const nextRooms = rooms.map((entry, entryIndex) => entryIndex === index ? { ...existing, id: roomId, quoteId, name } : entry);
+    return this.forward({ ...current.data, quoteRooms: nextRooms }, input.baseRevision ?? current.revision, cookie);
+  }
+
+  async deleteRoom(quoteId: string, roomId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim() || !roomId.trim()) throw new BadRequestException('O identificador do ambiente e obrigatorio.');
+    const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    const current = await this.readAggregate(cookie);
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const index = rooms.findIndex((entry) => this.sameId(entry, roomId) && this.text(this.record(entry)?.quoteId) === quoteId);
+    if (index < 0) throw new NotFoundException('Ambiente nao encontrado.');
+    const existing = this.record(rooms[index]) || {};
+    if (Array.isArray(existing.items) && existing.items.length) throw new BadRequestException('Remova os itens do ambiente antes de exclui-lo.');
+    return this.forward({ ...current.data, quoteRooms: rooms.filter((_, entryIndex) => entryIndex !== index) }, input.baseRevision ?? current.revision, cookie);
+  }
+
   async saveRooms(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de ambientes invalido.');

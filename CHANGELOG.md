@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Ambientes de orcamento agora usam `POST/PATCH/DELETE /api/quotes/{id}/rooms`; a API valida nome, duplicidade e impede excluir ambientes que ainda possuem itens.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v380` apos a migracao do ciclo de vida dos ambientes de orcamento.
+
 - Itens de orcamentos passaram a ser carregados por `GET /api/quotes/{id}/items` e registrados por `POST /api/quotes/{id}/items`; o detalhe agora combina produtos e servicos e calcula o total a partir do recurso validado de itens.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v379` apos a migracao dos itens de orcamento para o NestJS.
