@@ -21,6 +21,12 @@ export class SurveyController {
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
 
+  @Post(':id/send-to-quote')
+  async sendToQuote(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.survey.sendToQuote(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
   @Post()
   async create(@Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.survey.saveSurvey(body, request.headers.cookie);

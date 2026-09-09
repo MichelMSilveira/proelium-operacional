@@ -153,6 +153,20 @@ export default function SurveyPage() {
     }
   }
 
+  async function sendToQuote(survey: Survey) {
+    setSaving(true);
+    setError('');
+    try {
+      const result = await apiPost<{ quoteId?: string }>(`/api/survey/${encodeURIComponent(survey.id)}/send-to-quote`, { baseRevision: revision });
+      if (result.quoteId) window.location.assign(`/quotes/${encodeURIComponent(result.quoteId)}`);
+      else await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel enviar o levantamento ao orcamento.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <ModuleLayout eyebrow="LEVANTAMENTO TÉCNICO" title="Necessidades e pontos" description="Construa ambientes, pontos e quantitativos antes de enviar o levantamento para orçamento.">
       {error && <p className="error">{error}</p>}
@@ -200,7 +214,8 @@ export default function SurveyPage() {
         {surveys.map((survey) => {
           const surveyPoints = points.filter((point) => point.surveyId === survey.id);
           const surveyRooms = rooms.filter((room) => room.surveyId === survey.id);
-          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button></div>{survey.notes && <p>{survey.notes}</p>}{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
+          const ready = ['Validado', 'Enviado ao orçamento'].includes(survey.status) && surveyPoints.some((point) => Number(point.quantity || 0) > 0);
+          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><span><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button><button type="button" onClick={() => void sendToQuote(survey)} disabled={saving || !ready}>Enviar ao orçamento</button></span></div>{survey.notes && <p>{survey.notes}</p>}{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
         })}
         {!error && !surveys.length && <p>Nenhum levantamento disponível.</p>}
       </div>

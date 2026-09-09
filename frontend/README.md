@@ -34,7 +34,7 @@ Indicadores compoe suas metricas a partir de `GET /api/clients`, `GET /api/proje
 O resumo da pagina inicial compoe seus quatro indicadores por `GET /api/clients`, `GET /api/projects`, `GET /api/tasks` e `GET /api/finance`, sem consultar o agregado diretamente.
 Compras le a lista de materiais pelo recurso `GET /api/purchases`, com normalizacao de projeto, ambiente, quantidade, fornecedor e situacao.
 Conhecimento le artigos pelo recurso `GET /api/knowledge`, com normalizacao de titulo, categoria, resumo e base de referencia.
-Levantamento le pesquisas, ambientes e pontos tecnicos por `GET /api/survey` e `GET /api/survey/{id}/rooms`; a gravacao usa `POST/PATCH /api/survey`, `POST/PATCH/DELETE /api/survey/points` e `PUT /api/survey/{id}/rooms`, com persistencia temporaria no legado.
+Levantamento le pesquisas, ambientes e pontos tecnicos por `GET /api/survey` e `GET /api/survey/{id}/rooms`; a gravacao usa `POST/PATCH /api/survey`, `POST/PATCH/DELETE /api/survey/points` e `PUT /api/survey/{id}/rooms`, com persistencia temporaria no legado. Levantamentos validados podem ser enviados ao orcamento por `POST /api/survey/{id}/send-to-quote`.
 Equipamentos le ativos fisicos pelo recurso `GET /api/equipment`, com normalizacao de fabricante, modelo, numero de serie, localizacao e status; criacao e edicao usam `POST/PATCH /api/equipment` com revisao, enquanto a exclusao fisica permanece bloqueada para preservar historico.
 Rotinas le rotinas da empresa e checklists de projetos pelo recurso `GET /api/routines`, com normalizacao propria no NestJS; rotinas podem ser criadas, editadas e excluidas por `POST/PATCH/DELETE /api/routines`.
 O detalhe tambem le os ambientes pelo recurso `GET /api/quotes/{id}/rooms`.

@@ -62,6 +62,64 @@ export class SurveyService {
     return this.forward({ ...current.data, surveyRooms: [...otherRooms, ...rooms], surveyPoints: points }, input.baseRevision, cookie);
   }
 
+  async sendToQuote(surveyId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!surveyId.trim()) throw new BadRequestException('O identificador do levantamento e obrigatorio.');
+    const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    const current = await this.readAggregate(cookie);
+    const surveys = Array.isArray(current.data.surveys) ? current.data.surveys : [];
+    const survey = surveys.find((item) => this.sameId(item, surveyId)) as RecordItem | undefined;
+    if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
+    const opportunities = Array.isArray(current.data.opportunities) ? current.data.opportunities : [];
+    const opportunity = opportunities.find((item) => this.sameId(item, this.text(survey.opportunityId))) as RecordItem | undefined;
+    if (!opportunity) throw new BadRequestException('Vincule este levantamento a uma oportunidade antes de criar o orcamento.');
+    const points = (Array.isArray(current.data.surveyPoints) ? current.data.surveyPoints : [])
+      .filter((item) => this.text(this.record(item)?.surveyId) === surveyId);
+    if (!['Validado', 'Enviado ao orçamento'].includes(this.text(survey.status)) || !points.some((item) => this.number(this.record(item)?.quantity) > 0)) {
+      throw new BadRequestException('Valide o levantamento e registre ao menos um ponto ou quantitativo antes de envia-lo ao orcamento.');
+    }
+    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+    let quote = quotes.find((item) => {
+      const record = this.record(item);
+      return record !== null && this.text(record.opportunityId) === this.text(opportunity.id) && this.text(record.status) !== 'Aprovado';
+    }) as RecordItem | undefined;
+    if (!quote) {
+      quote = {
+        id: `orc-${crypto.randomUUID()}`,
+        opportunityId: this.text(opportunity.id),
+        technicalSurveyId: surveyId,
+        clientId: '',
+        title: `Proposta — ${this.text(opportunity.company, 'Cliente')}`,
+        value: 0,
+        status: 'Em elaboração',
+      };
+      quotes.unshift(quote);
+      opportunity.stage = 'Orçamento';
+    } else if (!this.text(quote.technicalSurveyId)) {
+      quote.technicalSurveyId = surveyId;
+    }
+    const roomNames = [...new Set([
+      ...this.normalizeRooms(current.data.surveyRooms).filter((room) => room.surveyId === surveyId).map((room) => room.name),
+      ...points.map((item) => this.text(this.record(item)?.room)),
+    ].filter(Boolean))];
+    const quoteRooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const existingNames = quoteRooms.filter((item) => this.text(this.record(item)?.quoteId) === this.text(quote.id)).map((item) => this.text(this.record(item)?.name));
+    const surveyRooms = this.normalizeRooms(current.data.surveyRooms).filter((room) => room.surveyId === surveyId);
+    const missing = roomNames.filter((name) => !existingNames.includes(name));
+    missing.forEach((name) => {
+      const source = surveyRooms.find((room) => room.name === name);
+      quoteRooms.push({ id: `amb-${crypto.randomUUID()}`, quoteId: this.text(quote?.id), technicalSurveyId: surveyId, surveyRoomId: source?.id || '', name, items: [] });
+    });
+    survey.status = 'Enviado ao orçamento';
+    const upstream = await this.forward({ ...current.data, surveys, opportunities, quotes, quoteRooms }, input.baseRevision ?? current.revision, cookie);
+    if (upstream.status < 200 || upstream.status >= 300) return upstream;
+    try {
+      const result = JSON.parse(upstream.body) as RecordItem;
+      return { status: upstream.status, body: JSON.stringify({ ...result, quoteId: this.text(quote.id), roomsCreated: missing.length }) };
+    } catch {
+      return { status: upstream.status, body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length }) };
+    }
+  }
+
   async saveSurvey(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de levantamento invalido.');
     const input = body as { survey?: unknown; baseRevision?: unknown };
