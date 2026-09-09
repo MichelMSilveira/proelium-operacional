@@ -157,6 +157,49 @@ export default function QuoteDetailPage() {
     }
   }
 
+  function productName(productId: string) {
+    const product = products.find((entry) => String(entry.id) === productId);
+    return String(product?.name || product?.nome || "Item");
+  }
+
+  async function editItem(item: Item) {
+    if (!payload?.data) return;
+    const qtyValue = window.prompt("Quantidade", String(item.qty || 1));
+    if (qtyValue === null) return;
+    const discountValue = window.prompt("Desconto (%)", String(item.discount || 0));
+    if (discountValue === null) return;
+    const qty = Math.max(1, Number(qtyValue || 1));
+    const discount = Math.min(100, Math.max(0, Number(discountValue || 0)));
+    if (!Number.isFinite(qty) || !Number.isFinite(discount)) {
+      setError("Informe quantidade e desconto validos.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const result = await apiPatch<{ revision?: number }>(`/api/quotes/${id}/items/${encodeURIComponent(String(item.id))}`, { item: { id: item.id, productId: item.productId, qty, discount }, baseRevision: payload.revision || 0 });
+      setPayload({ revision: result.revision, data: { ...payload.data, items: (payload.data.items || []).map((entry) => entry.id === item.id ? { ...entry, qty, discount } : entry) } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nao foi possivel editar o item.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteItem(item: Item) {
+    if (!payload?.data || !window.confirm(`Excluir ${productName(String(item.productId))} deste orcamento?`)) return;
+    setSaving(true);
+    setError("");
+    try {
+      const result = await apiDelete<{ revision?: number }>(`/api/quotes/${id}/items/${encodeURIComponent(String(item.id))}`, { baseRevision: payload.revision || 0 });
+      setPayload({ revision: result.revision, data: { ...payload.data, items: (payload.data.items || []).filter((entry) => entry.id !== item.id) } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nao foi possivel excluir o item.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function approveQuote() {
     if (!payload?.data || !quote || String(quote.status || "") === "Aprovado") return;
     if (!window.confirm("Aprovar este orcamento e criar ou vincular cliente e projeto?")) return;
@@ -261,6 +304,7 @@ export default function QuoteDetailPage() {
                 </span>
                 <button type="button" disabled={saving} onClick={() => editRoom(room)}>Renomear</button>
                 <button type="button" disabled={saving} onClick={() => deleteRoom(room)}>Excluir</button>
+                {items.filter((item) => String(item.roomId) === String(room.id)).map((item) => <div key={String(item.id)}><span>{productName(String(item.productId))} · {String(item.qty)} un · {String(item.discount || 0)}% desconto</span><button type="button" disabled={saving} onClick={() => editItem(item)}>Editar item</button><button type="button" disabled={saving} onClick={() => deleteItem(item)}>Excluir item</button></div>)}
               </article>
             ))}
             {rooms.length === 0 && <p>Nenhum ambiente cadastrado.</p>}

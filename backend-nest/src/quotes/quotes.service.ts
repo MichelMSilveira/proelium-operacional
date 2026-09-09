@@ -81,6 +81,59 @@ export class QuotesService {
     return this.forward({ ...current.data, quoteRooms: nextRooms }, input.baseRevision ?? current.revision, cookie);
   }
 
+  async updateItem(quoteId: string, itemId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim() || !itemId.trim()) throw new BadRequestException('O identificador do item e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de item invalido.');
+    const input = body as { item?: unknown; baseRevision?: unknown };
+    const item = this.record(input.item);
+    if (!item) throw new BadRequestException('A atualizacao precisa conter um item valido.');
+    const current = await this.readAggregate(cookie);
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    const locations = rooms.map((entry, roomIndex) => {
+      const room = this.record(entry) || {};
+      const roomId = this.text(room.id);
+      const existingItems = Array.isArray(room.items) ? room.items : [];
+      const itemIndex = this.text(room.quoteId) === quoteId ? existingItems.findIndex((candidate, index) => this.normalizeItem(candidate, quoteId, roomId, index).id === itemId) : -1;
+      return { room, roomId, existingItems, roomIndex, itemIndex };
+    });
+    const location = locations.find((entry) => entry.itemIndex >= 0);
+    if (!location) throw new NotFoundException('Item do orcamento nao encontrado.');
+    const existing = this.normalizeItem(location.existingItems[location.itemIndex], quoteId, location.roomId, location.itemIndex);
+    const productId = this.text(item.productId, existing.productId);
+    const products = Array.isArray(current.data.products) ? current.data.products : [];
+    if (!products.some((entry) => this.sameId(entry, productId))) throw new NotFoundException('Produto ou servico nao encontrado.');
+    const qty = this.number(item.qty ?? existing.qty);
+    const discount = this.number(item.discount ?? existing.discount);
+    if (qty <= 0) throw new BadRequestException('A quantidade do item deve ser maior que zero.');
+    if (discount > 100) throw new BadRequestException('O desconto do item deve estar entre zero e cem por cento.');
+    const nextItem: QuoteItem = { ...existing, ...item, id: itemId, quoteId, roomId: location.roomId, productId, qty, discount };
+    const nextRooms = rooms.map((entry, roomIndex) => roomIndex === location.roomIndex
+      ? { ...location.room, items: location.existingItems.map((candidate, itemIndex) => itemIndex === location.itemIndex ? nextItem : candidate) }
+      : entry);
+    return this.forward({ ...current.data, quoteRooms: nextRooms }, input.baseRevision ?? current.revision, cookie);
+  }
+
+  async deleteItem(quoteId: string, itemId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!quoteId.trim() || !itemId.trim()) throw new BadRequestException('O identificador do item e obrigatorio.');
+    const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    const current = await this.readAggregate(cookie);
+    const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+    let foundRoomIndex = -1;
+    let foundItemIndex = -1;
+    const nextRooms = rooms.map((entry, roomIndex) => {
+      const room = this.record(entry) || {};
+      const roomId = this.text(room.id);
+      const existingItems = Array.isArray(room.items) ? room.items : [];
+      const itemIndex = this.text(room.quoteId) === quoteId ? existingItems.findIndex((candidate, index) => this.normalizeItem(candidate, quoteId, roomId, index).id === itemId) : -1;
+      if (itemIndex < 0) return entry;
+      foundRoomIndex = roomIndex;
+      foundItemIndex = itemIndex;
+      return { ...room, items: existingItems.filter((_, index) => index !== itemIndex) };
+    });
+    if (foundRoomIndex < 0 || foundItemIndex < 0) throw new NotFoundException('Item do orcamento nao encontrado.');
+    return this.forward({ ...current.data, quoteRooms: nextRooms }, input.baseRevision ?? current.revision, cookie);
+  }
+
   async createRoom(quoteId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de ambiente invalido.');

@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Itens de orcamento agora podem ser editados e excluidos por `PATCH/DELETE /api/quotes/{id}/items/{itemId}`; o detalhe exibe cada item por ambiente e mantem a aprovacao baseada no conjunto atual.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v381` apos a migracao do ciclo de vida dos itens de orcamento.
+
 - Ambientes de orcamento agora usam `POST/PATCH/DELETE /api/quotes/{id}/rooms`; a API valida nome, duplicidade e impede excluir ambientes que ainda possuem itens.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v380` apos a migracao do ciclo de vida dos ambientes de orcamento.

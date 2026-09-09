@@ -31,6 +31,18 @@ export class QuotesController {
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
 
+  @Patch(':id/items/:itemId')
+  async updateItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.updateItem(id, itemId, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Delete(':id/items/:itemId')
+  async deleteItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.quotes.deleteItem(id, itemId, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
   @Post(':id/rooms')
   async createRoom(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.quotes.createRoom(id, body, request.headers.cookie);
