@@ -36,7 +36,7 @@ Compras le a lista de materiais pelo recurso `GET /api/purchases`, com normaliza
 Conhecimento le artigos pelo recurso `GET /api/knowledge`, com normalizacao de titulo, categoria, resumo e base de referencia.
 Levantamento le pesquisas, ambientes e pontos tecnicos por `GET /api/survey` e `GET /api/survey/{id}/rooms`; a gravacao usa `POST/PATCH /api/survey`, `POST/PATCH/DELETE /api/survey/points` e `PUT /api/survey/{id}/rooms`, com persistencia temporaria no legado. Levantamentos validados podem ser enviados ao orcamento por `POST /api/survey/{id}/send-to-quote`.
 Equipamentos le ativos fisicos pelo recurso `GET /api/equipment`, com normalizacao de fabricante, modelo, numero de serie, localizacao e status; criacao e edicao usam `POST/PATCH /api/equipment` com revisao, enquanto a exclusao fisica permanece bloqueada para preservar historico.
-Rotinas le rotinas da empresa e checklists de projetos pelo recurso `GET /api/routines`, com normalizacao propria no NestJS; rotinas podem ser criadas, editadas e excluidas por `POST/PATCH/DELETE /api/routines`.
+Rotinas le rotinas da empresa e checklists de projetos pelo recurso `GET /api/routines`; rotinas usam `POST/PATCH/DELETE /api/routines` e checklists usam `POST/PATCH /api/routines/checklists`, com revisao de conflito.
 O detalhe tambem le os ambientes pelo recurso `GET /api/quotes/{id}/rooms`.
 O detalhe tambem le o catalogo pelo recurso `GET /api/products`; servicos e gravacao de itens continuam na etapa seguinte.
 A gravacao de ambientes e itens agora usa `PUT /api/quotes/{id}/rooms`; o NestJS recompõe a colecao no legado usando a revisao informada.

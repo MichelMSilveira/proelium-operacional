@@ -27,4 +27,16 @@ export class RoutinesController {
     const upstream = await this.routines.remove(request.headers.cookie, id);
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
+
+  @Post('checklists')
+  async createChecklist(@Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.routines.saveChecklist(body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
+  @Patch('checklists/:id')
+  async updateChecklist(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.routines.saveChecklist(body, request.headers.cookie, id);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
 }
