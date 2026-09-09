@@ -170,15 +170,10 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
-    const origin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
-    const upstream = await fetch(`${origin}/api/auth/logout`, {
-      method: 'POST',
-      headers: request.headers.cookie ? { cookie: request.headers.cookie } : {},
-    });
-    const setCookie = upstream.headers.get('set-cookie');
-    if (setCookie) response.setHeader('set-cookie', setCookie);
-    response.status(upstream.status).type('application/json').send(await upstream.text());
+  async logout(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined } }, @Res() response: any) {
+    const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+    response.setHeader('set-cookie', `proelium_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+    response.status(200).type('application/json').send(JSON.stringify({ ok: true }));
   }
 
   @Post('login')

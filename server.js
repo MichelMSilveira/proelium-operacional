@@ -447,6 +447,13 @@ async function handleRequest(req, res) {
 
   if (pathname === '/api/auth/logout' && req.method === 'POST') {
     const user = currentUser(req); if (user) { presence.delete(user.username); announcePresence(); }
+    if (nestAuthEnabled()) {
+      try { return await forwardNestAuth(req, res, pathname); }
+      catch (error) {
+        console.error('Falha ao encaminhar logout ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'NÃ£o foi possÃ­vel encerrar a sessÃ£o agora.' });
+      }
+    }
     setSessionCookie(res, '', 0, secureCookie);
     return sendJson(res, 200, { ok: true });
   }
