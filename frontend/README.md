@@ -44,7 +44,7 @@ A aprovacao agora usa `POST /api/quotes/{id}/approve` com `baseRevision`; o Nest
 Operacoes le tarefas por `GET /api/tasks`, com criacao, edicao e exclusao em `POST/PATCH/DELETE /api/tasks`; ordens de servico continuam vindo do recurso separado `GET /api/operations` em modo de consulta.
 Agenda le e grava compromissos por `GET/POST/PATCH/DELETE /api/agenda`, com revisao de conflito e normalizacao no NestJS.
 Operacoes agora le tarefas e ordens de servico pelos recursos `GET /api/tasks` e `GET /api/operations`, sem depender de `/api/data` para a consulta; tarefas e ordens usam `POST/PATCH/DELETE` nos respectivos recursos.
-Relatorios le Relatorios de Servico e Entregas de Projetos por `GET /api/reports`, com normalizacao das duas colecoes no NestJS.
+Relatorios le Entregas de Projetos e grava Relatorios de Servico por `GET/POST /api/reports`, com normalizacao das duas colecoes no NestJS e revisao de conflito.
 Instalacoes agora le e grava pelo recurso `GET/POST/PATCH /api/installations`, com contrato normalizado no NestJS; a edicao preserva o historico sem exclusao fisica.
 Qualidade le avaliacoes pelo recurso `GET /api/quality` e registra novas avaliações por `POST /api/quality`; a media considera os quatro criterios normalizados e o historico não possui exclusao fisica.
 Processos ganhou a rota Next.js `/processes` com as sete etapas operacionais padrao; como o fluxo e estatico, nao depende de consulta ou gravacao no agregado.

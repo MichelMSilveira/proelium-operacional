@@ -40,6 +40,10 @@
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v371` após a migração do cadastro de colaboradores.
 
+- Relatórios passaram a permitir emissão de serviços executados por `POST /api/reports`, preservando projeto, OS opcional, execução, testes, pendências, mídia e próxima revisão; Entregas de Projetos continuam em consulta.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v372` após a migração da emissão de relatórios.
+
 - Criada a rota Next.js `/product-connections` para consulta do modelo tecnico de Produtos, usando `GET /api/products` e exibindo compatibilidades, requisitos, limites e fonte oficial sem duplicar armazenamento.
 - Biblioteca Tecnica passou a permitir criacao e edicao de fabricantes por `POST/PATCH /api/product-library`; a exclusao fisica permanece bloqueada para preservar referencias em produtos e conexoes.
 - Catalogo passou a permitir criacao e edicao de servicos por `POST/PATCH /api/services`, mantendo produtos e servicos separados na interface e classificados no mesmo armazenamento durante a transicao.
