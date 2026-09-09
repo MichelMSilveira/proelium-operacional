@@ -33,7 +33,7 @@ Agenda usa `appointments_domain_entries` e `appointments_domain_state`, com isol
 
 Tarefas usam `tasks_domain_entries` e `tasks_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial das pendências existentes durante a migração `020_tasks_domain.sql` e referências textuais aos projetos para preservar dados durante a transição.
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS; a consulta de sessão também é validada pelo NestJS, enquanto login, OAuth e o contrato agregado legado permanecem compatíveis com o servidor raiz durante a transição.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS e validam a sessão pelo endpoint interno do próprio NestJS; login, OAuth e o contrato agregado legado permanecem compatíveis com o servidor raiz durante a transição.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento também atualiza diretamente a oportunidade, o orçamento, os ambientes relacionados e o status do levantamento; a ponte legada fica como fallback sem PostgreSQL.
 

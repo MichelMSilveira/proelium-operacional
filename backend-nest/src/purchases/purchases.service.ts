@@ -25,6 +25,7 @@ const statuses = ['Planejado', 'A cotar', 'Comprado', 'Recebido', 'Conferido'];
 @Injectable()
 export class PurchasesService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+  private readonly authOrigin = process.env.NEST_AUTH_ORIGIN || (process.env.DATABASE_URL ? `http://127.0.0.1:${process.env.PORT || 4174}` : this.legacyOrigin);
   private readonly pool?: Pool;
 
   constructor() {
@@ -178,7 +179,7 @@ export class PurchasesService {
 
   private async authContext(cookie?: string): Promise<AuthContext> {
     if (!cookie) throw new UnauthorizedException('Sessao obrigatoria.');
-    const upstream = await fetch(`${this.legacyOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
+    const upstream = await fetch(`${this.authOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
       throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
     });
     if (upstream.status === 401) throw new UnauthorizedException('Sessao expirada.');

@@ -3,6 +3,7 @@
 ## Em desenvolvimento
 
 - A consulta de sessão `GET /api/auth/me` passou a ser atendida diretamente pelo NestJS e PostgreSQL quando o banco está ativo, verificando a assinatura do cookie, o usuário, a empresa e as permissões; o login, OAuth e o fallback sem banco continuam compatíveis com o servidor legado.
+- Os serviços NestJS passaram a consultar esse endpoint interno para validar sessões quando o PostgreSQL está ativo, removendo a chamada de autorização ao servidor legado dos domínios operacionais sem alterar o fallback local.
 - Documentação operacional alinhada ao estado atual da migração: com PostgreSQL ativo, os módulos operacionais persistem diretamente no NestJS; a compatibilidade restante está concentrada no modo sem banco, na autenticação legada e no app antigo.
 - A conversão posterior de oportunidades com orçamento aprovado passou a operar diretamente no PostgreSQL pelo NestJS, criando ou reutilizando o cliente, concluindo a oportunidade como Ganho e mantendo a ponte legada apenas como fallback sem PostgreSQL.
 - A gravação de oportunidades deixou de consultar e regravar o agregado legado quando o PostgreSQL está ativo; a validação do funil agora usa diretamente levantamentos, pontos, orçamentos e compromissos migrados.
