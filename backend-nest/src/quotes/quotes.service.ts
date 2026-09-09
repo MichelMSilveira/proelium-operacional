@@ -25,15 +25,7 @@ export class QuotesService {
   }
 
   async list(cookie?: string): Promise<{ quotes: Quote[]; packages: QuotePackage[]; procurementRequests: ProcurementRequest[]; revision?: number }> {
-    if (this.pool) {
-      const current = await this.readAggregate(cookie);
-      return {
-        quotes: this.normalizeList(current.data.quotes),
-        packages: this.normalizePackages(current.data.packages),
-        procurementRequests: this.normalizeProcurementRequests(current.data.procurementRequests),
-        revision: current.revision,
-      };
-    }
+    if (this.pool) return this.databaseList(cookie);
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponível para leitura de orçamentos.');
     });
@@ -58,10 +50,17 @@ export class QuotesService {
   async rooms(quoteId: string, cookie?: string): Promise<QuoteRoom[]> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
     if (this.pool) {
-      const current = await this.readAggregate(cookie);
-      const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
-      if (!quotes.some((item) => this.sameId(item, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
-      return this.normalizeRooms(current.data.quoteRooms).filter((room) => room.quoteId === quoteId);
+      const context = await this.authContext(cookie);
+      const [quote, rooms] = await Promise.all([
+        this.pool.query('select id from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]),
+        this.pool.query(
+          `select id, quote_id as "quoteId", name, items, extra_data as "extraData"
+           from quotes_domain_rooms where company_id = $1 and quote_id = $2 order by updated_at asc, name asc`,
+          [context.companyId, quoteId],
+        ),
+      ]);
+      if (!quote.rowCount) throw new NotFoundException('Orcamento nao encontrado.');
+      return rooms.rows.map((row) => this.roomFromRow(row));
     }
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura dos ambientes.');
@@ -73,6 +72,24 @@ export class QuotesService {
 
   async items(quoteId: string, cookie?: string): Promise<{ items: QuoteItem[]; revision?: number }> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (this.pool) {
+      const context = await this.authContext(cookie);
+      const [quote, rooms, state] = await Promise.all([
+        this.pool.query('select id from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]),
+        this.pool.query(
+          `select id, quote_id as "quoteId", items
+           from quotes_domain_rooms where company_id = $1 and quote_id = $2 order by updated_at asc, name asc`,
+          [context.companyId, quoteId],
+        ),
+        this.pool.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]),
+      ]);
+      if (!quote.rowCount) throw new NotFoundException('Orcamento nao encontrado.');
+      const items = rooms.rows.flatMap((room) => {
+        const roomItems: unknown[] = Array.isArray(room.items) ? room.items : [];
+        return roomItems.map((item: unknown, index: number) => this.normalizeItem(item, quoteId, this.text(room.id), index));
+      });
+      return { items, revision: Number(state.rows[0]?.revision || 0) };
+    }
     const current = await this.readAggregate(cookie);
     const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
     if (!quotes.some((item) => this.sameId(item, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
@@ -571,6 +588,35 @@ export class QuotesService {
     const relatedRooms = rooms.filter((entry) => this.text(this.record(entry)?.quoteId) === quoteId);
     if (relatedRooms.some((entry) => Array.isArray(this.record(entry)?.items) && (this.record(entry)?.items as unknown[]).length)) throw new BadRequestException('Remova os itens antes de excluir o orcamento.');
     return this.forward({ ...current.data, quotes: quotes.filter((entry) => !this.sameId(entry, quoteId)), quoteRooms: rooms.filter((entry) => this.text(this.record(entry)?.quoteId) !== quoteId) }, input.baseRevision ?? current.revision, cookie);
+  }
+
+  private async databaseList(cookie?: string): Promise<{ quotes: Quote[]; packages: QuotePackage[]; procurementRequests: ProcurementRequest[]; revision?: number }> {
+    const context = await this.authContext(cookie);
+    const [quotes, packages, procurementRequests, state] = await Promise.all([
+      this.pool!.query(
+        `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
+         from quotes_domain_entries where company_id = $1 order by updated_at desc, title asc`,
+        [context.companyId],
+      ),
+      this.pool!.query(
+        `select id, name, category, description, active, items, extra_data as "extraData"
+         from quotes_domain_packages where company_id = $1 order by updated_at desc, name asc`,
+        [context.companyId],
+      ),
+      this.pool!.query(
+        `select id, quote_id as "quoteId", room_id as "roomId", product_id as "productId", name, category, brand, status,
+                request_date as "createdAt", extra_data as "extraData"
+         from quotes_domain_procurement_requests where company_id = $1 order by updated_at desc, request_date desc`,
+        [context.companyId],
+      ),
+      this.pool!.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]),
+    ]);
+    return {
+      quotes: quotes.rows.map((row) => this.quoteFromRow(row)),
+      packages: packages.rows.map((row) => this.packageFromRow(row)),
+      procurementRequests: procurementRequests.rows.map((row) => this.procurementFromRow(row)),
+      revision: Number(state.rows[0]?.revision || 0),
+    };
   }
 
   private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
