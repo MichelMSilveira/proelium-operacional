@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
@@ -46,6 +46,56 @@ export class ReportsService {
     if (appointmentId && appointments.length) {
       nextData.appointments = appointments.map((entry) => this.sameId(entry, appointmentId) ? { ...entry, reportId, reportStatus: normalized.status, reportedAt: new Date().toISOString() } : entry);
     }
+    return this.forward(nextData, input.baseRevision, cookie);
+  }
+
+  async saveDelivery(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de entrega invalido.');
+    const input = body as { projectDelivery?: unknown; baseRevision?: unknown };
+    const delivery = this.record(input.projectDelivery);
+    if (!delivery) throw new BadRequestException('Entrega invalida.');
+    const projectId = this.text(delivery.projectId);
+    const date = this.text(delivery.date);
+    const responsible = this.text(delivery.responsible);
+    const acceptance = this.text(delivery.acceptance, 'Aceite pendente');
+    const note = this.text(delivery.note);
+    if (!projectId || !date || !responsible || !note) throw new BadRequestException('A entrega precisa conter projeto, data, responsavel e resumo.');
+    if (!['Aceite confirmado', 'Aceite pendente'].includes(acceptance)) throw new BadRequestException('Aceite de entrega invalido.');
+
+    const current = await this.readAggregate(cookie, 'gravacao de entregas');
+    const projects = Array.isArray(current.data.projects) ? current.data.projects : [];
+    const project = projects.find((item) => this.sameId(item, projectId));
+    if (!project) throw new NotFoundException('Projeto nao encontrado.');
+    const checklists = Array.isArray(current.data.projectChecklists) ? current.data.projectChecklists : [];
+    const projectChecklist = checklists.filter((item) => this.record(item)?.projectId === projectId);
+    if (!projectChecklist.length) throw new BadRequestException('Aplique o checklist do projeto antes de registrar a entrega.');
+    if (projectChecklist.some((item) => this.record(item)?.done !== true)) throw new BadRequestException('Conclua todos os itens do checklist antes de registrar a entrega.');
+
+    const deliveries = Array.isArray(current.data.projectDeliveries) ? current.data.projectDeliveries : [];
+    const normalized = {
+      ...delivery,
+      id: this.text(delivery.id, `del-${crypto.randomUUID()}`),
+      projectId,
+      date,
+      responsible,
+      acceptance,
+      note,
+    };
+    const nextData: Record<string, unknown> = {
+      ...current.data,
+      projectDeliveries: [normalized, ...deliveries.filter((item) => this.record(item)?.projectId !== projectId)],
+    };
+    nextData.projects = projects.map((item) => this.sameId(item, projectId) ? {
+      ...this.record(item), technicalStage: 'Entrega', progress: 100, status: acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite',
+    } : item);
+    const installations = Array.isArray(current.data.installations) ? current.data.installations : [];
+    nextData.installations = installations.map((item) => this.record(item)?.projectId === projectId ? {
+      ...this.record(item), stage: 'Entrega', progress: 100, status: acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite', due: date,
+    } : item);
+    const projectRecord = this.record(project);
+    const clientId = this.text(projectRecord?.clientId);
+    const activities = Array.isArray(current.data.activities) ? current.data.activities : [];
+    nextData.activities = clientId ? [{ id: `act-${crypto.randomUUID()}`, clientId, type: 'Entrega', title: `Entrega do projeto ${this.text(projectRecord?.name, projectId)}`, note, date }, ...activities] : activities;
     return this.forward(nextData, input.baseRevision, cookie);
   }
 

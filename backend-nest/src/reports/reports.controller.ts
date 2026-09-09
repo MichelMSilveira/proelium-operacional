@@ -15,4 +15,10 @@ export class ReportsController {
     const upstream = await this.reports.save(body, request.headers.cookie);
     response.status(upstream.status).type('application/json').send(upstream.body);
   }
+
+  @Post('deliveries')
+  async createDelivery(@Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.reports.saveDelivery(body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
 }

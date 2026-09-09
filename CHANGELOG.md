@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Entregas de projetos passaram a ser registradas pela tela de Relatorios usando `POST /api/reports/deliveries`, com validacao do checklist completo e atualizacao do projeto, instalacao e atividade do cliente.
+
+- Incrementado o cache do shell do PWA para `proelium-shell-v375` apos a migracao do registro de entregas para o NestJS.
+
 - Chamados de pós-venda passaram a ser lidos, criados e editados pela tela de Operação usando `GET/POST/PATCH /api/support-tickets`, com normalização de cliente, equipamento, tipo, prioridade e situação no NestJS.
 
 - Incrementado o cache do shell do PWA para `proelium-shell-v374` após a migração dos chamados de pós-venda para o NestJS.

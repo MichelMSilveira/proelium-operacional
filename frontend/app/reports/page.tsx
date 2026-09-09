@@ -5,7 +5,7 @@ import { ModuleLayout } from '../components/ModuleLayout';
 import { apiGet, apiPost } from '../../lib/api';
 
 type ServiceReport = { id: string; projectId: string; serviceOrderId: string; appointmentId: string; technician: string; date: string; status: string; execution: string; tests: string; pending: string; nextActionDate: string; media: string };
-type ProjectDelivery = { id: string; projectId: string; status: string; date: string };
+type ProjectDelivery = { id: string; projectId: string; status: string; date: string; responsible: string; acceptance: string; note: string };
 type ReportsPayload = { serviceReports?: ServiceReport[]; projectDeliveries?: ProjectDelivery[]; revision?: number };
 const statuses = ['Concluído', 'Parcial', 'Pendente'];
 
@@ -18,6 +18,7 @@ export default function ReportsPage() {
   const [deliveries, setDeliveries] = useState<ProjectDelivery[]>([]);
   const [revision, setRevision] = useState<number>();
   const [draft, setDraft] = useState<ServiceReport>(emptyReport);
+  const [deliveryDraft, setDeliveryDraft] = useState<ProjectDelivery>({ id: '', projectId: '', status: 'Aguardando aceite', date: new Date().toISOString().slice(0, 10), responsible: '', acceptance: 'Aceite confirmado', note: '' });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,6 +37,23 @@ export default function ReportsPage() {
   }
 
   useEffect(() => { void load(); }, []);
+
+  async function saveDelivery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const delivery = { ...deliveryDraft, id: `del-${Date.now()}`, status: deliveryDraft.acceptance };
+      const result = await apiPost<{ revision?: number }>('/api/reports/deliveries', { projectDelivery: delivery, baseRevision: revision });
+      setRevision(result.revision ?? revision);
+      setDeliveryDraft({ id: '', projectId: '', status: 'Aguardando aceite', date: new Date().toISOString().slice(0, 10), responsible: '', acceptance: 'Aceite confirmado', note: '' });
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel registrar a entrega.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,6 +89,18 @@ export default function ReportsPage() {
         <input className="wide" value={draft.media} onChange={(event) => setDraft({ ...draft, media: event.target.value })} placeholder="Fotos / arquivos: referência, link ou nome do arquivo" />
         <div><button disabled={saving}>{saving ? 'Salvando...' : 'Registrar relatório'}</button></div>
       </form>
+    </section>
+    <section className="card">
+      <div className="section-head"><h2>Registrar entrega de projeto</h2><span>Checklist completo antes do encerramento</span></div>
+      <form className="form-grid" onSubmit={saveDelivery}>
+        <input value={deliveryDraft.projectId} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, projectId: event.target.value })} placeholder="ID do projeto" required />
+        <input type="date" value={deliveryDraft.date} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, date: event.target.value })} required />
+        <input value={deliveryDraft.responsible} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, responsible: event.target.value })} placeholder="Responsável pela entrega" required />
+        <select value={deliveryDraft.acceptance} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, acceptance: event.target.value })}><option>Aceite confirmado</option><option>Aceite pendente</option></select>
+        <textarea className="wide" value={deliveryDraft.note} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, note: event.target.value })} placeholder="Resumo da entrega e pendências" required />
+        <div><button disabled={saving}>{saving ? 'Salvando...' : 'Registrar entrega'}</button></div>
+      </form>
+      <div className="group"><h3>Entregas registradas</h3>{deliveries.map((item) => <article className="card" key={item.id}><div className="section-head"><div><strong>{item.projectId}</strong><span>{item.date || 'Sem data'} Â· {item.responsible || 'Responsavel nao informado'}</span></div><strong>{item.acceptance || item.status}</strong></div><span>{item.note || 'Sem resumo informado'}</span></article>)}{!deliveries.length && <p>Nenhuma entrega registrada.</p>}</div>
     </section>
     <div className="summary"><article className="card"><span>Relatórios de serviço</span><strong>{reports.length}</strong></article><article className="card"><span>Entregas de projetos</span><strong>{deliveries.length}</strong></article></div>
     <section className="group"><h2>Histórico de serviço</h2>{loading && <p>Carregando relatórios…</p>}{!loading && reports.map((item) => <article className="card" key={item.id}><div className="section-head"><div><strong>{item.projectId}</strong><span>{item.date || 'Sem data'} · {item.technician || 'Responsável não informado'}{item.serviceOrderId ? ` · OS ${item.serviceOrderId}` : ''}</span></div><strong>{item.status}</strong></div><span>{item.execution}{item.tests ? ` · Testes: ${item.tests}` : ''}{item.pending ? ` · Pendências: ${item.pending}` : ''}</span>{item.nextActionDate && <small>Próxima revisão: {item.nextActionDate}</small>}</article>)}{!loading && !error && !reports.length && <p>Nenhum relatório disponível.</p>}</section>
