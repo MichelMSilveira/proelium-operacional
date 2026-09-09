@@ -33,7 +33,7 @@ Agenda usa `appointments_domain_entries` e `appointments_domain_state`, com isol
 
 Tarefas usam `tasks_domain_entries` e `tasks_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial das pendências existentes durante a migração `020_tasks_domain.sql` e referências textuais aos projetos para preservar dados durante a transição.
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes, as avaliações de qualidade, os chamados de pós-venda, os equipamentos, os colaboradores, as tarefas, a agenda, as ordens de serviço, as instalações, as compras, o financeiro, a execução, o diagrama técnico, as oportunidades e os orçamentos são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. A persistência da maior parte dos módulos ainda é encaminhada por serviços NestJS ao contrato agregado legado `/api/data`, usando `LEGACY_API_ORIGIN`. A biblioteca de conhecimento, o levantamento técnico, a biblioteca técnica de fabricantes, o catálogo de produtos/serviços, os clientes e seu histórico de atividades, as avaliações de qualidade, os chamados de pós-venda, os equipamentos, os colaboradores, as tarefas, a agenda, as ordens de serviço, as instalações, as compras, o financeiro, a execução, o diagrama técnico, as oportunidades e os orçamentos são as exceções atuais: em produção, seus registros já são lidos e gravados diretamente nas tabelas PostgreSQL do NestJS.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento ainda usa a ponte legada somente para atualizar a oportunidade, o orçamento e seus ambientes relacionados.
 
@@ -47,7 +47,7 @@ A biblioteca técnica usa isolamento por `companyId`, revisão própria e import
 
 O catálogo de produtos e serviços usa a tabela `products_domain_entries`, mantém produtos e serviços na mesma coleção compatível com o legado e importa os registros durante a migração `014_products_domain.sql`. A sessão e as permissões continuam sendo validadas pela API de autenticação legada durante a migração gradual.
 
-Clientes usam `clients_domain_entries` e `clients_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `015_clients_domain.sql`. A exclusão mantém a mesma semântica do legado e não remove registros relacionados de outros domínios.
+Clientes usam `clients_domain_entries`, `clients_domain_activities` e `clients_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante as migrações `015_clients_domain.sql` e `034_client_activities_domain.sql`. O histórico de contatos possui rotas próprias por cliente; a exclusão mantém a mesma semântica do legado e não remove registros relacionados.
 
 Avaliações de qualidade usam `quality_domain_evaluations` e `quality_domain_state`, com isolamento por `companyId`, revisão própria, validação das quatro notas e importação inicial durante a migração `016_quality_domain.sql`.
 

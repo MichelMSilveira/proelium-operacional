@@ -266,17 +266,26 @@ export class ReportsService {
          where company_id = $2 and id = $3`,
         [acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite', context.companyId, projectId],
       );
-      const nextRevision = await this.bumpRevision(client, context.companyId);
-      await client.query('commit');
       const projectRecord = this.record(project);
       const clientId = this.text(projectRecord?.clientId);
+      const activity = clientId ? {
+        id: `act-${crypto.randomUUID()}`,
+        clientId,
+        type: 'Entrega',
+        title: `Entrega do projeto ${this.text(projectRecord?.name, projectId)}`,
+        note,
+        date,
+      } : null;
+      if (activity) await this.appendClientActivity(client, context.companyId, activity);
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
       const activities = Array.isArray(current.data.activities) ? current.data.activities : [];
       const nextData: Record<string, unknown> = {
         ...current.data,
         projects: projects.map((item) => this.sameId(item, projectId) ? {
           ...this.record(item), technicalStage: 'Entrega', progress: 100, status: acceptance === 'Aceite confirmado' ? 'Concluído' : 'Aguardando aceite',
         } : item),
-        activities: clientId ? [{ id: `act-${crypto.randomUUID()}`, clientId, type: 'Entrega', title: `Entrega do projeto ${this.text(projectRecord?.name, projectId)}`, note, date }, ...activities] : activities,
+        activities: activity ? [activity, ...activities] : activities,
       };
       await this.forward(nextData, current.revision, cookie);
       return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, projectDelivery: normalized }) };
@@ -308,6 +317,22 @@ export class ReportsService {
 
   private ensureWritePermission(context: AuthContext): void {
     if (context.role !== 'admin' && context.role !== 'operacao') throw new ForbiddenException('Seu perfil nao pode alterar relatorios.');
+  }
+
+  private async appendClientActivity(client: PoolClient, companyId: string, activity: RecordItem): Promise<void> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:clients:${companyId}`]);
+    await client.query(
+      `insert into clients_domain_activities
+        (company_id, id, client_id, activity_date, type, title, note, extra_data, updated_at)
+       values ($1, $2, $3, $4, $5, $6, $7, '{}'::jsonb, now())
+       on conflict (company_id, id) do nothing`,
+      [companyId, activity.id, activity.clientId, activity.date, activity.type, activity.title, activity.note],
+    );
+    await client.query(
+      `insert into clients_domain_state (company_id, revision) values ($1, 0)
+       on conflict (company_id) do update set revision = clients_domain_state.revision + 1, updated_at = now()`,
+      [companyId],
+    );
   }
 
   private async lockRevision(client: PoolClient, companyId: string): Promise<number> {

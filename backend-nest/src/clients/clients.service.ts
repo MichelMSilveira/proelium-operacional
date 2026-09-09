@@ -15,6 +15,16 @@ export type Client = {
   [key: string]: unknown;
 };
 
+export type ClientActivity = {
+  id: string;
+  clientId: string;
+  date: string;
+  type: string;
+  title: string;
+  note: string;
+  [key: string]: unknown;
+};
+
 @Injectable()
 export class ClientsService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
@@ -30,21 +40,132 @@ export class ClientsService {
     }
   }
 
-  async list(cookie?: string): Promise<{ clients: Client[]; revision?: number }> {
+  async list(cookie?: string): Promise<{ clients: Client[]; activities: ClientActivity[]; revision?: number }> {
     if (!this.pool) return this.legacyList(cookie);
     const context = await this.authContext(cookie);
-    const [clients, state] = await Promise.all([
+    const [clients, activities, state] = await Promise.all([
       this.pool.query(
         `select id, name, document, email, phone, address, extra_data as "extraData"
          from clients_domain_entries where company_id = $1 order by updated_at desc, name asc`,
+        [context.companyId],
+      ),
+      this.pool.query(
+        `select id, client_id as "clientId", activity_date as date, type, title, note, extra_data as "extraData"
+         from clients_domain_activities where company_id = $1 order by updated_at desc, activity_date desc`,
         [context.companyId],
       ),
       this.pool.query('select revision from clients_domain_state where company_id = $1', [context.companyId]),
     ]);
     return {
       clients: clients.rows.map((row) => this.clientFromRow(row)),
+      activities: activities.rows.map((row) => this.activityFromRow(row)),
       revision: Number(state.rows[0]?.revision || 0),
     };
+  }
+
+  async activities(clientId: string, cookie?: string): Promise<{ activities: ClientActivity[]; revision?: number }> {
+    if (!clientId.trim()) throw new BadRequestException('O identificador do cliente e obrigatorio.');
+    if (!this.pool) {
+      const current = await this.readAggregate(cookie);
+      const clients = Array.isArray(current.data.clients) ? current.data.clients : [];
+      if (!clients.some((item) => this.sameId(item, clientId))) throw new NotFoundException('Cliente nao encontrado.');
+      return {
+        activities: this.normalizeActivities(current.data.activities).filter((item) => item.clientId === clientId),
+        revision: current.revision,
+      };
+    }
+    const context = await this.authContext(cookie);
+    const [client, activities, state] = await Promise.all([
+      this.pool.query('select id from clients_domain_entries where company_id = $1 and id = $2', [context.companyId, clientId]),
+      this.pool.query(
+        `select id, client_id as "clientId", activity_date as date, type, title, note, extra_data as "extraData"
+         from clients_domain_activities where company_id = $1 and client_id = $2 order by activity_date desc, updated_at desc`,
+        [context.companyId, clientId],
+      ),
+      this.pool.query('select revision from clients_domain_state where company_id = $1', [context.companyId]),
+    ]);
+    if (!client.rowCount) throw new NotFoundException('Cliente nao encontrado.');
+    return { activities: activities.rows.map((row) => this.activityFromRow(row)), revision: Number(state.rows[0]?.revision || 0) };
+  }
+
+  async saveActivity(body: unknown, clientId: string, cookie?: string, expectedActivityId?: string): Promise<{ status: number; body: string }> {
+    if (!clientId.trim()) throw new BadRequestException('O identificador do cliente e obrigatorio.');
+    if (!this.pool) return this.legacySaveActivity(body, clientId, cookie, expectedActivityId);
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de atividade invalido.');
+    const input = body as { activity?: unknown; baseRevision?: unknown };
+    const activity = this.record(input.activity);
+    if (!activity) throw new BadRequestException('A gravacao precisa conter uma atividade valida.');
+    const activityId = this.text(activity.id) || `act-${crypto.randomUUID()}`;
+    if (expectedActivityId && activityId !== expectedActivityId) throw new BadRequestException('O identificador da atividade nao confere.');
+    const client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const owner = await client.query('select id from clients_domain_entries where company_id = $1 and id = $2', [context.companyId, clientId]);
+      if (!owner.rowCount) throw new NotFoundException('Cliente nao encontrado.');
+      const existing = await client.query(
+        'select client_id as "clientId", extra_data as "extraData" from clients_domain_activities where company_id = $1 and id = $2',
+        [context.companyId, expectedActivityId || activityId],
+      );
+      if (expectedActivityId && (!existing.rowCount || this.text(existing.rows[0].clientId) !== clientId)) throw new NotFoundException('Atividade nao encontrada.');
+      if (!expectedActivityId && existing.rowCount) throw new BadRequestException('Ja existe uma atividade com este identificador.');
+      const normalized = this.normalizeActivity(activity, expectedActivityId || activityId, clientId);
+      const extraData = { ...(this.record(existing.rows[0]?.extraData) || {}), ...this.extraActivity(activity) };
+      await client.query(
+        `insert into clients_domain_activities
+          (company_id, id, client_id, activity_date, type, title, note, extra_data, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())
+         on conflict (company_id, id) do update set
+           client_id = excluded.client_id, activity_date = excluded.activity_date, type = excluded.type,
+           title = excluded.title, note = excluded.note, extra_data = excluded.extra_data, updated_at = now()`,
+        [context.companyId, normalized.id, normalized.clientId, normalized.date, normalized.type, normalized.title, normalized.note, JSON.stringify(extraData)],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: expectedActivityId ? 200 : 201, body: JSON.stringify({ ok: true, revision: nextRevision, activity: normalized }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async removeActivity(clientId: string, activityId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!clientId.trim() || !activityId.trim()) throw new BadRequestException('Os identificadores do cliente e da atividade sao obrigatorios.');
+    if (!this.pool) return this.legacyRemoveActivity(clientId, activityId, body, cookie);
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de exclusao invalido.');
+    const input = body as { baseRevision?: unknown };
+    const client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const deleted = await client.query(
+        'delete from clients_domain_activities where company_id = $1 and client_id = $2 and id = $3 returning id',
+        [context.companyId, clientId, activityId],
+      );
+      if (!deleted.rowCount) throw new NotFoundException('Atividade nao encontrada.');
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async save(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
@@ -199,6 +320,28 @@ export class ClientsService {
     };
   }
 
+  private activityFromRow(row: RecordItem): ClientActivity {
+    return this.normalizeActivity({ ...(this.record(row.extraData) || {}), id: row.id, clientId: row.clientId, date: row.date, type: row.type, title: row.title, note: row.note }, this.text(row.id), this.text(row.clientId));
+  }
+
+  private normalizeActivity(item: RecordItem, id: string, clientId: string): ClientActivity {
+    return {
+      ...item,
+      id,
+      clientId,
+      date: this.text(item.date, new Date().toISOString()),
+      type: this.text(item.type, 'Contato'),
+      title: this.text(item.title, 'Atividade sem título'),
+      note: this.text(item.note),
+    };
+  }
+
+  private extraActivity(activity: RecordItem): RecordItem {
+    const { id, clientId, date, type, title, note, updatedAt, createdAt, ...extra } = activity;
+    void id; void clientId; void date; void type; void title; void note; void updatedAt; void createdAt;
+    return extra;
+  }
+
   private extraData(client: RecordItem): RecordItem {
     const { id, name, nome, document, email, phone, telefone, address, endereco, updatedAt, createdAt, ...extra } = client;
     void id; void name; void nome; void document; void email; void phone; void telefone; void address; void endereco; void updatedAt; void createdAt;
@@ -211,13 +354,13 @@ export class ClientsService {
     return result;
   }
 
-  private async legacyList(cookie?: string): Promise<{ clients: Client[]; revision?: number }> {
+  private async legacyList(cookie?: string): Promise<{ clients: Client[]; activities: ClientActivity[]; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura de clientes.');
     });
     if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel carregar os clientes.');
     const payload = await upstream.json() as Aggregate;
-    return { clients: this.normalizeList(payload.data?.clients), revision: payload.revision };
+    return { clients: this.normalizeList(payload.data?.clients), activities: this.normalizeActivities(payload.data?.activities), revision: payload.revision };
   }
 
   private async legacySave(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {
@@ -248,13 +391,43 @@ export class ClientsService {
     return this.forwardSave({ ...current.data, clients: currentClients.filter((item) => !this.sameId(item, expectedId)) }, input.baseRevision, cookie);
   }
 
-  private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown> }> {
+  private async legacySaveActivity(body: unknown, clientId: string, cookie?: string, expectedActivityId?: string): Promise<{ status: number; body: string }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de atividade invalido.');
+    const input = body as { activity?: unknown; baseRevision?: unknown };
+    const activity = this.record(input.activity);
+    if (!activity) throw new BadRequestException('A gravacao precisa conter uma atividade valida.');
+    const activityId = this.text(activity.id) || `act-${crypto.randomUUID()}`;
+    if (expectedActivityId && activityId !== expectedActivityId) throw new BadRequestException('O identificador da atividade nao confere.');
+    const current = await this.readAggregate(cookie);
+    const clients = Array.isArray(current.data.clients) ? current.data.clients : [];
+    if (!clients.some((item) => this.sameId(item, clientId))) throw new NotFoundException('Cliente nao encontrado.');
+    const activities = this.normalizeActivities(current.data.activities);
+    const index = activities.findIndex((item) => item.id === (expectedActivityId || activityId) && item.clientId === clientId);
+    if (expectedActivityId && index < 0) throw new NotFoundException('Atividade nao encontrada.');
+    if (!expectedActivityId && activities.some((item) => item.id === activityId)) throw new BadRequestException('Ja existe uma atividade com este identificador.');
+    const normalized = this.normalizeActivity(activity, expectedActivityId || activityId, clientId);
+    const nextActivities = expectedActivityId
+      ? activities.map((item, itemIndex) => itemIndex === index ? { ...item, ...normalized, id: expectedActivityId, clientId } : item)
+      : [normalized, ...activities];
+    return this.forwardSave({ ...current.data, activities: nextActivities }, input.baseRevision, cookie);
+  }
+
+  private async legacyRemoveActivity(clientId: string, activityId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de exclusao invalido.');
+    const input = body as { baseRevision?: unknown };
+    const current = await this.readAggregate(cookie);
+    const activities = this.normalizeActivities(current.data.activities);
+    if (!activities.some((item) => item.id === activityId && item.clientId === clientId)) throw new NotFoundException('Atividade nao encontrada.');
+    return this.forwardSave({ ...current.data, activities: activities.filter((item) => !(item.id === activityId && item.clientId === clientId)) }, input.baseRevision, cookie);
+  }
+
+  private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura de clientes.');
     });
     if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel preparar a gravacao de clientes.');
     const payload = await upstream.json() as Aggregate;
-    return { data: payload.data || {} };
+    return { data: payload.data || {}, revision: payload.revision };
   }
 
   private async forwardSave(data: Record<string, unknown>, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
@@ -279,6 +452,12 @@ export class ClientsService {
         phone: this.text(item.phone ?? item.telefone),
         address: this.text(item.address ?? item.endereco),
       }));
+  }
+
+  private normalizeActivities(value: unknown): ClientActivity[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is RecordItem => Boolean(item) && typeof item === 'object')
+      .map((item, index) => this.normalizeActivity(item, this.text(item.id, `legacy-activity-${index + 1}`), this.text(item.clientId)));
   }
 
   private record(value: unknown): RecordItem | null {

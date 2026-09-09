@@ -22,6 +22,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `031_diagram_domain.sql` cria a persistência própria das conexões técnicas e registros auxiliares do diagrama, separada de `app_state`, e importa o estado existente por empresa.
 - A migração `032_opportunities_domain.sql` cria a persistência própria das oportunidades comerciais, separada de `app_state`, e importa o cadastro existente por empresa.
 - A migração `033_quotes_domain.sql` cria a persistência própria de orçamentos, ambientes e itens, separada de `app_state`, e importa o estado existente por empresa.
+- A migração `034_client_activities_domain.sql` cria a persistência própria do histórico de contatos dos clientes, vinculada ao domínio de Clientes, e importa as atividades existentes por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -49,7 +50,7 @@ O domínio da biblioteca técnica usa `product_library_domain_entries` e `produc
 
 O domínio de produtos usa `products_domain_entries` e `products_domain_state`. Produtos e serviços permanecem na mesma tabela, com `catalog_type` distinguindo os dois tipos; a revisão é independente da revisão agregada e os registros são isolados por `company_id`.
 
-O domínio de clientes usa `clients_domain_entries` e `clients_domain_state`. A revisão é independente da revisão agregada, os clientes são isolados por `company_id` e a exclusão não remove entidades relacionadas de outros domínios.
+O domínio de clientes usa `clients_domain_entries`, `clients_domain_activities` e `clients_domain_state`. Clientes e histórico de contatos são isolados por `company_id`, compartilham a revisão do CRM e a exclusão não remove entidades relacionadas de outros domínios.
 
 O domínio de qualidade usa `quality_domain_evaluations` e `quality_domain_state`. As quatro notas são armazenadas com limites de 1 a 5, a revisão é independente da revisão agregada e os registros são isolados por `company_id`.
 
