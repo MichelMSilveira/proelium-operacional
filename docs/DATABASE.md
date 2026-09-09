@@ -21,6 +21,7 @@ Durante o período de conferência, cada gravação concluída no PostgreSQL tam
 - A migração `030_execution_domain.sql` cria a persistência própria dos lançamentos de execução, separada de `app_state`, e importa os custos de campo existentes por empresa.
 - A migração `031_diagram_domain.sql` cria a persistência própria das conexões técnicas e registros auxiliares do diagrama, separada de `app_state`, e importa o estado existente por empresa.
 - A migração `032_opportunities_domain.sql` cria a persistência própria das oportunidades comerciais, separada de `app_state`, e importa o cadastro existente por empresa.
+- A migração `033_quotes_domain.sql` cria a persistência própria de orçamentos, ambientes e itens, separada de `app_state`, e importa o estado existente por empresa.
 
 - `app_state`: versão atual do documento operacional e sua revisão;
 - `app_state_revisions`: cópia imutável de cada revisão confirmada, com data e ator;
@@ -83,6 +84,8 @@ O domínio de execução usa `execution_domain_entries` e `execution_domain_stat
 O domínio de diagrama usa `diagram_domain_connections`, `diagram_domain_aux_records` e `diagram_domain_state`. As conexões, edições e sobrescritas são isoladas por `company_id`, a revisão é independente e o projeto permanece como referência textual durante a migração gradual.
 
 O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições continua passando pela ponte do fluxo comercial até a migração dos levantamentos e orçamentos relacionados.
+
+O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms` e `quotes_domain_state`. As propostas são isoladas por `company_id`, a revisão é independente e os itens dos ambientes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação e conversão ainda atualizam vínculos pela ponte legada.
 
 A migração `010_account_profiles_founders.sql` adiciona a separação entre identidade pessoal e vínculo empresarial. Ao remover uma pessoa de uma empresa ou excluir uma empresa, a conta permanece em `app_users` como `account_type = 'portfolio'`; somente o vínculo, convites, rotinas e estado operacional da empresa são encerrados.
 

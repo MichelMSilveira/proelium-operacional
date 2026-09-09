@@ -1,14 +1,32 @@
-import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Pool, PoolClient } from 'pg';
 
 export type Quote = { id: string; opportunityId: string; clientId: string; title: string; status: string; value: number; [key: string]: unknown };
 export type QuoteRoom = { id: string; quoteId: string; name: string; items: Record<string, unknown>[]; [key: string]: unknown };
 export type QuoteItem = { id: string; quoteId: string; roomId: string; productId: string; qty: number; discount: number; [key: string]: unknown };
+type RecordItem = Record<string, unknown>;
+type AuthContext = { username: string; companyId: string; role: string; permissions: string[]; modules: string[] };
 
 @Injectable()
 export class QuotesService {
   private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+  private readonly pool?: Pool;
+
+  constructor() {
+    if (process.env.DATABASE_URL) {
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: Number(process.env.PGPOOL_MAX || 10),
+        connectionTimeoutMillis: 5000,
+      });
+    }
+  }
 
   async list(cookie?: string): Promise<{ quotes: Quote[]; revision?: number }> {
+    if (this.pool) {
+      const current = await this.readAggregate(cookie);
+      return { quotes: this.normalizeList(current.data.quotes), revision: current.revision };
+    }
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponível para leitura de orçamentos.');
     });
@@ -27,6 +45,12 @@ export class QuotesService {
 
   async rooms(quoteId: string, cookie?: string): Promise<QuoteRoom[]> {
     if (!quoteId.trim()) throw new BadRequestException('O identificador do orcamento e obrigatorio.');
+    if (this.pool) {
+      const current = await this.readAggregate(cookie);
+      const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
+      if (!quotes.some((item) => this.sameId(item, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
+      return this.normalizeRooms(current.data.quoteRooms).filter((room) => room.quoteId === quoteId);
+    }
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura dos ambientes.');
     });
@@ -192,6 +216,12 @@ export class QuotesService {
     if (input.rooms.some((room) => !room || typeof room !== 'object' || String((room as { quoteId?: unknown }).quoteId || '') !== quoteId)) {
       throw new BadRequestException('Todos os ambientes precisam pertencer ao orcamento informado.');
     }
+    if (this.pool) {
+      const current = await this.readAggregate(cookie);
+      const currentRooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
+      const otherRooms = currentRooms.filter((room) => !room || typeof room !== 'object' || String((room as { quoteId?: unknown }).quoteId || '') !== quoteId);
+      return this.forward({ ...current.data, quoteRooms: [...otherRooms, ...input.rooms] }, input.baseRevision ?? current.revision, cookie);
+    }
     const currentResponse = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para gravacao dos ambientes.');
     });
@@ -354,6 +384,35 @@ export class QuotesService {
   }
 
   private async readAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
+    if (this.pool) {
+      const context = await this.authContext(cookie);
+      const legacy = await this.readLegacyAggregate(cookie);
+      const [quotes, rooms, state] = await Promise.all([
+        this.pool.query(
+          `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
+           from quotes_domain_entries where company_id = $1 order by updated_at desc, title asc`,
+          [context.companyId],
+        ),
+        this.pool.query(
+          `select id, quote_id as "quoteId", name, items, extra_data as "extraData"
+           from quotes_domain_rooms where company_id = $1 order by updated_at asc, name asc`,
+          [context.companyId],
+        ),
+        this.pool.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]),
+      ]);
+      return {
+        data: {
+          ...legacy.data,
+          quotes: quotes.rows.map((row) => this.quoteFromRow(row)),
+          quoteRooms: rooms.rows.map((row) => this.roomFromRow(row)),
+        },
+        revision: Number(state.rows[0]?.revision || 0),
+      };
+    }
+    return this.readLegacyAggregate(cookie);
+  }
+
+  private async readLegacyAggregate(cookie?: string): Promise<{ data: Record<string, unknown>; revision?: number }> {
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para leitura de orcamentos.');
     });
@@ -363,6 +422,7 @@ export class QuotesService {
   }
 
   private async forward(data: Record<string, unknown>, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (this.pool) return this.databaseForward(data, baseRevision, cookie);
     const upstream = await fetch(`${this.legacyOrigin}/api/data`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
       body: JSON.stringify({ data, baseRevision }),
@@ -371,6 +431,107 @@ export class QuotesService {
     });
     return { status: upstream.status, body: await upstream.text() };
   }
+
+  private async databaseForward(data: Record<string, unknown>, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const expectedRevision = this.revision(baseRevision);
+    const state = await this.pool!.query('select revision from quotes_domain_state where company_id = $1', [context.companyId]);
+    const currentRevision = Number(state.rows[0]?.revision || 0);
+    if (currentRevision !== expectedRevision) return this.conflict(currentRevision);
+    const legacy = await this.readLegacyAggregate(cookie);
+    const legacyData = { ...legacy.data, quotes: data.quotes, quoteRooms: data.quoteRooms };
+    const legacyResult = await this.forwardLegacy(legacyData, legacy.revision, cookie);
+    if (legacyResult.status >= 400) return legacyResult;
+    const quotes = Array.isArray(data.quotes) ? data.quotes : [];
+    const rooms = Array.isArray(data.quoteRooms) ? data.quoteRooms : [];
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== expectedRevision) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      await client.query('delete from quotes_domain_rooms where company_id = $1', [context.companyId]);
+      await client.query('delete from quotes_domain_entries where company_id = $1', [context.companyId]);
+      for (const item of quotes) {
+        const quote = this.normalizeQuote(this.record(item) || {}, this.text(this.record(item)?.id));
+        if (!quote.id) continue;
+        await client.query(
+          `insert into quotes_domain_entries (company_id, id, opportunity_id, client_id, title, status, value, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())`,
+          [context.companyId, quote.id, quote.opportunityId, quote.clientId, quote.title, quote.status, quote.value, JSON.stringify(this.extraQuote(this.record(item) || {}))],
+        );
+      }
+      for (const item of rooms) {
+        const room = this.normalizeRoom(this.record(item) || {}, this.text(this.record(item)?.id));
+        if (!room.id || !room.quoteId) continue;
+        await client.query(
+          `insert into quotes_domain_rooms (company_id, id, quote_id, name, items, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, now())`,
+          [context.companyId, room.id, room.quoteId, room.name, JSON.stringify(room.items), JSON.stringify(this.extraRoom(this.record(item) || {}))],
+        );
+      }
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async forwardLegacy(data: Record<string, unknown>, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const upstream = await fetch(`${this.legacyOrigin}/api/data`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+      body: JSON.stringify({ data, baseRevision }),
+    }).catch(() => {
+      throw new ServiceUnavailableException('Backend legado indisponivel para gravacao do orcamento.');
+    });
+    return { status: upstream.status, body: await upstream.text() };
+  }
+
+  private async authContext(cookie?: string): Promise<AuthContext> {
+    if (!cookie) throw new UnauthorizedException('Sessao obrigatoria.');
+    const upstream = await fetch(`${this.legacyOrigin}/api/auth/me`, { headers: { cookie } }).catch(() => {
+      throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
+    });
+    if (upstream.status === 401) throw new UnauthorizedException('Sessao expirada.');
+    if (!upstream.ok) throw new ServiceUnavailableException('Nao foi possivel validar a sessao.');
+    const payload = await upstream.json() as { user?: RecordItem };
+    const user = payload.user;
+    if (!user) throw new UnauthorizedException('Sessao invalida.');
+    const permissions = Array.isArray(user.permissions) ? user.permissions.map((item) => this.text(item)) : [];
+    const modules = Array.isArray(user.modules) ? user.modules.map((item) => this.text(item)) : [];
+    const role = this.text(user.role);
+    if (role !== 'admin' && !permissions.includes('*') && !permissions.includes('quotes') && !modules.includes('quotes') && !modules.includes('commercial')) {
+      throw new ForbiddenException('Seu perfil nao possui acesso aos orcamentos.');
+    }
+    return { username: this.text(user.username, 'unknown'), companyId: this.text(user.companyId, 'legacy') || 'legacy', role: role || 'leitura', permissions, modules };
+  }
+
+  private ensureWritePermission(context: AuthContext): void {
+    if (context.role !== 'admin' && context.role !== 'comercial') throw new ForbiddenException('Seu perfil nao pode alterar orcamentos.');
+  }
+
+  private async lockRevision(client: PoolClient, companyId: string): Promise<number> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:quotes:${companyId}`]);
+    const result = await client.query('select revision from quotes_domain_state where company_id = $1 for update', [companyId]);
+    if (result.rowCount) return Number(result.rows[0].revision);
+    await client.query('insert into quotes_domain_state (company_id, revision) values ($1, 0)', [companyId]);
+    return 0;
+  }
+
+  private async bumpRevision(client: PoolClient, companyId: string): Promise<number> {
+    const result = await client.query('update quotes_domain_state set revision = revision + 1, updated_at = now() where company_id = $1 returning revision', [companyId]);
+    return Number(result.rows[0].revision);
+  }
+
+  private conflict(revision: number): { status: number; body: string } { return { status: 409, body: JSON.stringify({ conflict: true, revision, error: 'Os dados foram alterados por outro usuario.' }) }; }
+  private revision(value: unknown): number { const result = Number(value ?? 0); if (!Number.isInteger(result) || result < 0) throw new BadRequestException('Revisao invalida.'); return result; }
 
   private record(value: unknown): Record<string, unknown> | null {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
@@ -382,6 +543,14 @@ export class QuotesService {
   }
 
   async save(body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (this.pool) {
+      if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de gravação inválido.');
+      const input = body as { data?: { quotes?: unknown }; baseRevision?: unknown };
+      if (!input.data || typeof input.data !== 'object' || !Array.isArray(input.data.quotes)) {
+        throw new BadRequestException('A gravação precisa conter data.quotes como lista.');
+      }
+      return this.forward(input.data as Record<string, unknown>, input.baseRevision, cookie);
+    }
     if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de gravação inválido.');
     const input = body as { data?: { quotes?: unknown }; baseRevision?: unknown };
     if (!input.data || typeof input.data !== 'object' || !Array.isArray(input.data.quotes)) {
@@ -395,6 +564,48 @@ export class QuotesService {
     });
     const result = await upstream.text();
     return { status: upstream.status, body: result };
+  }
+
+  private quoteFromRow(row: RecordItem): Quote {
+    return this.normalizeQuote({ ...(this.record(row.extraData) || {}), id: row.id, opportunityId: row.opportunityId, clientId: row.clientId, title: row.title, status: row.status, value: row.value }, this.text(row.id));
+  }
+
+  private roomFromRow(row: RecordItem): QuoteRoom {
+    return this.normalizeRoom({ ...(this.record(row.extraData) || {}), id: row.id, quoteId: row.quoteId, name: row.name, items: row.items }, this.text(row.id));
+  }
+
+  private normalizeQuote(item: RecordItem, id: string): Quote {
+    return {
+      ...item,
+      id,
+      opportunityId: this.text(item.opportunityId),
+      clientId: this.text(item.clientId),
+      title: this.text(item.title, 'Orçamento sem título'),
+      status: this.text(item.status, 'Em elaboração'),
+      value: this.number(item.value),
+    };
+  }
+
+  private normalizeRoom(item: RecordItem, id: string): QuoteRoom {
+    return {
+      ...item,
+      id,
+      quoteId: this.text(item.quoteId),
+      name: this.text(item.name, 'Ambiente sem nome'),
+      items: Array.isArray(item.items) ? item.items.filter((entry): entry is RecordItem => Boolean(entry) && typeof entry === 'object') : [],
+    };
+  }
+
+  private extraQuote(item: RecordItem): RecordItem {
+    const { id, opportunityId, clientId, title, status, value, updatedAt, createdAt, ...extra } = item;
+    void id; void opportunityId; void clientId; void title; void status; void value; void updatedAt; void createdAt;
+    return extra;
+  }
+
+  private extraRoom(item: RecordItem): RecordItem {
+    const { id, quoteId, name, items, updatedAt, createdAt, ...extra } = item;
+    void id; void quoteId; void name; void items; void updatedAt; void createdAt;
+    return extra;
   }
 
   private normalizeList(value: unknown): Quote[] {

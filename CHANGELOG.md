@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Orçamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com propostas, ambientes, itens, revisão própria e importação do estado existente; aprovação e conversão continuam usando a ponte de compatibilidade para atualizar os vínculos comerciais durante a transição.
 - Oportunidades passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação do cadastro existente e validação do funil comercial preservada pela ponte durante a transição.
 - Diagrama técnico passou a persistir diretamente no PostgreSQL pelo NestJS, com conexões, ajustes, sobrescritas, isolamento por empresa, revisão própria, validação de projeto e importação do estado existente.
 - Execução passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, validação de projeto e importação dos custos de campo; cada lançamento mantém seu vínculo financeiro por identificador.

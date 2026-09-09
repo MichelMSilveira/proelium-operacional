@@ -7,7 +7,7 @@ export class QuotesController {
 
   @Get()
   list(@Req() request: { headers: { cookie?: string } }) {
-    return this.quotes.list(request.headers.cookie).then((items) => ({ quotes: items }));
+    return this.quotes.list(request.headers.cookie);
   }
 
   @Get(':id')

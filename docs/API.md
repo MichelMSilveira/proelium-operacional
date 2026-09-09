@@ -56,12 +56,14 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST | `/opportunities` | listar e criar oportunidades |
 | PATCH | `/opportunities/{id}` | alterar oportunidade com validação do funil |
 | GET/POST | `/quotes` | orçamentos e versões |
+| GET/PATCH/DELETE | `/quotes/{id}` | detalhe, alteração ou exclusão de orçamento |
+| GET/POST/PATCH/DELETE | `/quotes/{id}/rooms` | ambientes do orçamento |
+| GET/POST/PATCH/DELETE | `/quotes/{id}/items` | itens de catálogo por ambiente |
+| POST | `/quotes/{id}/approve` | aprovar orçamento e iniciar conversão |
 | GET/POST/PATCH | `/products` e `/products/{id}` | catálogo de produtos com revisão de conflito |
 | GET/POST/PATCH | `/products/services` e `/products/services/{id}` | catálogo de serviços com revisão de conflito |
-| GET/POST | `/quotes/{id}/rooms` | cômodos ou ambientes do orçamento |
 | POST | `/quotes/{id}/rooms/{roomId}/items` | adicionar item do catálogo ao ambiente |
 | GET | `/quotes/{id}/analysis` | custo, venda e margem por ambiente |
-| POST | `/quotes/{id}/approve` | registrar aprovação |
 | GET/POST | `/work-orders` | ordens de serviço |
 | GET/POST | `/installations` | planejamento e controle de instalações |
 | GET/PATCH | `/installations/{id}` | etapa, progresso, prazo e entrega |
