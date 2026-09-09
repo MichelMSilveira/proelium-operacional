@@ -95,7 +95,6 @@ export class OpportunitiesService {
     const opportunityId = this.text(opportunity.id);
     if (!opportunityId) throw new BadRequestException('A oportunidade precisa conter identificador.');
     if (expectedId && opportunityId !== expectedId) throw new BadRequestException('O identificador da oportunidade nao confere.');
-    const legacy = await this.readAggregate(cookie);
     const client = await this.pool!.connect();
     try {
       await client.query('begin');
@@ -118,17 +117,40 @@ export class OpportunitiesService {
       const nextOpportunities = expectedId
         ? currentOpportunities.map((item) => item.id === expectedId ? { ...item, ...normalized, id: expectedId } : item)
         : [normalized, ...currentOpportunities];
-      const currentData = { ...(legacy.data || {}), opportunities: currentOpportunities };
+      const [surveyRows, pointRows, quoteRows, appointmentRows] = await Promise.all([
+        client.query(
+          `select id, opportunity_id as "opportunityId", status, extra_data as "extraData"
+           from survey_domain_surveys where company_id = $1`,
+          [context.companyId],
+        ),
+        client.query(
+          `select id, survey_id as "surveyId", quantity, extra_data as "extraData"
+           from survey_domain_points where company_id = $1`,
+          [context.companyId],
+        ),
+        client.query(
+          `select id, opportunity_id as "opportunityId", status, extra_data as "extraData"
+           from quotes_domain_entries where company_id = $1`,
+          [context.companyId],
+        ),
+        client.query(
+          `select id, status, extra_data as "extraData"
+           from appointments_domain_entries where company_id = $1`,
+          [context.companyId],
+        ),
+      ]);
+      const currentData = {
+        opportunities: currentOpportunities,
+        surveys: surveyRows.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: row.id, opportunityId: row.opportunityId, status: row.status })),
+        surveyPoints: pointRows.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: row.id, surveyId: row.surveyId, quantity: row.quantity })),
+        quotes: quoteRows.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: row.id, opportunityId: row.opportunityId, status: row.status })),
+        appointments: appointmentRows.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: row.id, status: row.status })),
+      };
       const nextData = { ...currentData, opportunities: nextOpportunities };
       const workflow = commercialWorkflow.validate(currentData, nextData);
       if (!workflow.ok) {
         await client.query('rollback');
         return { status: 422, body: JSON.stringify({ error: workflow.message || 'Transicao comercial invalida.' }) };
-      }
-      const legacyResult = await this.forwardSave({ ...(legacy.data || {}), opportunities: nextOpportunities }, legacy.revision, cookie);
-      if (legacyResult.status >= 400) {
-        await client.query('rollback');
-        return legacyResult;
       }
       const extraData = { ...(this.record(existing.rows[0]?.extraData) || {}), ...this.extraData(opportunity) };
       await client.query(
