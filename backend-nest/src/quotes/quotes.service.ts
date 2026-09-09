@@ -195,6 +195,7 @@ export class QuotesService {
     if (!room) throw new BadRequestException('A criacao precisa conter um ambiente valido.');
     const name = this.text(room.name);
     if (!name) throw new BadRequestException('O ambiente precisa conter um nome.');
+    if (this.pool) return this.databaseCreateRoom(quoteId, room, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
     if (!quotes.some((entry) => this.sameId(entry, quoteId))) throw new NotFoundException('Orcamento nao encontrado.');
@@ -215,6 +216,7 @@ export class QuotesService {
     if (!room) throw new BadRequestException('A atualizacao precisa conter um ambiente valido.');
     const name = this.text(room.name);
     if (!name) throw new BadRequestException('O ambiente precisa conter um nome.');
+    if (this.pool) return this.databaseUpdateRoom(quoteId, roomId, room, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
     const index = rooms.findIndex((entry) => this.sameId(entry, roomId) && this.text(this.record(entry)?.quoteId) === quoteId);
@@ -228,6 +230,7 @@ export class QuotesService {
   async deleteRoom(quoteId: string, roomId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!quoteId.trim() || !roomId.trim()) throw new BadRequestException('O identificador do ambiente e obrigatorio.');
     const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
+    if (this.pool) return this.databaseDeleteRoom(quoteId, roomId, input.baseRevision, cookie);
     const current = await this.readAggregate(cookie);
     const rooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
     const index = rooms.findIndex((entry) => this.sameId(entry, roomId) && this.text(this.record(entry)?.quoteId) === quoteId);
@@ -246,10 +249,7 @@ export class QuotesService {
       throw new BadRequestException('Todos os ambientes precisam pertencer ao orcamento informado.');
     }
     if (this.pool) {
-      const current = await this.readAggregate(cookie);
-      const currentRooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
-      const otherRooms = currentRooms.filter((room) => !room || typeof room !== 'object' || String((room as { quoteId?: unknown }).quoteId || '') !== quoteId);
-      return this.forward({ ...current.data, quoteRooms: [...otherRooms, ...input.rooms] }, input.baseRevision ?? current.revision, cookie);
+      return this.databaseSaveRooms(quoteId, input.rooms, input.baseRevision, cookie);
     }
     const currentResponse = await fetch(`${this.legacyOrigin}/api/data`, { headers: cookie ? { cookie } : {} }).catch(() => {
       throw new ServiceUnavailableException('Backend legado indisponivel para gravacao dos ambientes.');
@@ -671,6 +671,153 @@ export class QuotesService {
       const nextRevision = await this.bumpRevision(client, context.companyId);
       await client.query('commit');
       return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, id: quoteId }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseCreateRoom(quoteId: string, room: RecordItem, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const quote = await client.query('select id from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]);
+      if (!quote.rowCount) throw new NotFoundException('Orcamento nao encontrado.');
+      const rooms = await client.query('select id, name from quotes_domain_rooms where company_id = $1 and quote_id = $2', [context.companyId, quoteId]);
+      const name = this.text(room.name);
+      if (rooms.rows.some((entry) => this.text(entry.name).toLowerCase() === name.toLowerCase())) throw new BadRequestException('Ja existe um ambiente com este nome no orcamento.');
+      const roomId = this.text(room.id, `amb-${crypto.randomUUID()}`);
+      const duplicate = await client.query('select id from quotes_domain_rooms where company_id = $1 and id = $2', [context.companyId, roomId]);
+      if (duplicate.rowCount) throw new BadRequestException('Ja existe um ambiente com este identificador.');
+      const nextRoom = this.normalizeRoom({ ...room, id: roomId, quoteId, name, items: [] }, roomId);
+      await client.query(
+        `insert into quotes_domain_rooms (company_id, id, quote_id, name, items, extra_data, updated_at)
+         values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, now())`,
+        [context.companyId, nextRoom.id, quoteId, nextRoom.name, JSON.stringify(nextRoom.items), JSON.stringify(this.extraRoom(room))],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 201, body: JSON.stringify({ ok: true, revision: nextRevision, room: nextRoom }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseUpdateRoom(quoteId: string, roomId: string, room: RecordItem, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const existingResult = await client.query(
+        `select id, quote_id as "quoteId", name, items, extra_data as "extraData"
+         from quotes_domain_rooms where company_id = $1 and id = $2 and quote_id = $3 for update`,
+        [context.companyId, roomId, quoteId],
+      );
+      const existingRow = existingResult.rows[0] as RecordItem | undefined;
+      if (!existingRow) throw new NotFoundException('Ambiente nao encontrado.');
+      const name = this.text(room.name);
+      const siblings = await client.query('select id, name from quotes_domain_rooms where company_id = $1 and quote_id = $2 and id <> $3', [context.companyId, quoteId, roomId]);
+      if (siblings.rows.some((entry) => this.text(entry.name).toLowerCase() === name.toLowerCase())) throw new BadRequestException('Ja existe um ambiente com este nome no orcamento.');
+      const existing = this.roomFromRow(existingRow);
+      const nextRoom = { ...existing, id: roomId, quoteId, name };
+      await client.query(
+        `update quotes_domain_rooms set name = $1, extra_data = $2::jsonb, updated_at = now()
+         where company_id = $3 and id = $4 and quote_id = $5`,
+        [name, JSON.stringify({ ...(this.record(existingRow.extraData) || {}), ...this.extraRoom(room) }), context.companyId, roomId, quoteId],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, room: nextRoom }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseDeleteRoom(quoteId: string, roomId: string, baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const room = await client.query('select id, items from quotes_domain_rooms where company_id = $1 and id = $2 and quote_id = $3 for update', [context.companyId, roomId, quoteId]);
+      if (!room.rowCount) throw new NotFoundException('Ambiente nao encontrado.');
+      if (Array.isArray(room.rows[0].items) && room.rows[0].items.length) throw new BadRequestException('Remova os itens do ambiente antes de exclui-lo.');
+      await client.query('delete from quotes_domain_rooms where company_id = $1 and id = $2 and quote_id = $3', [context.companyId, roomId, quoteId]);
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, id: roomId }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async databaseSaveRooms(quoteId: string, roomsInput: unknown[], baseRevision: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const rooms = roomsInput.map((item) => {
+      const room = this.record(item) || {};
+      const roomId = this.text(room.id, `amb-${crypto.randomUUID()}`);
+      return this.normalizeRoom({ ...room, id: roomId, quoteId, name: this.text(room.name), items: Array.isArray(room.items) ? room.items : [] }, roomId);
+    });
+    if (rooms.some((room) => !room.name)) throw new BadRequestException('O ambiente precisa conter um nome.');
+    if (new Set(rooms.map((room) => room.id)).size !== rooms.length) throw new BadRequestException('Os ambientes precisam ter identificadores unicos.');
+    const names = rooms.map((room) => room.name.toLowerCase());
+    if (new Set(names).size !== names.length) throw new BadRequestException('Ja existe um ambiente com este nome no orcamento.');
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const quote = await client.query('select id from quotes_domain_entries where company_id = $1 and id = $2', [context.companyId, quoteId]);
+      if (!quote.rowCount) throw new NotFoundException('Orcamento nao encontrado.');
+      const duplicate = await client.query(
+        'select id from quotes_domain_rooms where company_id = $1 and id = any($2::text[]) and quote_id <> $3',
+        [context.companyId, rooms.map((room) => room.id), quoteId],
+      );
+      if (duplicate.rowCount) throw new BadRequestException('Ja existe um ambiente com este identificador.');
+      await client.query('delete from quotes_domain_rooms where company_id = $1 and quote_id = $2', [context.companyId, quoteId]);
+      for (const room of rooms) {
+        await client.query(
+          `insert into quotes_domain_rooms (company_id, id, quote_id, name, items, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, now())`,
+          [context.companyId, room.id, quoteId, room.name, JSON.stringify(room.items), JSON.stringify(this.extraRoom(room))],
+        );
+      }
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision: nextRevision, rooms }) };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
       throw error;
