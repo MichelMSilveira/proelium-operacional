@@ -119,52 +119,132 @@ export class SurveyService {
     if (!this.pool) return this.legacySendToQuote(surveyId, body, cookie);
     const context = await this.authContext(cookie);
     this.ensureWritePermission(context);
+    return this.databaseSendToQuote(surveyId, body, context);
+  }
+
+  private async databaseSendToQuote(surveyId: string, body: unknown, context: AuthContext): Promise<{ status: number; body: string }> {
     if (!surveyId.trim()) throw new BadRequestException('O identificador do levantamento e obrigatorio.');
     const input = body && typeof body === 'object' ? body as { baseRevision?: unknown } : {};
-    const snapshot = await this.directSnapshot(context.companyId);
     const baseRevision = this.revision(input.baseRevision);
-    if (snapshot.revision !== baseRevision) return this.conflict(snapshot.revision);
-    const survey = snapshot.surveys.find((item) => item.id === surveyId) as RecordItem | undefined;
-    if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
-    const points = snapshot.points.filter((item) => item.surveyId === surveyId);
-    if (!['Validado', 'Enviado ao orçamento'].includes(this.text(survey.status)) || !points.some((item) => this.number(item.quantity) > 0)) {
-      throw new BadRequestException('Valide o levantamento e registre ao menos um ponto ou quantitativo antes de envia-lo ao orcamento.');
-    }
-    const current = await this.readAggregate(cookie);
-    const opportunities = Array.isArray(current.data.opportunities) ? current.data.opportunities : [];
-    const opportunity = opportunities.find((item) => this.sameId(item, this.text(survey.opportunityId))) as RecordItem | undefined;
-    if (!opportunity) throw new BadRequestException('Vincule este levantamento a uma oportunidade antes de criar o orcamento.');
-    const quotes = Array.isArray(current.data.quotes) ? current.data.quotes : [];
-    let quote = quotes.find((item) => {
-      const record = this.record(item);
-      return record !== null && this.text(record.opportunityId) === this.text(opportunity.id) && this.text(record.status) !== 'Aprovado';
-    }) as RecordItem | undefined;
-    if (!quote) {
-      quote = { id: `orc-${crypto.randomUUID()}`, opportunityId: this.text(opportunity.id), technicalSurveyId: surveyId, clientId: '', title: `Proposta — ${this.text(opportunity.company, 'Cliente')}`, value: 0, status: 'Em elaboração' };
-      quotes.unshift(quote);
-      opportunity.stage = 'Orçamento';
-    } else if (!this.text(quote.technicalSurveyId)) quote.technicalSurveyId = surveyId;
-    const roomNames = [...new Set([
-      ...snapshot.rooms.filter((room) => room.surveyId === surveyId).map((room) => room.name),
-      ...points.map((item) => this.text(item.room)),
-    ].filter(Boolean))];
-    const quoteRooms = Array.isArray(current.data.quoteRooms) ? current.data.quoteRooms : [];
-    const existingNames = quoteRooms.filter((item) => this.text(this.record(item)?.quoteId) === this.text(quote.id)).map((item) => this.text(this.record(item)?.name));
-    const surveyRooms = snapshot.rooms.filter((room) => room.surveyId === surveyId);
-    const missing = roomNames.filter((name) => !existingNames.includes(name));
-    missing.forEach((name) => {
-      const source = surveyRooms.find((room) => room.name === name);
-      quoteRooms.push({ id: `amb-${crypto.randomUUID()}`, quoteId: this.text(quote?.id), technicalSurveyId: surveyId, surveyRoomId: source?.id || '', name, items: [] });
-    });
-    const upstream = await this.forward({ ...current.data, opportunities, quotes, quoteRooms }, current.revision, cookie);
-    if (upstream.status < 200 || upstream.status >= 300) return upstream;
-    const marked = await this.markSent(context.companyId, surveyId, baseRevision);
-    if (marked.status !== 200) return marked;
+    const client = await this.pool!.connect();
     try {
-      const result = JSON.parse(upstream.body) as RecordItem;
-      return { status: upstream.status, body: JSON.stringify({ ...result, quoteId: this.text(quote.id), roomsCreated: missing.length, revision: marked.revision }) };
-    } catch {
-      return { status: upstream.status, body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, revision: marked.revision }) };
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== baseRevision) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const surveyResult = await client.query(
+        `select id, opportunity_id as "opportunityId", title, site, source, status, notes, extra_data as "extraData"
+         from survey_domain_surveys where company_id = $1 and id = $2`,
+        [context.companyId, surveyId],
+      );
+      const survey = surveyResult.rows[0] as RecordItem | undefined;
+      if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
+      const pointsResult = await client.query(
+        `select id, survey_id as "surveyId", room, room_id as "roomId", type, technology, quantity, status, notes, extra_data as "extraData"
+         from survey_domain_points where company_id = $1 and survey_id = $2`,
+        [context.companyId, surveyId],
+      );
+      const roomsResult = await client.query(
+        `select id, survey_id as "surveyId", name, extra_data as "extraData"
+         from survey_domain_rooms where company_id = $1 and survey_id = $2`,
+        [context.companyId, surveyId],
+      );
+      const points = pointsResult.rows.map((row) => this.pointFromRow(row));
+      const surveyStatus = this.text(survey.status);
+      if (!['Validado', 'Enviado ao orçamento'].includes(surveyStatus) || !points.some((item) => this.number(item.quantity) > 0)) {
+        throw new BadRequestException('Valide o levantamento e registre ao menos um ponto ou quantitativo antes de envia-lo ao orcamento.');
+      }
+
+      const opportunityRevision = await this.lockDomainRevision(client, 'opportunities_domain_state', 'proelium:opportunities', context.companyId);
+      const opportunityResult = await client.query(
+        `select id, company, stage, extra_data as "extraData"
+         from opportunities_domain_entries where company_id = $1 and id = $2`,
+        [context.companyId, this.text(survey.opportunityId)],
+      );
+      const opportunity = opportunityResult.rows[0] as RecordItem | undefined;
+      if (!opportunity) throw new BadRequestException('Vincule este levantamento a uma oportunidade antes de criar o orcamento.');
+
+      const quotesRevision = await this.lockDomainRevision(client, 'quotes_domain_state', 'proelium:quotes', context.companyId);
+      const quoteResult = await client.query(
+        `select id, opportunity_id as "opportunityId", client_id as "clientId", title, status, value, extra_data as "extraData"
+         from quotes_domain_entries where company_id = $1 and opportunity_id = $2 and status <> 'Aprovado'
+         order by updated_at desc limit 1`,
+        [context.companyId, this.text(opportunity.id)],
+      );
+      let quote = quoteResult.rows[0] as RecordItem | undefined;
+      let opportunityChanged = false;
+      if (!quote) {
+        quote = {
+          id: `orc-${crypto.randomUUID()}`,
+          opportunityId: this.text(opportunity.id),
+          clientId: '',
+          title: `Proposta — ${this.text(opportunity.company, 'Cliente')}`,
+          value: 0,
+          status: 'Em elaboração',
+          extraData: { technicalSurveyId: surveyId },
+        };
+        await client.query(
+          `insert into quotes_domain_entries
+            (company_id, id, opportunity_id, client_id, title, status, value, extra_data, updated_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, now())`,
+          [context.companyId, quote.id, quote.opportunityId, quote.clientId, quote.title, quote.status, quote.value, JSON.stringify(quote.extraData)],
+        );
+        opportunityChanged = true;
+      } else if (!this.text(this.record(quote.extraData)?.technicalSurveyId)) {
+        const extraData = { ...(this.record(quote.extraData) || {}), technicalSurveyId: surveyId };
+        await client.query(
+          'update quotes_domain_entries set extra_data = $1::jsonb, updated_at = now() where company_id = $2 and id = $3',
+          [JSON.stringify(extraData), context.companyId, quote.id],
+        );
+      }
+      if (opportunityChanged) {
+        await client.query(
+          `update opportunities_domain_entries set stage = 'Orçamento', updated_at = now()
+           where company_id = $1 and id = $2`,
+          [context.companyId, opportunity.id],
+        );
+      }
+
+      const surveyRooms = roomsResult.rows.map((row) => this.roomFromRow(row));
+      const roomNames = [...new Set([
+        ...surveyRooms.map((room) => room.name),
+        ...points.map((item) => this.text(item.room)),
+      ].filter(Boolean))];
+      const quoteRoomsResult = await client.query(
+        `select id, quote_id as "quoteId", name, items, extra_data as "extraData"
+         from quotes_domain_rooms where company_id = $1 and quote_id = $2`,
+        [context.companyId, quote.id],
+      );
+      const existingNames = quoteRoomsResult.rows.map((row) => this.text(row.name));
+      const missing = roomNames.filter((name) => !existingNames.includes(name));
+      for (const name of missing) {
+        const source = surveyRooms.find((room) => room.name === name);
+        await client.query(
+          `insert into quotes_domain_rooms (company_id, id, quote_id, name, items, extra_data, updated_at)
+           values ($1, $2, $3, $4, '[]'::jsonb, $5::jsonb, now())`,
+          [context.companyId, `amb-${crypto.randomUUID()}`, quote.id, name, JSON.stringify({ technicalSurveyId: surveyId, surveyRoomId: source?.id || '' })],
+        );
+      }
+      await client.query(
+        `update survey_domain_surveys set status = 'Enviado ao orçamento', updated_at = now()
+         where company_id = $1 and id = $2`,
+        [context.companyId, surveyId],
+      );
+      const nextRevision = await this.bumpRevision(client, context.companyId);
+      const nextOpportunityRevision = opportunityChanged ? await this.bumpDomainRevision(client, 'opportunities_domain_state', context.companyId) : opportunityRevision;
+      const nextQuotesRevision = await this.bumpDomainRevision(client, 'quotes_domain_state', context.companyId);
+      await client.query('commit');
+      return {
+        status: 200,
+        body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, revision: nextRevision, opportunityRevision: nextOpportunityRevision, quotesRevision: nextQuotesRevision }),
+      };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
     }
   }
 
@@ -378,6 +458,19 @@ export class SurveyService {
 
   private async bumpRevision(client: PoolClient, companyId: string): Promise<number> {
     const result = await client.query('update survey_domain_state set revision = revision + 1, updated_at = now() where company_id = $1 returning revision', [companyId]);
+    return Number(result.rows[0].revision);
+  }
+
+  private async lockDomainRevision(client: PoolClient, tableName: string, lockKey: string, companyId: string): Promise<number> {
+    await client.query('select pg_advisory_xact_lock(hashtext($1))', [`${lockKey}:${companyId}`]);
+    const result = await client.query(`select revision from ${tableName} where company_id = $1 for update`, [companyId]);
+    if (result.rowCount) return Number(result.rows[0].revision);
+    await client.query(`insert into ${tableName} (company_id, revision) values ($1, 0)`, [companyId]);
+    return 0;
+  }
+
+  private async bumpDomainRevision(client: PoolClient, tableName: string, companyId: string): Promise<number> {
+    const result = await client.query(`update ${tableName} set revision = revision + 1, updated_at = now() where company_id = $1 returning revision`, [companyId]);
     return Number(result.rows[0].revision);
   }
 

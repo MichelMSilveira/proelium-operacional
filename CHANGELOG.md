@@ -5,6 +5,7 @@
 - O domínio de orçamentos passou a persistir também pacotes comerciais e a fila de itens a cotar no PostgreSQL, com importação do estado existente e revisão compartilhada com propostas e ambientes.
 - O histórico técnico dos equipamentos passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o cadastro, importação do estado existente e rotas próprias para registrar, editar e excluir registros.
 - Entregas de projeto deixaram de regravar o agregado legado quando o PostgreSQL está ativo: a entrega atualiza diretamente relatório, projeto, instalação, checklist e histórico do cliente, com as revisões dos domínios relacionados preservadas.
+- O envio de levantamento para orçamento passou a operar em transação direta no PostgreSQL, criando ou reutilizando a proposta, sincronizando a oportunidade, importando ambientes faltantes e marcando o levantamento sem regravar o agregado legado.
 - O histórico de contatos dos clientes passou a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão compartilhada com o CRM, importação do estado existente e rotas próprias para registrar, editar e excluir atividades; entregas de projeto também registram o histórico direto durante a transição.
 - Orçamentos passaram a persistir diretamente no PostgreSQL pelo NestJS, com propostas, ambientes, itens, revisão própria e importação do estado existente; aprovação e conversão continuam usando a ponte de compatibilidade para atualizar os vínculos comerciais durante a transição.
 - Oportunidades passaram a persistir diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria, importação do cadastro existente e validação do funil comercial preservada pela ponte durante a transição.
@@ -40,7 +41,7 @@
 
 - Pipeline de deploy passou a compilar, instalar e reiniciar o serviço NestJS no VPS, além de validar sua rota de saúde em `4174`, garantindo que as migrações de domínio cheguem à API publicada.
 
-- Levantamento técnico passou a persistir diretamente no PostgreSQL pelo NestJS, com tabelas separadas para levantamentos, pontos e ambientes, isolamento por empresa, revisão própria e importação dos registros existentes; o envio para orçamento permanece híbrido para atualizar os domínios ainda legados.
+- Levantamento técnico passou a persistir diretamente no PostgreSQL pelo NestJS, com tabelas separadas para levantamentos, pontos e ambientes, isolamento por empresa, revisão própria e importação dos registros existentes.
 
 - Biblioteca de conhecimento passou a persistir artigos diretamente no PostgreSQL pelo NestJS, com isolamento por empresa, revisão própria e importação dos registros existentes; a autenticação continua compatível com a sessão legada.
 

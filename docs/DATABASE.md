@@ -46,7 +46,7 @@ Essa primeira etapa prioriza transações, histórico e recuperação sem exigir
 
 O domínio de conhecimento usa `knowledge_domain_articles` e `knowledge_domain_state`. A revisão do domínio é independente da revisão agregada, e os artigos são isolados por `company_id`; a sessão ainda é validada pela API de autenticação durante a migração gradual.
 
-O domínio de levantamento usa `survey_domain_surveys`, `survey_domain_points`, `survey_domain_rooms` e `survey_domain_state`. O envio para orçamento permanece temporariamente híbrido porque ainda atualiza oportunidades, orçamentos e ambientes do agregado legado.
+O domínio de levantamento usa `survey_domain_surveys`, `survey_domain_points`, `survey_domain_rooms` e `survey_domain_state`. O envio para orçamento atualiza diretamente os domínios de oportunidades e orçamentos, criando ambientes faltantes e preservando as revisões de cada domínio; o agregado legado permanece apenas como fallback sem PostgreSQL.
 
 O domínio da biblioteca técnica usa `product_library_domain_entries` e `product_library_domain_state`. A revisão do domínio é independente da revisão agregada, e os fabricantes são isolados por `company_id`; a sessão e as permissões ainda são validadas pela API de autenticação durante a migração gradual.
 
@@ -86,7 +86,7 @@ O domínio de execução usa `execution_domain_entries` e `execution_domain_stat
 
 O domínio de diagrama usa `diagram_domain_connections`, `diagram_domain_aux_records` e `diagram_domain_state`. As conexões, edições e sobrescritas são isoladas por `company_id`, a revisão é independente e o projeto permanece como referência textual durante a migração gradual.
 
-O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições continua passando pela ponte do fluxo comercial até a migração dos levantamentos e orçamentos relacionados.
+O domínio de oportunidades usa `opportunities_domain_entries` e `opportunities_domain_state`. O cadastro é isolado por `company_id`, a revisão é independente e a validação das transições do fluxo comercial continua passando pela ponte de compatibilidade; o envio do levantamento para orçamento já atualiza a oportunidade diretamente.
 
 O domínio de orçamentos usa `quotes_domain_entries`, `quotes_domain_rooms`, `quotes_domain_packages`, `quotes_domain_procurement_requests` e `quotes_domain_state`. Propostas, pacotes e fila de cotação são isolados por `company_id` e compartilham a revisão comercial; os itens dos ambientes e dos pacotes permanecem em JSONB para manter o cálculo atual durante a transição; aprovação e conversão ainda atualizam vínculos pela ponte legada.
 
