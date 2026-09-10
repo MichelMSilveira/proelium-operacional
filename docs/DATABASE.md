@@ -1,5 +1,7 @@
 # Banco de dados PostgreSQL
 
+O perfil da empresa (`/api/company/profile`) agora consulta e atualiza `companies` diretamente pelo NestJS quando o PostgreSQL está ativo, mantendo a validação do administrador e o fallback legado sem banco.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.

@@ -459,6 +459,15 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/company/profile' && ['GET','PUT'].includes(req.method)) {
+    if (nestAuthEnabled()) {
+      try {
+        const body = req.method === 'GET' ? undefined : await readBody(req);
+        return await forwardNestAuth(req, res, pathname, body);
+      } catch (error) {
+        console.error('Falha ao encaminhar perfil da empresa ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'Não foi possível consultar a configuração da empresa agora.' });
+      }
+    }
     const actor=await requireUser(req,res); if(!actor)return;
     if(!isCompanyAdmin(actor))return sendJson(res,403,{error:'Apenas o administrador da empresa pode editar sua configuração.'});
     try {
