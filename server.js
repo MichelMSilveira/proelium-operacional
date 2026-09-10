@@ -551,6 +551,16 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/auth/users' && ['GET', 'POST', 'DELETE'].includes(req.method)) {
+    if (nestAuthEnabled()) {
+      try {
+        const query = new URL(req.url, `http://${req.headers.host}`).search;
+        const body = req.method === 'GET' ? undefined : await readBody(req);
+        return await forwardNestAuth(req, res, `${pathname}${query}`, body);
+      } catch (error) {
+        console.error('Falha ao encaminhar usuários ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'Não foi possível consultar os usuários agora.' });
+      }
+    }
     const actor = await requireUser(req, res);
     if (!actor) return;
     if (actor.role !== 'admin' || !isPlatformAdmin(actor)) return sendJson(res, 403, { error: 'Apenas administradores da plataforma podem gerenciar usuários globais.' });

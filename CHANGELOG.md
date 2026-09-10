@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O diretório de usuários globais passou a consultar e alterar `app_users` diretamente pelo NestJS/PostgreSQL, com validação de administrador, hash de senha e fallback legado sem banco.
+
 - O encerramento de sessÃ£o passou a limpar o cookie diretamente no NestJS; o servidor pÃºblico preserva a limpeza da presenÃ§a e encaminha o logout quando o PostgreSQL estÃ¡ ativo.
 
 - A consulta de sessão `GET /api/auth/me` passou a ser atendida diretamente pelo NestJS e PostgreSQL quando o banco está ativo, verificando a assinatura do cookie, o usuário, a empresa e as permissões; o login, OAuth e o fallback sem banco continuam compatíveis com o servidor legado.
