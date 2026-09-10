@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Post, Put, Req, Res } from '@nestjs/common';
+import { createHash, randomBytes } from 'node:crypto';
 import { Pool } from 'pg';
 
 type RecordItem = Record<string, any>;
@@ -141,6 +142,86 @@ export class CompanyController {
     }
   }
 
+  private inviteTokenHash(token: string): string {
+    return createHash('sha256').update(String(token)).digest('hex');
+  }
+
+  private publicInvite(invite: RecordItem, companyName: string): RecordItem {
+    return {
+      id: invite.id, companyId: invite.companyId, companyName: companyName || 'Empresa', email: invite.email || '',
+      role: invite.role || 'operacao', modules: invite.modules || [], expiresAt: invite.expiresAt,
+      usedAt: invite.usedAt || null, createdAt: invite.createdAt,
+    };
+  }
+
+  private async databaseInvites(
+    request: { headers: { cookie?: string; host?: string; 'x-forwarded-proto'?: string }; url?: string },
+    response: any,
+    method: string,
+    payload?: unknown,
+  ) {
+    const actor = await this.actor(request);
+    if (!actor) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+    const companyId = String(actor.companyId || '');
+    if (actor.role !== 'admin' || !companyId || companyId === 'legacy') {
+      return response.status(403).type('application/json').send(JSON.stringify({ error: 'Apenas o administrador da empresa pode gerenciar convites.' }));
+    }
+    const companyResult = await this.pool!.query('select name from companies where id = $1', [companyId]);
+    const company = companyResult.rows[0] as RecordItem | undefined;
+    if (!company) return response.status(404).type('application/json').send(JSON.stringify({ error: 'Empresa não encontrada.' }));
+
+    if (method === 'GET') {
+      const result = await this.pool!.query(
+        `select id, company_id as "companyId", email, role, modules, expires_at as "expiresAt", used_at as "usedAt", created_at as "createdAt"
+         from company_invites where company_id = $1 and used_at is null and expires_at > now() order by created_at desc`,
+        [companyId],
+      );
+      return response.status(200).type('application/json').send(JSON.stringify({ invites: result.rows.map((invite) => this.publicInvite({ ...invite, modules: invite.modules || [] }, String(company.name || 'Empresa'))) }));
+    }
+
+    if (method === 'DELETE') {
+      const input = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as RecordItem : {};
+      const queryId = new URL(request.url || '/api/company/invites', 'http://internal').searchParams.get('id');
+      const id = String(queryId || input.id || '');
+      const deleted = await this.pool!.query('update company_invites set used_at = coalesce(used_at, now()) where company_id = $1 and id = $2 returning id', [companyId, id]);
+      if (!deleted.rowCount) return response.status(404).type('application/json').send(JSON.stringify({ error: 'Convite não encontrado nesta empresa.' }));
+      return response.status(200).type('application/json').send(JSON.stringify({ ok: true }));
+    }
+
+    const input = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as RecordItem : {};
+    const token = randomBytes(32).toString('base64url');
+    const allowedModules = ['dashboard', 'projects', 'tasks', 'agenda', 'operations', 'reports', 'quality', 'collaborators', 'equipment', 'knowledge', 'routines'];
+    const modules = [...new Set((Array.isArray(input.modules) ? input.modules : allowedModules).filter((item) => allowedModules.includes(String(item))))].slice(0, 12);
+    const invite = {
+      id: `inv-${crypto.randomUUID()}`,
+      companyId,
+      email: String(input.email || '').trim().toLowerCase().slice(0, 160),
+      role: ['operacao', 'comercial', 'financeiro', 'leitura'].includes(String(input.role)) ? String(input.role) : 'operacao',
+      modules,
+      expiresAt: new Date(Date.now() + 300000).toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:invites:${companyId}`]);
+      await client.query('delete from company_invites where company_id = $1 and used_at is null', [companyId]);
+      await client.query(
+        `insert into company_invites (id, company_id, token_hash, email, role, modules, expires_at, created_at)
+         values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)`,
+        [invite.id, companyId, this.inviteTokenHash(token), invite.email || null, invite.role, JSON.stringify(invite.modules), invite.expiresAt, invite.createdAt],
+      );
+      await client.query('commit');
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+    const base = process.env.BASE_URL || `${request.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'}://${request.headers.host || 'localhost'}`;
+    return response.status(201).type('application/json').send(JSON.stringify({ ok: true, invite: this.publicInvite(invite, String(company.name || 'Empresa')), url: `${base}/?invite=${encodeURIComponent(token)}` }));
+  }
+
   @Get('profile')
   async profile(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     if (this.pool) {
@@ -199,6 +280,13 @@ export class CompanyController {
 
   @Get('invites')
   async invites(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseInvites(request, response, 'GET'); }
+      catch (error) {
+        console.error('Falha ao consultar convites da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(503).type('application/json').send(JSON.stringify({ error: 'Não foi possível consultar os convites agora.' }));
+      }
+    }
     const upstream = await this.forward('/api/company/invites', 'GET', request);
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);
@@ -206,13 +294,27 @@ export class CompanyController {
 
   @Post('invites')
   async createInvite(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseInvites(request, response, 'POST', payload); }
+      catch (error) {
+        console.error('Falha ao criar convite da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(400).type('application/json').send(JSON.stringify({ error: 'Convite inválido.' }));
+      }
+    }
     const upstream = await this.forward('/api/company/invites', 'POST', request, payload);
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);
   }
 
   @Delete('invites')
-  async deleteInvite(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+  async deleteInvite(@Req() request: { headers: { cookie?: string; host?: string; 'x-forwarded-proto'?: string }; url?: string }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseInvites(request, response, 'DELETE', payload); }
+      catch (error) {
+        console.error('Falha ao revogar convite da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(400).type('application/json').send(JSON.stringify({ error: 'Convite inválido.' }));
+      }
+    }
     const upstream = await this.forward('/api/company/invites', 'DELETE', request, payload);
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);

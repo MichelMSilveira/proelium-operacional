@@ -508,6 +508,16 @@ async function handleRequest(req, res) {
     try { const payload=JSON.parse(await readBody(req)), routines=Array.isArray(payload.routines)?payload.routines.slice(0,200).map(item=>({id:String(item.id||crypto.randomUUID()).slice(0,80),name:String(item.name||'').trim().slice(0,120),description:String(item.description||'').trim().slice(0,500),periodicity:String(item.periodicity||'Sem periodicidade').slice(0,40),steps:Array.isArray(item.steps)?item.steps.slice(0,100).map(step=>String(step).trim().slice(0,200)).filter(Boolean):[]})).filter(item=>item.name):[]; await storage.writeRoutines(companyId,routines); return sendJson(res,200,{ok:true,routines}); } catch { return sendJson(res,400,{error:'Rotinas inválidas.'}); }
   }
   if (pathname === '/api/company/invites' && ['GET','POST','DELETE'].includes(req.method)) {
+    if (nestAuthEnabled()) {
+      try {
+        const query = new URL(req.url, `http://${req.headers.host}`).search;
+        const body = req.method === 'GET' || req.method === 'DELETE' ? undefined : await readBody(req);
+        return await forwardNestAuth(req, res, `${pathname}${query}`, body);
+      } catch (error) {
+        console.error('Falha ao encaminhar convites da empresa ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'Não foi possível consultar os convites agora.' });
+      }
+    }
     const actor=await requireUser(req,res); if(!actor)return; if(!actor.companyId||actor.companyId==='legacy'||!['admin'].includes(actor.role))return sendJson(res,403,{error:'Apenas o administrador da empresa pode gerenciar convites.'});
     const companies=await storage.readCompanies(),company=companies.find(item=>item.id===actor.companyId); if(!company)return sendJson(res,404,{error:'Empresa não encontrada.'});
     const invites=(await storage.readInvites()).filter(item=>item.companyId===actor.companyId);
