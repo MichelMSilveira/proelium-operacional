@@ -87,6 +87,60 @@ export class CompanyController {
     return response.status(200).type('application/json').send(JSON.stringify({ ok: true, company: this.publicCompany(saved.rows[0]) }));
   }
 
+  private async databaseRoutines(request: { headers: { cookie?: string } }, response: any, payload?: unknown, write = false) {
+    const actor = await this.actor(request);
+    if (!actor) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+    const companyId = String(actor.companyId || 'legacy');
+    if (companyId === 'legacy') return response.status(403).type('application/json').send(JSON.stringify({ error: 'É necessário estar vinculado a uma empresa.' }));
+    if (!write) {
+      const result = await this.pool!.query(
+        `select id, name, description, periodicity, steps, created_at as "createdAt", updated_at as "updatedAt"
+         from routines where company_id = $1 order by created_at desc`,
+        [companyId],
+      );
+      return response.status(200).type('application/json').send(JSON.stringify({ routines: result.rows.map((row) => ({ ...row, steps: row.steps || [] })) }));
+    }
+    const input = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as RecordItem : {};
+    if (!Array.isArray(input.routines)) return response.status(200).type('application/json').send(JSON.stringify({ ok: true, routines: [] }));
+    const routines = input.routines.slice(0, 200).map((item: unknown) => {
+      const value = item && typeof item === 'object' && !Array.isArray(item) ? item as RecordItem : {};
+      return {
+        id: String(value.id || crypto.randomUUID()).slice(0, 80),
+        name: String(value.name || '').trim().slice(0, 120),
+        description: String(value.description || '').trim().slice(0, 500),
+        periodicity: String(value.periodicity || 'Sem periodicidade').slice(0, 40),
+        steps: Array.isArray(value.steps) ? value.steps.slice(0, 100).map((step: unknown) => String(step).trim().slice(0, 200)).filter(Boolean) : [],
+      };
+    }).filter((item) => item.name);
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:routines:${companyId}`]);
+      await client.query('delete from routines where company_id = $1', [companyId]);
+      for (const routine of routines) {
+        await client.query(
+          `insert into routines (id, company_id, name, description, periodicity, steps)
+           values ($1, $2, $3, $4, $5, $6::jsonb)`,
+          [routine.id, companyId, routine.name, routine.description, routine.periodicity, JSON.stringify(routine.steps)],
+        );
+      }
+      await client.query('select revision from routines_domain_state where company_id = $1 for update', [companyId]);
+      const revisionRow = await client.query(
+        `insert into routines_domain_state (company_id, revision) values ($1, 1)
+         on conflict (company_id) do update set revision = routines_domain_state.revision + 1, updated_at = now()
+         returning revision`,
+        [companyId],
+      );
+      await client.query('commit');
+      return response.status(200).type('application/json').send(JSON.stringify({ ok: true, routines, revision: Number(revisionRow.rows[0]?.revision || 0) }));
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   @Get('profile')
   async profile(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     if (this.pool) {
@@ -117,6 +171,13 @@ export class CompanyController {
 
   @Get('routines')
   async routines(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseRoutines(request, response); }
+      catch (error) {
+        console.error('Falha ao consultar rotinas da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(503).type('application/json').send(JSON.stringify({ error: 'Não foi possível consultar as rotinas agora.' }));
+      }
+    }
     const upstream = await this.forward('/api/company/routines', 'GET', request);
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);
@@ -124,6 +185,13 @@ export class CompanyController {
 
   @Put('routines')
   async updateRoutines(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseRoutines(request, response, payload, true); }
+      catch (error) {
+        console.error('Falha ao atualizar rotinas da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(503).type('application/json').send(JSON.stringify({ error: 'Não foi possível atualizar as rotinas agora.' }));
+      }
+    }
     const upstream = await this.forward('/api/company/routines', 'PUT', request, payload);
     const body = await upstream.text();
     response.status(upstream.status).type('application/json').send(body);

@@ -493,6 +493,15 @@ async function handleRequest(req, res) {
     } catch { return sendJson(res,400,{error:'Perfil inválido.'}); }
   }
   if (pathname === '/api/company/routines' && ['GET','PUT'].includes(req.method)) {
+    if (nestAuthEnabled()) {
+      try {
+        const body = req.method === 'GET' ? undefined : await readBody(req);
+        return await forwardNestAuth(req, res, pathname, body);
+      } catch (error) {
+        console.error('Falha ao encaminhar rotinas da empresa ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'Não foi possível consultar as rotinas agora.' });
+      }
+    }
     const actor=await requireUser(req,res); if(!actor)return;
     const companyId=actor.companyId||'legacy';
     if(req.method==='GET')return sendJson(res,200,{routines:await storage.readRoutines(companyId)});

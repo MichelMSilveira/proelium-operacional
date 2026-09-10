@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A coleção legada de rotinas da empresa passou a consultar e gravar `routines` diretamente pelo NestJS/PostgreSQL, com isolamento transacional por empresa e fallback sem banco.
+
 - O perfil da empresa passou a consultar e atualizar `companies` diretamente pelo NestJS/PostgreSQL, mantendo a autorização do administrador e o fallback legado sem banco.
 
 - O gerenciamento de usuários vinculados à empresa passou a listar, ativar, ajustar acesso e transformar desligamentos em perfis pessoais diretamente no NestJS/PostgreSQL, mantendo as proteções do administrador e o fallback sem banco.
