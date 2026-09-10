@@ -88,7 +88,8 @@ export class UsersController {
 
   private async databaseList(request: { headers: { cookie?: string } }, response: any) {
     const actor = await this.actor(request);
-    if (!actor || actor.role !== 'admin' || !this.isPlatformAdmin(actor)) return response.status(403).type('application/json').send(JSON.stringify({ error: 'Apenas administradores da plataforma podem gerenciar usuários globais.' }));
+    if (!actor) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+    if (actor.role !== 'admin' || !this.isPlatformAdmin(actor)) return response.status(403).type('application/json').send(JSON.stringify({ error: 'Apenas administradores da plataforma podem gerenciar usuários globais.' }));
     const result = await this.pool!.query(
       `select username, name, role, active, email, company_id as "companyId", account_type as "accountType",
               founder, profile_info as "profileInfo", portfolio, modules,
@@ -100,7 +101,8 @@ export class UsersController {
 
   private async databaseMutation(request: { headers: { cookie?: string } }, payload: unknown, method: string, response: any, usernameQuery?: string) {
     const actor = await this.actor(request);
-    if (!actor || actor.role !== 'admin' || !this.isPlatformAdmin(actor)) return response.status(403).type('application/json').send(JSON.stringify({ error: 'Apenas administradores da plataforma podem gerenciar usuários globais.' }));
+    if (!actor) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+    if (actor.role !== 'admin' || !this.isPlatformAdmin(actor)) return response.status(403).type('application/json').send(JSON.stringify({ error: 'Apenas administradores da plataforma podem gerenciar usuários globais.' }));
     try {
       const input = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as RecordItem : {};
       const username = String(usernameQuery || input.username || '').trim().toLowerCase();
