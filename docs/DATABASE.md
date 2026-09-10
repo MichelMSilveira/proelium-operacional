@@ -4,6 +4,8 @@ Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e 
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.
 
+A rota `/api/company/users` agora também consulta e atualiza `app_users` diretamente quando o PostgreSQL está ativo; ao desligar um colaborador, o vínculo empresarial é removido e o histórico da empresa fica no portfólio pessoal.
+
 ## Estado atual
 
 O PostgreSQL é a fonte principal do estado operacional e dos usuários. A API pública permanece igual, portanto PWA, Android e Windows continuam usando `/api/data`, `/api/events` e as rotas de autenticação sem mudança de contrato.

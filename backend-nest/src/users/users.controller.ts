@@ -197,9 +197,16 @@ export class UsersController {
 
 @Controller('company/users')
 export class CompanyUsersController {
+  private readonly pool?: Pool;
+  private readonly legacyOrigin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
+  private readonly authOrigin = process.env.NEST_AUTH_ORIGIN || (process.env.DATABASE_URL ? `http://127.0.0.1:${process.env.PORT || 4174}` : this.legacyOrigin);
+
+  constructor() {
+    if (process.env.DATABASE_URL) this.pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PGPOOL_MAX || 10), connectionTimeoutMillis: 5000 });
+  }
+
   private async forward(path: string, method: string, request: { headers: { cookie?: string } }, payload?: unknown) {
-    const origin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
-    return fetch(`${origin}${path}`, {
+    return fetch(`${this.legacyOrigin}${path}`, {
       method,
       headers: {
         ...(payload === undefined ? {} : { 'content-type': 'application/json' }),
@@ -209,22 +216,131 @@ export class CompanyUsersController {
     });
   }
 
+  private async actor(request: { headers: { cookie?: string } }): Promise<RecordItem | null> {
+    const upstream = await fetch(`${this.authOrigin}/api/auth/me`, {
+      headers: request.headers.cookie ? { cookie: request.headers.cookie } : {},
+    }).catch(() => null);
+    if (!upstream || upstream.status !== 200) return null;
+    const body = await upstream.json().catch(() => null) as RecordItem | null;
+    return body?.authenticated && body.user ? body.user as RecordItem : null;
+  }
+
+  private publicUser(user: RecordItem): RecordItem {
+    const role = user.role === 'operador' ? 'operacao' : (rolePermissions[user.role] ? user.role : 'operacao');
+    const companyScoped = Boolean(user.companyId && user.companyId !== 'legacy');
+    const companyFullAccess = companyScoped && user.companyAccessOverride === 'full';
+    const rolePermissionList = rolePermissions[role] || rolePermissions.operacao;
+    const storedModules = Array.isArray(user.modules) && user.modules.length ? user.modules : rolePermissionList;
+    const effectiveModules = role === 'comercial' ? [...new Set([...storedModules, ...rolePermissionList])] : storedModules;
+    const permissions = companyFullAccess ? ['*'] : (rolePermissionList[0] === '*' ? effectiveModules : rolePermissionList.filter((item) => effectiveModules.includes(item)));
+    return {
+      username: user.username, name: user.name || user.username, email: user.email || '', role: user.role || 'operador',
+      roleLabel: roleLabels[role], scope: 'company', platformAdmin: false, supportUser: false, portfolioUser: false,
+      accountType: user.accountType || 'member', founder: user.accountType === 'founder' || user.founder === true,
+      permissions, modules: effectiveModules, companyAccessOverride: companyFullAccess ? 'full' : null,
+      portfolioCount: Array.isArray(user.portfolio) ? user.portfolio.length : 0, accessLevel: user.accessLevel || 'limited',
+      licenseStatus: user.licenseStatus || 'pending', companyStatus: user.companyStatus || 'pending', active: user.active !== false,
+      companyId: user.companyId || 'legacy',
+    };
+  }
+
+  private async authorize(request: { headers: { cookie?: string } }, response: any): Promise<RecordItem | null> {
+    const actor = await this.actor(request);
+    if (!actor) {
+      response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+      return null;
+    }
+    if (actor.role !== 'admin' || !actor.companyId || actor.companyId === 'legacy') {
+      response.status(403).type('application/json').send(JSON.stringify({ error: 'Apenas administradores da empresa podem gerenciar seus usuários.' }));
+      return null;
+    }
+    return actor;
+  }
+
+  private async databaseList(request: { headers: { cookie?: string } }, response: any) {
+    const actor = await this.authorize(request, response);
+    if (!actor) return;
+    const result = await this.pool!.query(
+      `select username, name, role, active, email, company_id as "companyId", account_type as "accountType",
+              founder, profile_info as "profileInfo", portfolio, modules,
+              company_access_override as "companyAccessOverride"
+       from app_users where company_id = $1 order by username`,
+      [actor.companyId],
+    );
+    return response.status(200).type('application/json').send(JSON.stringify({ users: result.rows.map((user) => this.publicUser({ ...user, portfolio: user.portfolio || [], modules: user.modules || [] })) }));
+  }
+
+  private async databaseMutation(request: { headers: { cookie?: string } }, payload: unknown, method: string, usernameQuery: string | undefined, response: any) {
+    const actor = await this.authorize(request, response);
+    if (!actor) return;
+    const input = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as RecordItem : {};
+    const username = String(usernameQuery || input.username || '').trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username)) return response.status(400).type('application/json').send(JSON.stringify({ error: 'Usuário inválido.' }));
+    try {
+      const result = await this.pool!.query(
+        `select username, name, role, active, email, company_id as "companyId", account_type as "accountType",
+                founder, profile_info as "profileInfo", portfolio, modules,
+                company_access_override as "companyAccessOverride", created_at as "createdAt"
+         from app_users where username = $1 and company_id = $2`,
+        [username, actor.companyId],
+      );
+      const target = result.rows[0] as RecordItem | undefined;
+      if (!target) return response.status(404).type('application/json').send(JSON.stringify({ error: 'Usuário não encontrado nesta empresa.' }));
+      if (target.role === 'admin') return response.status(403).type('application/json').send(JSON.stringify({ error: 'A administração da empresa não pode ser alterada por este painel.' }));
+      if (method === 'POST') {
+        const active = input.active !== false;
+        const accessOverride = Object.prototype.hasOwnProperty.call(input, 'companyAccessOverride') && input.companyAccessOverride === 'full' ? 'full' : null;
+        const updated = await this.pool!.query(
+          `update app_users set active = $1, company_access_override = $2, updated_at = now()
+           where username = $3 and company_id = $4
+           returning username, name, role, active, email, company_id as "companyId", account_type as "accountType",
+                     founder, profile_info as "profileInfo", portfolio, modules, company_access_override as "companyAccessOverride"`,
+          [active, accessOverride, username, actor.companyId],
+        );
+        return response.status(200).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser({ ...updated.rows[0], portfolio: updated.rows[0].portfolio || [], modules: updated.rows[0].modules || [] }) }));
+      }
+      const company = await this.pool!.query('select name from companies where id = $1', [actor.companyId]);
+      const portfolio = Array.isArray(target.portfolio) ? target.portfolio : [];
+      portfolio.push({ companyId: actor.companyId, companyName: company.rows[0]?.name || 'Empresa', role: target.role || 'operador', founder: false, joinedAt: target.createdAt || null, leftAt: new Date().toISOString() });
+      const updated = await this.pool!.query(
+        `update app_users set company_id = null, account_type = 'portfolio', founder = false,
+                company_access_override = null, modules = '[]'::jsonb, portfolio = $1::jsonb, updated_at = now()
+         where username = $2 and company_id = $3
+         returning username, name, role, active, email, company_id as "companyId", account_type as "accountType",
+                   founder, profile_info as "profileInfo", portfolio, modules, company_access_override as "companyAccessOverride"`,
+        [JSON.stringify(portfolio), username, actor.companyId],
+      );
+      return response.status(200).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser({ ...updated.rows[0], portfolio: updated.rows[0].portfolio || [], modules: updated.rows[0].modules || [] }) }));
+    } catch (error) {
+      console.error('Falha ao gerenciar usuários da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+      return response.status(400).type('application/json').send(JSON.stringify({ error: 'Dados de usuário da empresa inválidos.' }));
+    }
+  }
+
   @Get()
   async list(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseList(request, response); }
+      catch (error) {
+        console.error('Falha ao listar usuários da empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(503).type('application/json').send(JSON.stringify({ error: 'Armazenamento temporariamente indisponível.' }));
+      }
+    }
     const upstream = await this.forward('/api/company/users', 'GET', request);
-    response.status(upstream.status).type('application/json').send(await upstream.text());
+    return response.status(upstream.status).type('application/json').send(await upstream.text());
   }
 
   @Post()
   async create(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) return this.databaseMutation(request, payload, 'POST', undefined, response);
     const upstream = await this.forward('/api/company/users', 'POST', request, payload);
-    response.status(upstream.status).type('application/json').send(await upstream.text());
+    return response.status(upstream.status).type('application/json').send(await upstream.text());
   }
 
   @Delete()
-  async remove(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
-    const username = payload && typeof payload === 'object' ? String((payload as { username?: unknown }).username || '') : '';
-    const upstream = await this.forward(`/api/company/users?username=${encodeURIComponent(username)}`, 'DELETE', request, payload);
-    response.status(upstream.status).type('application/json').send(await upstream.text());
+  async remove(@Req() request: { headers: { cookie?: string } }, @Query('username') username: string, @Res() response: any) {
+    if (this.pool) return this.databaseMutation(request, {}, 'DELETE', username, response);
+    const upstream = await this.forward(`/api/company/users?username=${encodeURIComponent(username || '')}`, 'DELETE', request);
+    return response.status(upstream.status).type('application/json').send(await upstream.text());
   }
 }

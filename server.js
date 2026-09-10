@@ -524,6 +524,16 @@ async function handleRequest(req, res) {
   }
 
   if (pathname === '/api/company/users' && ['GET','POST','DELETE'].includes(req.method)) {
+    if (nestAuthEnabled()) {
+      try {
+        const query = new URL(req.url, `http://${req.headers.host}`).search;
+        const body = req.method === 'GET' || req.method === 'DELETE' ? undefined : await readBody(req);
+        return await forwardNestAuth(req, res, `${pathname}${query}`, body);
+      } catch (error) {
+        console.error('Falha ao encaminhar usuários da empresa ao NestJS:', error.message);
+        return sendJson(res, 503, { error: 'Não foi possível consultar os usuários da empresa agora.' });
+      }
+    }
     const actor=await requireUser(req,res); if(!actor)return;
     if(!isCompanyAdmin(actor))return sendJson(res,403,{error:'Apenas administradores da empresa podem gerenciar seus usuários.'});
     let users;

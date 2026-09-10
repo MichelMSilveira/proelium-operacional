@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O gerenciamento de usuários vinculados à empresa passou a listar, ativar, ajustar acesso e transformar desligamentos em perfis pessoais diretamente no NestJS/PostgreSQL, mantendo as proteções do administrador e o fallback sem banco.
+
 - O diretório de usuários globais passou a consultar e alterar `app_users` diretamente pelo NestJS/PostgreSQL, com validação de administrador, hash de senha e fallback legado sem banco.
 
 - O encerramento de sessÃ£o passou a limpar o cookie diretamente no NestJS; o servidor pÃºblico preserva a limpeza da presenÃ§a e encaminha o logout quando o PostgreSQL estÃ¡ ativo.
