@@ -38,6 +38,8 @@ O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamen
 
 A rota `/api/company/users` agora também consulta e atualiza `app_users` diretamente quando o PostgreSQL está ativo; ao desligar um colaborador, o vínculo empresarial é removido e o histórico da empresa fica no portfólio pessoal.
 
+Com `DATABASE_URL` configurada, o utilitario `auth-admin.js` grava e atualiza credenciais diretamente em `app_users`, a fonte consultada pelo login de producao. Sem PostgreSQL, o fallback continua usando `data/users.json`.
+
 ## Estado atual
 
 O PostgreSQL é a fonte principal do estado operacional e dos usuários. A API pública permanece igual, portanto PWA, Android e Windows continuam usando `/api/data`, `/api/events` e as rotas de autenticação sem mudança de contrato.

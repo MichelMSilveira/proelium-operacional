@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Corrigido o utilitário de administração de credenciais para atualizar `app_users` no PostgreSQL quando o banco está ativo; o fallback em `data/users.json` permanece disponível sem banco.
 - Reorganizado o painel de dimensionamento tecnico: requisitos agora aparecem em cards, o resumo fica separado dos produtos compativeis, as demais opcoes do catalogo ficam recolhidas e os produtos sao agrupados por area: Rede, Automacao, Audio e Video e Cameras. Cache web atualizado para `v404`.
 - Corrigido o atalho de projetos em andamento: a visão `projectDetail` agora é reconhecida pelas permissões e pelo estado da interface, abrindo o Projeto 360° em vez de retornar à Visão geral.
 - A primeira regra de Automacao agora separa controlador generico e canais de iluminacao por rele ou dimmer, valida capacidade de canais no catalogo e aplica os modulos confirmados ao orcamento. Cache web atualizado para `v401`.

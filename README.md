@@ -96,4 +96,4 @@ Execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"`. O comando valid
 
 ## Usuários
 
-O sistema agora usa login por usuário e senha. Os usuários ficam em `data/users.json`, fora do Git. Para criar ou atualizar um usuário no servidor, execute `node auth-admin.js <usuario> admin` ou `node auth-admin.js <usuario> operador`; a senha é solicitada de forma interativa e armazenada somente como hash.
+O sistema usa login por usuário e senha. Com `DATABASE_URL` configurada, `node auth-admin.js <usuario> admin` ou `node auth-admin.js <usuario> operador` cria ou atualiza a conta diretamente em `app_users`, que é a fonte usada pelo login de produção. Sem PostgreSQL, o comando mantém o fallback em `data/users.json`, fora do Git. A senha é solicitada de forma interativa e armazenada somente como hash.
