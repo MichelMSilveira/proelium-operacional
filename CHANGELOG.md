@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Corrigido o overflow horizontal do shell Next.js em viewport móvel, reorganizando o cabeçalho e a navegação das telas de módulos.
+
 - Adicionado teste de cobertura para garantir que APIs usadas pelo Next.js tenham rewrite e encaminhamento no proxy publicados.
 
 - Ampliadas as rewrites do Next.js para os subrecursos de Levantamento, Rotinas e Relatórios usados pelas operações de gravação das telas.
