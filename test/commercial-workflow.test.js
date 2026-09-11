@@ -90,15 +90,19 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
     products: [
       { id: 'switch-16', name: 'Switch 16 portas', technicalType: 'Switch de rede', price: 100, cost: 50, active: true },
       { id: 'switch-24', name: 'Switch 24 portas PoE', technicalType: 'Switch de rede', price: 900, cost: 500, active: true },
+      { id: 'ap', name: 'Access Point Wi-Fi PoE', technicalType: 'Ponto de rede Wi-Fi', price: 300, cost: 150, active: true },
       { id: 'cable', name: 'Cabo de rede Cat6', technicalType: 'Cabo de rede', unit: 'm', price: 10, cost: 5, active: true }
     ],
     surveys: [{
       id: 'survey-confirmed',
       opportunityId: 'opp-1',
       status: 'Enviado ao orcamento',
-      technicalSolution: { status: 'confirmed', engineVersion: 'network-v1', selectedProductIds: ['switch-24'] }
+      technicalSolution: { status: 'confirmed', engineVersion: 'network-v1', selectedProductIds: ['switch-24', 'ap'] }
     }],
-    surveyPoints: [{ id: 'point-1', surveyId: 'survey-confirmed', room: 'Sala', type: 'Ponto de rede Cat6', quantity: 19 }],
+    surveyPoints: [
+      { id: 'point-1', surveyId: 'survey-confirmed', room: 'Sala', type: 'Ponto de rede Cat6', quantity: 19 },
+      { id: 'wifi-1', surveyId: 'survey-confirmed', room: 'Sala', type: 'Access Point Wi-Fi', quantity: 2 }
+    ],
     surveyRooms: [{ id: 'room-1', surveyId: 'survey-confirmed', name: 'Sala' }],
     quoteRooms: [{ id: 'quote-room', quoteId: 'quote-1', name: 'Sala', items: [] }],
     quotes: [{ id: 'quote-1', opportunityId: 'opp-1', value: 0 }]
@@ -107,10 +111,12 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
   const result = workflow.populateQuoteFromSurvey(data, 'survey-confirmed', 'quote-1', prefix => `${prefix}-new`);
   const infrastructure = data.quoteRooms.find(room => room.items.some(item => item.productId === 'switch-24'));
   const switchItem = infrastructure?.items.find(item => item.productId === 'switch-24');
+  const accessPointItem = data.quoteRooms.find(room => room.name === 'Sala')?.items.find(item => item.productId === 'ap');
 
   assert.equal(result.unmapped.length, 0);
   assert.equal(switchItem?.qty, 1);
-  assert.equal(data.quotes[0].value, 6600);
+  assert.equal(accessPointItem?.qty, 2);
+  assert.equal(data.quotes[0].value, 7200);
   assert.equal(data.quotes[0].surveyMapping.technicalSolutionApplied, true);
 });
 

@@ -36,3 +36,15 @@ test('confirma uma unica referencia por requisito e respeita a escolha solicitad
   assert.deepEqual(selectCompatibleProductIds(compatibility, ['small', 'right']), ['small']);
   assert.deepEqual(selectCompatibleProductIds(compatibility, ['right']), ['right']);
 });
+
+test('encontra access points compativeis sem misturar switches', () => {
+  const dimensioning = dimensionSurvey({ id: 'lev-compat-3' }, [{ id: 'wifi-1', surveyId: 'lev-compat-3', type: 'Access Point Wi-Fi', quantity: 2 }]);
+  const result = findCompatibleProducts(dimensioning, [
+    { id: 'ap', name: 'Access Point Wi-Fi PoE+', category: 'Rede Wi-Fi', active: true },
+    { id: 'switch', name: 'Switch 24 portas PoE+', category: 'Rede', active: true }
+  ]);
+
+  const match = result.matches.find((item) => item.requirementKind === 'access-point');
+  assert.equal(match.requirement.quantity, 2);
+  assert.deepEqual(match.products.map((product) => product.productId), ['ap']);
+});

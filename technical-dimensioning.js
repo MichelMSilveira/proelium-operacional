@@ -33,6 +33,10 @@
     return normalized([point.type, point.name, point.technology, point.notes].filter(Boolean).join(' '));
   }
 
+  function isAccessPointPoint(point) {
+    return /wi\s*fi|access\s*point|accesspoint/.test(pointText(point));
+  }
+
   function hasToken(value, tokens) {
     return tokens.some((token) => value.includes(token));
   }
@@ -56,7 +60,9 @@
       return hasToken(value, NETWORK_TOKENS);
     });
     const endpointPoints = networkPoints.filter((point) => !hasToken(pointText(point), INFRASTRUCTURE_TOKENS.filter((token) => !['access point', 'accesspoint'].includes(token))));
+    const accessPointPoints = networkPoints.filter(isAccessPointPoint);
     const portsUsed = endpointPoints.reduce((total, point) => total + quantity(point), 0);
+    const accessPointsRequired = accessPointPoints.reduce((total, point) => total + quantity(point), 0);
     const portsRequired = portsUsed ? Math.ceil(portsUsed * (1 + reservePercent / 100)) : 0;
     const minimumStandardPorts = SWITCH_PORTS.find((capacity) => capacity >= portsRequired) || null;
     const poePoints = networkPoints.filter((point) => hasToken(pointText(point), POE_TOKENS));
@@ -72,7 +78,8 @@
     if (!networkPoints.length) warnings.push({ code: 'network.no-input', message: 'Nenhum ponto de Rede foi identificado no levantamento.' });
     if (portsUsed && !minimumStandardPorts) warnings.push({ code: 'network.switch-capacity', message: `A necessidade de ${portsRequired} portas excede os padrões iniciais de 8, 16, 24 e 48 portas.` });
     if (missingPoeWatts.length) warnings.push({ code: 'network.poe-power-missing', message: 'O consumo PoE precisa ser informado para validar o orçamento mínimo de potência.' });
-    const requirements = portsUsed ? [{
+    const requirements = [];
+    if (portsUsed) requirements.push({
       category: 'network',
       kind: 'switch',
       portsUsed,
@@ -82,14 +89,22 @@
       poeRequired,
       poeWattsRequired,
       poeWattsWithReserve,
-    }] : [];
-    const solutions = minimumStandardPorts ? [{
+    });
+    if (accessPointsRequired) requirements.push({
+      category: 'network',
+      kind: 'access-point',
+      quantity: accessPointsRequired,
+      sourcePointIds: accessPointPoints.map((point) => text(point.id)).filter(Boolean),
+    });
+    const solutions = [];
+    if (minimumStandardPorts) solutions.push({
       category: 'network',
       kind: 'switch',
       ports: minimumStandardPorts,
       poeRequired,
       poeWattsMinimum: poeWattsWithReserve,
-    }] : [];
+    });
+    if (accessPointsRequired) solutions.push({ category: 'network', kind: 'access-point', quantity: accessPointsRequired });
     return {
       engineVersion: 'network-v1',
       status: portsUsed && !warnings.length ? 'dimensionado' : 'incompleto',
@@ -101,6 +116,7 @@
         ruleId: 'network.switch.capacity.v1',
         sourcePointIds: networkPoints.map((point) => text(point.id)).filter(Boolean),
         endpointPointIds: endpointPoints.map((point) => text(point.id)).filter(Boolean),
+        accessPointPointIds: accessPointPoints.map((point) => text(point.id)).filter(Boolean),
       }] : [],
     };
   }

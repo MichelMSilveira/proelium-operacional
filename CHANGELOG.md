@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O Dimensionamento Técnico de Rede agora separa a necessidade de access points, consulta referências Wi-Fi compatíveis e usa o produto confirmado na quantidade levantada ao gerar o orçamento. Cache web atualizado para `v395`.
+
 - A confirmação de compatibilidade agora registra uma única referência por requisito técnico, respeitando a escolha enviada e evitando incluir alternativas simultâneas na solução. Cache web atualizado para `v394`.
 
 - A solucao tecnica confirmada agora alimenta a geracao do orcamento: referencias selecionadas sao usadas como itens precificados pelo catalogo, mantendo o fallback legado para levantamentos sem confirmacao. Cache web atualizado para `v393`.

@@ -180,7 +180,8 @@
         if (!addGenerated(product, automation.reduce((sum, point) => sum + Number(point.quantity || 1), 0), { room, kind: 'automation' }, automation.map(point => point.id), 'Uma interface por necessidade de automação do ambiente')) unmapped.push(...automation.map(point => ({ pointId: point.id, type: point.type || 'Automação' })));
       }
       if (wifi.length) {
-        const product = pickCatalogProduct(products, [/ponto de rede wi/, /access\s*point/, /wi\s*-?\s*fi/]);
+        const confirmedAccessPoint = selectedProducts.find(product => /access\s*point|wi\s*-?\s*fi|wifi/.test(productSearchText(product)));
+        const product = confirmedAccessPoint || pickCatalogProduct(products, [/ponto de rede wi/, /access\s*point/, /wi\s*-?\s*fi/]);
         if (!addGenerated(product, wifi.reduce((sum, point) => sum + Number(point.quantity || 1), 0), { room, kind: 'wifi' }, wifi.map(point => point.id), 'Um access point por necessidade Wi-Fi')) unmapped.push(...wifi.map(point => ({ pointId: point.id, type: point.type || 'Wi-Fi' })));
       }
       roomFor(room);

@@ -44,6 +44,11 @@
     return value.includes('switch') || value.includes('comutador') || value.includes('distribuicao de portas');
   }
 
+  function isAccessPoint(product) {
+    const value = productText(product);
+    return value.includes('access point') || value.includes('accesspoint') || value.includes('wifi') || value.includes('wi fi');
+  }
+
   function supportsPoe(product) {
     return productText(product).includes('poe');
   }
@@ -64,9 +69,11 @@
     const matches = [];
     const unmatched = [];
     requirements.forEach((requirement) => {
-      if (requirement.kind !== 'switch') return;
+      if (requirement.kind !== 'switch' && requirement.kind !== 'access-point') return;
       const compatible = catalog.filter((product) => {
-        if (!product || product.active === false || normalized(product.catalogType) === 'service' || !isSwitch(product)) return false;
+        if (!product || product.active === false || normalized(product.catalogType) === 'service') return false;
+        if (requirement.kind === 'access-point') return isAccessPoint(product);
+        if (!isSwitch(product)) return false;
         const ports = capacity(product);
         if (ports == null || ports < Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)) return false;
         return !requirement.poeRequired || supportsPoe(product);
@@ -75,11 +82,13 @@
         unmatched.push({ kind: requirement.kind, message: 'Nenhum produto do catalogo atende aos requisitos tecnicos atuais.' });
         return;
       }
-      compatible.sort((left, right) => (capacity(left) - Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)) - (capacity(right) - Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)));
+      if (requirement.kind === 'switch') compatible.sort((left, right) => (capacity(left) - Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)) - (capacity(right) - Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)));
       matches.push({
         requirementKind: requirement.kind,
-        requirement: { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
-        products: compatible.map((product) => ({ ...publicProductReference(product), capacity: capacity(product), poeSupported: supportsPoe(product) })),
+        requirement: requirement.kind === 'access-point'
+          ? { quantity: requirement.quantity }
+          : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
+        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' ? { capacity: capacity(product), poeSupported: supportsPoe(product) } : {}) })),
       });
     });
     return { engineVersion: 'network-compatibility-v1', matches, unmatched };

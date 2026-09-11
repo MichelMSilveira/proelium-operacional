@@ -39,3 +39,15 @@ test('sinaliza levantamento sem entradas de rede', () => {
   assert.equal(result.requirements.length, 0);
   assert.equal(result.warnings[0].code, 'network.no-input');
 });
+
+test('gera requisito separado para access points com rastreabilidade', () => {
+  const result = dimensionSurvey({ id: 'lev-4' }, [
+    { id: 'wifi-1', surveyId: 'lev-4', type: 'Access Point Wi-Fi', quantity: 3, poeWatts: 18 }
+  ]);
+  const requirement = result.requirements.find((item) => item.kind === 'access-point');
+  const solution = result.solutions.find((item) => item.kind === 'access-point');
+
+  assert.equal(requirement.quantity, 3);
+  assert.equal(solution.quantity, 3);
+  assert.deepEqual(requirement.sourcePointIds, ['wifi-1']);
+});

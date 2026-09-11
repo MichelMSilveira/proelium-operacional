@@ -2468,13 +2468,13 @@ function survey(){
 }
 views.survey=survey;
 function technicalDimensioningPanel(result,compatibility,survey){
-  const requirement=result?.requirements?.find(item=>item.kind==='switch'),solution=result?.solutions?.find(item=>item.ports);
+  const requirement=result?.requirements?.find(item=>item.kind==='switch'),accessPointRequirement=result?.requirements?.find(item=>item.kind==='access-point'),solution=result?.solutions?.find(item=>item.ports);
   if(!result)return '';
-  const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}`:'Nenhum ponto de Rede identificado neste levantamento.';
+  const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}${accessPointRequirement?` · access points necessarios: ${accessPointRequirement.quantity}`:''}`:accessPointRequirement?`Access points necessarios: ${accessPointRequirement.quantity}`:'Nenhum ponto de Rede identificado neste levantamento.';
   const poe=requirement?.poeRequired?`<div>PoE: ${requirement.poeWattsWithReserve?`${requirement.poeWattsWithReserve} W com reserva tecnica`:'consumo ainda nao informado'}.</div>`:'';
   const warnings=(result.warnings||[]).map(item=>`<li>${item.message}</li>`).join('');
   const matches=(compatibility?.matches||[]).flatMap(item=>item.products||[]);
-  const compatible=matches.length?`<div><strong>Produtos compativeis no catalogo:</strong> ${matches.map(item=>`${item.name||item.sku||item.productId} (${item.capacity} portas)`).join(' · ')}</div>`:'';
+  const compatible=matches.length?`<div><strong>Produtos compativeis no catalogo:</strong> ${matches.map(item=>`${item.name||item.sku||item.productId}${item.capacity?` (${item.capacity} portas)`:''}`).join(' · ')}</div>`:'';
   const unmatched=(compatibility?.unmatched||[]).map(item=>`<li>${item.message}</li>`).join('');
   const confirmed=survey?.technicalSolution?.status==='confirmed';
   const confirmation=matches.length?`<div class="technical-dimensioning-confirmation">${confirmed?'Solucao tecnica confirmada para este levantamento.':`<button class="button secondary" data-confirm-dimensioning="${survey.id}">Confirmar solucao tecnica</button>`}</div>`:'';
