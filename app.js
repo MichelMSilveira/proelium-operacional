@@ -2472,31 +2472,65 @@ function survey(){
   return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-room="${selected.id}">+ Adicionar ambiente</button><button class="button secondary" data-add-survey-point>+ Adicionar ponto / quantitativo</button><button class="button secondary" data-delete-survey="${selected.id}">Excluir levantamento</button>${sendButton}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p>${surveyValidationMeta(selected)}</div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
 }
 views.survey=survey;
+function technicalRequirementLabel(kind){
+  return ({switch:'Switch / PoE','access-point':'Access point','patch-panel':'Patch panel','cable-management':'Organizacao de cabos',rack:'Rack tecnico',ups:'Nobreak','audio-processing':'Processamento de audio','audio-speakers':'Caixas acusticas','audio-subwoofer':'Subwoofer','automation-controller':'Controladora de automacao','automation-lighting':'Controle de iluminacao','electrical-infrastructure':'Infraestrutura eletrica'})[kind]||'Requisito tecnico';
+}
+function technicalCategoryLabel(category){
+  return ({network:'Rede e infraestrutura',audio:'Audio e video',automation:'Automacao',electrical:'Eletrica e infraestrutura'})[category]||'Solucao tecnica';
+}
+function technicalRequirementSummary(item){
+  if(item.kind==='switch')return `${item.portsUsed} usadas + ${item.reservePercent}% reserva = ${item.portsRequired} necessarias`;
+  if(item.kind==='access-point')return `${item.quantity} unidade(s)`;
+  if(item.kind==='patch-panel')return `${item.ports} portas · ${item.quantity} unidade(s)`;
+  if(item.kind==='cable-management')return `${item.quantity} unidade(s) para ${item.ports} portas`;
+  if(item.kind==='rack')return `${item.quantity} unidade(s) · ${item.mountingUnitsMinimum}U minimo`;
+  if(item.kind==='ups')return `${item.quantity} unidade(s) · ${item.autonomyMinutesMinimum} min · ${item.powerWattsMinimum?`${item.powerWattsMinimum} W / ${item.vaMinimum} VA minimo`:'carga pendente'}`;
+  if(item.kind==='audio-processing')return `${item.configuration} · ${item.channels} canais · ${item.quantity} configuracao(oes)`;
+  if(item.kind==='audio-speakers')return `${item.quantity} unidade(s) · ${item.mainSpeakers} principais${item.heightSpeakers?` + ${item.heightSpeakers} de altura`:''}`;
+  if(item.kind==='audio-subwoofer')return `${item.quantity} unidade(s) · configuracao ${item.configuration}`;
+  if(item.kind==='automation-controller')return `${item.quantity} unidade(s)`;
+  if(item.kind==='automation-lighting')return `${item.circuitsRequired} circuito(s) · ${item.controlMode==='dimmer'?'dimerizavel':'rele'}`;
+  if(item.kind==='electrical-infrastructure')return 'Circuito dedicado · aterramento · DPS';
+  return '';
+}
+function technicalProductMeta(product,kind){
+  const values=[];
+  if(product.capacity)values.push(`${product.capacity} portas`);
+  if(product.channels)values.push(`${product.channels} canais`);
+  if(product.controlMode)values.push(product.controlMode==='dimmer'?'dimerizavel':'rele');
+  if(product.powerWatts)values.push(`${product.powerWatts} W`);
+  if(product.va)values.push(`${product.va} VA`);
+  if(product.poeBudgetWatts)values.push(`PoE ${product.poeBudgetWatts} W`);
+  if(product.autonomyMinutes)values.push(`${product.autonomyMinutes} min`);
+  return values.length?values.map(value=>`<span>${escapeUserText(value)}</span>`).join(''):`<span>Referencia do catalogo</span>`;
+}
+function technicalProductCard(product,kind){
+  const title=escapeUserText(product.name||product.sku||product.productId||'Produto sem nome');
+  const subtitle=[product.brand,product.model].filter(Boolean).map(escapeUserText).join(' · ');
+  return `<div class="technical-product"><div><strong>${title}</strong>${subtitle?`<small>${subtitle}</small>`:''}</div><div class="technical-product-meta">${technicalProductMeta(product,kind)}</div></div>`;
+}
 function technicalDimensioningPanel(result,compatibility,survey){
   if(!result)return '';
-  const requirement=result.requirements?.find(item=>item.kind==='switch'),accessPointRequirement=result.requirements?.find(item=>item.kind==='access-point'),patchPanelRequirement=result.requirements?.find(item=>item.kind==='patch-panel'),cableManagementRequirement=result.requirements?.find(item=>item.kind==='cable-management'),rackRequirement=result.requirements?.find(item=>item.kind==='rack'),upsRequirement=result.requirements?.find(item=>item.kind==='ups'),electricalRequirement=result.requirements?.find(item=>item.kind==='electrical-infrastructure'),solution=result.solutions?.find(item=>item.kind==='switch');
-  const audioProcessingRequirements=(result.requirements||[]).filter(item=>item.kind==='audio-processing'),audioSpeakerRequirements=(result.requirements||[]).filter(item=>item.kind==='audio-speakers'),audioSubwooferRequirements=(result.requirements||[]).filter(item=>item.kind==='audio-subwoofer');
-  const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}${accessPointRequirement?` · access points necessarios: ${accessPointRequirement.quantity}`:''}${patchPanelRequirement?` · patch panel: ${patchPanelRequirement.ports} portas`:''}${cableManagementRequirement?` · organizador de cabos: ${cableManagementRequirement.quantity} unidade(s)`:''}${rackRequirement?` · rack: ${rackRequirement.quantity} unidade(s), ${rackRequirement.mountingUnitsMinimum}U minimo (${rackRequirement.mountingUnitsOccupied}U ocupadas + ${rackRequirement.mountingUnitsReserve}U reserva)`:''}`:accessPointRequirement?`Access points necessarios: ${accessPointRequirement.quantity}`:'Nenhum ponto de Rede identificado neste levantamento.';
-  const audioInfrastructure=audioProcessingRequirements.map(item=>`<div>Audio ${item.configuration}: ${item.channels} canais (${item.mainChannels} principais${item.heightChannels?` + ${item.heightChannels} de altura`:''}), ${item.quantity} configuracao(oes)${item.externalAmplificationRequired?', verificar amplificacao externa':''}.</div>`).join('')+audioSpeakerRequirements.map(item=>`<div>Caixas acusticas: ${item.quantity} unidade(s) (${item.mainSpeakers} principais${item.heightSpeakers?` + ${item.heightSpeakers} de altura`:''}).</div>`).join('')+audioSubwooferRequirements.map(item=>`<div>Subwoofer: ${item.quantity} unidade(s).</div>`).join('');
-  const infrastructure=(upsRequirement?`<div>Nobreak: ${upsRequirement.quantity} unidade(s) · ${upsRequirement.powerWattsMinimum?`${upsRequirement.powerWattsMinimum} W / ${upsRequirement.vaMinimum} VA minimo`:'potencia minima pendente por falta de carga informada'} · autonomia minima ${upsRequirement.autonomyMinutesMinimum} min · saida ${upsRequirement.outputWaveform}.</div>`:'')+audioInfrastructure;
-  const electrical=electricalRequirement?'<div>Infraestrutura eletrica: circuito dedicado, aterramento e DPS para a rede.</div>':'';
-  const poe=requirement?.poeRequired?`<div>PoE: ${requirement.poeWattsWithReserve?`${requirement.poeWattsWithReserve} W com reserva tecnica`:'consumo ainda nao informado'}.</div>`:'';
-  const warnings=(result.warnings||[]).map(item=>`<li>${item.message}</li>`).join('');
-  const matches=(compatibility?.matches||[]).flatMap(item=>item.products||[]);
-  const compatible=matches.length?`<div><strong>Produtos compativeis no catalogo:</strong> ${matches.map(item=>`${item.name||item.sku||item.productId}${item.capacity?` (${item.capacity} portas)`:''}${item.powerWatts?` · ${item.powerWatts} W`:''}${item.va?` · ${item.va} VA`:''}${item.poeBudgetWatts?` · PoE ${item.poeBudgetWatts} W`:''}`).join(' · ')}</div>`:'';
-  const unmatched=(compatibility?.unmatched||[]).map(item=>`<li>${item.message}</li>`).join('');
+  const requirements=result.requirements||[],switchRequirement=requirements.find(item=>item.kind==='switch'),accessPointRequirement=requirements.find(item=>item.kind==='access-point'),rackRequirement=requirements.find(item=>item.kind==='rack');
+  const matches=compatibility?.matches||[],warnings=[...(result.warnings||[]),...(compatibility?.unmatched||[])];
+  const metrics=[];
+  if(switchRequirement)metrics.push(['Portas',`${switchRequirement.portsUsed} usadas / ${switchRequirement.portsRequired} necessarias`]);
+  if(switchRequirement?.minimumStandardPorts)metrics.push(['Switch minimo',`${switchRequirement.minimumStandardPorts} portas`]);
+  if(switchRequirement?.poeRequired)metrics.push(['Orcamento PoE',switchRequirement.poeWattsWithReserve?`${switchRequirement.poeWattsWithReserve} W com reserva`:'Carga pendente']);
+  if(accessPointRequirement)metrics.push(['Access points',`${accessPointRequirement.quantity} unidade(s)`]);
+  if(rackRequirement)metrics.push(['Rack',`${rackRequirement.mountingUnitsMinimum}U minimo`]);
+  if(!metrics.length)metrics.push(['Requisitos',`${requirements.length} definido(s)`]);
+  const metricHtml=metrics.slice(0,5).map(item=>`<div class="technical-metric"><small>${item[0]}</small><strong>${item[1]}</strong></div>`).join('');
+  const requirementHtml=requirements.map(item=>`<article class="technical-requirement"><div><span class="technical-kicker">${technicalCategoryLabel(item.category)}</span><h4>${technicalRequirementLabel(item.kind)}</h4></div><p>${technicalRequirementSummary(item)}</p></article>`).join('');
+  const compatibleHtml=matches.map(match=>{
+    const products=match.products||[],visible=products.slice(0,1),hidden=products.slice(1);
+    return `<article class="technical-match"><div class="technical-match-head"><div><span class="technical-kicker">${technicalCategoryLabel((requirements.find(item=>item.kind===match.requirementKind)||{}).category)}</span><h4>${technicalRequirementLabel(match.requirementKind)}</h4><p>${technicalRequirementSummary({...match.requirement,kind:match.requirementKind})}</p></div><span class="technical-option-count">${products.length} opcao(oes)</span></div><div class="technical-product-list">${visible.map(product=>technicalProductCard(product,match.requirementKind)).join('')}</div>${hidden.length?`<details class="technical-product-more"><summary>Ver mais ${hidden.length} opcao(oes) do catalogo</summary><div class="technical-product-list">${hidden.map(product=>technicalProductCard(product,match.requirementKind)).join('')}</div></details>`:''}</article>`;
+  }).join('');
   const confirmed=survey?.technicalSolution?.status==='confirmed';
-  const confirmation=matches.length?`<div class="technical-dimensioning-confirmation">${confirmed?'Solucao tecnica confirmada para este levantamento.':`<button class="button secondary" data-confirm-dimensioning="${survey.id}">Confirmar solucao tecnica</button>`}</div>`:'';
-  return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Rede e infraestrutura</h3><p class="subtext">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'} · previa generica, sem marca, produto ou preco.</p></div></div><div>${details}.</div>${infrastructure}${electrical}${poe}${compatible}${warnings?`<ul class="technical-dimensioning-warnings">${warnings}</ul>`:''}${unmatched?`<ul class="technical-dimensioning-warnings">${unmatched}</ul>`:''}${confirmation}</section>`;
+  const confirmation=matches.length?`<div class="technical-dimensioning-confirmation">${confirmed?'<span class="technical-confirmed">Solucao tecnica confirmada</span>':`<button class="button secondary" data-confirm-dimensioning="${survey.id}">Confirmar solucao tecnica</button>`}</div>`:'';
+  return `<section class="card technical-dimensioning-preview"><header class="technical-dimensioning-header"><div><span class="technical-kicker">Dimensionamento tecnico</span><h3>Solucao tecnica preliminar</h3><p class="subtext">Requisitos genericos antes da escolha de marca, produto e preco.</p></div><span class="technical-status ${result.status==='dimensionado'?'is-ready':'is-review'}">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'}</span></header><div class="technical-metrics">${metricHtml}</div><section class="technical-section"><div class="technical-section-head"><div><h4>Requisitos calculados</h4><p>O motor transformou o levantamento em necessidades tecnicas.</p></div></div><div class="technical-requirements">${requirementHtml||'<p class="technical-empty">Nenhum requisito tecnico foi identificado.</p>'}</div></section>${compatibleHtml?`<section class="technical-section"><div class="technical-section-head"><div><h4>Produtos compativeis</h4><p>Referencias do catalogo que atendem aos requisitos. Os precos continuam no orcamento.</p></div></div><div class="technical-matches">${compatibleHtml}</div></section>`:''}${warnings.length?`<section class="technical-alert"><strong>Pontos para revisar</strong><ul class="technical-dimensioning-warnings">${warnings.map(item=>`<li>${escapeUserText(item.message)}</li>`).join('')}</ul></section>`:''}${confirmation}</section>`;
 }
 const surveyWithDimensioningPreview=views.survey;
-function automationDimensioningPanel(result){
-  if(!result)return '';
-  const controller=(result.requirements||[]).find(item=>item.kind==='automation-controller'),lighting=(result.requirements||[]).filter(item=>item.kind==='automation-lighting');
-  if(!controller&&!lighting.length)return '';
-  const details=(controller?`<div>Controlador de automacao: <strong>${controller.quantity}</strong> unidade(s).</div>`:'')+lighting.map(item=>`<div>Iluminacao ${item.controlMode==='dimmer'?'dimerizavel':'por rele'}: <strong>${item.circuitsRequired}</strong> circuito(s) / canal(is).</div>`).join('');
-  return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Automacao</h3><p class="subtext">Requisitos genericos, sem marca, produto ou preco.</p></div></div>${details}</section>`;
-}
 views.survey=()=>{
   const html=surveyWithDimensioningPreview();
   const selected=(state.data.surveys||[]).find(item=>item.id===state.selectedSurvey);
@@ -2504,7 +2538,7 @@ views.survey=()=>{
   const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===selected.id);
   const dimensioning=TechnicalDimensioning.dimensionSurvey(selected,points);
   const compatibility=typeof TechnicalCompatibility==='undefined'?null:TechnicalCompatibility.findCompatibleProducts(dimensioning,state.data.products||[]);
-  return html.replace('<div class="room-grid">',technicalDimensioningPanel(dimensioning,compatibility,selected)+automationDimensioningPanel(dimensioning)+'<div class="room-grid">');
+  return html.replace('<div class="room-grid">',technicalDimensioningPanel(dimensioning,compatibility,selected)+'<div class="room-grid">');
 };
 const surveySaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{

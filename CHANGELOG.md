@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Reorganizado o painel de dimensionamento tecnico: requisitos agora aparecem em cards, o resumo fica separado dos produtos compativeis e as demais opcoes do catalogo ficam recolhidas para evitar um bloco de texto continuo.
 - Corrigido o atalho de projetos em andamento: a visão `projectDetail` agora é reconhecida pelas permissões e pelo estado da interface, abrindo o Projeto 360° em vez de retornar à Visão geral.
 - A primeira regra de Automacao agora separa controlador generico e canais de iluminacao por rele ou dimmer, valida capacidade de canais no catalogo e aplica os modulos confirmados ao orcamento. Cache web atualizado para `v401`.
 - O Dimensionamento Técnico agora reconhece Áudio: som ambiente mono/estéreo e configurações de cinema como 5.1 e 7.1.4 geram requisitos de canais, caixas, subwoofer e processamento compatível, com aplicação das referências confirmadas no orçamento. Cache web atualizado para `v400`.
