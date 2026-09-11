@@ -333,7 +333,7 @@ async function storedUserFromSession(req) {
 
 async function requireUser(req, res) {
   try {
-    const user = await storedUserFromSession(req);
+    const user = nestAuthEnabled() ? await userFromNestSession(req) : await storedUserFromSession(req);
     if (!user) {
       sendJson(res, 401, { error: 'É necessário entrar no sistema.' });
       return null;
@@ -370,6 +370,16 @@ function broadcastRequestEvent(name, payload, companyId) {
     if (name === 'assistance-request' && (client.username === payload.from?.username || client.available === false)) continue;
     client.write(message);
   }
+}
+
+async function userFromNestSession(req) {
+  const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
+  const response = await fetch(`${origin}/api/auth/me`, {
+    headers: req.headers.cookie ? { cookie: req.headers.cookie } : {},
+  });
+  if (response.status !== 200) return null;
+  const payload = await response.json().catch(() => ({}));
+  return payload.authenticated && payload.user ? payload.user : null;
 }
 function normalizeDevice(value) { const device = String(value || '').trim().slice(0, 32); return ['Android', 'iPhone/iPad', 'Windows', 'macOS', 'Linux', 'Navegador'].includes(device) ? device : 'Navegador'; }
 function deviceFromUserAgent(value) { const ua=String(value||''); return /Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone/iPad':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Navegador'; }
