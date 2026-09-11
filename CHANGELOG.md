@@ -2,7 +2,7 @@
 
 ## Em desenvolvimento
 
-- O bot de interface passou a autenticar pelo formulário visível de acesso mestre, validando o login real do Next.js e do shell legado sem injetar a sessão diretamente pela API; a documentação agora diferencia credenciais locais de contas Google.
+- O bot de interface passou a autenticar pelo formulário visível de acesso mestre, validar o login real do Next.js e do shell legado sem injetar a sessão diretamente pela API e abrir as rotas Next em uma nova aba autenticada para evitar o guard de histórico do shell legado; a documentação agora diferencia credenciais locais de contas Google.
 
 - Adicionados nomes acessíveis a datas, horários e seleções das telas Next.js, melhorando navegação por teclado e leitores de tela.
 

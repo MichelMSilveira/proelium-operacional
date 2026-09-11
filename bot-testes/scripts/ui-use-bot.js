@@ -7,6 +7,8 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
 
 async function loginThroughVisibleForm(page, { next = false } = {}) {
   await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.locator('#authGate:not([hidden]), main.auth-page').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.waitForTimeout(300);
   const masterToggle = page.getByRole('button', { name: /Acesso mestre da plataforma/i });
   if (await masterToggle.count()) {
     await masterToggle.click();
@@ -16,12 +18,11 @@ async function loginThroughVisibleForm(page, { next = false } = {}) {
   await usernameField.waitFor({ state: 'visible', timeout: 5000 });
   await usernameField.fill(username);
   await passwordField.fill(password);
-  await page.locator('form button[type="submit"]').click();
+  await page.locator('#authForm button[type="submit"], main.auth-page form button[type="submit"]').first().click();
   if (next) {
-    await page.locator('nav').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('#authUserBadge:not([hidden]), main.auth-page nav button').first().waitFor({ state: 'visible', timeout: 15000 });
   } else {
-    await page.locator('#navigation').waitFor({ state: 'visible', timeout: 15000 });
-    await page.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10000 });
+    await page.locator('#authUserBadge:not([hidden])').waitFor({ state: 'visible', timeout: 15000 });
   }
 }
 
@@ -32,7 +33,7 @@ async function loginThroughVisibleForm(page, { next = false } = {}) {
         channel: process.argv.includes('--chrome') ? 'chrome' : undefined,
         headless: !process.argv.includes('--headed'),
       });
-  const page = await browser.newPage();
+  let page = await browser.newPage();
   if (process.env.PROELIUM_NEXT_TEST === '1' || process.argv.includes('--next')) {
     try {
       if (username && password) {
@@ -42,6 +43,9 @@ async function loginThroughVisibleForm(page, { next = false } = {}) {
           throw new Error(`login Next pela interface falhou — ${error.message}`);
         }
         console.log('[OK] Next.js — login mestre concluído pela interface');
+        const authenticatedNextPage = await browser.newPage();
+        await page.close();
+        page = authenticatedNextPage;
       }
       for (const route of ['/clients', '/projects', '/commercial', '/quotes']) {
         const response = await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle', timeout: 15000 });
