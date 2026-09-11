@@ -53,6 +53,17 @@
     return productText(product).includes('poe');
   }
 
+  function poeBudgetWatts(product) {
+    const definition = product && typeof product.technicalDefinition === 'object' ? product.technicalDefinition : {};
+    const connection = product && typeof product.connectionModel === 'object' ? product.connectionModel : {};
+    for (const value of [product && product.poeBudgetWatts, product && product.poeBudget, definition.poeBudgetWatts, definition.poeBudget, definition.powerBudgetWatts, connection.poeBudgetWatts, connection.poeBudget]) {
+      const parsed = number(value);
+      if (parsed != null) return parsed;
+    }
+    const match = productText(product).match(/(?:poe|power budget|orcamento poe)[^0-9]{0,30}(\d+(?:[.,]\d+)?)\s*w/);
+    return match ? number(match[1].replace(',', '.')) : null;
+  }
+
   function publicProductReference(product) {
     return {
       productId: text(product && product.id),
@@ -76,7 +87,10 @@
         if (!isSwitch(product)) return false;
         const ports = capacity(product);
         if (ports == null || ports < Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)) return false;
-        return !requirement.poeRequired || supportsPoe(product);
+        if (requirement.poeRequired && !supportsPoe(product)) return false;
+        const requiredPoeWatts = Number(requirement.poeWattsWithReserve || 0);
+        const availablePoeWatts = poeBudgetWatts(product);
+        return !requiredPoeWatts || availablePoeWatts == null || availablePoeWatts >= requiredPoeWatts;
       });
       if (!compatible.length) {
         unmatched.push({ kind: requirement.kind, message: 'Nenhum produto do catalogo atende aos requisitos tecnicos atuais.' });
@@ -88,7 +102,7 @@
         requirement: requirement.kind === 'access-point'
           ? { quantity: requirement.quantity }
           : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
-        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' ? { capacity: capacity(product), poeSupported: supportsPoe(product) } : {}) })),
+        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' ? { capacity: capacity(product), poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) })),
       });
     });
     return { engineVersion: 'network-compatibility-v1', matches, unmatched };

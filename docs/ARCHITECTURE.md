@@ -61,3 +61,5 @@ Quando o levantamento possui uma solução técnica confirmada, o mapeador comer
 A confirmação de compatibilidade consolida uma referência por requisito técnico. Alternativas permanecem disponíveis para consulta, mas não são gravadas juntas na solução nem enviadas simultaneamente ao orçamento.
 
 O primeiro requisito adicional implementado é `access-point`: a regra calcula quantidade e origem dos pontos Wi-Fi, a compatibilidade filtra referências de access point e o mapeador comercial aplica a quantidade por ambiente somente depois da confirmação.
+
+Para switches PoE, a compatibilidade também compara o orçamento de potência cadastrado no produto com o requisito calculado. Produtos sem orçamento informado ficam pendentes de validação, enquanto produtos conhecidos abaixo do mínimo são excluídos.

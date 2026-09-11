@@ -48,3 +48,16 @@ test('encontra access points compativeis sem misturar switches', () => {
   assert.equal(match.requirement.quantity, 2);
   assert.deepEqual(match.products.map((product) => product.productId), ['ap']);
 });
+
+test('rejeita switch com orçamento PoE abaixo do requisito', () => {
+  const dimensioning = {
+    requirements: [{ kind: 'switch', minimumStandardPorts: 24, poeRequired: true, poeWattsWithReserve: 172 }]
+  };
+  const result = findCompatibleProducts(dimensioning, [
+    { id: 'low', name: 'Switch 24 portas PoE 95 W', category: 'Rede', active: true },
+    { id: 'right', name: 'Switch 24 portas PoE 250 W', category: 'Rede', active: true }
+  ]);
+
+  assert.deepEqual(result.matches[0].products.map((product) => product.productId), ['right']);
+  assert.equal(result.matches[0].products[0].poeBudgetWatts, 250);
+});

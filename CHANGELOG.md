@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A compatibilidade de Rede agora valida o orçamento de potência PoE quando o catálogo informa esse valor, rejeitando switches abaixo do requisito técnico e exibindo a potência compatível. Cache web atualizado para `v396`.
+
 - O Dimensionamento Técnico de Rede agora separa a necessidade de access points, consulta referências Wi-Fi compatíveis e usa o produto confirmado na quantidade levantada ao gerar o orçamento. Cache web atualizado para `v395`.
 
 - A confirmação de compatibilidade agora registra uma única referência por requisito técnico, respeitando a escolha enviada e evitando incluir alternativas simultâneas na solução. Cache web atualizado para `v394`.

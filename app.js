@@ -2474,7 +2474,7 @@ function technicalDimensioningPanel(result,compatibility,survey){
   const poe=requirement?.poeRequired?`<div>PoE: ${requirement.poeWattsWithReserve?`${requirement.poeWattsWithReserve} W com reserva tecnica`:'consumo ainda nao informado'}.</div>`:'';
   const warnings=(result.warnings||[]).map(item=>`<li>${item.message}</li>`).join('');
   const matches=(compatibility?.matches||[]).flatMap(item=>item.products||[]);
-  const compatible=matches.length?`<div><strong>Produtos compativeis no catalogo:</strong> ${matches.map(item=>`${item.name||item.sku||item.productId}${item.capacity?` (${item.capacity} portas)`:''}`).join(' · ')}</div>`:'';
+  const compatible=matches.length?`<div><strong>Produtos compativeis no catalogo:</strong> ${matches.map(item=>`${item.name||item.sku||item.productId}${item.capacity?` (${item.capacity} portas)`:''}${item.poeBudgetWatts?` · PoE ${item.poeBudgetWatts} W`:''}`).join(' · ')}</div>`:'';
   const unmatched=(compatibility?.unmatched||[]).map(item=>`<li>${item.message}</li>`).join('');
   const confirmed=survey?.technicalSolution?.status==='confirmed';
   const confirmation=matches.length?`<div class="technical-dimensioning-confirmation">${confirmed?'Solucao tecnica confirmada para este levantamento.':`<button class="button secondary" data-confirm-dimensioning="${survey.id}">Confirmar solucao tecnica</button>`}</div>`:'';
