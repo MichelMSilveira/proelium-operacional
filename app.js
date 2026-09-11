@@ -2451,7 +2451,9 @@ function startQuoteFromSurvey(id){
   let quote=(state.data.quotes||[]).find(item=>item.opportunityId===opportunity.id&&item.status!=='Aprovado');
   if(!quote){quote={id:uid('orc'),opportunityId:opportunity.id,technicalSurveyId:survey.id,clientId:'',title:`Proposta — ${opportunity.company}`,value:0,status:'Em elaboração'};state.data.quotes.unshift(quote);opportunity.stage='Orçamento';logAudit('Criou orçamento a partir do levantamento','Levantamento técnico',`${survey.title} → ${quote.title}`)}else if(!quote.technicalSurveyId)quote.technicalSurveyId=survey.id;
   const count=sendSurveyRoomsToQuote(survey,quote);
-  persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`Orçamento aberto com ${count} ambiente(s) do levantamento.`);
+  const mapping=ProeliumCommercialWorkflow.populateQuoteFromSurvey(state.data,survey.id,quote.id,prefix=>uid(prefix));
+  if(mapping.added||mapping.updated)logAudit('Gerou itens do levantamento','Orçamento',`${survey.title} · ${mapping.added+mapping.updated} sugestão(ões) do catálogo${mapping.unmapped.length?` · ${mapping.unmapped.length} pendência(s) sem produto correspondente`:''}`);
+  persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`Orçamento aberto com ${count} ambiente(s) e ${mapping.added+mapping.updated} item(ns) sugerido(s) do catálogo.`);
 }
 function survey(){
   const surveys=state.data.surveys||[],selected=surveys.find(item=>item.id===state.selectedSurvey);

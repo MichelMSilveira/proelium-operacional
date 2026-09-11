@@ -85,6 +85,42 @@ test('validação concluída registra autoria, avança a oportunidade e cria or�
   assert.equal(reloaded.quotes.filter(item => item.technicalSurveyId === 'survey-1').length, 1);
 });
 
+test('converte levantamento residencial em itens de catálogo e mantém o total idempotente', () => {
+  const data = {
+    products: [
+      { id: 'central', name: 'Controladora compacta Embrace Lite', technicalType: 'Central de automação', price: 6000, cost: 5000, active: true },
+      { id: 'keypad', name: 'Kit keypad 1 acionamento Virtue', technicalType: 'Interface de automação', price: 300, cost: 200, active: true },
+      { id: 'relay', name: 'Módulo relé 8 canais', technicalType: 'Módulo de iluminação', price: 2800, cost: 2300, active: true },
+      { id: 'switch', name: 'Switch UniFi Pro Max 24 PoE', technicalType: 'Switch de rede', price: 14000, cost: 11000, active: true },
+      { id: 'ap', name: 'Access Point UniFi U7 Pro', technicalType: 'Ponto de rede Wi-Fi', price: 2500, cost: 1800, active: true },
+      { id: 'cable', name: 'Cabo de rede Cat6', technicalType: 'Cabo de rede', unit: 'm', price: 8, cost: 4, active: true }
+    ],
+    surveys: [{ id: 'survey-residential', opportunityId: 'opp-1', status: 'Enviado ao orçamento' }],
+    surveyPoints: [
+      { id: 'automation-point', surveyId: 'survey-residential', room: 'Sala', type: 'Automação geral', quantity: 1 },
+      { id: 'wifi-point', surveyId: 'survey-residential', room: 'Sala', type: 'Wi-Fi', quantity: 1 },
+      { id: 'network-point', surveyId: 'survey-residential', room: 'Sala', type: 'Pontos de rede', quantity: 2 },
+      { id: 'lighting-point', surveyId: 'survey-residential', room: 'Sala', type: 'Circuito de iluminacao / retorno', quantity: 3 }
+    ],
+    surveyRooms: [{ id: 'survey-room', surveyId: 'survey-residential', name: 'Sala' }],
+    quotes: [{ id: 'quote-1', opportunityId: 'opp-1', technicalSurveyId: 'survey-residential', value: 0 }],
+    quoteRooms: [{ id: 'quote-room', quoteId: 'quote-1', name: 'Sala', items: [] }]
+  };
+
+  const first = workflow.populateQuoteFromSurvey(data, 'survey-residential', 'quote-1', prefix => `${prefix}-new`);
+  const itemCount = data.quoteRooms.reduce((sum, room) => sum + room.items.length, 0);
+  assert.equal(first.added, 6);
+  assert.equal(itemCount, 6);
+  assert.equal(data.quotes[0].value, 26080);
+  assert.ok(data.quoteRooms.find(room => room.name === 'Infraestrutura técnica').items.some(item => item.productId === 'relay'));
+
+  const second = workflow.populateQuoteFromSurvey(data, 'survey-residential', 'quote-1', prefix => `${prefix}-new`);
+  assert.equal(second.added, 0);
+  assert.equal(second.updated, 6);
+  assert.equal(data.quoteRooms.reduce((sum, room) => sum + room.items.length, 0), 6);
+  assert.equal(data.quotes[0].value, 26080);
+});
+
 test('não duplica levantamento ao reutilizar a oportunidade', () => {
   const current = { ...base(), surveys: [{ id: 'survey-1', opportunityId: 'opp-1', status: 'Em levantamento' }] };
   const duplicate = { ...current, surveys: [...current.surveys, { id: 'survey-2', opportunityId: 'opp-1', status: 'Em levantamento' }] };

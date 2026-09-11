@@ -1,6 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { Pool, PoolClient } from 'pg';
 
+const surveyQuoteMapper = require('../../../commercial-workflow.js') as {
+  populateQuoteFromSurvey: (data: Record<string, unknown>, surveyId: string, quoteId: string, makeId?: (prefix: string) => string) => { added: number; updated: number; unmapped: Array<Record<string, unknown>>; value: number };
+};
+
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
 type AuthContext = { username: string; companyId: string; role: string; permissions: string[]; modules: string[] };
@@ -218,16 +222,39 @@ export class SurveyService {
          from quotes_domain_rooms where company_id = $1 and quote_id = $2`,
         [context.companyId, quote.id],
       );
-      const existingNames = quoteRoomsResult.rows.map((row) => this.text(row.name));
+      const quoteRooms = quoteRoomsResult.rows.map((row) => ({ ...row, items: Array.isArray(row.items) ? row.items : [] })) as RecordItem[];
+      const existingNames = quoteRooms.map((row) => this.text(row.name));
       const missing = roomNames.filter((name) => !existingNames.includes(name));
       for (const name of missing) {
         const source = surveyRooms.find((room) => room.name === name);
+        const room = { id: `amb-${crypto.randomUUID()}`, quoteId: quote.id, technicalSurveyId: surveyId, surveyRoomId: source?.id || '', name, items: [] };
+        quoteRooms.push(room);
         await client.query(
           `insert into quotes_domain_rooms (company_id, id, quote_id, name, items, extra_data, updated_at)
            values ($1, $2, $3, $4, '[]'::jsonb, $5::jsonb, now())`,
-          [context.companyId, `amb-${crypto.randomUUID()}`, quote.id, name, JSON.stringify({ technicalSurveyId: surveyId, surveyRoomId: source?.id || '' })],
+          [context.companyId, room.id, quote.id, name, JSON.stringify({ technicalSurveyId: surveyId, surveyRoomId: source?.id || '' })],
         );
       }
+      const productsResult = await client.query(
+        `select id, catalog_type as "catalogType", name, sku, category, unit, price, active, extra_data as "extraData"
+         from products_domain_entries where company_id = $1`,
+        [context.companyId],
+      );
+      const products = productsResult.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: this.text(row.id), catalogType: this.text(row.catalogType), name: this.text(row.name), sku: this.text(row.sku), category: this.text(row.category), unit: this.text(row.unit, 'un'), price: this.number(row.price), active: row.active !== false }));
+      const mappingData = { products, surveys: [survey], surveyPoints: points, surveyRooms, quoteRooms, quotes: [quote] };
+      const mapping = surveyQuoteMapper.populateQuoteFromSurvey(mappingData, surveyId, this.text(quote.id), prefix => `${prefix}-${crypto.randomUUID()}`);
+      quote.value = mapping.value;
+      quote.extraData = { ...(this.record(quote.extraData) || {}), technicalSurveyId: surveyId, surveyMapping: quote.surveyMapping };
+      for (const room of quoteRooms) {
+        await client.query(
+          'update quotes_domain_rooms set items = $1::jsonb, extra_data = $2::jsonb, updated_at = now() where company_id = $3 and id = $4',
+          [JSON.stringify(Array.isArray(room.items) ? room.items : []), JSON.stringify({ ...(this.record(room.extraData) || {}), technicalSurveyId: surveyId }), context.companyId, room.id],
+        );
+      }
+      await client.query(
+        'update quotes_domain_entries set value = $1, extra_data = $2::jsonb, updated_at = now() where company_id = $3 and id = $4',
+        [mapping.value, JSON.stringify(quote.extraData), context.companyId, quote.id],
+      );
       await client.query(
         `update survey_domain_surveys set status = 'Enviado ao orçamento', updated_at = now()
          where company_id = $1 and id = $2`,
@@ -239,7 +266,7 @@ export class SurveyService {
       await client.query('commit');
       return {
         status: 200,
-        body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, revision: nextRevision, opportunityRevision: nextOpportunityRevision, quotesRevision: nextQuotesRevision }),
+        body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value, revision: nextRevision, opportunityRevision: nextOpportunityRevision, quotesRevision: nextQuotesRevision }),
       };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
@@ -548,9 +575,11 @@ export class SurveyService {
     const missing = roomNames.filter((name) => !existingNames.includes(name));
     missing.forEach((name) => { const source = surveyRooms.find((room) => room.name === name); quoteRooms.push({ id: `amb-${crypto.randomUUID()}`, quoteId: this.text(quote?.id), technicalSurveyId: surveyId, surveyRoomId: source?.id || '', name, items: [] }); });
     survey.status = 'Enviado ao orçamento';
-    const upstream = await this.forward({ ...current.data, surveys, opportunities, quotes, quoteRooms }, input.baseRevision ?? current.revision, cookie);
+    const nextData = { ...current.data, surveys, opportunities, quotes, quoteRooms, surveyPoints: points };
+    const mapping = surveyQuoteMapper.populateQuoteFromSurvey(nextData, surveyId, this.text(quote.id), prefix => `${prefix}-${crypto.randomUUID()}`);
+    const upstream = await this.forward(nextData, input.baseRevision ?? current.revision, cookie);
     if (upstream.status < 200 || upstream.status >= 300) return upstream;
-    try { const result = JSON.parse(upstream.body) as RecordItem; return { status: upstream.status, body: JSON.stringify({ ...result, quoteId: this.text(quote.id), roomsCreated: missing.length }) }; } catch { return { status: upstream.status, body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length }) }; }
+    try { const result = JSON.parse(upstream.body) as RecordItem; return { status: upstream.status, body: JSON.stringify({ ...result, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value }) }; } catch { return { status: upstream.status, body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value }) }; }
   }
 
   private async legacySaveSurvey(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {

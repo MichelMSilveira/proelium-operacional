@@ -35,6 +35,120 @@
     survey.status === 'Validado' || survey.status === 'Enviado ao orçamento'
   ) && list(data, 'surveyPoints').some(point => String(point.surveyId || '') === String(survey.id) && Number(point.quantity || 0) > 0));
 
+  const normalizeSearchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[‑–—]/g, '-').toLocaleLowerCase('pt-BR');
+  const productPrice = product => Number(product?.price ?? product?.extraData?.price ?? product?.extraData?.salePrice ?? product?.extraData?.valor ?? 0);
+  const productSearchText = product => normalizeSearchText(`${product?.name || ''} ${product?.brand || ''} ${product?.model || ''} ${product?.category || ''} ${product?.technicalType || ''} ${product?.technicalFunction || ''}`);
+  const pickCatalogProduct = (products, patterns) => {
+    const candidates = Array.isArray(products) ? products.filter(product => product && product.active !== false) : [];
+    const scored = candidates.map(product => {
+      const text = productSearchText(product);
+      const score = patterns.reduce((total, pattern, index) => total + (pattern.test(text) ? patterns.length - index : 0), 0);
+      return { product, score };
+    }).filter(item => item.score > 0);
+    scored.sort((left, right) => (productPrice(right.product) > 0 ? 1 : 0) - (productPrice(left.product) > 0 ? 1 : 0) || right.score - left.score || productPrice(left.product) - productPrice(right.product) || String(left.product.name || '').localeCompare(String(right.product.name || ''), 'pt-BR'));
+    return scored[0]?.product || null;
+  };
+  const productForSurveyPoint = (products, point) => {
+    const explicit = (products || []).find(product => String(product?.id || '') === String(point?.sourceProductId || ''));
+    if (explicit && explicit.active !== false) return explicit;
+    const text = normalizeSearchText(`${point?.type || ''} ${point?.technology || ''} ${point?.technicalType || ''} ${point?.technicalFunction || ''}`);
+    if (/wi\s*-?\s*fi|access\s*point/.test(text)) return pickCatalogProduct(products, [/ponto de rede wi/, /access\s*point/, /wi\s*-?\s*fi/]);
+    if (/pontos? de rede|rede cabeada|cat\s*6/.test(text)) return pickCatalogProduct(products, [/switch de rede/, /switch/, /cabo.*(?:cat\s*6|categoria\s*6)/, /cabo de rede/]);
+    if (/circuito.*ilumin|ilumin.*(?:rele|dimmer)|dimmer|pwm/.test(text)) return pickCatalogProduct(products, [/modulo rele.*8 canais/, /modulo dimmer.*8 canais/, /modulo de iluminacao/]);
+    if (/automacao geral|automacao|keypad|pulsador/.test(text)) return pickCatalogProduct(products, [/keypad.*1 acionamento/, /interface de automacao/, /central de automacao/]);
+    return null;
+  };
+  const itemQuantity = (product, quantity, kind) => {
+    const value = Math.max(1, Number(quantity || 1));
+    if (kind === 'lighting') return Math.max(1, Math.ceil(value / 8));
+    if (kind === 'network-cable') return String(product?.unit || '').toLocaleLowerCase('pt-BR') === 'm' ? value * 30 : Math.max(1, Math.ceil(value * 30 / 305));
+    if (kind === 'network-switch') return Math.max(1, Math.ceil(value / 24));
+    return value;
+  };
+  const quoteValue = (data, quoteId) => (Array.isArray(data?.quoteRooms) ? data.quoteRooms : []).filter(room => String(room?.quoteId || '') === String(quoteId)).reduce((total, room) => total + (Array.isArray(room?.items) ? room.items : []).reduce((sum, item) => {
+    const product = (Array.isArray(data?.products) ? data.products : []).find(candidate => String(candidate?.id || '') === String(item?.productId || ''));
+    const discount = Math.max(0, Math.min(100, Number(item?.discount || 0)));
+    return sum + productPrice(product) * Number(item?.qty || 0) * (1 - discount / 100);
+  }, 0), 0);
+
+  function populateQuoteFromSurvey(data = {}, surveyId, quoteId, makeId = prefix => `${prefix}-${Date.now().toString(36)}`) {
+    const survey = list(data, 'surveys').find(item => String(item?.id || '') === String(surveyId));
+    const quote = list(data, 'quotes').find(item => String(item?.id || '') === String(quoteId));
+    if (!survey || !quote) return { added: 0, updated: 0, unmapped: [], value: 0 };
+    if (!Array.isArray(data.quoteRooms)) data.quoteRooms = [];
+    const products = list(data, 'products');
+    const points = list(data, 'surveyPoints').filter(point => String(point?.surveyId || '') === String(surveyId) && Number(point?.quantity || 0) > 0);
+    const surveyRooms = list(data, 'surveyRooms').filter(room => String(room?.surveyId || room?.technicalSurveyId || '') === String(surveyId));
+    const roomFor = (name, global = false) => {
+      const roomName = global ? 'Infraestrutura técnica' : String(name || 'Ambiente sem nome').trim();
+      let room = data.quoteRooms.find(item => String(item?.quoteId || '') === String(quoteId) && item.name === roomName);
+      if (!room) {
+        const source = surveyRooms.find(item => item.name === roomName);
+        room = { id: makeId('amb'), quoteId, technicalSurveyId: surveyId, surveyRoomId: source?.id || '', name: roomName, items: [] };
+        data.quoteRooms.push(room);
+      }
+      if (!Array.isArray(room.items)) room.items = [];
+      return room;
+    };
+    let added = 0;
+    let updated = 0;
+    const unmapped = [];
+    const addGenerated = (product, quantity, scope, pointIds, basis) => {
+      if (!product || !Number(quantity || 0)) return false;
+      const room = roomFor(scope.room, scope.global);
+      const sourceKey = `${scope.global ? 'global' : 'room'}:${scope.kind}:${scope.room || 'all'}`;
+      const existing = room.items.find(item => item.autoGenerated === 'survey-v1' && item.sourceSurveyId === surveyId && item.sourceKey === sourceKey);
+      const record = { productId: product.id, qty: Number(quantity), discount: 0, autoGenerated: 'survey-v1', sourceSurveyId: surveyId, sourceSurveyPointIds: pointIds, sourceKey, quantityBasis: basis };
+      if (existing) { Object.assign(existing, record); updated += 1; } else { room.items.push(record); added += 1; }
+      return true;
+    };
+
+    points.filter(point => point.sourceProductId).forEach(point => {
+      const product = productForSurveyPoint(products, point);
+      if (product) addGenerated(product, Number(point.quantity || 1), { room: point.room, kind: 'explicit' }, [point.id], 'Quantidade informada no ponto técnico');
+      else unmapped.push({ pointId: point.id, type: point.type || 'Item técnico' });
+    });
+    const inferred = points.filter(point => !point.sourceProductId);
+    const byRoom = new Map();
+    inferred.forEach(point => { const key = String(point.room || 'Ambiente sem nome').trim(); if (!byRoom.has(key)) byRoom.set(key, []); byRoom.get(key).push(point); });
+    for (const [room, roomPoints] of byRoom) {
+      const automation = roomPoints.filter(point => /automacao geral|automacao|keypad|pulsador/.test(normalizeSearchText(`${point.type} ${point.technology}`)));
+      const wifi = roomPoints.filter(point => /wi\s*-?\s*fi|access\s*point/.test(normalizeSearchText(`${point.type} ${point.technology}`)));
+      if (automation.length) {
+        const product = pickCatalogProduct(products, [/keypad.*1 acionamento/, /interface de automacao/, /central de automacao/]);
+        if (!addGenerated(product, automation.reduce((sum, point) => sum + Number(point.quantity || 1), 0), { room, kind: 'automation' }, automation.map(point => point.id), 'Uma interface por necessidade de automação do ambiente')) unmapped.push(...automation.map(point => ({ pointId: point.id, type: point.type || 'Automação' })));
+      }
+      if (wifi.length) {
+        const product = pickCatalogProduct(products, [/ponto de rede wi/, /access\s*point/, /wi\s*-?\s*fi/]);
+        if (!addGenerated(product, wifi.reduce((sum, point) => sum + Number(point.quantity || 1), 0), { room, kind: 'wifi' }, wifi.map(point => point.id), 'Um access point por necessidade Wi-Fi')) unmapped.push(...wifi.map(point => ({ pointId: point.id, type: point.type || 'Wi-Fi' })));
+      }
+      roomFor(room);
+    }
+    const pointText = point => normalizeSearchText(`${point.type} ${point.technology}`);
+    const networkPoints = inferred.filter(point => /pontos? de rede|rede cabeada|cat\s*6/.test(pointText(point)));
+    const lightingPoints = inferred.filter(point => /circuito.*ilumin|ilumin.*(?:rele|dimmer)|dimmer|pwm/.test(pointText(point)));
+    const automationPoints = inferred.filter(point => /automacao geral|automacao|keypad|pulsador/.test(pointText(point)));
+    const totalNetwork = networkPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
+    const totalLighting = lightingPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
+    if (automationPoints.length || totalLighting) {
+      const product = pickCatalogProduct(products, [/controladora.*embrace.*lite/, /central de automacao/]);
+      if (!addGenerated(product, 1, { global: true, kind: 'controller' }, automationPoints.concat(lightingPoints).map(point => point.id), 'Uma central para o conjunto residencial')) unmapped.push({ type: 'Central de automação' });
+    }
+    if (totalLighting) {
+      const product = pickCatalogProduct(products, [/modulo rele.*8 canais/, /modulo dimmer.*8 canais/, /modulo de iluminacao/]);
+      if (!addGenerated(product, itemQuantity(product, totalLighting, 'lighting'), { global: true, kind: 'lighting' }, lightingPoints.map(point => point.id), `${totalLighting} circuito(s), dimensionado(s) em blocos de 8 canais`)) unmapped.push({ type: 'Módulo de iluminação' });
+    }
+    if (totalNetwork) {
+      const switchProduct = pickCatalogProduct(products, [/switch de rede/, /switch/]);
+      if (!addGenerated(switchProduct, itemQuantity(switchProduct, totalNetwork, 'network-switch'), { global: true, kind: 'network-switch' }, networkPoints.map(point => point.id), `${totalNetwork} ponto(s), dimensionado(s) em blocos de 24 portas`)) unmapped.push({ type: 'Switch de rede' });
+      const cableProduct = pickCatalogProduct(products, [/cabo.*(?:cat\s*6|categoria\s*6)/, /cabo de rede/]);
+      if (!addGenerated(cableProduct, itemQuantity(cableProduct, totalNetwork, 'network-cable'), { global: true, kind: 'network-cable' }, networkPoints.map(point => point.id), `${totalNetwork} ponto(s) × 30 m médios; bobina considerada em 305 m quando aplicável`)) unmapped.push({ type: 'Cabo de rede' });
+    }
+    quote.surveyMapping = { version: 1, surveyId, generatedAt: new Date().toISOString(), generatedItems: added + updated, unmapped };
+    quote.value = Number(quoteValue(data, quoteId).toFixed(2));
+    return { added, updated, unmapped, value: quote.value };
+  }
+
   function applyValidatedSurveyTransition(currentData = {}, nextData = {}, actor = '', validatedAt = '') {
     const next = structuredClone(nextData || {});
     const currentSurveys = list(currentData, 'surveys');
@@ -195,7 +309,7 @@
     return { ok: true };
   }
 
-  return { stages, terminalStages, legacyStageAliases, qualificationFields, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, applyValidatedSurveyTransition, validate };
+  return { stages, terminalStages, legacyStageAliases, qualificationFields, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, applyValidatedSurveyTransition, populateQuoteFromSurvey, quoteValue, validate };
 }));
 // Compacta os cartões comerciais no mobile sem alterar dados nem regras do fluxo principal.
 (()=>{
