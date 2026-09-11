@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A consulta da identificação Google pendente também passou a ser atendida pelo NestJS quando o PostgreSQL está ativo; o servidor legado fica restrito ao fallback sem banco.
+
 - Corrigido o proxy público do OAuth Google para preservar múltiplos cookies `Set-Cookie` no callback, evitando perda da sessão ou da identificação pendente.
 
 - O canal SSE de eventos passou a manter as conexões no NestJS quando o PostgreSQL está ativo; o servidor público faz apenas o proxy de streaming e encaminha atualizações internas sem alterar o contrato do navegador.

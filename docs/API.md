@@ -20,7 +20,7 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.
 
-Com PostgreSQL ativo, `/api/events` é mantido pelo NestJS e encaminhado pelo servidor público como SSE; sem banco, a conexão permanece no fallback legado. Os eventos `data-updated`, `presence-updated`, `collaboration-request` e `assistance-request` mantêm o mesmo contrato.
+Com PostgreSQL ativo, `/api/events` é mantido pelo NestJS e encaminhado pelo servidor público como SSE; a identificação Google pendente também é consultada pelo NestJS. Sem banco, essas rotas permanecem no fallback legado. Os eventos `data-updated`, `presence-updated`, `collaboration-request` e `assistance-request` mantêm o mesmo contrato.
 
 `POST /api/commercial/reconcile-legacy` recebe `{ "apply": false }` para prévia e `{ "apply": true }` para aplicar. A aplicação promove somente etapas defasadas conforme os vínculos existentes (levantamento, visita legada e orçamento), preserva Ganho/Perdido e os demais campos, registra uma entrada em `auditLog` e usa a revisão central para evitar sobrescrita concorrente. A operação não é um salto normal do funil.
 

@@ -435,6 +435,13 @@ async function handleRequest(req, res) {
       return sendJson(res, 503, { authenticated: false, error: 'Não foi possível validar a sessão agora.' });
     }
   }
+  if (pathname === '/api/auth/google/pending' && req.method === 'GET' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, pathname); }
+    catch (error) {
+      console.error('Falha ao encaminhar identificaÃ§Ã£o Google pendente ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'NÃ£o foi possÃ­vel consultar a identificaÃ§Ã£o Google agora.' });
+    }
+  }
   if (pathname === '/api/auth/google/pending' && req.method === 'GET') {
     const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});
     return pending?.email ? sendJson(res,200,{email:pending.email,name:pending.name||'',invite:Boolean(parseCookies(req).proelium_invite)}) : sendJson(res,401,{error:'Identificação Google expirada.'});
