@@ -217,6 +217,10 @@
       const confirmedSwitch = selectedProducts.find(product => /switch|comutador/.test(productSearchText(product)));
       if (confirmedSwitch && !addGenerated(confirmedSwitch, 1, { global: true, kind: 'network-switch' }, technicalNetworkPoints.map(point => point.id), `Produto confirmado na soluÃ§Ã£o tÃ©cnica ${String(technicalSolution.engineVersion || '')}`.trim())) unmapped.push({ type: 'Switch de rede' });
     }
+    if (technicalNetworkPoints.length) {
+      const confirmedUps = selectedProducts.find(product => /nobreak|no\s*break|ups|backup\s*power/.test(productSearchText(product)));
+      if (confirmedUps && !addGenerated(confirmedUps, 1, { global: true, kind: 'ups' }, technicalNetworkPoints.map(point => point.id), 'Produto confirmado na solucao tecnica')) unmapped.push({ type: 'Nobreak' });
+    }
     quote.surveyMapping = { version: 1, surveyId, generatedAt: new Date().toISOString(), generatedItems: added + updated, technicalSolutionApplied: Boolean(selectedProducts.length), unmapped };
     quote.value = Number(quoteValue(data, quoteId).toFixed(2));
     return { added, updated, unmapped, value: quote.value };

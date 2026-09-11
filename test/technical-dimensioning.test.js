@@ -14,7 +14,9 @@ test('dimensiona portas de rede com reserva técnica de 20%', () => {
   assert.deepEqual(result.solutions, [
     { category: 'network', kind: 'switch', ports: 24, poeRequired: false, poeWattsMinimum: null },
     { category: 'network', kind: 'patch-panel', ports: 24, quantity: 1 },
-    { category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 }
+    { category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 },
+    { category: 'network', kind: 'ups', quantity: 1, powerWattsMinimum: null, vaMinimum: null, autonomyMinutesMinimum: 10, outputWaveform: 'senoidal' },
+    { category: 'electrical', kind: 'electrical-infrastructure', quantity: 1, dedicatedCircuitRequired: true, groundingRequired: true, surgeProtectionRequired: true }
   ]);
   assert.equal(Object.hasOwn(result, 'products'), false);
   assert.equal(Object.hasOwn(result, 'prices'), false);
@@ -33,6 +35,9 @@ test('gera requisito genérico de PoE sem escolher produto', () => {
   assert.equal(requirement.minimumStandardPorts, 24);
   assert.equal(requirement.poeWattsRequired, 102);
   assert.equal(requirement.poeWattsWithReserve, 123);
+  const ups = result.requirements.find((item) => item.kind === 'ups');
+  assert.equal(ups.powerWattsMinimum, 123);
+  assert.equal(ups.vaMinimum, 300);
   assert.equal(result.warnings.length, 0);
 });
 

@@ -9,6 +9,7 @@ test('encontra switch compatível sem expor preço ou custo', () => {
     { id: 'small', name: 'Switch 16 portas', category: 'Rede', active: true, price: 100 },
     { id: 'right', name: 'Switch 24 portas PoE+', brand: 'Marca', model: 'M24', category: 'Rede', active: true, price: 999 },
     { id: 'patch', name: 'Patch panel 24 portas', category: 'Cabeamento', active: true },
+    { id: 'ups', name: 'Nobreak senoidal 1200 VA / 720 W', category: 'Infraestrutura eletrica', technicalType: 'Nobreak', active: true },
     { id: 'rack', name: 'Rack técnico 6U', category: 'Infraestrutura', active: true },
   ]);
 
@@ -70,4 +71,20 @@ test('rejeita switch com orçamento PoE abaixo do requisito', () => {
 
   assert.deepEqual(result.matches[0].products.map((product) => product.productId), ['right']);
   assert.equal(result.matches[0].products[0].poeBudgetWatts, 250);
+});
+
+test('seleciona nobreak pela carga e capacidade VA', () => {
+  const dimensioning = dimensionSurvey({ id: 'lev-compat-5' }, [{ id: 'ap-1', surveyId: 'lev-compat-5', type: 'Access Point Wi-Fi', quantity: 1, poeWatts: 500 }]);
+  const result = findCompatibleProducts(dimensioning, [
+    { id: 'low-ups', name: 'Nobreak senoidal 1000 VA / 500 W', category: 'Infraestrutura eletrica', technicalType: 'Nobreak', active: true },
+    { id: 'right-ups', name: 'Nobreak senoidal 1200 VA / 720 W', category: 'Infraestrutura eletrica', technicalType: 'Nobreak', active: true }
+  ]);
+
+  const match = result.matches.find((item) => item.requirementKind === 'ups');
+  assert.equal(match.requirement.powerWattsMinimum, 600);
+  assert.equal(match.requirement.vaMinimum, 1000);
+  assert.deepEqual(match.products.map((product) => product.productId), ['right-ups']);
+  assert.equal(match.products[0].powerWatts, 720);
+  assert.equal(match.products[0].va, 1200);
+  assert.equal(result.unmatched.some((item) => item.kind === 'electrical-infrastructure'), false);
 });

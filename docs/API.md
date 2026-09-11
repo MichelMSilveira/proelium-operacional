@@ -28,6 +28,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 
 ## Recursos
 
+A prévia de Dimensionamento de Rede também pode retornar nobreak com potência/VA mínimos, autonomia e saída senoidal, além de requisitos de infraestrutura elétrica (circuito dedicado, aterramento e DPS). A camada de compatibilidade consulta a capacidade cadastrada do nobreak; os requisitos elétricos de instalação não são produtos.
+
 | Método | Rota | Uso |
 |---|---|---|
 | GET/POST/PATCH | `/clients` e `/clients/{id}` | listar, criar e alterar clientes com revisão de conflito |

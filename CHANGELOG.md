@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O Dimensionamento Tecnico de Rede agora gera requisito generico de nobreak com potencia/VA derivados da carga PoE conhecida e exige circuito dedicado, aterramento e DPS. Um produto compativel pode ser confirmado e aplicado a infraestrutura do orcamento. Cache web atualizado para `v398`.
+
 - O Dimensionamento Técnico de Rede agora gera requisitos de patch panel e rack a partir da capacidade dimensionada; referências confirmadas podem ser incluídas na infraestrutura do orçamento. Cache web atualizado para `v397`.
 
 - A compatibilidade de Rede agora valida o orçamento de potência PoE quando o catálogo informa esse valor, rejeitando switches abaixo do requisito técnico e exibindo a potência compatível. Cache web atualizado para `v396`.

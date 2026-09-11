@@ -26,6 +26,10 @@
       definition.input,
       definition.output,
       definition.capacity,
+      definition.powerWatts,
+      definition.capacityWatts,
+      definition.capacityVa,
+      definition.autonomyMinutes,
       connection.requirements,
       connection.constraints,
     ].flat().filter(Boolean).join(' '));
@@ -59,6 +63,11 @@
     return value.includes('rack') || value.includes('armario tecnico') || value.includes('gabinete de rede');
   }
 
+  function isUps(product) {
+    const value = productText(product);
+    return value.includes('nobreak') || value.includes('no break') || value.includes('ups') || value.includes('backup power');
+  }
+
   function supportsPoe(product) {
     return productText(product).includes('poe');
   }
@@ -72,6 +81,35 @@
     }
     const match = productText(product).match(/(?:poe|power budget|orcamento poe)[^0-9]{0,30}(\d+(?:[.,]\d+)?)\s*w/);
     return match ? number(match[1].replace(',', '.')) : null;
+  }
+
+  function productPowerWatts(product) {
+    const definition = product && typeof product.technicalDefinition === 'object' ? product.technicalDefinition : {};
+    for (const value of [product && product.powerWatts, product && product.outputWatts, definition.powerWatts, definition.outputWatts, definition.capacityWatts]) {
+      const parsed = number(value);
+      if (parsed != null) return parsed;
+    }
+    const match = productText(product).match(/(\d+(?:[.,]\d+)?)\s*w(?:atts?)?/);
+    return match ? number(match[1].replace(',', '.')) : null;
+  }
+
+  function productVa(product) {
+    const definition = product && typeof product.technicalDefinition === 'object' ? product.technicalDefinition : {};
+    for (const value of [product && product.va, product && product.capacityVa, definition.va, definition.capacityVa]) {
+      const parsed = number(value);
+      if (parsed != null) return parsed;
+    }
+    const match = productText(product).match(/(\d+(?:[.,]\d+)?)\s*va/);
+    return match ? number(match[1].replace(',', '.')) : null;
+  }
+
+  function productAutonomyMinutes(product) {
+    const definition = product && typeof product.technicalDefinition === 'object' ? product.technicalDefinition : {};
+    for (const value of [product && product.autonomyMinutes, definition.autonomyMinutes]) {
+      const parsed = number(value);
+      if (parsed != null) return parsed;
+    }
+    return null;
   }
 
   function publicProductReference(product) {
@@ -90,11 +128,21 @@
     const matches = [];
     const unmatched = [];
     requirements.forEach((requirement) => {
-      if (!['switch', 'access-point', 'patch-panel', 'rack'].includes(requirement.kind)) return;
+      if (requirement.kind === 'electrical-infrastructure') return;
+      if (!['switch', 'access-point', 'patch-panel', 'rack', 'ups'].includes(requirement.kind)) return;
       const compatible = catalog.filter((product) => {
         if (!product || product.active === false || normalized(product.catalogType) === 'service') return false;
         if (requirement.kind === 'access-point') return isAccessPoint(product);
         if (requirement.kind === 'rack') return isRack(product);
+        if (requirement.kind === 'ups') {
+          if (!isUps(product)) return false;
+          const requiredWatts = Number(requirement.powerWattsMinimum || 0);
+          const availableWatts = productPowerWatts(product);
+          if (requiredWatts && availableWatts != null && availableWatts < requiredWatts) return false;
+          const requiredVa = Number(requirement.vaMinimum || 0);
+          const availableVa = productVa(product);
+          return !requiredVa || availableVa == null || availableVa >= requiredVa;
+        }
         if (requirement.kind === 'patch-panel') {
           return isPatchPanel(product) && (capacity(product) == null || capacity(product) >= Number(requirement.ports || 0));
         }
@@ -117,8 +165,10 @@
           ? { quantity: requirement.quantity }
           : requirement.kind === 'patch-panel'
             ? { ports: requirement.ports, quantity: requirement.quantity }
+            : requirement.kind === 'ups'
+              ? { quantity: requirement.quantity, powerWattsMinimum: requirement.powerWattsMinimum ?? null, vaMinimum: requirement.vaMinimum ?? null, autonomyMinutesMinimum: requirement.autonomyMinutesMinimum, outputWaveform: requirement.outputWaveform }
             : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
-        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' || requirement.kind === 'patch-panel' ? { capacity: capacity(product), ...(requirement.kind === 'switch' ? { poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) } : {}) })),
+        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' || requirement.kind === 'patch-panel' ? { capacity: capacity(product), ...(requirement.kind === 'switch' ? { poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) } : requirement.kind === 'ups' ? { powerWatts: productPowerWatts(product), va: productVa(product), autonomyMinutes: productAutonomyMinutes(product) } : {}) })),
       });
     });
     return { engineVersion: 'network-compatibility-v1', matches, unmatched };

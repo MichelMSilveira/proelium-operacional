@@ -38,6 +38,8 @@ O fluxo comercial passa a reservar uma etapa entre levantamento e orçamento: `L
 
 ## Preparação para o N.E.M.O.
 
+Para a infraestrutura de rede, o motor também produz um requisito de nobreak senoidal com potência e VA mínimos derivados da carga PoE conhecida, além de autonomia mínima de 10 minutos. Ele registra separadamente circuito dedicado, aterramento e DPS; esses requisitos de instalação não são tratados como produtos. A compatibilidade do nobreak compara capacidade cadastrada e permanece independente de marca.
+
 - API versionada e documentada.
 - IDs UUID, timestamps e campos estruturados.
 - endpoint de resumo operacional, evitando que o agente precise juntar dezenas de chamadas;
