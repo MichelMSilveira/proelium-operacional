@@ -480,6 +480,15 @@ async function handleRequest(req, res) {
       await storage.writeCompanies(companies); return sendJson(res,200,{ok:true,company:companyProfilePublic(companies[index])});
     } catch { return sendJson(res,400,{error:'Configuração da empresa inválida.'}); }
   }
+  if (pathname === '/api/account/profile' && ['GET','PUT'].includes(req.method) && nestAuthEnabled()) {
+    try {
+      const body = req.method === 'GET' ? undefined : await readBody(req);
+      return await forwardNestAuth(req, res, pathname, body);
+    } catch (error) {
+      console.error('Falha ao encaminhar perfil pessoal ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível consultar o perfil agora.' });
+    }
+  }
   if (pathname === '/api/account/profile' && ['GET','PUT'].includes(req.method)) {
     const actor=await requireUser(req,res); if(!actor)return;
     try {

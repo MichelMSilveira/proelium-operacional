@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O perfil pessoal passou a consultar e atualizar `app_users` diretamente pelo NestJS/PostgreSQL, preservando portfólio, identidade e fallback legado sem banco.
+
 - O ciclo de convites da empresa passou a listar, criar e revogar registros diretamente em `company_invites` pelo NestJS/PostgreSQL, preservando expiração, hash do token e fallback sem banco.
 
 - A coleção legada de rotinas da empresa passou a consultar e gravar `routines` diretamente pelo NestJS/PostgreSQL, com isolamento transacional por empresa e fallback sem banco.
