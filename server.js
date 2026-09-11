@@ -160,6 +160,7 @@ async function forwardNestAuth(req, res, pathname, body) {
   if (setCookie) res.setHeader('Set-Cookie', setCookie);
   res.writeHead(upstream.status, { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': 'no-store' });
   res.end(await upstream.text());
+  return upstream.status;
 }
 function clearGoogleStateCookie(res, secure = false) {
   addSetCookie(res, `proelium_google_state=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
@@ -532,6 +533,26 @@ async function handleRequest(req, res) {
     const invites=(await storage.readInvites()).filter(item=>item.companyId===actor.companyId);
     if(req.method==='GET')return sendJson(res,200,{invites:invites.filter(item=>!item.usedAt&&new Date(item.expiresAt)>new Date()).map(item=>invitePublic(item,companies))});
     try { const payload=req.method==='DELETE'?{id:new URL(req.url,`http://${req.headers.host}`).searchParams.get('id')}:JSON.parse(await readBody(req)); if(req.method==='DELETE'){const id=String(payload.id||'');if(!invites.some(item=>item.id===id))return sendJson(res,404,{error:'Convite não encontrado nesta empresa.'});const next=(await storage.readInvites()).map(item=>item.companyId===actor.companyId&&item.id===id?{...item,usedAt:new Date().toISOString()}:item);await storage.writeInvites(next);return sendJson(res,200,{ok:true});} const token=crypto.randomBytes(32).toString('base64url'),allowedModules=['dashboard','projects','tasks','agenda','operations','reports','quality','collaborators','equipment','knowledge','routines'],modules=[...new Set((Array.isArray(payload.modules)?payload.modules:allowedModules).filter(item=>allowedModules.includes(item)))].slice(0,12),invite={id:`inv-${crypto.randomUUID()}`,companyId:actor.companyId,tokenHash:inviteTokenHash(token),email:String(payload.email||'').trim().toLowerCase().slice(0,160),role:['operacao','comercial','financeiro','leitura'].includes(payload.role)?payload.role:'operacao',modules,expiresAt:new Date(Date.now()+300000).toISOString(),createdAt:new Date().toISOString()}; const all=(await storage.readInvites()).filter(item=>item.companyId!==actor.companyId||(!item.usedAt&&new Date(item.expiresAt)>new Date()));await storage.writeInvites([...all,invite]);const base=process.env.BASE_URL||`${req.headers['x-forwarded-proto']==='https'?'https':'http'}://${req.headers.host}`;return sendJson(res,201,{ok:true,invite:invitePublic(invite,companies),url:`${base}/?invite=${encodeURIComponent(token)}`}); } catch { return sendJson(res,400,{error:'Convite inválido.'}); }
+  }
+  if (pathname === '/api/admin/companies' && ['GET','PUT','DELETE'].includes(req.method) && nestAuthEnabled()) {
+    try {
+      const query = new URL(req.url, `http://${req.headers.host}`).search;
+      const companyId = new URL(req.url, `http://${req.headers.host}`).searchParams.get('id') || '';
+      const connectedUsernames = req.method === 'DELETE'
+        ? new Set((await storage.readUsers()).filter(user => user.companyId === companyId).map(user => user.username))
+        : new Set();
+      const body = req.method === 'PUT' ? await readBody(req) : undefined;
+      const status = await forwardNestAuth(req, res, `${pathname}${query}`, body);
+      if (req.method === 'DELETE' && status === 200) {
+        for (const username of connectedUsernames) presence.delete(username);
+        for (const client of [...eventClients]) if (client.companyId === companyId) { eventClients.delete(client); try { client.end(); } catch {} }
+        announcePresence();
+      }
+      return status;
+    } catch (error) {
+      console.error('Falha ao encaminhar administração de empresas ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível consultar as empresas agora.' });
+    }
   }
   if (pathname === '/api/admin/companies' && req.method === 'DELETE') {
     const actor=await requireUser(req,res); if(!actor)return;
