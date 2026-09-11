@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O proxy do Next.js foi ampliado para todas as rotas de módulos já construídas, eliminando os 404 dos links de Financeiro, Operação, Agenda, Catálogo, Qualidade, Conhecimento, Compras, Levantamento, Relatórios, Rotinas, Instalações, Colaboradores, Configurações, Usuários e Convites; a raiz permanece no shell legado até a validação autenticada do shell principal.
+
 - Documentação do frontend atualizada para refletir a migração operacional concluída: o NestJS/PostgreSQL é o caminho ativo, enquanto o contrato agregado e os adaptadores legados permanecem somente como compatibilidade e fallback explícito.
 
 - A consulta da identificação Google pendente também passou a ser atendida pelo NestJS quando o PostgreSQL está ativo; o servidor legado fica restrito ao fallback sem banco.

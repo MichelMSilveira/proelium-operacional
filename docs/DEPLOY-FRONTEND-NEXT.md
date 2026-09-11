@@ -2,25 +2,24 @@
 
 ## Estado atual
 
-O app legado continua atendendo a porta `4173`. O frontend Next.js é validado no CI, mas ainda não é publicado no VPS.
+O app legado continua atendendo a porta `4173` para a raiz e o contrato de compatibilidade. O frontend Next.js é executado na porta `4300` e as rotas dos módulos publicados são encaminhadas pelo Nginx.
 
 ## Estratégia de transição
 
 1. Gerar o build com `npm --prefix frontend run build`.
 2. Publicar `frontend/.next/standalone` e os arquivos estáticos correspondentes em um diretório versionado do VPS.
-3. Executar o Next.js como serviço separado, em uma porta interna que não seja `4173`.
-4. Configurar o proxy para encaminhar apenas as rotas migradas ao Next.js e manter as demais no app legado.
-5. Definir `PROELIUM_API_ORIGIN` apontando para a origem HTTPS da API legada.
-6. Validar health check, autenticação e uma rota migrada antes de ampliar o encaminhamento.
+3. Executar o Next.js como serviço separado na porta `4300`.
+4. Instalar `deploy/proelium-next-proxy.example.conf` em `/etc/nginx/snippets/proelium-next-locations.conf` e recarregar o Nginx.
+5. Encaminhar para o Next.js todas as rotas de módulos construídas; manter a raiz no shell legado até concluir os testes autenticados do shell principal.
+6. Validar health check, autenticação, matriz de rotas e as APIs específicas antes de ampliar o shell principal.
 
 ## Critérios de rollback
 
 Se o health check ou a autenticação falhar, remover o encaminhamento das rotas Next.js e manter o serviço legado ativo. O build anterior deve permanecer disponível para retorno rápido.
 
-## Pendências de infraestrutura
+## Infraestrutura publicada
 
-- nome e arquivo do serviço do Next.js;
-- porta interna reservada;
-- configuração do proxy reverso;
-- segredo/variável `PROELIUM_API_ORIGIN` no VPS;
-- health check público e procedimento de rollback.
+- serviço `proelium-next.service` na porta `4300`;
+- proxy reverso versionado em `deploy/proelium-next-proxy.example.conf`;
+- health check público e teste operacional executados no deploy;
+- rollback: remover ou restaurar o snippet do Next.js e recarregar o Nginx, mantendo o app legado na porta `4173`.
