@@ -89,6 +89,7 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
   const data = {
     products: [
       { id: 'ups', name: 'Nobreak senoidal 1200 VA / 720 W', technicalType: 'Nobreak', price: 1200, cost: 600, active: true },
+      { id: 'organizer', name: 'Organizador horizontal de cabos 1U', technicalType: 'Organizador de cabos', price: 180, cost: 90, active: true },
       { id: 'switch-16', name: 'Switch 16 portas', technicalType: 'Switch de rede', price: 100, cost: 50, active: true },
       { id: 'switch-24', name: 'Switch 24 portas PoE', technicalType: 'Switch de rede', price: 900, cost: 500, active: true },
       { id: 'ap', name: 'Access Point Wi-Fi PoE', technicalType: 'Ponto de rede Wi-Fi', price: 300, cost: 150, active: true },
@@ -100,7 +101,7 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
       id: 'survey-confirmed',
       opportunityId: 'opp-1',
       status: 'Enviado ao orcamento',
-      technicalSolution: { status: 'confirmed', engineVersion: 'network-v1', selectedProductIds: ['switch-24', 'ap', 'patch', 'rack', 'ups'] }
+      technicalSolution: { status: 'confirmed', engineVersion: 'network-v1', selectedProductIds: ['switch-24', 'ap', 'patch', 'rack', 'ups', 'organizer'] }
     }],
     surveyPoints: [
       { id: 'point-1', surveyId: 'survey-confirmed', room: 'Sala', type: 'Ponto de rede Cat6', quantity: 19 },
@@ -117,6 +118,7 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
   const patchPanelItem = infrastructure?.items.find(item => item.productId === 'patch');
   const rackItem = infrastructure?.items.find(item => item.productId === 'rack');
   const upsItem = infrastructure?.items.find(item => item.productId === 'ups');
+  const organizerItem = infrastructure?.items.find(item => item.productId === 'organizer');
   const accessPointItem = data.quoteRooms.find(room => room.name === 'Sala')?.items.find(item => item.productId === 'ap');
 
   assert.equal(result.unmapped.length, 0);
@@ -125,7 +127,8 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
   assert.equal(patchPanelItem?.qty, 1);
   assert.equal(rackItem?.qty, 1);
   assert.equal(upsItem?.qty, 1);
-  assert.equal(data.quotes[0].value, 9600);
+  assert.equal(organizerItem?.qty, 1);
+  assert.equal(data.quotes[0].value, 9780);
   assert.equal(data.quotes[0].surveyMapping.technicalSolutionApplied, true);
 });
 

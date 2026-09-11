@@ -14,7 +14,8 @@ test('dimensiona portas de rede com reserva técnica de 20%', () => {
   assert.deepEqual(result.solutions, [
     { category: 'network', kind: 'switch', ports: 24, poeRequired: false, poeWattsMinimum: null },
     { category: 'network', kind: 'patch-panel', ports: 24, quantity: 1 },
-    { category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 },
+    { category: 'network', kind: 'cable-management', ports: 24, quantity: 1 },
+    { category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6, mountingUnitsOccupied: 3, mountingUnitsReserve: 3 },
     { category: 'network', kind: 'ups', quantity: 1, powerWattsMinimum: null, vaMinimum: null, autonomyMinutesMinimum: 10, outputWaveform: 'senoidal' },
     { category: 'electrical', kind: 'electrical-infrastructure', quantity: 1, dedicatedCircuitRequired: true, groundingRequired: true, surgeProtectionRequired: true }
   ]);

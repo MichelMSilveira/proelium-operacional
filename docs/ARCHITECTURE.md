@@ -38,6 +38,8 @@ O fluxo comercial passa a reservar uma etapa entre levantamento e orçamento: `L
 
 ## Preparação para o N.E.M.O.
 
+O requisito de rack registra unidades ocupadas e reserva técnica. A regra também produz organizadores de cabos por bloco de até 24 portas; o tipo é genérico, não conhece fabricante e só chega ao orçamento quando uma referência compatível é confirmada.
+
 Para a infraestrutura de rede, o motor também produz um requisito de nobreak senoidal com potência e VA mínimos derivados da carga PoE conhecida, além de autonomia mínima de 10 minutos. Ele registra separadamente circuito dedicado, aterramento e DPS; esses requisitos de instalação não são tratados como produtos. A compatibilidade do nobreak compara capacidade cadastrada e permanece independente de marca.
 
 - API versionada e documentada.

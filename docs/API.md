@@ -28,6 +28,8 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 
 ## Recursos
 
+A prévia de Dimensionamento de Rede também retorna a ocupação mínima do rack (equipamentos, organização e reserva) e organizadores de cabos dimensionados por blocos de portas. A compatibilidade continua genérica e a confirmação aplica o organizador selecionado ao orçamento.
+
 A prévia de Dimensionamento de Rede também pode retornar nobreak com potência/VA mínimos, autonomia e saída senoidal, além de requisitos de infraestrutura elétrica (circuito dedicado, aterramento e DPS). A camada de compatibilidade consulta a capacidade cadastrada do nobreak; os requisitos elétricos de instalação não são produtos.
 
 | Método | Rota | Uso |

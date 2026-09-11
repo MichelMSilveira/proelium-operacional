@@ -77,6 +77,10 @@
     const poeWattsRequired = poeRequired && poeWattsKnown > 0 ? Math.ceil(poeWattsKnown) : null;
     const poeWattsWithReserve = poeWattsRequired == null ? null : Math.ceil(poeWattsRequired * (1 + reservePercent / 100));
     const upsVaMinimum = poeWattsWithReserve == null ? null : Math.ceil((poeWattsWithReserve / UPS_POWER_FACTOR) / 100) * 100;
+    const cableManagementQuantity = portsUsed ? Math.max(1, Math.ceil((minimumStandardPorts || portsUsed) / 24)) : 0;
+    const rackOccupiedUnits = portsUsed ? 1 + (minimumStandardPorts ? 1 : 0) + cableManagementQuantity : 0;
+    const rackReserveUnits = portsUsed ? 3 : 0;
+    const rackMinimumUnits = portsUsed ? Math.max(6, rackOccupiedUnits + rackReserveUnits) : 0;
     const warnings = [];
     if (!networkPoints.length) warnings.push({ code: 'network.no-input', message: 'Nenhum ponto de Rede foi identificado no levantamento.' });
     if (portsUsed && !minimumStandardPorts) warnings.push({ code: 'network.switch-capacity', message: `A necessidade de ${portsRequired} portas excede os padrões iniciais de 8, 16, 24 e 48 portas.` });
@@ -100,7 +104,8 @@
       sourcePointIds: accessPointPoints.map((point) => text(point.id)).filter(Boolean),
     });
     if (portsUsed && minimumStandardPorts) requirements.push({ category: 'network', kind: 'patch-panel', ports: minimumStandardPorts, quantity: 1 });
-    if (portsUsed) requirements.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 });
+    if (portsUsed) requirements.push({ category: 'network', kind: 'cable-management', ports: minimumStandardPorts || portsUsed, quantity: cableManagementQuantity });
+    if (portsUsed) requirements.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: rackMinimumUnits, mountingUnitsOccupied: rackOccupiedUnits, mountingUnitsReserve: rackReserveUnits });
     if (networkPoints.length) requirements.push({
       category: 'network',
       kind: 'ups',
@@ -130,7 +135,8 @@
     });
     if (accessPointsRequired) solutions.push({ category: 'network', kind: 'access-point', quantity: accessPointsRequired });
     if (portsUsed && minimumStandardPorts) solutions.push({ category: 'network', kind: 'patch-panel', ports: minimumStandardPorts, quantity: 1 });
-    if (portsUsed) solutions.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 });
+    if (portsUsed) solutions.push({ category: 'network', kind: 'cable-management', ports: minimumStandardPorts || portsUsed, quantity: cableManagementQuantity });
+    if (portsUsed) solutions.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: rackMinimumUnits, mountingUnitsOccupied: rackOccupiedUnits, mountingUnitsReserve: rackReserveUnits });
     if (networkPoints.length) solutions.push({ category: 'network', kind: 'ups', quantity: 1, powerWattsMinimum: poeWattsWithReserve, vaMinimum: upsVaMinimum, autonomyMinutesMinimum: UPS_AUTONOMY_MINUTES, outputWaveform: 'senoidal' });
     if (networkPoints.length) solutions.push({ category: 'electrical', kind: 'electrical-infrastructure', quantity: 1, dedicatedCircuitRequired: true, groundingRequired: true, surgeProtectionRequired: true });
     return {

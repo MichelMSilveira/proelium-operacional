@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O Dimensionamento Técnico de Rede agora calcula ocupação e reserva do rack e gera organizadores de cabos por bloco de 24 portas. Referências confirmadas podem ser aplicadas à infraestrutura do orçamento. Cache web atualizado para `v399`.
+
 - O Dimensionamento Tecnico de Rede agora gera requisito generico de nobreak com potencia/VA derivados da carga PoE conhecida e exige circuito dedicado, aterramento e DPS. Um produto compativel pode ser confirmado e aplicado a infraestrutura do orcamento. Cache web atualizado para `v398`.
 
 - O Dimensionamento Técnico de Rede agora gera requisitos de patch panel e rack a partir da capacidade dimensionada; referências confirmadas podem ser incluídas na infraestrutura do orçamento. Cache web atualizado para `v397`.

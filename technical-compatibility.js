@@ -63,6 +63,11 @@
     return value.includes('rack') || value.includes('armario tecnico') || value.includes('gabinete de rede');
   }
 
+  function isCableManagement(product) {
+    const value = productText(product);
+    return value.includes('organizador de cabo') || value.includes('organizacao de cabo') || value.includes('gerenciamento de cabo') || value.includes('cable management');
+  }
+
   function isUps(product) {
     const value = productText(product);
     return value.includes('nobreak') || value.includes('no break') || value.includes('ups') || value.includes('backup power');
@@ -129,11 +134,12 @@
     const unmatched = [];
     requirements.forEach((requirement) => {
       if (requirement.kind === 'electrical-infrastructure') return;
-      if (!['switch', 'access-point', 'patch-panel', 'rack', 'ups'].includes(requirement.kind)) return;
+      if (!['switch', 'access-point', 'patch-panel', 'cable-management', 'rack', 'ups'].includes(requirement.kind)) return;
       const compatible = catalog.filter((product) => {
         if (!product || product.active === false || normalized(product.catalogType) === 'service') return false;
         if (requirement.kind === 'access-point') return isAccessPoint(product);
         if (requirement.kind === 'rack') return isRack(product);
+        if (requirement.kind === 'cable-management') return isCableManagement(product);
         if (requirement.kind === 'ups') {
           if (!isUps(product)) return false;
           const requiredWatts = Number(requirement.powerWattsMinimum || 0);
@@ -165,6 +171,8 @@
           ? { quantity: requirement.quantity }
           : requirement.kind === 'patch-panel'
             ? { ports: requirement.ports, quantity: requirement.quantity }
+            : requirement.kind === 'cable-management'
+              ? { ports: requirement.ports, quantity: requirement.quantity }
             : requirement.kind === 'ups'
               ? { quantity: requirement.quantity, powerWattsMinimum: requirement.powerWattsMinimum ?? null, vaMinimum: requirement.vaMinimum ?? null, autonomyMinutesMinimum: requirement.autonomyMinutesMinimum, outputWaveform: requirement.outputWaveform }
             : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },

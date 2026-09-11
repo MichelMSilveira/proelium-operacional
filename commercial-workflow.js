@@ -218,6 +218,9 @@
       if (confirmedSwitch && !addGenerated(confirmedSwitch, 1, { global: true, kind: 'network-switch' }, technicalNetworkPoints.map(point => point.id), `Produto confirmado na soluÃ§Ã£o tÃ©cnica ${String(technicalSolution.engineVersion || '')}`.trim())) unmapped.push({ type: 'Switch de rede' });
     }
     if (technicalNetworkPoints.length) {
+      const confirmedCableManagement = selectedProducts.find(product => /organizador\s+de\s+cabo|organizacao\s+de\s+cabo|gerenciamento\s+de\s+cabo|cable\s+management/.test(productSearchText(product)));
+      const cableManagementQuantity = Math.max(1, Math.ceil((totalNetwork || technicalNetworkPoints.length) / 24));
+      if (confirmedCableManagement && !addGenerated(confirmedCableManagement, cableManagementQuantity, { global: true, kind: 'cable-management' }, technicalNetworkPoints.map(point => point.id), 'Organizacao de cabos dimensionada por bloco de 24 portas')) unmapped.push({ type: 'Organizador de cabos' });
       const confirmedUps = selectedProducts.find(product => /nobreak|no\s*break|ups|backup\s*power/.test(productSearchText(product)));
       if (confirmedUps && !addGenerated(confirmedUps, 1, { global: true, kind: 'ups' }, technicalNetworkPoints.map(point => point.id), 'Produto confirmado na solucao tecnica')) unmapped.push({ type: 'Nobreak' });
     }

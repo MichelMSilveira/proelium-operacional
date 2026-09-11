@@ -10,6 +10,7 @@ test('encontra switch compatível sem expor preço ou custo', () => {
     { id: 'right', name: 'Switch 24 portas PoE+', brand: 'Marca', model: 'M24', category: 'Rede', active: true, price: 999 },
     { id: 'patch', name: 'Patch panel 24 portas', category: 'Cabeamento', active: true },
     { id: 'ups', name: 'Nobreak senoidal 1200 VA / 720 W', category: 'Infraestrutura eletrica', technicalType: 'Nobreak', active: true },
+    { id: 'organizer', name: 'Organizador horizontal de cabos 1U', category: 'Infraestrutura de rede', technicalType: 'Organizador de cabos', active: true },
     { id: 'rack', name: 'Rack técnico 6U', category: 'Infraestrutura', active: true },
   ]);
 
@@ -50,6 +51,7 @@ test('encontra access points compativeis sem misturar switches', () => {
     { id: 'ap', name: 'Access Point Wi-Fi PoE+', category: 'Rede Wi-Fi', active: true },
     { id: 'switch', name: 'Switch 24 portas PoE+', category: 'Rede', active: true },
     { id: 'patch', name: 'Patch panel 24 portas', category: 'Cabeamento', active: true },
+    { id: 'organizer', name: 'Organizador horizontal de cabos 1U', category: 'Infraestrutura de rede', technicalType: 'Organizador de cabos', active: true },
     { id: 'rack', name: 'Rack técnico 6U', category: 'Infraestrutura', active: true }
   ]);
 
@@ -57,6 +59,7 @@ test('encontra access points compativeis sem misturar switches', () => {
   assert.equal(match.requirement.quantity, 2);
   assert.deepEqual(match.products.map((product) => product.productId), ['ap']);
   assert.equal(result.matches.find((item) => item.requirementKind === 'patch-panel').products[0].productId, 'patch');
+  assert.equal(result.matches.find((item) => item.requirementKind === 'cable-management').products[0].productId, 'organizer');
   assert.equal(result.matches.find((item) => item.requirementKind === 'rack').products[0].productId, 'rack');
 });
 
