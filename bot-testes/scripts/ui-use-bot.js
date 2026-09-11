@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 
-const baseUrl = process.argv[2] || process.env.PROELIUM_TEST_URL || 'http://127.0.0.1:4173';
+const cliBaseUrl = process.argv.slice(2).find(argument => !argument.startsWith('--'));
+const baseUrl = cliBaseUrl || process.env.PROELIUM_TEST_URL || 'http://127.0.0.1:4173';
 const username = process.env.PROELIUM_TEST_USER;
 const password = process.env.PROELIUM_TEST_PASSWORD;
 

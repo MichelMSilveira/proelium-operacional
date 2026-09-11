@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Corrigido o bot de interface Next para aceitar a URL de teste mesmo quando as opções `--next`, `--chrome` ou `--headed` aparecem antes dela.
+
 - O proxy reverso passou a encaminhar as APIs específicas dos módulos Next.js para o próprio frontend, preservando no servidor raiz o health check, OAuth, SSE e o contrato legado; as telas migradas passam a manter sessão e dados no mesmo caminho publicado.
 
 - Ajustado o unit file do Next.js para usar o caminho real do Node instalado no VPS (`/usr/local/bin/node`), evitando loop de restart após a publicação do standalone.
