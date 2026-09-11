@@ -90,6 +90,77 @@ export class SurveyService {
     return { surveyId, dimensioning, compatibility: technicalCompatibility.findCompatibleProducts(dimensioning, products) };
   }
 
+  async confirmDimensioning(surveyId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
+    if (!surveyId.trim()) throw new BadRequestException('O identificador do levantamento e obrigatorio.');
+    if (!body || typeof body !== 'object') throw new BadRequestException('Corpo de confirmacao invalido.');
+    const input = body as { productIds?: unknown; baseRevision?: unknown };
+    if (!Array.isArray(input.productIds) || !input.productIds.length || input.productIds.some((item) => typeof item !== 'string' || !item.trim())) {
+      throw new BadRequestException('Selecione ao menos um produto compativel.');
+    }
+    const productIds = [...new Set(input.productIds.map((item) => this.text(item)))];
+    if (!this.pool) {
+      const current = await this.readAggregate(cookie);
+      const surveys = this.normalizeSurveys(current.data?.surveys);
+      const survey = surveys.find((item) => this.sameId(item, surveyId));
+      if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
+      const points = this.normalizePoints(current.data?.surveyPoints).filter((point) => point.surveyId === surveyId);
+      const dimensioning = technicalDimensioning.dimensionSurvey(survey, points);
+      const products = Array.isArray(current.data?.products) ? current.data.products.map((item) => this.record(item)).filter((item): item is RecordItem => Boolean(item)) : [];
+      const compatibility = technicalCompatibility.findCompatibleProducts(dimensioning, products);
+      const allowed = new Set((compatibility.matches as Array<RecordItem>).flatMap((item) => Array.isArray(item.products) ? item.products.map((product) => this.text(this.record(product)?.productId)) : []));
+      if (productIds.some((productId) => !allowed.has(productId))) throw new BadRequestException('A selecao contem produto fora da compatibilidade tecnica calculada.');
+      const technicalSolution = { status: 'confirmed', engineVersion: String(dimensioning.engineVersion), compatibilityEngineVersion: String(compatibility.engineVersion), selectedProductIds: productIds, confirmedAt: new Date().toISOString() };
+      const nextSurveys = surveys.map((item) => item.id === surveyId ? { ...item, technicalSolution } : item);
+      const otherSurveys = (Array.isArray(current.data?.surveys) ? current.data.surveys : []).filter((item) => !this.sameId(item, surveyId));
+      return this.forward({ ...current.data, surveys: [...otherSurveys, ...nextSurveys.filter((item) => item.id === surveyId)] }, input.baseRevision, cookie);
+    }
+    const context = await this.authContext(cookie);
+    this.ensureWritePermission(context);
+    const client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      const currentRevision = await this.lockRevision(client, context.companyId);
+      if (currentRevision !== this.revision(input.baseRevision)) {
+        await client.query('rollback');
+        return this.conflict(currentRevision);
+      }
+      const surveyResult = await client.query(
+        `select id, opportunity_id as "opportunityId", title, site, source, status, notes, extra_data as "extraData"
+         from survey_domain_surveys where company_id = $1 and id = $2`,
+        [context.companyId, surveyId],
+      );
+      const survey = surveyResult.rows[0] as RecordItem | undefined;
+      if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
+      const pointsResult = await client.query(
+        `select id, survey_id as "surveyId", room, room_id as "roomId", type, technology, quantity, status, notes, extra_data as "extraData"
+         from survey_domain_points where company_id = $1 and survey_id = $2`,
+        [context.companyId, surveyId],
+      );
+      const productsResult = await client.query(
+        `select id, catalog_type as "catalogType", name, sku, category, active, extra_data as "extraData"
+         from products_domain_entries where company_id = $1 order by updated_at desc, name asc`,
+        [context.companyId],
+      );
+      const points = pointsResult.rows.map((row) => this.pointFromRow(row));
+      const products = productsResult.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: this.text(row.id), catalogType: this.text(row.catalogType), name: this.text(row.name), sku: this.text(row.sku), category: this.text(row.category), active: row.active !== false }));
+      const dimensioning = technicalDimensioning.dimensionSurvey(survey, points);
+      const compatibility = technicalCompatibility.findCompatibleProducts(dimensioning, products);
+      const allowed = new Set((compatibility.matches as Array<RecordItem>).flatMap((item) => Array.isArray(item.products) ? item.products.map((product) => this.text(this.record(product)?.productId)) : []));
+      if (productIds.some((productId) => !allowed.has(productId))) throw new BadRequestException('A selecao contem produto fora da compatibilidade tecnica calculada.');
+      const technicalSolution = { status: 'confirmed', engineVersion: String(dimensioning.engineVersion), compatibilityEngineVersion: String(compatibility.engineVersion), selectedProductIds: productIds, confirmedAt: new Date().toISOString() };
+      const extraData = { ...(this.record(survey.extraData) || {}), technicalSolution };
+      await client.query('update survey_domain_surveys set extra_data = $1::jsonb, updated_at = now() where company_id = $2 and id = $3', [JSON.stringify(extraData), context.companyId, surveyId]);
+      const revision = await this.bumpRevision(client, context.companyId);
+      await client.query('commit');
+      return { status: 200, body: JSON.stringify({ ok: true, revision, surveyId, technicalSolution }) };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async saveRooms(surveyId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {
     if (!this.pool) return this.legacySaveRooms(surveyId, body, cookie);
     const context = await this.authContext(cookie);

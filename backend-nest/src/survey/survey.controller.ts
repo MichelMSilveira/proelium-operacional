@@ -20,6 +20,12 @@ export class SurveyController {
     return this.survey.dimensioning(id, request.headers.cookie);
   }
 
+  @Post(':id/dimensioning/confirm')
+  async confirmDimensioning(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+    const upstream = await this.survey.confirmDimensioning(id, body, request.headers.cookie);
+    response.status(upstream.status).type('application/json').send(upstream.body);
+  }
+
   @Put(':id/rooms')
   async saveRooms(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.survey.saveRooms(id, body, request.headers.cookie);

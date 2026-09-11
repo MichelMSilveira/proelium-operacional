@@ -12,6 +12,7 @@ type Survey = {
   source?: string;
   status: string;
   notes?: string;
+  technicalSolution?: { status?: string; selectedProductIds?: string[]; confirmedAt?: string };
 };
 
 type SurveyPoint = {
@@ -187,6 +188,26 @@ export default function SurveyPage() {
     }
   }
 
+  async function confirmCompatibleProducts(survey: Survey) {
+    const compatibility = compatibilityBySurvey[survey.id];
+    const productIds = compatibility?.matches?.flatMap((match) => (match.products || []).map((product) => product.productId)) || [];
+    if (!productIds.length) {
+      setError('Nenhum produto compativel disponivel para confirmar.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const result = await apiPost<{ revision?: number }>(`/api/survey/${encodeURIComponent(survey.id)}/dimensioning/confirm`, { productIds, baseRevision: revision });
+      setRevision(result.revision ?? revision);
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Nao foi possivel confirmar a solucao tecnica.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <ModuleLayout eyebrow="LEVANTAMENTO TÉCNICO" title="Necessidades e pontos" description="Construa ambientes, pontos e quantitativos antes de enviar o levantamento para orçamento.">
       {error && <p className="error">{error}</p>}
@@ -235,7 +256,7 @@ export default function SurveyPage() {
           const surveyPoints = points.filter((point) => point.surveyId === survey.id);
           const surveyRooms = rooms.filter((room) => room.surveyId === survey.id);
           const ready = ['Validado', 'Enviado ao orçamento'].includes(survey.status) && surveyPoints.some((point) => Number(point.quantity || 0) > 0);
-          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><span><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button><button type="button" onClick={() => void sendToQuote(survey)} disabled={saving || !ready}>Enviar ao orçamento</button></span></div>{survey.notes && <p>{survey.notes}</p>}<DimensioningPreview result={dimensioningBySurvey[survey.id]} compatibility={compatibilityBySurvey[survey.id]} />{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
+          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><span><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button><button type="button" onClick={() => void sendToQuote(survey)} disabled={saving || !ready}>Enviar ao orçamento</button></span></div>{survey.notes && <p>{survey.notes}</p>}<DimensioningPreview result={dimensioningBySurvey[survey.id]} compatibility={compatibilityBySurvey[survey.id]} confirmed={survey.technicalSolution?.status === 'confirmed'} onConfirm={() => void confirmCompatibleProducts(survey)} />{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
         })}
         {!error && !surveys.length && <p>Nenhum levantamento disponível.</p>}
       </div>
@@ -244,12 +265,12 @@ export default function SurveyPage() {
   );
 }
 
-function DimensioningPreview({ result, compatibility }: { result?: DimensioningResult; compatibility?: CompatibilityResult }) {
+function DimensioningPreview({ result, compatibility, confirmed, onConfirm }: { result?: DimensioningResult; compatibility?: CompatibilityResult; confirmed?: boolean; onConfirm?: () => void }) {
   if (!result) return null;
   const requirement = result.requirements?.find((item) => item.kind === 'switch');
   const solution = result.solutions?.find((item) => item.ports);
   const products = compatibility?.matches?.flatMap((match) => match.products || []) || [];
-  return <section className="dimensioning-preview"><header><strong>Dimensionamento técnico - Rede</strong><small>{result.status === 'dimensionado' ? 'Dimensionado' : 'Revisão necessária'}</small></header>{requirement ? <div>{requirement.portsUsed} porta(s) usadas + {requirement.reservePercent}% de reserva = <strong>{requirement.portsRequired} necessárias</strong>{solution?.ports ? <>; requisito mínimo de switch: <strong>{solution.ports} portas</strong>.</> : '.'}</div> : <div>Nenhum ponto de Rede identificado neste levantamento.</div>}{requirement?.poeRequired && <div>PoE: {requirement.poeWattsWithReserve ? `${requirement.poeWattsWithReserve} W com reserva técnica` : 'consumo ainda não informado'}.</div>}{products.length > 0 && <div><strong>Produtos compatíveis:</strong> {products.map((product) => `${product.name || product.sku || product.productId} (${product.capacity} portas)`).join(' · ')}</div>}{compatibility?.unmatched?.length ? <ul>{compatibility.unmatched.map((item, index) => <li key={`${item.message}-${index}`}>{item.message}</li>)}</ul> : null}{Boolean(result.warnings?.length) && <ul>{result.warnings?.map((warning, index) => <li key={`${warning.message}-${index}`}>{warning.message}</li>)}</ul>}<small>Requisitos, compatibilidade e preço continuam camadas separadas.</small></section>;
+  return <section className="dimensioning-preview"><header><strong>Dimensionamento técnico - Rede</strong><small>{confirmed ? 'Solução confirmada' : result.status === 'dimensionado' ? 'Dimensionado' : 'Revisão necessária'}</small></header>{requirement ? <div>{requirement.portsUsed} porta(s) usadas + {requirement.reservePercent}% de reserva = <strong>{requirement.portsRequired} necessárias</strong>{solution?.ports ? <>; requisito mínimo de switch: <strong>{solution.ports} portas</strong>.</> : '.'}</div> : <div>Nenhum ponto de Rede identificado neste levantamento.</div>}{requirement?.poeRequired && <div>PoE: {requirement.poeWattsWithReserve ? `${requirement.poeWattsWithReserve} W com reserva técnica` : 'consumo ainda não informado'}.</div>}{products.length > 0 && <div><strong>Produtos compatíveis:</strong> {products.map((product) => `${product.name || product.sku || product.productId} (${product.capacity} portas)`).join(' · ')}</div>}{compatibility?.unmatched?.length ? <ul>{compatibility.unmatched.map((item, index) => <li key={`${item.message}-${index}`}>{item.message}</li>)}</ul> : null}{Boolean(result.warnings?.length) && <ul>{result.warnings?.map((warning, index) => <li key={`${warning.message}-${index}`}>{warning.message}</li>)}</ul>}{products.length > 0 && <div><button type="button" onClick={onConfirm} disabled={confirmed}>{confirmed ? 'Produtos confirmados na solução técnica' : 'Confirmar solução técnica'}</button></div>}<small>Requisitos, compatibilidade e preço continuam camadas separadas.</small></section>;
 }
 
 function surveyDraftFrom(survey: Survey) {

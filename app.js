@@ -2467,7 +2467,7 @@ function survey(){
   return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-room="${selected.id}">+ Adicionar ambiente</button><button class="button secondary" data-add-survey-point>+ Adicionar ponto / quantitativo</button><button class="button secondary" data-delete-survey="${selected.id}">Excluir levantamento</button>${sendButton}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p>${surveyValidationMeta(selected)}</div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
 }
 views.survey=survey;
-function technicalDimensioningPanel(result,compatibility){
+function technicalDimensioningPanel(result,compatibility,survey){
   const requirement=result?.requirements?.find(item=>item.kind==='switch'),solution=result?.solutions?.find(item=>item.ports);
   if(!result)return '';
   const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}`:'Nenhum ponto de Rede identificado neste levantamento.';
@@ -2476,7 +2476,9 @@ function technicalDimensioningPanel(result,compatibility){
   const matches=(compatibility?.matches||[]).flatMap(item=>item.products||[]);
   const compatible=matches.length?`<div><strong>Produtos compativeis no catalogo:</strong> ${matches.map(item=>`${item.name||item.sku||item.productId} (${item.capacity} portas)`).join(' · ')}</div>`:'';
   const unmatched=(compatibility?.unmatched||[]).map(item=>`<li>${item.message}</li>`).join('');
-  return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Rede</h3><p class="subtext">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'} · previa generica, sem marca, produto ou preco.</p></div></div><div>${details}.</div>${poe}${compatible}${warnings?`<ul class="technical-dimensioning-warnings">${warnings}</ul>`:''}${unmatched?`<ul class="technical-dimensioning-warnings">${unmatched}</ul>`:''}</section>`;
+  const confirmed=survey?.technicalSolution?.status==='confirmed';
+  const confirmation=matches.length?`<div class="technical-dimensioning-confirmation">${confirmed?'Solucao tecnica confirmada para este levantamento.':`<button class="button secondary" data-confirm-dimensioning="${survey.id}">Confirmar solucao tecnica</button>`}</div>`:'';
+  return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Rede</h3><p class="subtext">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'} · previa generica, sem marca, produto ou preco.</p></div></div><div>${details}.</div>${poe}${compatible}${warnings?`<ul class="technical-dimensioning-warnings">${warnings}</ul>`:''}${unmatched?`<ul class="technical-dimensioning-warnings">${unmatched}</ul>`:''}${confirmation}</section>`;
 }
 const surveyWithDimensioningPreview=views.survey;
 views.survey=()=>{
@@ -2486,7 +2488,7 @@ views.survey=()=>{
   const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===selected.id);
   const dimensioning=TechnicalDimensioning.dimensionSurvey(selected,points);
   const compatibility=typeof TechnicalCompatibility==='undefined'?null:TechnicalCompatibility.findCompatibleProducts(dimensioning,state.data.products||[]);
-  return html.replace('<div class="room-grid">',technicalDimensioningPanel(dimensioning,compatibility)+'<div class="room-grid">');
+  return html.replace('<div class="room-grid">',technicalDimensioningPanel(dimensioning,compatibility,selected)+'<div class="room-grid">');
 };
 const surveySaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{
@@ -2499,6 +2501,15 @@ document.addEventListener('click',event=>{
   if(add){event.preventDefault();openTechnicalSurvey();return}if(open){event.preventDefault();state.selectedSurvey=open.dataset.openSurvey;state.selectedSurveyRoom='';state.view='survey';render();return}if(back){event.preventDefault();state.selectedSurvey=null;state.selectedSurveyRoom='';render();return}if(edit){event.preventDefault();openTechnicalSurvey(edit.dataset.editSurvey);return}if(remove){event.preventDefault();deleteTechnicalSurvey(remove.dataset.deleteSurvey);return}if(addRoom){event.preventDefault();openSurveyRoomEdit(addRoom.dataset.addSurveyRoom,'');return}if(selectRoom){event.preventDefault();state.selectedSurveyRoom=selectRoom.dataset.selectSurveyRoom;render();return}if(point){event.preventDefault();openSurveyPoint();return}if(editPoint){event.preventDefault();openSurveyPoint(editPoint.dataset.editSurveyPoint);return}if(sendToQuote){event.preventDefault();startQuoteFromSurvey(sendToQuote.dataset.surveySendToQuote);return}if(startQuote){event.preventDefault();startQuoteFromSurvey(startQuote.dataset.surveyStartQuote);return}if(send){event.preventDefault();const current=(state.data.surveys||[]).find(item=>item.id===send.dataset.surveyCreateRooms),quote=(state.data.quotes||[]).find(item=>item.opportunityId===current?.opportunityId&&item.status!=='Aprovado');if(!current||!quote)return;const count=sendSurveyRoomsToQuote(current,quote);persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`${count} ambiente(s) enviados ao orçamento. Os itens continuam aguardando validação comercial.`)}
 },true);
 document.addEventListener('click',event=>{const add=event.target.closest('[data-add="survey"]');if(!add)return;event.preventDefault();event.stopImmediatePropagation();openTechnicalSurvey()},true);
+function confirmTechnicalDimensioning(id){
+  const survey=(state.data.surveys||[]).find(item=>item.id===id),points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===id);
+  if(!survey||typeof TechnicalDimensioning==='undefined'||typeof TechnicalCompatibility==='undefined')return;
+  const dimensioning=TechnicalDimensioning.dimensionSurvey(survey,points),compatibility=TechnicalCompatibility.findCompatibleProducts(dimensioning,state.data.products||[]),productIds=(compatibility.matches||[]).flatMap(item=>(item.products||[]).map(product=>product.productId));
+  if(!productIds.length){toast('Nenhum produto compativel disponivel para confirmar.');return}
+  survey.technicalSolution={status:'confirmed',engineVersion:dimensioning.engineVersion,compatibilityEngineVersion:compatibility.engineVersion,selectedProductIds:productIds,confirmedAt:new Date().toISOString()};
+  persist();render();toast('Solucao tecnica confirmada. Os produtos ainda nao foram incluidos no orcamento.');
+}
+document.addEventListener('click',event=>{const button=event.target.closest('[data-confirm-dimensioning]');if(!button)return;event.preventDefault();confirmTechnicalDimensioning(button.dataset.confirmDimensioning)},true);
 render();
 
 // Camadas adicionadas depois do levantamento também normalizam os dados recebidos do servidor.
