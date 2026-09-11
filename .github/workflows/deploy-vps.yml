@@ -59,7 +59,7 @@ jobs:
           runtime_files=(
             server.js app.js index.html styles.css quotes.css bi.css crm.css
             danger.css sw.js commercial-workflow.js technical-dimensioning.js technical-compatibility.js manifest.webmanifest icon.svg storage.js
-            package.json package-lock.json
+            package.json package-lock.json auth-admin.js
           )
           rsync -az "${runtime_files[@]}" \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/"
