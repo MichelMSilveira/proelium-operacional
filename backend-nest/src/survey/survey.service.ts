@@ -8,6 +8,9 @@ const surveyQuoteMapper = require('../../../commercial-workflow.js') as {
 const technicalDimensioning = require('../../../technical-dimensioning.js') as {
   dimensionSurvey: (survey: Record<string, unknown>, points: Array<Record<string, unknown>>, options?: Record<string, unknown>) => Record<string, unknown>;
 };
+const technicalCompatibility = require('../../../technical-compatibility.js') as {
+  findCompatibleProducts: (dimensioning: Record<string, unknown>, products: Array<Record<string, unknown>>) => Record<string, unknown>;
+};
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
@@ -68,14 +71,23 @@ export class SurveyService {
       const survey = surveys.find((item) => this.sameId(item, surveyId));
       if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
       const points = this.normalizePoints(current.data?.surveyPoints).filter((point) => point.surveyId === surveyId);
-      return { surveyId, dimensioning: technicalDimensioning.dimensionSurvey(survey, points) };
+      const dimensioning = technicalDimensioning.dimensionSurvey(survey, points);
+      const products = Array.isArray(current.data?.products) ? current.data.products.map((item) => this.record(item)).filter((item): item is RecordItem => Boolean(item)) : [];
+      return { surveyId, dimensioning, compatibility: technicalCompatibility.findCompatibleProducts(dimensioning, products) };
     }
     const context = await this.authContext(cookie);
     const snapshot = await this.directSnapshot(context.companyId);
     const survey = snapshot.surveys.find((item) => item.id === surveyId);
     if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
     const points = snapshot.points.filter((point) => point.surveyId === surveyId);
-    return { surveyId, dimensioning: technicalDimensioning.dimensionSurvey(survey, points) };
+    const productsResult = await this.pool.query(
+      `select id, catalog_type as "catalogType", name, sku, category, active, extra_data as "extraData"
+       from products_domain_entries where company_id = $1 order by updated_at desc, name asc`,
+      [context.companyId],
+    );
+    const products = productsResult.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: this.text(row.id), catalogType: this.text(row.catalogType), name: this.text(row.name), sku: this.text(row.sku), category: this.text(row.category), active: row.active !== false }));
+    const dimensioning = technicalDimensioning.dimensionSurvey(survey, points);
+    return { surveyId, dimensioning, compatibility: technicalCompatibility.findCompatibleProducts(dimensioning, products) };
   }
 
   async saveRooms(surveyId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {

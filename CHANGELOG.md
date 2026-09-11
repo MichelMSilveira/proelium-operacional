@@ -2,7 +2,8 @@
 
 ## Em desenvolvimento
 
-- Primeiro núcleo de Dimensionamento Técnico adicionado entre levantamento e orçamento: a regra de Rede calcula portas, reserva técnica e requisito genérico de PoE, com rastreabilidade dos pontos de origem e sem dependência de marca, produto ou preço. A prévia é somente leitura e aparece no shell legado e na tela Next.js; cache web atualizado para `v390`.
+- Adicionada a primeira camada de Produtos Compatíveis: requisitos de Rede agora consultam o catálogo por capacidade e suporte a PoE, exibindo apenas referências técnicas e justificativas, sem misturar preço ou orçamento.
+- Primeiro núcleo de Dimensionamento Técnico adicionado entre levantamento e orçamento: a regra de Rede calcula portas, reserva técnica e requisito genérico de PoE, com rastreabilidade dos pontos de origem e sem dependência de marca, produto ou preço. A prévia é somente leitura e aparece no shell legado e na tela Next.js; cache web atualizado para `v391`.
 - Corrigido o pacote da implantação para sincronizar o núcleo de Dimensionamento Técnico usado pelo NestJS no VPS.
 - O envio do levantamento validado agora cria também um pré-projeto técnico vinculado à proposta, com escopo, ambientes, quantitativos, custo e valor; a aprovação reutiliza esse vínculo para concluir o projeto sem duplicação.
 - O envio de um levantamento técnico ao orçamento agora converte seus quantitativos em sugestões de itens do catálogo, distribui os itens pelos ambientes e pela infraestrutura técnica, calcula o valor da proposta e registra pendências sem produto correspondente; o mapeamento é rastreável e idempotente na interface e no NestJS.

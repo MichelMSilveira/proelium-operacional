@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "check": "node --check app.js && node --check server.js && node --check storage.js && node --check commercial-workflow.js && node --check technical-dimensioning.js && node --test test/encoding.test.js test/storage.test.js test/commercial-workflow.test.js test/technical-dimensioning.test.js test/next-routing.test.js bot-testes/test/smoke-bot.test.js bot-testes/test/functional-test-bot.test.js",
+    "check": "node --check app.js && node --check server.js && node --check storage.js && node --check commercial-workflow.js && node --check technical-dimensioning.js && node --check technical-compatibility.js && node --test test/encoding.test.js test/storage.test.js test/commercial-workflow.test.js test/technical-dimensioning.test.js test/technical-compatibility.test.js test/next-routing.test.js bot-testes/test/smoke-bot.test.js bot-testes/test/functional-test-bot.test.js",
     "check:frontend": "npm --prefix frontend run typecheck && npm --prefix frontend run build",
     "check:nest": "npm --prefix backend-nest run build",
     "check:all": "npm run check && npm run check:frontend && npm run check:nest",

@@ -32,7 +32,7 @@ const invitesFile = path.join(dataDirectory, 'company-invites.json');
 const companyDataDirectory = path.join(dataDirectory, 'company-data');
 const storage = createStorage({ dataFile, usersFile, companiesFile, routinesFile, invitesFile, companyDataDirectory });
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
-const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'commercial-workflow.js', 'technical-dimensioning.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
+const publicFiles = new Set(['index.html', 'styles.css', 'quotes.css', 'bi.css', 'crm.css', 'danger.css', 'app.js', 'commercial-workflow.js', 'technical-dimensioning.js', 'technical-compatibility.js', 'sw.js', 'manifest.webmanifest', 'icon.svg']);
 const eventClients = new Set();
 const presence = new Map();
 const loginAttempts = new Map();

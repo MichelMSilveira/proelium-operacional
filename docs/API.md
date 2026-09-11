@@ -88,7 +88,7 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST | `/quality` | avaliações de qualidade com revisão de conflito |
 | GET/POST/PATCH | `/support-tickets` e `/support-tickets/{id}` | chamados de pós-venda com revisão de conflito |
 | GET/POST/PATCH | `/survey` | levantamentos técnicos e revisão |
-| GET | `/survey/{id}/dimensioning` | prévia de dimensionamento genérico do levantamento, atualmente com a regra de Rede |
+| GET | `/survey/{id}/dimensioning` | prévia de dimensionamento genérico e referências de Produtos Compatíveis, atualmente com a regra de Rede |
 | GET/PUT | `/survey/{id}/rooms` | ambientes do levantamento |
 | POST/PATCH/DELETE | `/survey/points` | pontos técnicos e quantitativos |
 | POST | `/survey/{id}/send-to-quote` | enviar levantamento validado ao orçamento, gerar sugestões do catálogo, criar pré-projeto técnico e recalcular o valor da proposta |
