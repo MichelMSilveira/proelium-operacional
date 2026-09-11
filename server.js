@@ -730,6 +730,38 @@ async function handleRequest(req, res) {
     try { const payload=JSON.parse(await readBody(req)), current=presence.get(authenticatedUser.username); if(current) { current.available=payload.available!==false; for(const client of eventClients)if(client.username===authenticatedUser.username&&client.companyId===authenticatedCompanyId)client.available=current.available; } announcePresence(); return sendJson(res,200,{ok:true,users:presencePayload(authenticatedCompanyId)}); }
     catch { return sendJson(res,400,{error:'Disponibilidade inválida.'}); }
   }
+  if (pathname === '/api/collaboration-requests' && req.method === 'POST' && nestAuthEnabled()) {
+    try {
+      const body = await readBody(req);
+      return await forwardNestAuth(req, res, pathname, body, 'follow', (status, responseBody) => {
+        if (status !== 202) return;
+        try {
+          const item = JSON.parse(responseBody).request;
+          if (!item) return;
+          for (const client of eventClients) if (client.companyId === authenticatedCompanyId && client.userRole === 'admin') client.write(`event: collaboration-request\ndata: ${JSON.stringify(item)}\n\n`);
+        } catch { /* resposta já foi entregue ao cliente */ }
+      });
+    } catch (error) {
+      console.error('Falha ao encaminhar pedido de colaboração ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível enviar o pedido agora.' });
+    }
+  }
+  if (pathname === '/api/assistance-requests' && req.method === 'POST' && nestAuthEnabled()) {
+    try {
+      const body = await readBody(req);
+      return await forwardNestAuth(req, res, pathname, body, 'follow', (status, responseBody) => {
+        if (status !== 202) return;
+        try {
+          const item = JSON.parse(responseBody).request;
+          if (!item) return;
+          for (const client of eventClients) if (client.companyId === authenticatedCompanyId && client.username !== authenticatedUser.username && client.available !== false) client.write(`event: assistance-request\ndata: ${JSON.stringify(item)}\n\n`);
+        } catch { /* resposta já foi entregue ao cliente */ }
+      });
+    } catch (error) {
+      console.error('Falha ao encaminhar pedido de auxílio ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível enviar o pedido agora.' });
+    }
+  }
   if (pathname === '/api/collaboration-requests' && req.method === 'POST') {
     try {
       const payload = JSON.parse(await readBody(req));

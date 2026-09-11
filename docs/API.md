@@ -11,6 +11,8 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 | GET | `/api/data` | carregar a base da empresa e sua revisão, filtrada pelas permissões do usuário |
 | PUT | `/api/data` | salvar a base informando `baseRevision`; domínios sem permissão não podem ser alterados |
 | POST | `/api/commercial/reconcile-legacy` | pré-visualizar ou aplicar, somente como administração, a reconciliação auditável das etapas comerciais legadas |
+| POST | `/api/collaboration-requests` | enviar pedido de colaboração aos administradores conectados |
+| POST | `/api/assistance-requests` | enviar pedido de auxílio aos participantes disponíveis conectados |
 | GET | `/api/events` | receber avisos de atualização em tempo real (SSE) |
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.

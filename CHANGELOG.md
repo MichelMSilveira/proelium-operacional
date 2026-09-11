@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Os pedidos de colaboração e auxílio passaram a ser validados e criados pelo NestJS quando o PostgreSQL está ativo; a entrega continua usando o SSE público e o fallback legado permanece sem banco.
+
 - A reconciliação administrativa de etapas comerciais passou a consultar e atualizar `app_state` diretamente pelo NestJS/PostgreSQL, com lock de revisão, auditoria e fallback legado.
 
 - A gravação do agregado compartilhado (`PUT /api/data`) passou a validar permissões, funil comercial e revisão em transação PostgreSQL pelo NestJS, com lock concorrente e notificação aos clientes; sem banco, o fallback legado permanece.
