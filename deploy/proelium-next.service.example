@@ -1,10 +1,10 @@
 [Unit]
-Description=Proelium Next.js frontend (transicao)
+Description=Proelium Next.js frontend
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/proelium-operacional/frontend
+WorkingDirectory=/opt/proelium-operacional/frontend/.next/standalone
 Environment=NODE_ENV=production
 Environment=PORT=4300
 Environment=PROELIUM_API_ORIGIN=http://127.0.0.1:4173

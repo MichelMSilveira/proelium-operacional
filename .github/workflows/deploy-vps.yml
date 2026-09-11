@@ -27,9 +27,10 @@ jobs:
 
       - name: Package Next.js standalone
         run: |
-          mkdir -p frontend/.next/standalone/frontend/.next
-          cp -R frontend/.next/static frontend/.next/standalone/frontend/.next/static
-          if [ -d frontend/public ]; then cp -R frontend/public frontend/.next/standalone/frontend/public; fi
+          rm -rf frontend/.next/standalone/frontend frontend/.next/standalone/.next/static frontend/.next/standalone/public
+          mkdir -p frontend/.next/standalone/.next
+          cp -R frontend/.next/static frontend/.next/standalone/.next/static
+          if [ -d frontend/public ]; then cp -R frontend/public frontend/.next/standalone/public; fi
 
       - name: Upload Next.js artifact
         uses: actions/upload-artifact@v4
@@ -76,6 +77,8 @@ jobs:
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/frontend/.next/standalone/"
           rsync -az deploy/proelium-nest.service.example \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/proelium-nest.service"
+          rsync -az deploy/proelium-next.service.example \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/proelium-next.service"
           rsync -az deploy/proelium-next-proxy.example.conf \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/proelium-next-locations.conf"
           rsync -az database/ \
@@ -88,7 +91,7 @@ jobs:
       - name: Install, migrate and restart
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-          'set -eux; cd /opt/proelium-operacional && npm ci --omit=dev --no-audit --no-fund && npm --prefix backend-nest ci --omit=dev --no-audit --no-fund && set -a && . /etc/proelium/database.env && set +a && npm run db:migrate && ls -l /tmp/proelium-nest.service /tmp/proelium-next-locations.conf && install -v -m 0644 /tmp/proelium-nest.service /etc/systemd/system/proelium-nest.service && install -v -m 0644 /tmp/proelium-next-locations.conf /etc/nginx/snippets/proelium-next-locations.conf && nginx -t && systemctl reload nginx && systemctl daemon-reload && systemctl enable proelium-next proelium-nest && chown -R root:root /opt/proelium-operacional && systemctl restart proelium-next && systemctl is-active --quiet proelium-next && systemctl restart proelium && systemctl is-active --quiet proelium; set +e; systemctl restart proelium-nest; nest_status=$?; systemctl status proelium-nest --no-pager || true; journalctl -u proelium-nest -n 80 --no-pager || true; set -e; test "$nest_status" -eq 0 && systemctl is-active --quiet proelium-nest && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4173/api/health | grep -q postgresql && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4174/api/health | grep -q proelium-backend-nest && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4300/processes >/dev/null'
+          'set -eux; cd /opt/proelium-operacional && npm ci --omit=dev --no-audit --no-fund && npm --prefix backend-nest ci --omit=dev --no-audit --no-fund && set -a && . /etc/proelium/database.env && set +a && npm run db:migrate && ls -l /tmp/proelium-next.service /tmp/proelium-nest.service /tmp/proelium-next-locations.conf && install -v -m 0644 /tmp/proelium-next.service /etc/systemd/system/proelium-next.service && install -v -m 0644 /tmp/proelium-nest.service /etc/systemd/system/proelium-nest.service && install -v -m 0644 /tmp/proelium-next-locations.conf /etc/nginx/snippets/proelium-next-locations.conf && nginx -t && systemctl reload nginx && systemctl daemon-reload && systemctl enable proelium-next proelium-nest && chown -R root:root /opt/proelium-operacional && systemctl restart proelium-next && systemctl is-active --quiet proelium-next && systemctl restart proelium && systemctl is-active --quiet proelium; set +e; systemctl restart proelium-nest; nest_status=$?; systemctl status proelium-nest --no-pager || true; journalctl -u proelium-nest -n 80 --no-pager || true; set -e; test "$nest_status" -eq 0 && systemctl is-active --quiet proelium-nest && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4173/api/health | grep -q postgresql && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4174/api/health | grep -q proelium-backend-nest && curl --fail --silent --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:4300/processes >/dev/null'
 
       - name: Run operational test bot
         run: |

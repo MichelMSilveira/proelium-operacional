@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Corrigido o empacotamento do Next.js: arquivos estáticos agora ficam no diretório servido pelo standalone, e o serviço `proelium-next` passa a ser versionado, instalado e reiniciado pelo deploy.
+
 - O deploy passou a reiniciar e validar o serviço `proelium-next` depois de sincronizar o standalone, garantindo que o VPS não continue servindo um build antigo das páginas migradas.
 
 - Corrigida a entrega do artefato standalone do Next.js: o build agora é sincronizado para o diretório usado pelo serviço no VPS antes do restart, evitando que páginas novas fiquem presas em uma versão antiga.
