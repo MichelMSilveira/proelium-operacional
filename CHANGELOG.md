@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O deploy passou a reiniciar e validar o serviço `proelium-next` depois de sincronizar o standalone, garantindo que o VPS não continue servindo um build antigo das páginas migradas.
+
 - Corrigida a entrega do artefato standalone do Next.js: o build agora é sincronizado para o diretório usado pelo serviço no VPS antes do restart, evitando que páginas novas fiquem presas em uma versão antiga.
 
 - O proxy do Next.js foi ampliado para todas as rotas de módulos já construídas, eliminando os 404 dos links de Financeiro, Operação, Agenda, Catálogo, Qualidade, Conhecimento, Compras, Levantamento, Relatórios, Rotinas, Instalações, Colaboradores, Configurações, Usuários e Convites; a raiz permanece no shell legado até a validação autenticada do shell principal.
