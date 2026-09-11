@@ -435,8 +435,84 @@ export class AuthController {
     return response.status(201).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser({ ...user, modules }), company }));
   }
 
+  private async databaseGoogle(request: { headers: { cookie?: string; [key: string]: string | undefined }; url?: string }, response: any) {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) return response.status(503).type('application/json').send(JSON.stringify({ error: 'Login Google ainda não configurado no servidor.' }));
+    const query = new URL(request.url || '/api/auth/google', 'http://internal').searchParams;
+    const invite = query.get('invite');
+    const state = randomUUID().replace(/-/g, '');
+    const stateExpiresAt = Date.now() + 300000;
+    const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+    const redirect = process.env.GOOGLE_REDIRECT_URI || `${request.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'}://${request.headers.host}/api/auth/google/callback`;
+    const params = new URLSearchParams({ client_id: process.env.GOOGLE_CLIENT_ID, redirect_uri: redirect, response_type: 'code', scope: 'openid email profile', state });
+    const cookies = [`proelium_google_state=${encodeURIComponent(this.signedSession({ state, expiresAt: stateExpiresAt }))}; Path=/; Max-Age=300; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`];
+    if (invite) cookies.unshift(`proelium_invite=${encodeURIComponent(invite)}; Path=/; Max-Age=300; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+    response.setHeader('set-cookie', cookies);
+    response.setHeader('location', `https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+    return response.status(302).send();
+  }
+
+  private async databaseGoogleCallback(request: { headers: { cookie?: string; [key: string]: string | undefined }; url?: string }, response: any) {
+    const query = new URL(request.url || '/api/auth/google/callback', 'http://internal').searchParams;
+    const state = query.get('state');
+    const code = query.get('code');
+    const stateToken = this.cookieValue(request.headers.cookie, 'proelium_google_state');
+    const statePayload = this.verifySession(`proelium_session=${stateToken}`);
+    const clearState = `proelium_google_state=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.') ? '; Secure' : ''}`;
+    response.setHeader('set-cookie', clearState);
+    if (!state || !code || statePayload?.state !== state || Number(statePayload.expiresAt) < Date.now()) return response.status(400).type('application/json').send(JSON.stringify({ error: 'Validação Google expirada ou inválida. Inicie o login novamente.' }));
+    try {
+      const redirect = process.env.GOOGLE_REDIRECT_URI || `${request.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'}://${request.headers.host}/api/auth/google/callback`;
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ code, client_id: process.env.GOOGLE_CLIENT_ID || '', client_secret: process.env.GOOGLE_CLIENT_SECRET || '', redirect_uri: redirect, grant_type: 'authorization_code' }),
+      });
+      const tokenData = await tokenResponse.json().catch(() => ({})) as RecordItem;
+      if (!tokenResponse.ok || !tokenData.access_token) return response.status(401).type('application/json').send(JSON.stringify({ error: 'Não foi possível validar a conta Google.' }));
+      const profileResponse = await fetch(`https://openidconnect.googleapis.com/v1/userinfo?access_token=${encodeURIComponent(String(tokenData.access_token))}`);
+      const profile = await profileResponse.json().catch(() => ({})) as RecordItem;
+      const email = String(profile.email || '').trim().toLowerCase();
+      if (!profileResponse.ok || !email || profile.email_verified !== true) return response.status(401).type('application/json').send(JSON.stringify({ error: 'A conta Google precisa ter e-mail verificado.' }));
+      const userResult = await this.pool!.query(
+        `select username, name, email, role, active, company_id as "companyId", account_type as "accountType", founder,
+                profile_info as "profileInfo", portfolio, modules, company_access_override as "companyAccessOverride"
+         from app_users where lower(email) = $1 and active = true limit 1`,
+        [email],
+      );
+      const stored = userResult.rows[0] as RecordItem | undefined;
+      if (!stored) {
+        const pending = this.signedSession({ email, name: String(profile.name || '').slice(0, 80), expiresAt: Date.now() + 600000 });
+        const invite = Boolean(this.cookieValue(request.headers.cookie, 'proelium_invite'));
+        response.setHeader('set-cookie', [clearState, `proelium_google_pending=${encodeURIComponent(pending)}; Path=/; Max-Age=600; HttpOnly; SameSite=Lax${request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.') ? '; Secure' : ''}`]);
+        response.setHeader('location', invite ? '/?google_invite=1' : '/?google_onboarding=1');
+        return response.status(302).send();
+      }
+      const companyId = stored.companyId || 'legacy';
+      let company: RecordItem | undefined;
+      if (companyId !== 'legacy') {
+        const companyResult = await this.pool!.query(
+          `select id, status, access_level as "accessLevel", license_status as "licenseStatus", company_type as "companyType", modules
+           from companies where id = $1`,
+          [companyId],
+        );
+        company = companyResult.rows[0] as RecordItem | undefined;
+      }
+      const modules = this.membershipModules(stored, company, []);
+      const accountType = stored.accountType || (this.isPlatformAdmin(stored) ? 'support' : (stored.companyId ? 'member' : 'support'));
+      const session = this.signedSession({ username: stored.username, role: stored.role || 'operador', name: stored.name || String(profile.name || stored.username), email, companyId, companyStatus: company?.status || (companyId === 'legacy' ? 'approved' : 'pending'), accessLevel: company?.accessLevel || (companyId === 'legacy' ? 'full' : 'limited'), licenseStatus: company?.licenseStatus || (companyId === 'legacy' ? 'approved' : 'pending'), modules, accountType, founder: stored.founder === true, profileInfo: stored.profileInfo || '', portfolio: stored.portfolio || [], expiresAt: Date.now() + this.sessionTtlSeconds * 1000 });
+      const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+      response.setHeader('set-cookie', [clearState, `proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${this.sessionTtlSeconds}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`]);
+      response.setHeader('location', '/');
+      return response.status(302).send();
+    } catch (error) {
+      console.error('Falha no OAuth Google no PostgreSQL:', error instanceof Error ? error.message : error);
+      return response.status(502).type('application/json').send(JSON.stringify({ error: 'Não foi possível concluir o login Google.' }));
+    }
+  }
+
   @Get('google')
-  async google(@Req() request: { headers: { cookie?: string }; url?: string }, @Res() response: any) {
+  async google(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined }; url?: string }, @Res() response: any) {
+    if (this.pool) return this.databaseGoogle(request, response);
     const origin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
     const query = request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
     const upstream = await fetch(`${origin}/api/auth/google${query}`, {
@@ -449,7 +525,8 @@ export class AuthController {
   }
 
   @Get('google/callback')
-  async googleCallback(@Req() request: { headers: { cookie?: string }; url?: string }, @Res() response: any) {
+  async googleCallback(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined }; url?: string }, @Res() response: any) {
+    if (this.pool) return this.databaseGoogleCallback(request, response);
     const origin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
     const query = request.url?.includes('?') ? request.url.slice(request.url.indexOf('?')) : '';
     const upstream = await fetch(`${origin}/api/auth/google/callback${query}`, {
@@ -464,7 +541,13 @@ export class AuthController {
   }
 
   @Get('google/pending')
-  async googlePending(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+  async googlePending(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined } }, @Res() response: any) {
+    if (this.pool) {
+      const pending = this.verifySession(`proelium_session=${this.cookieValue(request.headers.cookie, 'proelium_google_pending')}`);
+      return pending?.email
+        ? response.status(200).type('application/json').send(JSON.stringify({ email: pending.email, name: pending.name || '', invite: Boolean(this.cookieValue(request.headers.cookie, 'proelium_invite')) }))
+        : response.status(401).type('application/json').send(JSON.stringify({ error: 'Identificação Google expirada.' }));
+    }
     const upstream = await this.forward('/api/auth/google/pending', 'GET', request);
     response.status(upstream.status).type('application/json').send(await upstream.text());
   }

@@ -379,6 +379,20 @@ async function handleRequest(req, res) {
       return sendJson(res, 503, { error: 'Não foi possível aceitar o convite agora.' });
     }
   }
+  if (pathname === '/api/auth/google' && req.method === 'GET' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, `${pathname}${new URL(req.url, `http://${req.headers.host}`).search}`); }
+    catch (error) {
+      console.error('Falha ao encaminhar início do OAuth Google ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Login Google indisponível agora.' });
+    }
+  }
+  if (pathname === '/api/auth/google/callback' && req.method === 'GET' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, `${pathname}${new URL(req.url, `http://${req.headers.host}`).search}`); }
+    catch (error) {
+      console.error('Falha ao encaminhar callback Google ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível concluir o login Google agora.' });
+    }
+  }
 
   if (pathname === '/api/auth/google' && req.method === 'GET') {
     const invite=new URL(req.url,`http://${req.headers.host}`).searchParams.get('invite');
