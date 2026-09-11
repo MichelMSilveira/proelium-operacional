@@ -10,8 +10,8 @@ O app legado continua atendendo a porta `4173` para a raiz e o contrato de compa
 2. Publicar `frontend/.next/standalone` e os arquivos estáticos correspondentes em um diretório versionado do VPS.
 3. Executar o Next.js como serviço separado na porta `4300`.
 4. Instalar `deploy/proelium-next-proxy.example.conf` em `/etc/nginx/snippets/proelium-next-locations.conf` e recarregar o Nginx.
-5. Encaminhar para o Next.js todas as rotas de módulos construídas; manter a raiz no shell legado até concluir os testes autenticados do shell principal.
-6. Validar health check, autenticação, matriz de rotas e as APIs específicas antes de ampliar o shell principal.
+5. Encaminhar para o Next.js todas as rotas de módulos construídas e suas APIs específicas; manter no servidor raiz health check, OAuth, SSE e o contrato legado.
+6. Validar health check, autenticação, matriz de rotas, recursos estáticos e APIs específicas antes de ampliar o shell principal.
 
 ## Critérios de rollback
 

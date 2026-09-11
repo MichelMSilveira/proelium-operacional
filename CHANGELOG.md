@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O proxy reverso passou a encaminhar as APIs específicas dos módulos Next.js para o próprio frontend, preservando no servidor raiz o health check, OAuth, SSE e o contrato legado; as telas migradas passam a manter sessão e dados no mesmo caminho publicado.
+
 - Ajustado o unit file do Next.js para usar o caminho real do Node instalado no VPS (`/usr/local/bin/node`), evitando loop de restart após a publicação do standalone.
 
 - Corrigido o empacotamento do Next.js: arquivos estáticos agora ficam no diretório servido pelo standalone, e o serviço `proelium-next` passa a ser versionado, instalado e reiniciado pelo deploy.
