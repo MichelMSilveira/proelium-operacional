@@ -24,10 +24,12 @@ async function main() {
     const usersResult = await pool.query('select username from app_users order by username');
     if (!stateResult.rowCount) throw new Error('Estado compartilhado não encontrado no PostgreSQL.');
     const stored = stateResult.rows[0];
+    const storedUsernames = new Set(usersResult.rows.map(row => row.username));
+    const sourceUsernames = sourceUsers.map(user => user.username).filter(Boolean);
     const checks = {
       revision: Number(stored.revision) === Number(source.revision),
       dataHash: digest(stored.data) === digest(source.data),
-      users: usersResult.rowCount === sourceUsers.length
+      users: sourceUsernames.every(username => storedUsernames.has(username))
     };
     if (Object.values(checks).some(value => !value)) throw new Error(`Validação falhou: ${JSON.stringify(checks)}`);
     console.log(`Validação concluída: revisão ${stored.revision}, hash íntegro, ${usersResult.rowCount} usuário(s).`);
