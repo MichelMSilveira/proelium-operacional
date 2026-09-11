@@ -5,6 +5,9 @@ const surveyQuoteMapper = require('../../../commercial-workflow.js') as {
   populateQuoteFromSurvey: (data: Record<string, unknown>, surveyId: string, quoteId: string, makeId?: (prefix: string) => string) => { added: number; updated: number; unmapped: Array<Record<string, unknown>>; value: number };
   ensurePreProjectFromQuote: (data: Record<string, unknown>, surveyId: string, quoteId: string, makeId?: (prefix: string) => string) => { project: Record<string, unknown> | null; created: boolean; updated: boolean; cost: number };
 };
+const technicalDimensioning = require('../../../technical-dimensioning.js') as {
+  dimensionSurvey: (survey: Record<string, unknown>, points: Array<Record<string, unknown>>, options?: Record<string, unknown>) => Record<string, unknown>;
+};
 
 type RecordItem = Record<string, unknown>;
 type AggregateResponse = { data?: Record<string, unknown>; revision?: number };
@@ -55,6 +58,24 @@ export class SurveyService {
     if (!survey.rowCount) throw new NotFoundException('Levantamento nao encontrado.');
     const state = await this.pool.query('select revision from survey_domain_state where company_id = $1', [context.companyId]);
     return { rooms: result.rows.map((row) => this.roomFromRow(row)), revision: Number(state.rows[0]?.revision || 0) };
+  }
+
+  async dimensioning(surveyId: string, cookie?: string): Promise<Record<string, unknown>> {
+    if (!surveyId.trim()) throw new BadRequestException('O identificador do levantamento e obrigatorio.');
+    if (!this.pool) {
+      const current = await this.readAggregate(cookie);
+      const surveys = this.normalizeSurveys(current.data?.surveys);
+      const survey = surveys.find((item) => this.sameId(item, surveyId));
+      if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
+      const points = this.normalizePoints(current.data?.surveyPoints).filter((point) => point.surveyId === surveyId);
+      return { surveyId, dimensioning: technicalDimensioning.dimensionSurvey(survey, points) };
+    }
+    const context = await this.authContext(cookie);
+    const snapshot = await this.directSnapshot(context.companyId);
+    const survey = snapshot.surveys.find((item) => item.id === surveyId);
+    if (!survey) throw new NotFoundException('Levantamento nao encontrado.');
+    const points = snapshot.points.filter((point) => point.surveyId === surveyId);
+    return { surveyId, dimensioning: technicalDimensioning.dimensionSurvey(survey, points) };
   }
 
   async saveRooms(surveyId: string, body: unknown, cookie?: string): Promise<{ status: number; body: string }> {

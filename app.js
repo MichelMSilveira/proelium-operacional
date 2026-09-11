@@ -968,7 +968,6 @@ survey=()=>{
   });
   return markup;
 };
-views.survey=survey;
 
 // A tela do catálogo passa a explicar as classificações que o levantamento usará, evitando
 // confundir categoria comercial (ex.: Automação) com a função concreta do item.
@@ -2468,6 +2467,22 @@ function survey(){
   return `<button class="back-link" data-survey-back>← Voltar para levantamentos</button>${heading(selected.title,`${surveyOpportunityLabel(selected.opportunityId)} · ${selected.source} · ${selected.status}`)}<div class="module-toolbar"><button class="button secondary" data-edit-survey="${selected.id}">Editar levantamento</button><button class="button primary" data-add-survey-room="${selected.id}">+ Adicionar ambiente</button><button class="button secondary" data-add-survey-point>+ Adicionar ponto / quantitativo</button><button class="button secondary" data-delete-survey="${selected.id}">Excluir levantamento</button>${sendButton}</div><section class="card"><div class="card-head"><div><h3>Premissas</h3><p class="subtext">${selected.notes||'Sem observações registradas.'}</p>${surveyValidationMeta(selected)}</div></div></section><div class="room-grid">${Object.entries(byRoom).map(([room,items])=>`<section class="card room-card"><div class="card-head"><div><h3>${room}</h3><small>${items.length} item(ns) levantado(s)</small></div></div>${table(['Tipo','Qtd.','Situação','Observação',''],items.map(item=>`<tr><td>${item.type}</td><td>${item.quantity}</td><td>${badge(item.status)}</td><td>${item.notes||'—'}</td><td><button class="link-button" data-edit-survey-point="${item.id}">Ajustar</button></td></tr>`))}</section>`).join('')||'<div class="empty">Adicione ambientes, pontos e quantitativos desta visita.</div>'}</div>`;
 }
 views.survey=survey;
+function technicalDimensioningPanel(result){
+  const requirement=result?.requirements?.find(item=>item.kind==='switch'),solution=result?.solutions?.find(item=>item.ports);
+  if(!result)return '';
+  const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}`:'Nenhum ponto de Rede identificado neste levantamento.';
+  const poe=requirement?.poeRequired?`<div>PoE: ${requirement.poeWattsWithReserve?`${requirement.poeWattsWithReserve} W com reserva tecnica`:'consumo ainda nao informado'}.</div>`:'';
+  const warnings=(result.warnings||[]).map(item=>`<li>${item.message}</li>`).join('');
+  return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Rede</h3><p class="subtext">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'} · previa generica, sem marca, produto ou preco.</p></div></div><div>${details}.</div>${poe}${warnings?`<ul class="technical-dimensioning-warnings">${warnings}</ul>`:''}</section>`;
+}
+const surveyWithDimensioningPreview=views.survey;
+views.survey=()=>{
+  const html=surveyWithDimensioningPreview();
+  const selected=(state.data.surveys||[]).find(item=>item.id===state.selectedSurvey);
+  if(!selected||typeof TechnicalDimensioning==='undefined')return html;
+  const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===selected.id);
+  return html.replace('<div class="room-grid">',technicalDimensioningPanel(TechnicalDimensioning.dimensionSurvey(selected,points))+'<div class="room-grid">');
+};
 const surveySaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{
   if(kind==='technicalSurvey'){const record={opportunityId:data.opportunityId,title:data.title,site:data.site,source:data.source,status:data.status,notes:data.notes,updatedAt:new Date().toISOString()};if(editId){const index=state.data.surveys.findIndex(item=>item.id===editId);if(index>=0)state.data.surveys[index]={...state.data.surveys[index],...record}}else{const created={id:uid('lev'),...record};state.data.surveys.unshift(created);state.selectedSurvey=created.id}logAudit(editId?'Atualizou levantamento':'Criou levantamento','Levantamento técnico',record.title);persist();render();toast('Levantamento técnico salvo.');return}

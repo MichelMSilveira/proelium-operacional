@@ -1,5 +1,5 @@
-const CACHE = 'proelium-shell-v389';
-const ASSETS = ['./','./index.html','./styles.css','./crm.css','./bi.css','./quotes.css','./danger.css','./app.js','./commercial-workflow.js','./manifest.webmanifest','./icon.svg','./assets/proelium-logo-oficial.png','./assets/proelium-simbolo-oficial.png'];
+const CACHE = 'proelium-shell-v390';
+const ASSETS = ['./','./index.html','./styles.css','./crm.css','./bi.css','./quotes.css','./danger.css','./app.js','./commercial-workflow.js','./technical-dimensioning.js','./manifest.webmanifest','./icon.svg','./assets/proelium-logo-oficial.png','./assets/proelium-simbolo-oficial.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

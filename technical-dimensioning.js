@@ -1,0 +1,109 @@
+(function attachTechnicalDimensioning(root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.TechnicalDimensioning = factory();
+}(typeof self !== 'undefined' ? self : globalThis, function createTechnicalDimensioning() {
+  const SWITCH_PORTS = [8, 16, 24, 48];
+  const NETWORK_TOKENS = ['rede', 'cat5', 'cat6', 'ethernet', 'rj45', 'cabeado', 'wifi', 'wi fi', 'access point', 'accesspoint', 'internet', 'cftv', 'camera', 'poe', 'switch', 'gateway'];
+  const INFRASTRUCTURE_TOKENS = ['switch', 'gateway', 'roteador', 'router', 'patch panel', 'cabo', 'rack', 'nobreak', 'access point', 'accesspoint'];
+  const POE_TOKENS = ['poe', 'camera', 'cftv', 'access point', 'accesspoint', 'wifi'];
+
+  function text(value) {
+    return String(value == null ? '' : value).trim();
+  }
+
+  function normalized(value) {
+    return text(value).toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-_/]+/g, ' ').replace(/\s+/g, ' ');
+  }
+
+  function number(value, fallback) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  }
+
+  function quantity(point) {
+    return Math.max(0, Math.ceil(number(point.quantity, 0)));
+  }
+
+  function pointExtra(point) {
+    const extra = point && typeof point.extraData === 'object' && point.extraData ? point.extraData : {};
+    return { ...extra, ...(point && typeof point.metadata === 'object' && point.metadata ? point.metadata : {}) };
+  }
+
+  function pointText(point) {
+    return normalized([point.type, point.name, point.technology, point.notes].filter(Boolean).join(' '));
+  }
+
+  function hasToken(value, tokens) {
+    return tokens.some((token) => value.includes(token));
+  }
+
+  function poeWatts(point) {
+    const extra = pointExtra(point);
+    for (const key of ['poeWatts', 'powerWatts', 'consumptionWatts', 'power']) {
+      const value = number(point[key] ?? extra[key], -1);
+      if (value >= 0) return value;
+    }
+    return null;
+  }
+
+  function dimensionSurvey(survey, points, options) {
+    const sourcePoints = Array.isArray(points) ? points : [];
+    const reservePercent = number(options && options.reservePercent, 20);
+    const surveyId = text(survey && survey.id);
+    const networkPoints = sourcePoints.filter((point) => {
+      if (surveyId && text(point.surveyId) && text(point.surveyId) !== surveyId) return false;
+      const value = pointText(point);
+      return hasToken(value, NETWORK_TOKENS);
+    });
+    const endpointPoints = networkPoints.filter((point) => !hasToken(pointText(point), INFRASTRUCTURE_TOKENS.filter((token) => !['access point', 'accesspoint'].includes(token))));
+    const portsUsed = endpointPoints.reduce((total, point) => total + quantity(point), 0);
+    const portsRequired = portsUsed ? Math.ceil(portsUsed * (1 + reservePercent / 100)) : 0;
+    const minimumStandardPorts = SWITCH_PORTS.find((capacity) => capacity >= portsRequired) || null;
+    const poePoints = networkPoints.filter((point) => hasToken(pointText(point), POE_TOKENS));
+    const poeRequired = poePoints.length > 0;
+    const poeWattsKnown = poePoints.reduce((total, point) => {
+      const watts = poeWatts(point);
+      return total + (watts == null ? 0 : watts * quantity(point));
+    }, 0);
+    const missingPoeWatts = poePoints.filter((point) => poeWatts(point) == null && quantity(point) > 0);
+    const poeWattsRequired = poeRequired && poeWattsKnown > 0 ? Math.ceil(poeWattsKnown) : null;
+    const poeWattsWithReserve = poeWattsRequired == null ? null : Math.ceil(poeWattsRequired * (1 + reservePercent / 100));
+    const warnings = [];
+    if (!networkPoints.length) warnings.push({ code: 'network.no-input', message: 'Nenhum ponto de Rede foi identificado no levantamento.' });
+    if (portsUsed && !minimumStandardPorts) warnings.push({ code: 'network.switch-capacity', message: `A necessidade de ${portsRequired} portas excede os padrões iniciais de 8, 16, 24 e 48 portas.` });
+    if (missingPoeWatts.length) warnings.push({ code: 'network.poe-power-missing', message: 'O consumo PoE precisa ser informado para validar o orçamento mínimo de potência.' });
+    const requirements = portsUsed ? [{
+      category: 'network',
+      kind: 'switch',
+      portsUsed,
+      reservePercent,
+      portsRequired,
+      minimumStandardPorts,
+      poeRequired,
+      poeWattsRequired,
+      poeWattsWithReserve,
+    }] : [];
+    const solutions = minimumStandardPorts ? [{
+      category: 'network',
+      kind: 'switch',
+      ports: minimumStandardPorts,
+      poeRequired,
+      poeWattsMinimum: poeWattsWithReserve,
+    }] : [];
+    return {
+      engineVersion: 'network-v1',
+      status: portsUsed && !warnings.length ? 'dimensionado' : 'incompleto',
+      categories: networkPoints.length ? ['network'] : [],
+      requirements,
+      solutions,
+      warnings,
+      trace: networkPoints.length ? [{
+        ruleId: 'network.switch.capacity.v1',
+        sourcePointIds: networkPoints.map((point) => text(point.id)).filter(Boolean),
+        endpointPointIds: endpointPoints.map((point) => text(point.id)).filter(Boolean),
+      }] : [],
+    };
+  }
+
+  return { dimensionSurvey };
+}));

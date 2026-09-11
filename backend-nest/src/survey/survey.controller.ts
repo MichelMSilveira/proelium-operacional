@@ -15,6 +15,11 @@ export class SurveyController {
     return this.survey.rooms(id, request.headers.cookie);
   }
 
+  @Get(':id/dimensioning')
+  dimensioning(@Param('id') id: string, @Req() request: { headers: { cookie?: string } }) {
+    return this.survey.dimensioning(id, request.headers.cookie);
+  }
+
   @Put(':id/rooms')
   async saveRooms(@Param('id') id: string, @Body() body: unknown, @Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     const upstream = await this.survey.saveRooms(id, body, request.headers.cookie);

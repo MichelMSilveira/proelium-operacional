@@ -32,6 +32,10 @@ PostgreSQL + armazenamento de arquivos
 
 O frontend e o contrato agregado de `/api/data` permanecem no protótipo atual. O armazenamento principal já utiliza PostgreSQL com transações, histórico de revisões, migrações e espelho JSON temporário. A normalização por recurso e a API `/api/v1` continuam como evolução posterior.
 
+## Dimensionamento técnico
+
+O fluxo comercial passa a reservar uma etapa entre levantamento e orçamento: `Levantamento → Regras técnicas → Solução técnica → Produtos compatíveis → Orçamento`. O núcleo inicial está em `technical-dimensioning.js`, como função pura compartilhada pelo shell e pelo NestJS. Ele recebe necessidades e pontos, produz requisitos genéricos e mantém a origem dos pontos em `trace`; não conhece catálogo, marcas, custos ou preços. A rota `GET /api/survey/{id}/dimensioning` expõe a prévia para a tela Next.js. A seleção de produtos compatíveis e a persistência de soluções dimensionadas permanecem como próxima etapa, evitando acoplamento com o orçamento atual.
+
 ## Preparação para o N.E.M.O.
 
 - API versionada e documentada.

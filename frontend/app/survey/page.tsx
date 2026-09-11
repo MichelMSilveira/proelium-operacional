@@ -27,6 +27,8 @@ type SurveyPoint = {
 
 type SurveyRoom = { id: string; surveyId: string; name: string };
 type SurveyPayload = { surveys?: Survey[]; points?: SurveyPoint[]; rooms?: SurveyRoom[]; revision?: number };
+type DimensioningRequirement = { kind: string; portsUsed?: number; reservePercent?: number; portsRequired?: number; minimumStandardPorts?: number | null; poeRequired?: boolean; poeWattsWithReserve?: number | null };
+type DimensioningResult = { status: string; requirements?: DimensioningRequirement[]; solutions?: Array<{ ports?: number; poeRequired?: boolean; poeWattsMinimum?: number | null }>; warnings?: Array<{ message: string }> };
 
 const emptySurvey = { id: '', opportunityId: '', title: '', site: '', source: 'Preenchimento manual', status: 'Em levantamento', notes: '' };
 const emptyPoint = { id: '', surveyId: '', room: '', type: '', technology: '', quantity: 1, status: 'Em levantamento', notes: '' };
@@ -35,6 +37,7 @@ export default function SurveyPage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [points, setPoints] = useState<SurveyPoint[]>([]);
   const [rooms, setRooms] = useState<SurveyRoom[]>([]);
+  const [dimensioningBySurvey, setDimensioningBySurvey] = useState<Record<string, DimensioningResult>>({});
   const [revision, setRevision] = useState<number>();
   const [surveyDraft, setSurveyDraft] = useState(emptySurvey);
   const [pointDraft, setPointDraft] = useState(emptyPoint);
@@ -45,10 +48,22 @@ export default function SurveyPage() {
   async function load() {
     try {
       const payload = await apiGet<SurveyPayload>('/api/survey');
-      setSurveys(payload.surveys || []);
+      const nextSurveys = payload.surveys || [];
+      setSurveys(nextSurveys);
       setPoints(payload.points || []);
       setRooms(payload.rooms || []);
       setRevision(payload.revision);
+      const dimensions = await Promise.all(nextSurveys.map(async (survey) => {
+        try {
+          const result = await apiGet<{ dimensioning?: DimensioningResult }>(`/api/survey/${encodeURIComponent(survey.id)}/dimensioning`);
+          return [survey.id, result.dimensioning] as const;
+        } catch {
+          return [survey.id, undefined] as const;
+        }
+      }));
+      const nextDimensions: Record<string, DimensioningResult> = {};
+      dimensions.forEach(([id, dimension]) => { if (dimension) nextDimensions[id] = dimension; });
+      setDimensioningBySurvey(nextDimensions);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Falha ao carregar levantamento.');
     }
@@ -215,13 +230,20 @@ export default function SurveyPage() {
           const surveyPoints = points.filter((point) => point.surveyId === survey.id);
           const surveyRooms = rooms.filter((room) => room.surveyId === survey.id);
           const ready = ['Validado', 'Enviado ao orçamento'].includes(survey.status) && surveyPoints.some((point) => Number(point.quantity || 0) > 0);
-          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><span><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button><button type="button" onClick={() => void sendToQuote(survey)} disabled={saving || !ready}>Enviar ao orçamento</button></span></div>{survey.notes && <p>{survey.notes}</p>}{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
+          return <article className="card" key={survey.id}><div className="section-head"><div><h2>{survey.title}</h2><span>{survey.status} · {survey.site || 'Local não informado'} · {surveyPoints.length} ponto(s) · {surveyRooms.length} ambiente(s)</span></div><span><button type="button" className="secondary" onClick={() => setSurveyDraft(surveyDraftFrom(survey))}>Editar</button><button type="button" onClick={() => void sendToQuote(survey)} disabled={saving || !ready}>Enviar ao orçamento</button></span></div>{survey.notes && <p>{survey.notes}</p>}<DimensioningPreview result={dimensioningBySurvey[survey.id]} />{surveyRooms.length > 0 && <div className="point-list"><strong>Ambientes</strong>{surveyRooms.map((room) => <div className="point" key={room.id}><span>{room.name}</span><span><button type="button" className="secondary" onClick={() => setRoomDraft(room)}>Editar</button><button type="button" className="danger" onClick={() => void removeRoom(room)} disabled={saving}>Excluir</button></span></div>)}</div>}{surveyPoints.length > 0 && <div className="point-list"><strong>Pontos</strong>{surveyPoints.map((point) => <div className="point" key={point.id}><span><strong>{point.type}</strong> · {point.room || 'Ambiente não informado'} · qtd. {point.quantity ?? 0}</span><span><button type="button" className="secondary" onClick={() => setPointDraft(pointDraftFrom(point))}>Editar</button><button type="button" className="danger" onClick={() => void removePoint(point.id)} disabled={saving}>Excluir</button></span></div>)}</div>}</article>;
         })}
         {!error && !surveys.length && <p>Nenhum levantamento disponível.</p>}
       </div>
-      <style jsx>{`.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0}.summary article,.record-list .card{display:grid;gap:8px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.summary span,.section-head span,.record-list p{font-size:12px;color:var(--proelium-muted)}.summary strong{font-size:28px;color:var(--proelium-olive)}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.form-grid input,.form-grid select,.form-grid textarea{min-width:0;padding:11px;border:1px solid var(--proelium-line);border-radius:7px;background:var(--proelium-card);color:inherit}.form-grid textarea{min-height:44px}.form-grid button,.section-head button,.point button{border:0;border-radius:7px;padding:10px 14px;background:var(--proelium-orange);color:#fff;font-weight:700;cursor:pointer}.form-grid button:disabled,.point button:disabled{opacity:.6}.secondary{background:transparent!important;color:var(--proelium-olive)!important;border:1px solid var(--proelium-line)!important}.danger{background:#a33!important}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-head h2{margin:0}.record-list{display:grid;gap:12px;margin-top:28px}.point-list{display:grid;gap:8px;margin-top:10px}.point{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border-top:1px solid var(--proelium-line);font-size:13px}.point button{margin-left:6px;padding:6px 10px;font-size:12px}@media(max-width:900px){.form-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.form-grid{grid-template-columns:1fr}.point{align-items:flex-start;flex-direction:column}}`}</style>
+      <style jsx>{`.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0}.summary article,.record-list .card{display:grid;gap:8px;padding:18px;border-radius:10px;background:var(--proelium-card);box-shadow:0 5px 20px #26282812}.summary span,.section-head span,.record-list p{font-size:12px;color:var(--proelium-muted)}.summary strong{font-size:28px;color:var(--proelium-olive)}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.form-grid input,.form-grid select,.form-grid textarea{min-width:0;padding:11px;border:1px solid var(--proelium-line);border-radius:7px;background:var(--proelium-card);color:inherit}.form-grid textarea{min-height:44px}.form-grid button,.section-head button,.point button{border:0;border-radius:7px;padding:10px 14px;background:var(--proelium-orange);color:#fff;font-weight:700;cursor:pointer}.form-grid button:disabled,.point button:disabled{opacity:.6}.secondary{background:transparent!important;color:var(--proelium-olive)!important;border:1px solid var(--proelium-line)!important}.danger{background:#a33!important}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-head h2{margin:0}.record-list{display:grid;gap:12px;margin-top:28px}.point-list{display:grid;gap:8px;margin-top:10px}.point{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border-top:1px solid var(--proelium-line);font-size:13px}.point button{margin-left:6px;padding:6px 10px;font-size:12px}.dimensioning-preview{display:grid;gap:8px;margin-top:14px;padding:14px;border:1px solid var(--proelium-line);border-radius:8px;background:#f7f9f4}.dimensioning-preview header{display:flex;justify-content:space-between;gap:12px;align-items:center}.dimensioning-preview header strong{color:var(--proelium-olive)}.dimensioning-preview small{color:var(--proelium-muted)}.dimensioning-preview ul{margin:0;padding-left:18px;color:#8a4c16}@media(max-width:900px){.form-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.form-grid{grid-template-columns:1fr}.point{align-items:flex-start;flex-direction:column}}`}</style>
     </ModuleLayout>
   );
+}
+
+function DimensioningPreview({ result }: { result?: DimensioningResult }) {
+  if (!result) return null;
+  const requirement = result.requirements?.find((item) => item.kind === 'switch');
+  const solution = result.solutions?.find((item) => item.ports);
+  return <section className="dimensioning-preview"><header><strong>Dimensionamento técnico - Rede</strong><small>{result.status === 'dimensionado' ? 'Dimensionado' : 'Revisão necessária'}</small></header>{requirement ? <div>{requirement.portsUsed} porta(s) usadas + {requirement.reservePercent}% de reserva = <strong>{requirement.portsRequired} necessárias</strong>{solution?.ports ? <>; requisito mínimo de switch: <strong>{solution.ports} portas</strong>.</> : '.'}</div> : <div>Nenhum ponto de Rede identificado neste levantamento.</div>}{requirement?.poeRequired && <div>PoE: {requirement.poeWattsWithReserve ? `${requirement.poeWattsWithReserve} W com reserva técnica` : 'consumo ainda não informado'}.</div>}{Boolean(result.warnings?.length) && <ul>{result.warnings?.map((warning, index) => <li key={`${warning.message}-${index}`}>{warning.message}</li>)}</ul>}<small>Prévia genérica: não seleciona marca, produto ou preço.</small></section>;
 }
 
 function surveyDraftFrom(survey: Survey) {
