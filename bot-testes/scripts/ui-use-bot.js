@@ -62,7 +62,12 @@ async function loginThroughVisibleForm(page, { next = false } = {}) {
   }
   const errors = [];
   page.on('pageerror', error => errors.push(`${error.message} @ ${error.stack || 'sem stack'}`));
-  page.on('console', message => { if (message.type() === 'error' && !message.text().includes('401 (Unauthorized)')) errors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    if (/Failed to load resource: the server responded with a status of 401/i.test(text)) return;
+    errors.push(text);
+  });
   page.on('response', response => {
     if (response.status() >= 400 && response.status() !== 401) {
       const bodySize = response.request().postData()?.length;
