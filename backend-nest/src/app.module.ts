@@ -28,9 +28,10 @@ import { ExecutionModule } from './execution/execution.module';
 import { DiagramModule } from './diagram/diagram.module';
 import { AccountModule } from './account/account.module';
 import { AdminModule } from './admin/admin.module';
+import { CommercialModule } from './commercial/commercial.module';
 
 @Module({
   controllers: [HealthController],
-  imports: [AuthModule, AccountModule, AdminModule, UsersModule, CompanyModule, DataModule, OpportunitiesModule, ClientsModule, ProductsModule, QuotesModule, ProjectsModule, TasksModule, AgendaModule, OperationsModule, SupportTicketsModule, ReportsModule, InstallationsModule, QualityModule, CollaboratorsModule, FinanceModule, ExecutionModule, DiagramModule, PurchasesModule, KnowledgeModule, SurveyModule, EquipmentModule, RoutinesModule, ProductLibraryModule],
+  imports: [AuthModule, AccountModule, AdminModule, CommercialModule, UsersModule, CompanyModule, DataModule, OpportunitiesModule, ClientsModule, ProductsModule, QuotesModule, ProjectsModule, TasksModule, AgendaModule, OperationsModule, SupportTicketsModule, ReportsModule, InstallationsModule, QualityModule, CollaboratorsModule, FinanceModule, ExecutionModule, DiagramModule, PurchasesModule, KnowledgeModule, SurveyModule, EquipmentModule, RoutinesModule, ProductLibraryModule],
 })
 export class AppModule {}

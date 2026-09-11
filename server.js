@@ -783,6 +783,22 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (pathname === '/api/commercial/reconcile-legacy' && req.method === 'POST' && nestAuthEnabled()) {
+    try {
+      const body = await readBody(req);
+      return await forwardNestAuth(req, res, pathname, body, 'follow', (status, responseBody) => {
+        if (status !== 200) return;
+        try {
+          const saved = JSON.parse(responseBody);
+          if (saved.applied) broadcastUpdate({ revision: Number(saved.revision || 0), updatedAt: saved.updatedAt || new Date().toISOString() }, authenticatedCompanyId);
+        } catch { /* resposta já foi entregue ao cliente */ }
+      });
+    } catch (error) {
+      console.error('Falha ao encaminhar reconciliação comercial ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível reconciliar as etapas comerciais agora.' });
+    }
+  }
+
   if (pathname === '/api/commercial/reconcile-legacy' && req.method === 'POST') {
     if (!isPlatformAdmin(authenticatedUser) && !isCompanyAdmin(authenticatedUser) && !isCompanyFounder(authenticatedUser)) {
       return sendJson(res, 403, { error: 'Apenas a administração pode reconciliar etapas comerciais legadas.' });

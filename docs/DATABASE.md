@@ -24,6 +24,8 @@ O proxy público preserva os redirecionamentos e cookies desse fluxo, permitindo
 
 A leitura e a gravação compatíveis do agregado (`GET/PUT /api/data`) agora consultam e atualizam `app_state` diretamente pelo NestJS quando o PostgreSQL está ativo; a gravação usa revisão, lock transacional, auditoria de revisão, permissões e validação do fluxo comercial. Sem banco, o fallback legado permanece.
 
+A reconciliação administrativa de etapas comerciais usa o mesmo `app_state` transacional pelo NestJS quando o banco está ativo, preservando auditoria e controle de concorrência; sem banco, o endpoint continua no servidor legado.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.
