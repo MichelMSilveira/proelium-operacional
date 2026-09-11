@@ -20,6 +20,8 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.
 
+Com PostgreSQL ativo, `/api/events` é mantido pelo NestJS e encaminhado pelo servidor público como SSE; sem banco, a conexão permanece no fallback legado. Os eventos `data-updated`, `presence-updated`, `collaboration-request` e `assistance-request` mantêm o mesmo contrato.
+
 `POST /api/commercial/reconcile-legacy` recebe `{ "apply": false }` para prévia e `{ "apply": true }` para aplicar. A aplicação promove somente etapas defasadas conforme os vínculos existentes (levantamento, visita legada e orçamento), preserva Ganho/Perdido e os demais campos, registra uma entrada em `auditLog` e usa a revisão central para evitar sobrescrita concorrente. A operação não é um salto normal do funil.
 
 As gravações que alteram o fluxo comercial são validadas no servidor: a oportunidade deve respeitar Primeiro contato → Qualificação de serviços → Levantamento técnico → Orçamento. A Qualificação de serviços exige `interests`, `needs` e `initialScope`; o levantamento precisa de oportunidade qualificada e o orçamento exige diagrama teórico validado com ao menos um ponto técnico. Cada oportunidade deve ter no máximo um levantamento novo: a UI reabre o registro associado por `opportunityId` e o servidor rejeita duplicação com HTTP `422`. Visita técnica não é etapa nem rota de Oportunidades; registros legados com esse alias são tratados como Levantamento técnico sem migração destrutiva. Os aliases legados `Novo contato`, `Qualificação` e `Visita` continuam aceitos para preservar registros existentes. Uma violação recebe HTTP `422`; estados legados não alterados são preservados.

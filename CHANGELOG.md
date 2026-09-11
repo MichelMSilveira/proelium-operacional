@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O canal SSE de eventos passou a manter as conexões no NestJS quando o PostgreSQL está ativo; o servidor público faz apenas o proxy de streaming e encaminha atualizações internas sem alterar o contrato do navegador.
+
 - A presença e os heartbeats passaram a ser controlados pelo NestJS com expiração efêmera de 90 segundos quando o PostgreSQL está ativo; o SSE público continua entregando as atualizações e o fallback legado permanece sem banco.
 
 - Os pedidos de colaboração e auxílio passaram a ser validados e criados pelo NestJS quando o PostgreSQL está ativo; a entrega continua usando o SSE público e o fallback legado permanece sem banco.

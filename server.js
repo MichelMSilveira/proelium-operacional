@@ -168,6 +168,39 @@ async function forwardNestAuth(req, res, pathname, body, redirect = 'follow', af
   if (afterResponse) await afterResponse(upstream.status, responseBody);
   return upstream.status;
 }
+async function forwardNestEvents(req, res, pathname) {
+  const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  req.once('close', abort);
+  try {
+    const upstream = await fetch(`${origin}${pathname}`, {
+      method: req.method,
+      headers: {
+        ...(req.headers.cookie ? { cookie: req.headers.cookie } : {}),
+        ...(req.headers['x-forwarded-for'] ? { 'x-forwarded-for': req.headers['x-forwarded-for'] } : {}),
+        ...(req.headers['x-forwarded-proto'] ? { 'x-forwarded-proto': req.headers['x-forwarded-proto'] } : {}),
+        ...(req.headers['user-agent'] ? { 'user-agent': req.headers['user-agent'] } : {}),
+      },
+      signal: controller.signal,
+    });
+    const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
+    res.writeHead(upstream.status, { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
+    if (!upstream.body) return res.end(await upstream.text());
+    for await (const chunk of upstream.body) {
+      if (res.destroyed) break;
+      res.write(Buffer.from(chunk));
+    }
+    if (!res.writableEnded) res.end();
+  } catch (error) {
+    if (!res.headersSent && !controller.signal.aborted) {
+      console.error('Falha ao encaminhar SSE ao NestJS:', error.message);
+      sendJson(res, 503, { error: 'Não foi possível abrir os eventos agora.' });
+    }
+  } finally {
+    req.removeListener('close', abort);
+  }
+}
 function clearGoogleStateCookie(res, secure = false) {
   addSetCookie(res, `proelium_google_state=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
 }
@@ -305,15 +338,40 @@ async function requireUser(req, res) {
   }
 }
 
-function broadcastUpdate(saved, companyId='legacy') {
-  const message = `event: data-updated\ndata: ${JSON.stringify({ revision: saved.revision, updatedAt: saved.updatedAt })}\n\n`;
-  for (const client of eventClients) if (client.companyId===companyId) client.write(message);
+function publishNestEvent(name, payload, companyId = null) {
+  if (!nestAuthEnabled()) return;
+  const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
+  void fetch(`${origin}/api/events/publish`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-proelium-event-secret': sessionSecret },
+    body: JSON.stringify({ name, payload, companyId }),
+  }).catch(error => console.error('Falha ao publicar evento no NestJS:', error.message));
 }
-function broadcastEvent(name, payload, companyId = null) { const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`; for (const client of eventClients) if (companyId === null || client.companyId === companyId) client.write(message); }
+function broadcastUpdate(saved, companyId='legacy') { broadcastEvent('data-updated', { revision: saved.revision, updatedAt: saved.updatedAt }, companyId); }
+function broadcastEvent(name, payload, companyId = null) {
+  if (nestAuthEnabled()) return publishNestEvent(name, payload, companyId);
+  const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`;
+  for (const client of eventClients) if (companyId === null || client.companyId === companyId) client.write(message);
+}
+function broadcastRequestEvent(name, payload, companyId) {
+  if (nestAuthEnabled()) return publishNestEvent(name, payload, companyId);
+  const message = `event: ${name}\ndata: ${JSON.stringify(payload)}\n\n`;
+  for (const client of eventClients) {
+    if (client.companyId !== companyId) continue;
+    if (name === 'collaboration-request' && client.userRole !== 'admin') continue;
+    if (name === 'assistance-request' && (client.username === payload.from?.username || client.available === false)) continue;
+    client.write(message);
+  }
+}
 function normalizeDevice(value) { const device = String(value || '').trim().slice(0, 32); return ['Android', 'iPhone/iPad', 'Windows', 'macOS', 'Linux', 'Navegador'].includes(device) ? device : 'Navegador'; }
 function deviceFromUserAgent(value) { const ua=String(value||''); return /Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone/iPad':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Navegador'; }
 function presencePayload(companyId = 'legacy') { return [...presence.values()].filter(item => item.companyId === companyId && Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => { const sessions=[...eventClients].filter(client=>client.username===username&&client.companyId===companyId),devices=[...new Set([...sessions.map(client=>normalizeDevice(client.device)),normalizeDevice(device)])]; return { username, name, role, device: devices[0], devices, sessions: Math.max(1,sessions.length), available: available !== false }; }); }
-function announcePresence() { for (const companyId of new Set([...eventClients].map(client => client.companyId))) broadcastEvent('presence-updated', { users: presencePayload(companyId), at: new Date().toISOString() }, companyId); }
+function announcePresence() {
+  const companies = nestAuthEnabled()
+    ? new Set([...presence.values()].map(client => client.companyId))
+    : new Set([...eventClients].map(client => client.companyId));
+  for (const companyId of companies) broadcastEvent('presence-updated', { users: presencePayload(companyId), at: new Date().toISOString() }, companyId);
+}
 function announceForwardedPresence(responseBody, companyId) {
   try {
     const users = JSON.parse(responseBody).users;
@@ -767,7 +825,7 @@ async function handleRequest(req, res) {
         try {
           const item = JSON.parse(responseBody).request;
           if (!item) return;
-          for (const client of eventClients) if (client.companyId === authenticatedCompanyId && client.userRole === 'admin') client.write(`event: collaboration-request\ndata: ${JSON.stringify(item)}\n\n`);
+          broadcastRequestEvent('collaboration-request', item, authenticatedCompanyId);
         } catch { /* resposta já foi entregue ao cliente */ }
       });
     } catch (error) {
@@ -783,7 +841,7 @@ async function handleRequest(req, res) {
         try {
           const item = JSON.parse(responseBody).request;
           if (!item) return;
-          for (const client of eventClients) if (client.companyId === authenticatedCompanyId && client.username !== authenticatedUser.username && client.available !== false) client.write(`event: assistance-request\ndata: ${JSON.stringify(item)}\n\n`);
+          broadcastRequestEvent('assistance-request', item, authenticatedCompanyId);
         } catch { /* resposta já foi entregue ao cliente */ }
       });
     } catch (error) {
@@ -797,7 +855,7 @@ async function handleRequest(req, res) {
       const message = String(payload.message || '').trim().slice(0, 500);
       if (!message) return sendJson(res, 400, { error: 'Descreva como deseja colaborar.' });
       const request = { id: crypto.randomUUID(), from: publicUser(authenticatedUser), message, at: new Date().toISOString() };
-      for (const client of eventClients) if (client.companyId === authenticatedCompanyId && client.userRole === 'admin') client.write(`event: collaboration-request\ndata: ${JSON.stringify(request)}\n\n`);
+      broadcastRequestEvent('collaboration-request', request, authenticatedCompanyId);
       return sendJson(res, 202, { ok: true });
     } catch { return sendJson(res, 400, { error: 'Pedido de colaboração inválido.' }); }
   }
@@ -806,7 +864,7 @@ async function handleRequest(req, res) {
       const payload=JSON.parse(await readBody(req)), message=String(payload.message||'').trim().slice(0,500);
       if(!message)return sendJson(res,400,{error:'Descreva o auxílio necessário.'});
       const request={id:crypto.randomUUID(),from:publicUser(authenticatedUser),message,at:new Date().toISOString()};
-      for(const client of eventClients)if(client.companyId===authenticatedCompanyId&&client.username!==authenticatedUser.username&&client.available!==false)client.write(`event: assistance-request\ndata: ${JSON.stringify(request)}\n\n`);
+      broadcastRequestEvent('assistance-request', request, authenticatedCompanyId);
       return sendJson(res,202,{ok:true});
     } catch { return sendJson(res,400,{error:'Pedido de auxílio inválido.'}); }
   }
@@ -910,6 +968,10 @@ async function handleRequest(req, res) {
     } catch {
       return sendJson(res, 400, { error: 'Não foi possível reconciliar as etapas comerciais legadas.' });
     }
+  }
+
+  if (pathname === '/api/events' && req.method === 'GET' && nestAuthEnabled()) {
+    return await forwardNestEvents(req, res, pathname);
   }
 
   if (pathname === '/api/events' && req.method === 'GET') {
