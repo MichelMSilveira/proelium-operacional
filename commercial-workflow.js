@@ -136,6 +136,9 @@
     if (!Array.isArray(data.quoteRooms)) data.quoteRooms = [];
     const products = list(data, 'products');
     const points = list(data, 'surveyPoints').filter(point => String(point?.surveyId || '') === String(surveyId) && Number(point?.quantity || 0) > 0);
+    const technicalSolution = survey.technicalSolution || survey.extraData?.technicalSolution;
+    const selectedProductIds = Array.isArray(technicalSolution?.selectedProductIds) ? technicalSolution.selectedProductIds.map(id => String(id)) : [];
+    const selectedProducts = selectedProductIds.map(id => products.find(product => String(product?.id || '') === id)).filter(product => product && product.active !== false);
     const surveyRooms = list(data, 'surveyRooms').filter(room => String(room?.surveyId || room?.technicalSurveyId || '') === String(surveyId));
     const roomFor = (name, global = false) => {
       const roomName = global ? 'Infraestrutura técnica' : String(name || 'Ambiente sem nome').trim();
@@ -184,6 +187,7 @@
     }
     const pointText = point => normalizeSearchText(`${point.type} ${point.technology}`);
     const networkPoints = inferred.filter(point => /pontos? de rede|rede cabeada|cat\s*6/.test(pointText(point)));
+    const technicalNetworkPoints = inferred.filter(point => /rede|wi\s*-?\s*fi|access\s*point|camera|cftv|poe/.test(pointText(point)));
     const lightingPoints = inferred.filter(point => /circuito.*ilumin|ilumin.*(?:rele|dimmer)|dimmer|pwm/.test(pointText(point)));
     const automationPoints = inferred.filter(point => /automacao geral|automacao|keypad|pulsador/.test(pointText(point)));
     const totalNetwork = networkPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
@@ -197,12 +201,18 @@
       if (!addGenerated(product, itemQuantity(product, totalLighting, 'lighting'), { global: true, kind: 'lighting' }, lightingPoints.map(point => point.id), `${totalLighting} circuito(s), dimensionado(s) em blocos de 8 canais`)) unmapped.push({ type: 'Módulo de iluminação' });
     }
     if (totalNetwork) {
-      const switchProduct = pickCatalogProduct(products, [/switch de rede/, /switch/]);
-      if (!addGenerated(switchProduct, itemQuantity(switchProduct, totalNetwork, 'network-switch'), { global: true, kind: 'network-switch' }, networkPoints.map(point => point.id), `${totalNetwork} ponto(s), dimensionado(s) em blocos de 24 portas`)) unmapped.push({ type: 'Switch de rede' });
+      const confirmedSwitch = selectedProducts.find(product => /switch|comutador/.test(productSearchText(product)));
+      const switchProduct = confirmedSwitch || pickCatalogProduct(products, [/switch de rede/, /switch/]);
+      const switchQuantity = confirmedSwitch ? 1 : itemQuantity(switchProduct, totalNetwork, 'network-switch');
+      const switchBasis = confirmedSwitch ? `Produto confirmado na soluÃ§Ã£o tÃ©cnica ${String(technicalSolution.engineVersion || '')}`.trim() : `${totalNetwork} ponto(s), dimensionado(s) em blocos de 24 portas`;
+      if (!addGenerated(switchProduct, switchQuantity, { global: true, kind: 'network-switch' }, (confirmedSwitch ? technicalNetworkPoints : networkPoints).map(point => point.id), switchBasis)) unmapped.push({ type: 'Switch de rede' });
       const cableProduct = pickCatalogProduct(products, [/cabo.*(?:cat\s*6|categoria\s*6)/, /cabo de rede/]);
       if (!addGenerated(cableProduct, itemQuantity(cableProduct, totalNetwork, 'network-cable'), { global: true, kind: 'network-cable' }, networkPoints.map(point => point.id), `${totalNetwork} ponto(s) × 30 m médios; bobina considerada em 305 m quando aplicável`)) unmapped.push({ type: 'Cabo de rede' });
+    } else {
+      const confirmedSwitch = selectedProducts.find(product => /switch|comutador/.test(productSearchText(product)));
+      if (confirmedSwitch && !addGenerated(confirmedSwitch, 1, { global: true, kind: 'network-switch' }, technicalNetworkPoints.map(point => point.id), `Produto confirmado na soluÃ§Ã£o tÃ©cnica ${String(technicalSolution.engineVersion || '')}`.trim())) unmapped.push({ type: 'Switch de rede' });
     }
-    quote.surveyMapping = { version: 1, surveyId, generatedAt: new Date().toISOString(), generatedItems: added + updated, unmapped };
+    quote.surveyMapping = { version: 1, surveyId, generatedAt: new Date().toISOString(), generatedItems: added + updated, technicalSolutionApplied: Boolean(selectedProducts.length), unmapped };
     quote.value = Number(quoteValue(data, quoteId).toFixed(2));
     return { added, updated, unmapped, value: quote.value };
   }

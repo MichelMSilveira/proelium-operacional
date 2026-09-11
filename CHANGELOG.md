@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A solucao tecnica confirmada agora alimenta a geracao do orcamento: referencias selecionadas sao usadas como itens precificados pelo catalogo, mantendo o fallback legado para levantamentos sem confirmacao. Cache web atualizado para `v393`.
+
 - A solução técnica agora pode confirmar produtos compatíveis selecionados no levantamento; a confirmação é validada pelo motor, persiste somente referências técnicas e não cria itens nem preços no orçamento. Cache web atualizado para `v392`.
 - Adicionada a primeira camada de Produtos Compatíveis: requisitos de Rede agora consultam o catálogo por capacidade e suporte a PoE, exibindo apenas referências técnicas e justificativas, sem misturar preço ou orçamento.
 - Primeiro núcleo de Dimensionamento Técnico adicionado entre levantamento e orçamento: a regra de Rede calcula portas, reserva técnica e requisito genérico de PoE, com rastreabilidade dos pontos de origem e sem dependência de marca, produto ou preço. A prévia é somente leitura e aparece no shell legado e na tela Next.js; cache web atualizado para `v391`.

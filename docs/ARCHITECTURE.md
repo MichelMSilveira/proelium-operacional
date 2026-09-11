@@ -53,3 +53,7 @@ O fluxo comercial passa a reservar uma etapa entre levantamento e orçamento: `L
 3. Normalizar recursos gradualmente e adicionar anexos/auditoria estruturada.
 4. Conectar o N.E.M.O. primeiro em modo somente leitura.
 5. Liberar ações assistidas com permissões e registro completo.
+
+## Integração da solução técnica com o orçamento
+
+Quando o levantamento possui uma solução técnica confirmada, o mapeador comercial usa as referências selecionadas para gerar os itens do orçamento. A camada comercial consulta os preços atuais do catálogo somente nessa etapa; levantamentos sem confirmação continuam usando o mapeamento legado como fallback. Assim, regras e requisitos permanecem independentes de marcas e preços.
