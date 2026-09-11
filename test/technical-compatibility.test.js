@@ -91,3 +91,18 @@ test('seleciona nobreak pela carga e capacidade VA', () => {
   assert.equal(match.products[0].va, 1200);
   assert.equal(result.unmatched.some((item) => item.kind === 'electrical-infrastructure'), false);
 });
+
+test('encontra processamento de audio compativel com cinema 7.1.4', () => {
+  const dimensioning = dimensionSurvey({ id: 'lev-compat-audio' }, [{ id: 'cinema-1', surveyId: 'lev-compat-audio', type: 'Cinema 7.1.4', quantity: 1 }]);
+  const result = findCompatibleProducts(dimensioning, [
+    { id: 'receiver-7', name: 'Receiver 7 canais', category: 'Audio e video', technicalType: 'Receiver', active: true },
+    { id: 'processor-11', name: 'Processador AV 11 canais', category: 'Audio e video', technicalType: 'Processador AV', active: true },
+    { id: 'speaker', name: 'Caixa acustica residencial', category: 'Audio', technicalType: 'Caixa acustica', active: true },
+    { id: 'sub', name: 'Subwoofer ativo residencial', category: 'Audio', technicalType: 'Subwoofer', active: true }
+  ]);
+
+  assert.deepEqual(result.matches.find((item) => item.requirementKind === 'audio-processing').products.map((product) => product.productId), ['processor-11']);
+  assert.equal(result.matches.find((item) => item.requirementKind === 'audio-speakers').requirement.quantity, 11);
+  assert.equal(result.matches.find((item) => item.requirementKind === 'audio-subwoofer').products[0].productId, 'sub');
+  assert.equal(result.unmatched.length, 0);
+});

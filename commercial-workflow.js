@@ -189,6 +189,7 @@
     const pointText = point => normalizeSearchText(`${point.type} ${point.technology}`);
     const networkPoints = inferred.filter(point => /pontos? de rede|rede cabeada|cat\s*6/.test(pointText(point)));
     const technicalNetworkPoints = inferred.filter(point => /rede|wi\s*-?\s*fi|access\s*point|camera|cftv|poe/.test(pointText(point)));
+    const audioPoints = inferred.filter(point => /audio|som ambiente|som distribuido|alto\s*-?\s*falante|caixa acustica|cinema|home theater|receiver/.test(pointText(point)));
     const lightingPoints = inferred.filter(point => /circuito.*ilumin|ilumin.*(?:rele|dimmer)|dimmer|pwm/.test(pointText(point)));
     const automationPoints = inferred.filter(point => /automacao geral|automacao|keypad|pulsador/.test(pointText(point)));
     const totalNetwork = networkPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
@@ -223,6 +224,25 @@
       if (confirmedCableManagement && !addGenerated(confirmedCableManagement, cableManagementQuantity, { global: true, kind: 'cable-management' }, technicalNetworkPoints.map(point => point.id), 'Organizacao de cabos dimensionada por bloco de 24 portas')) unmapped.push({ type: 'Organizador de cabos' });
       const confirmedUps = selectedProducts.find(product => /nobreak|no\s*break|ups|backup\s*power/.test(productSearchText(product)));
       if (confirmedUps && !addGenerated(confirmedUps, 1, { global: true, kind: 'ups' }, technicalNetworkPoints.map(point => point.id), 'Produto confirmado na solucao tecnica')) unmapped.push({ type: 'Nobreak' });
+    }
+    if (audioPoints.length) {
+      const audioSpeakerQuantity = audioPoints.reduce((sum, point) => {
+        const value = pointText(point);
+        const quantity = Number(point.quantity || 1);
+        if (/cinema|home theater|receiver/.test(value)) {
+          const configuration = (value.match(/(?:5\.1|7\.1(?:\.\d+)?|2\.1|2\.0)/) || [])[0] || '5.1';
+          const parts = configuration.split('.').map(Number);
+          return sum + quantity * ((parts[0] || 2) + (parts[2] || 0));
+        }
+        return sum + quantity * (/estereo|stereo|2\.0/.test(value) ? 2 : 1);
+      }, 0);
+      const cinemaQuantity = audioPoints.filter(point => /cinema|home theater|receiver/.test(pointText(point))).reduce((sum, point) => sum + Number(point.quantity || 1), 0);
+      const confirmedProcessor = selectedProducts.find(product => /receiver|processador\s+de\s+audio|processador\s+av|amplificador/.test(productSearchText(product)));
+      const confirmedSpeakers = selectedProducts.find(product => /caixa\s+acustica|alto\s*-?\s*falante|speaker/.test(productSearchText(product)));
+      const confirmedSubwoofer = selectedProducts.find(product => /subwoofer/.test(productSearchText(product)));
+      if (confirmedProcessor && !addGenerated(confirmedProcessor, 1, { global: true, kind: 'audio-processing' }, audioPoints.map(point => point.id), 'Processamento de audio confirmado na solucao tecnica')) unmapped.push({ type: 'Processamento de audio' });
+      if (confirmedSpeakers && !addGenerated(confirmedSpeakers, audioSpeakerQuantity, { global: true, kind: 'audio-speakers' }, audioPoints.map(point => point.id), 'Caixas dimensionadas pela configuracao de audio')) unmapped.push({ type: 'Caixas acusticas' });
+      if (confirmedSubwoofer && cinemaQuantity && !addGenerated(confirmedSubwoofer, cinemaQuantity, { global: true, kind: 'audio-subwoofer' }, audioPoints.map(point => point.id), 'Subwoofer dimensionado pela configuracao de cinema')) unmapped.push({ type: 'Subwoofer' });
     }
     quote.surveyMapping = { version: 1, surveyId, generatedAt: new Date().toISOString(), generatedItems: added + updated, technicalSolutionApplied: Boolean(selectedProducts.length), unmapped };
     quote.value = Number(quoteValue(data, quoteId).toFixed(2));

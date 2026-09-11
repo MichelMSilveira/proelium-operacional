@@ -6,6 +6,7 @@
   const NETWORK_TOKENS = ['rede', 'cat5', 'cat6', 'ethernet', 'rj45', 'cabeado', 'wifi', 'wi fi', 'access point', 'accesspoint', 'internet', 'cftv', 'camera', 'poe', 'switch', 'gateway'];
   const INFRASTRUCTURE_TOKENS = ['switch', 'gateway', 'roteador', 'router', 'patch panel', 'cabo', 'rack', 'nobreak', 'access point', 'accesspoint'];
   const POE_TOKENS = ['poe', 'camera', 'cftv', 'access point', 'accesspoint', 'wifi'];
+  const AUDIO_TOKENS = ['audio', 'som ambiente', 'som distribuido', 'alto falante', 'alto-falante', 'caixa acustica', 'cinema', 'home theater', 'receiver'];
   const UPS_POWER_FACTOR = 0.6;
   const UPS_AUTONOMY_MINUTES = 10;
 
@@ -39,6 +40,25 @@
     return /wi\s*fi|access\s*point|accesspoint/.test(pointText(point));
   }
 
+  function isAudioPoint(point) {
+    return hasToken(pointText(point), AUDIO_TOKENS);
+  }
+
+  function audioConfiguration(point) {
+    const value = pointText(point);
+    if (/cinema|home theater|receiver/.test(value)) return (value.match(/(?:5\.1|7\.1(?:\.\d+)?|2\.1|2\.0)/) || [])[0] || '5.1';
+    return /estereo|stereo|2\.0/.test(value) ? '2.0' : 'mono';
+  }
+
+  function audioLayout(configuration) {
+    if (configuration === 'mono') return { mainChannels: 1, heightChannels: 0, subwoofers: 0, channels: 1 };
+    const parts = String(configuration).split('.').map(Number);
+    const mainChannels = parts[0] || 2;
+    const subwoofers = parts[1] || 0;
+    const heightChannels = parts[2] || 0;
+    return { mainChannels, heightChannels, subwoofers, channels: mainChannels + heightChannels };
+  }
+
   function hasToken(value, tokens) {
     return tokens.some((token) => value.includes(token));
   }
@@ -61,6 +81,10 @@
       const value = pointText(point);
       return hasToken(value, NETWORK_TOKENS);
     });
+    const audioPoints = sourcePoints.filter((point) => {
+      if (surveyId && text(point.surveyId) && text(point.surveyId) !== surveyId) return false;
+      return isAudioPoint(point);
+    });
     const endpointPoints = networkPoints.filter((point) => !hasToken(pointText(point), INFRASTRUCTURE_TOKENS.filter((token) => !['access point', 'accesspoint'].includes(token))));
     const accessPointPoints = networkPoints.filter(isAccessPointPoint);
     const portsUsed = endpointPoints.reduce((total, point) => total + quantity(point), 0);
@@ -82,7 +106,7 @@
     const rackReserveUnits = portsUsed ? 3 : 0;
     const rackMinimumUnits = portsUsed ? Math.max(6, rackOccupiedUnits + rackReserveUnits) : 0;
     const warnings = [];
-    if (!networkPoints.length) warnings.push({ code: 'network.no-input', message: 'Nenhum ponto de Rede foi identificado no levantamento.' });
+    if (!networkPoints.length && !audioPoints.length) warnings.push({ code: 'technical.no-input', message: 'Nenhum ponto técnico de Rede ou Áudio foi identificado no levantamento.' });
     if (portsUsed && !minimumStandardPorts) warnings.push({ code: 'network.switch-capacity', message: `A necessidade de ${portsRequired} portas excede os padrões iniciais de 8, 16, 24 e 48 portas.` });
     if (missingPoeWatts.length) warnings.push({ code: 'network.poe-power-missing', message: 'O consumo PoE precisa ser informado para validar o orçamento mínimo de potência.' });
     const requirements = [];
@@ -116,6 +140,20 @@
       outputWaveform: 'senoidal',
       sourcePointIds: networkPoints.map((point) => text(point.id)).filter(Boolean),
     });
+    const audioGroups = new Map();
+    audioPoints.forEach((point) => {
+      const configuration = audioConfiguration(point);
+      const group = audioGroups.get(configuration) || { configuration, quantity: 0, sourcePointIds: [] };
+      group.quantity += quantity(point);
+      if (point.id) group.sourcePointIds.push(text(point.id));
+      audioGroups.set(configuration, group);
+    });
+    audioGroups.forEach((group) => {
+      const layout = audioLayout(group.configuration);
+      requirements.push({ category: 'audio', kind: 'audio-processing', configuration: group.configuration, quantity: group.quantity, channels: layout.channels, mainChannels: layout.mainChannels, heightChannels: layout.heightChannels, subwooferRequired: layout.subwoofers > 0, externalAmplificationRequired: layout.channels > 7, sourcePointIds: group.sourcePointIds });
+      requirements.push({ category: 'audio', kind: 'audio-speakers', configuration: group.configuration, quantity: group.quantity * (layout.mainChannels + layout.heightChannels), mainSpeakers: group.quantity * layout.mainChannels, heightSpeakers: group.quantity * layout.heightChannels, sourcePointIds: group.sourcePointIds });
+      if (layout.subwoofers) requirements.push({ category: 'audio', kind: 'audio-subwoofer', configuration: group.configuration, quantity: group.quantity * layout.subwoofers, sourcePointIds: group.sourcePointIds });
+    });
     if (networkPoints.length) requirements.push({
       category: 'electrical',
       kind: 'electrical-infrastructure',
@@ -139,19 +177,26 @@
     if (portsUsed) solutions.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: rackMinimumUnits, mountingUnitsOccupied: rackOccupiedUnits, mountingUnitsReserve: rackReserveUnits });
     if (networkPoints.length) solutions.push({ category: 'network', kind: 'ups', quantity: 1, powerWattsMinimum: poeWattsWithReserve, vaMinimum: upsVaMinimum, autonomyMinutesMinimum: UPS_AUTONOMY_MINUTES, outputWaveform: 'senoidal' });
     if (networkPoints.length) solutions.push({ category: 'electrical', kind: 'electrical-infrastructure', quantity: 1, dedicatedCircuitRequired: true, groundingRequired: true, surgeProtectionRequired: true });
+    audioGroups.forEach((group) => {
+      const layout = audioLayout(group.configuration);
+      solutions.push({ category: 'audio', kind: 'audio-processing', configuration: group.configuration, quantity: group.quantity, channels: layout.channels, mainChannels: layout.mainChannels, heightChannels: layout.heightChannels, subwooferRequired: layout.subwoofers > 0, externalAmplificationRequired: layout.channels > 7 });
+      solutions.push({ category: 'audio', kind: 'audio-speakers', configuration: group.configuration, quantity: group.quantity * (layout.mainChannels + layout.heightChannels), mainSpeakers: group.quantity * layout.mainChannels, heightSpeakers: group.quantity * layout.heightChannels });
+      if (layout.subwoofers) solutions.push({ category: 'audio', kind: 'audio-subwoofer', configuration: group.configuration, quantity: group.quantity * layout.subwoofers });
+    });
+    const categories = [];
+    if (networkPoints.length) categories.push('network');
+    if (audioPoints.length) categories.push('audio');
+    const trace = [];
+    if (networkPoints.length) trace.push({ ruleId: 'network.switch.capacity.v1', sourcePointIds: networkPoints.map((point) => text(point.id)).filter(Boolean), endpointPointIds: endpointPoints.map((point) => text(point.id)).filter(Boolean), accessPointPointIds: accessPointPoints.map((point) => text(point.id)).filter(Boolean) });
+    if (audioPoints.length) trace.push({ ruleId: 'audio.layout.v1', sourcePointIds: audioPoints.map((point) => text(point.id)).filter(Boolean) });
     return {
-      engineVersion: 'network-v1',
-      status: portsUsed && !warnings.length ? 'dimensionado' : 'incompleto',
-      categories: networkPoints.length ? ['network'] : [],
+      engineVersion: 'technical-v2',
+      status: (portsUsed || audioPoints.length) && !warnings.length ? 'dimensionado' : 'incompleto',
+      categories,
       requirements,
       solutions,
       warnings,
-      trace: networkPoints.length ? [{
-        ruleId: 'network.switch.capacity.v1',
-        sourcePointIds: networkPoints.map((point) => text(point.id)).filter(Boolean),
-        endpointPointIds: endpointPoints.map((point) => text(point.id)).filter(Boolean),
-        accessPointPointIds: accessPointPoints.map((point) => text(point.id)).filter(Boolean),
-      }] : [],
+      trace,
     };
   }
 

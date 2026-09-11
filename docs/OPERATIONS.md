@@ -108,6 +108,8 @@ Ao aprovar uma oportunidade, ela deixa de aparecer no mapa ativo e o cliente per
 O teste `npm run test:ui-flow` cria 30 oportunidades por interação real com a interface antes de validar o ciclo principal; a base temporária começa vazia e não usa mutações diretas de oportunidades, levantamentos, clientes ou projetos.
 ## Levantamento inicial por necessidades
 
+Pontos de som ambiente podem ser mono ou estéreo. Pontos de cinema aceitam configurações como 5.1, 5.1.2, 7.1 e 7.1.4; a prévia mostra canais, caixas principais, caixas de altura, subwoofer e alerta de amplificação externa quando necessário. Após a confirmação, as referências escolhidas são aplicadas ao orçamento com as quantidades dimensionadas.
+
 Na prévia da rede, o rack mostra unidades ocupadas e reserva técnica. Organizadores horizontais de cabos são calculados por blocos de até 24 portas e entram na infraestrutura do orçamento somente após a confirmação do produto compatível.
 
 O dimensionamento de rede exibe um nobreak senoidal com a carga PoE conhecida convertida em potência e VA mínimos, além de autonomia de 10 minutos. Quando a carga não foi informada, a potência fica pendente de validação. A prévia também registra circuito dedicado, aterramento e DPS; somente o nobreak confirmado no catálogo entra automaticamente no orçamento.

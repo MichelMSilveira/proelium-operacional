@@ -30,6 +30,10 @@
       definition.capacityWatts,
       definition.capacityVa,
       definition.autonomyMinutes,
+      definition.channels,
+      definition.channelCount,
+      definition.configuration,
+      product && product.technicalFunction,
       connection.requirements,
       connection.constraints,
     ].flat().filter(Boolean).join(' '));
@@ -66,6 +70,30 @@
   function isCableManagement(product) {
     const value = productText(product);
     return value.includes('organizador de cabo') || value.includes('organizacao de cabo') || value.includes('gerenciamento de cabo') || value.includes('cable management');
+  }
+
+  function isAudioProcessor(product) {
+    const value = productText(product);
+    return value.includes('receiver') || value.includes('processador de audio') || value.includes('processador av') || value.includes('amplificador multicanal') || value.includes('amplificador de audio') || value.includes('amplificador') && value.includes('canais');
+  }
+
+  function isAudioSpeaker(product) {
+    const value = productText(product);
+    return value.includes('caixa acustica') || value.includes('alto falante') || value.includes('alto-falante') || value.includes('speaker');
+  }
+
+  function isSubwoofer(product) {
+    return productText(product).includes('subwoofer');
+  }
+
+  function audioChannels(product) {
+    const definition = product && typeof product.technicalDefinition === 'object' ? product.technicalDefinition : {};
+    for (const value of [product && product.channels, product && product.channelCount, definition.channels, definition.channelCount]) {
+      const parsed = number(value);
+      if (parsed != null) return parsed;
+    }
+    const match = productText(product).match(/(\d+)\s*(?:canais|channels)/);
+    return match ? Number(match[1]) : null;
   }
 
   function isUps(product) {
@@ -134,12 +162,15 @@
     const unmatched = [];
     requirements.forEach((requirement) => {
       if (requirement.kind === 'electrical-infrastructure') return;
-      if (!['switch', 'access-point', 'patch-panel', 'cable-management', 'rack', 'ups'].includes(requirement.kind)) return;
+      if (!['switch', 'access-point', 'patch-panel', 'cable-management', 'rack', 'ups', 'audio-processing', 'audio-speakers', 'audio-subwoofer'].includes(requirement.kind)) return;
       const compatible = catalog.filter((product) => {
         if (!product || product.active === false || normalized(product.catalogType) === 'service') return false;
         if (requirement.kind === 'access-point') return isAccessPoint(product);
         if (requirement.kind === 'rack') return isRack(product);
         if (requirement.kind === 'cable-management') return isCableManagement(product);
+        if (requirement.kind === 'audio-processing') return isAudioProcessor(product) && (audioChannels(product) == null || audioChannels(product) >= Number(requirement.channels || 0));
+        if (requirement.kind === 'audio-speakers') return isAudioSpeaker(product);
+        if (requirement.kind === 'audio-subwoofer') return isSubwoofer(product);
         if (requirement.kind === 'ups') {
           if (!isUps(product)) return false;
           const requiredWatts = Number(requirement.powerWattsMinimum || 0);
@@ -173,13 +204,17 @@
             ? { ports: requirement.ports, quantity: requirement.quantity }
             : requirement.kind === 'cable-management'
               ? { ports: requirement.ports, quantity: requirement.quantity }
+            : requirement.kind === 'audio-processing'
+              ? { configuration: requirement.configuration, quantity: requirement.quantity, channels: requirement.channels, mainChannels: requirement.mainChannels, heightChannels: requirement.heightChannels, subwooferRequired: requirement.subwooferRequired, externalAmplificationRequired: requirement.externalAmplificationRequired }
+            : requirement.kind === 'audio-speakers' || requirement.kind === 'audio-subwoofer'
+              ? { configuration: requirement.configuration, quantity: requirement.quantity }
             : requirement.kind === 'ups'
               ? { quantity: requirement.quantity, powerWattsMinimum: requirement.powerWattsMinimum ?? null, vaMinimum: requirement.vaMinimum ?? null, autonomyMinutesMinimum: requirement.autonomyMinutesMinimum, outputWaveform: requirement.outputWaveform }
             : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
-        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' || requirement.kind === 'patch-panel' ? { capacity: capacity(product), ...(requirement.kind === 'switch' ? { poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) } : requirement.kind === 'ups' ? { powerWatts: productPowerWatts(product), va: productVa(product), autonomyMinutes: productAutonomyMinutes(product) } : {}) })),
+        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' || requirement.kind === 'patch-panel' ? { capacity: capacity(product), ...(requirement.kind === 'switch' ? { poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) } : requirement.kind === 'ups' ? { powerWatts: productPowerWatts(product), va: productVa(product), autonomyMinutes: productAutonomyMinutes(product) } : requirement.kind === 'audio-processing' ? { channels: audioChannels(product) } : {}) })),
       });
     });
-    return { engineVersion: 'network-compatibility-v1', matches, unmatched };
+    return { engineVersion: 'technical-compatibility-v2', matches, unmatched };
   }
 
   function selectCompatibleProductIds(compatibility, requestedProductIds) {

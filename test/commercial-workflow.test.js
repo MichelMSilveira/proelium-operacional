@@ -132,6 +132,30 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
   assert.equal(data.quotes[0].surveyMapping.technicalSolutionApplied, true);
 });
 
+test('aplica cinema dimensionado ao orcamento com quantidade de caixas', () => {
+  const data = {
+    products: [
+      { id: 'processor', name: 'Processador AV 11 canais', technicalType: 'Processador AV', price: 12000, cost: 8000, active: true },
+      { id: 'speaker', name: 'Caixa acustica residencial', technicalType: 'Caixa acustica', price: 1800, cost: 900, active: true },
+      { id: 'sub', name: 'Subwoofer ativo residencial', technicalType: 'Subwoofer', price: 3200, cost: 1800, active: true }
+    ],
+    surveys: [{ id: 'survey-cinema', opportunityId: 'opp-1', status: 'Enviado ao orcamento', technicalSolution: { status: 'confirmed', engineVersion: 'technical-v2', selectedProductIds: ['processor', 'speaker', 'sub'] } }],
+    surveyPoints: [{ id: 'cinema-point', surveyId: 'survey-cinema', room: 'Cinema', type: 'Cinema 7.1.4', quantity: 1 }],
+    surveyRooms: [{ id: 'cinema-room', surveyId: 'survey-cinema', name: 'Cinema' }],
+    quotes: [{ id: 'quote-cinema', opportunityId: 'opp-1', value: 0 }],
+    quoteRooms: [{ id: 'quote-cinema-room', quoteId: 'quote-cinema', name: 'Cinema', items: [] }]
+  };
+
+  const result = workflow.populateQuoteFromSurvey(data, 'survey-cinema', 'quote-cinema', prefix => `${prefix}-new`);
+  const infrastructure = data.quoteRooms.find(room => room.items.some(item => item.productId === 'processor'));
+
+  assert.equal(result.unmapped.length, 0);
+  assert.equal(infrastructure?.items.find(item => item.productId === 'processor')?.qty, 1);
+  assert.equal(infrastructure?.items.find(item => item.productId === 'speaker')?.qty, 11);
+  assert.equal(infrastructure?.items.find(item => item.productId === 'sub')?.qty, 1);
+  assert.equal(data.quotes[0].value, 35000);
+});
+
 test('converte levantamento residencial em itens de catálogo e mantém o total idempotente', () => {
   const data = {
     products: [

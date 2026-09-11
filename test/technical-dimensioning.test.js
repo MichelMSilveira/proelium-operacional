@@ -43,11 +43,11 @@ test('gera requisito genérico de PoE sem escolher produto', () => {
 });
 
 test('sinaliza levantamento sem entradas de rede', () => {
-  const result = dimensionSurvey({ id: 'lev-3' }, [{ id: 'audio-1', surveyId: 'lev-3', type: 'Som ambiente', quantity: 2 }]);
+  const result = dimensionSurvey({ id: 'lev-3' }, [{ id: 'other-1', surveyId: 'lev-3', type: 'Ponto de manutenção', quantity: 2 }]);
 
   assert.equal(result.status, 'incompleto');
   assert.equal(result.requirements.length, 0);
-  assert.equal(result.warnings[0].code, 'network.no-input');
+  assert.equal(result.warnings[0].code, 'technical.no-input');
 });
 
 test('gera requisito separado para access points com rastreabilidade', () => {
@@ -60,4 +60,17 @@ test('gera requisito separado para access points com rastreabilidade', () => {
   assert.equal(requirement.quantity, 3);
   assert.equal(solution.quantity, 3);
   assert.deepEqual(requirement.sourcePointIds, ['wifi-1']);
+});
+
+test('dimensiona cinema 7.1.4 em canais, caixas e subwoofer', () => {
+  const result = dimensionSurvey({ id: 'lev-audio-1' }, [{ id: 'cinema-1', surveyId: 'lev-audio-1', type: 'Cinema 7.1.4', quantity: 1 }]);
+  const processing = result.requirements.find((item) => item.kind === 'audio-processing');
+  const speakers = result.requirements.find((item) => item.kind === 'audio-speakers');
+  const subwoofer = result.requirements.find((item) => item.kind === 'audio-subwoofer');
+
+  assert.equal(result.status, 'dimensionado');
+  assert.deepEqual(result.categories, ['audio']);
+  assert.deepEqual({ channels: processing.channels, mainChannels: processing.mainChannels, heightChannels: processing.heightChannels, subwooferRequired: processing.subwooferRequired, externalAmplificationRequired: processing.externalAmplificationRequired }, { channels: 11, mainChannels: 7, heightChannels: 4, subwooferRequired: true, externalAmplificationRequired: true });
+  assert.deepEqual({ quantity: speakers.quantity, mainSpeakers: speakers.mainSpeakers, heightSpeakers: speakers.heightSpeakers }, { quantity: 11, mainSpeakers: 7, heightSpeakers: 4 });
+  assert.equal(subwoofer.quantity, 1);
 });
