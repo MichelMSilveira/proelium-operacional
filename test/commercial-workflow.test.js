@@ -91,13 +91,15 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
       { id: 'switch-16', name: 'Switch 16 portas', technicalType: 'Switch de rede', price: 100, cost: 50, active: true },
       { id: 'switch-24', name: 'Switch 24 portas PoE', technicalType: 'Switch de rede', price: 900, cost: 500, active: true },
       { id: 'ap', name: 'Access Point Wi-Fi PoE', technicalType: 'Ponto de rede Wi-Fi', price: 300, cost: 150, active: true },
+      { id: 'patch', name: 'Patch panel 24 portas', technicalType: 'Patch panel', price: 400, cost: 200, active: true },
+      { id: 'rack', name: 'Rack técnico 6U', technicalType: 'Rack técnico', price: 800, cost: 400, active: true },
       { id: 'cable', name: 'Cabo de rede Cat6', technicalType: 'Cabo de rede', unit: 'm', price: 10, cost: 5, active: true }
     ],
     surveys: [{
       id: 'survey-confirmed',
       opportunityId: 'opp-1',
       status: 'Enviado ao orcamento',
-      technicalSolution: { status: 'confirmed', engineVersion: 'network-v1', selectedProductIds: ['switch-24', 'ap'] }
+      technicalSolution: { status: 'confirmed', engineVersion: 'network-v1', selectedProductIds: ['switch-24', 'ap', 'patch', 'rack'] }
     }],
     surveyPoints: [
       { id: 'point-1', surveyId: 'survey-confirmed', room: 'Sala', type: 'Ponto de rede Cat6', quantity: 19 },
@@ -111,12 +113,16 @@ test('aplica produto da solucao tecnica confirmada ao orcamento', () => {
   const result = workflow.populateQuoteFromSurvey(data, 'survey-confirmed', 'quote-1', prefix => `${prefix}-new`);
   const infrastructure = data.quoteRooms.find(room => room.items.some(item => item.productId === 'switch-24'));
   const switchItem = infrastructure?.items.find(item => item.productId === 'switch-24');
+  const patchPanelItem = infrastructure?.items.find(item => item.productId === 'patch');
+  const rackItem = infrastructure?.items.find(item => item.productId === 'rack');
   const accessPointItem = data.quoteRooms.find(room => room.name === 'Sala')?.items.find(item => item.productId === 'ap');
 
   assert.equal(result.unmapped.length, 0);
   assert.equal(switchItem?.qty, 1);
   assert.equal(accessPointItem?.qty, 2);
-  assert.equal(data.quotes[0].value, 7200);
+  assert.equal(patchPanelItem?.qty, 1);
+  assert.equal(rackItem?.qty, 1);
+  assert.equal(data.quotes[0].value, 8400);
   assert.equal(data.quotes[0].surveyMapping.technicalSolutionApplied, true);
 });
 

@@ -49,6 +49,16 @@
     return value.includes('access point') || value.includes('accesspoint') || value.includes('wifi') || value.includes('wi fi');
   }
 
+  function isPatchPanel(product) {
+    const value = productText(product);
+    return value.includes('patch panel') || value.includes('patchpanel');
+  }
+
+  function isRack(product) {
+    const value = productText(product);
+    return value.includes('rack') || value.includes('armario tecnico') || value.includes('gabinete de rede');
+  }
+
   function supportsPoe(product) {
     return productText(product).includes('poe');
   }
@@ -80,10 +90,14 @@
     const matches = [];
     const unmatched = [];
     requirements.forEach((requirement) => {
-      if (requirement.kind !== 'switch' && requirement.kind !== 'access-point') return;
+      if (!['switch', 'access-point', 'patch-panel', 'rack'].includes(requirement.kind)) return;
       const compatible = catalog.filter((product) => {
         if (!product || product.active === false || normalized(product.catalogType) === 'service') return false;
         if (requirement.kind === 'access-point') return isAccessPoint(product);
+        if (requirement.kind === 'rack') return isRack(product);
+        if (requirement.kind === 'patch-panel') {
+          return isPatchPanel(product) && (capacity(product) == null || capacity(product) >= Number(requirement.ports || 0));
+        }
         if (!isSwitch(product)) return false;
         const ports = capacity(product);
         if (ports == null || ports < Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)) return false;
@@ -99,10 +113,12 @@
       if (requirement.kind === 'switch') compatible.sort((left, right) => (capacity(left) - Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)) - (capacity(right) - Number(requirement.minimumStandardPorts || requirement.portsRequired || 0)));
       matches.push({
         requirementKind: requirement.kind,
-        requirement: requirement.kind === 'access-point'
+        requirement: requirement.kind === 'access-point' || requirement.kind === 'rack'
           ? { quantity: requirement.quantity }
-          : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
-        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' ? { capacity: capacity(product), poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) })),
+          : requirement.kind === 'patch-panel'
+            ? { ports: requirement.ports, quantity: requirement.quantity }
+            : { ports: requirement.minimumStandardPorts || requirement.portsRequired, poeRequired: Boolean(requirement.poeRequired), poeWattsMinimum: requirement.poeWattsWithReserve ?? null },
+        products: compatible.map((product) => ({ ...publicProductReference(product), ...(requirement.kind === 'switch' || requirement.kind === 'patch-panel' ? { capacity: capacity(product), ...(requirement.kind === 'switch' ? { poeSupported: supportsPoe(product), poeBudgetWatts: poeBudgetWatts(product) } : {}) } : {}) })),
       });
     });
     return { engineVersion: 'network-compatibility-v1', matches, unmatched };

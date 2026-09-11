@@ -8,6 +8,8 @@ test('encontra switch compatível sem expor preço ou custo', () => {
   const result = findCompatibleProducts(dimensioning, [
     { id: 'small', name: 'Switch 16 portas', category: 'Rede', active: true, price: 100 },
     { id: 'right', name: 'Switch 24 portas PoE+', brand: 'Marca', model: 'M24', category: 'Rede', active: true, price: 999 },
+    { id: 'patch', name: 'Patch panel 24 portas', category: 'Cabeamento', active: true },
+    { id: 'rack', name: 'Rack técnico 6U', category: 'Infraestrutura', active: true },
   ]);
 
   assert.equal(result.matches[0].products[0].productId, 'right');
@@ -19,10 +21,14 @@ test('encontra switch compatível sem expor preço ou custo', () => {
 
 test('rejeita switch sem PoE quando a solução exige PoE', () => {
   const dimensioning = dimensionSurvey({ id: 'lev-compat-2' }, [{ id: 'p-1', surveyId: 'lev-compat-2', type: 'Access Point Wi-Fi', quantity: 1, poeWatts: 18 }]);
-  const result = findCompatibleProducts(dimensioning, [{ id: 'plain', name: 'Switch 24 portas', category: 'Rede', active: true }]);
+  const result = findCompatibleProducts(dimensioning, [
+    { id: 'plain', name: 'Switch 24 portas', category: 'Rede', active: true },
+    { id: 'patch', name: 'Patch panel 24 portas', category: 'Cabeamento', active: true },
+    { id: 'rack', name: 'Rack técnico 6U', category: 'Infraestrutura', active: true }
+  ]);
 
-  assert.equal(result.matches.length, 0);
-  assert.equal(result.unmatched[0].kind, 'switch');
+  assert.equal(result.matches.some((item) => item.requirementKind === 'switch'), false);
+  assert.equal(result.unmatched.some((item) => item.kind === 'switch'), true);
 });
 
 test('confirma uma unica referencia por requisito e respeita a escolha solicitada', () => {
@@ -41,12 +47,16 @@ test('encontra access points compativeis sem misturar switches', () => {
   const dimensioning = dimensionSurvey({ id: 'lev-compat-3' }, [{ id: 'wifi-1', surveyId: 'lev-compat-3', type: 'Access Point Wi-Fi', quantity: 2 }]);
   const result = findCompatibleProducts(dimensioning, [
     { id: 'ap', name: 'Access Point Wi-Fi PoE+', category: 'Rede Wi-Fi', active: true },
-    { id: 'switch', name: 'Switch 24 portas PoE+', category: 'Rede', active: true }
+    { id: 'switch', name: 'Switch 24 portas PoE+', category: 'Rede', active: true },
+    { id: 'patch', name: 'Patch panel 24 portas', category: 'Cabeamento', active: true },
+    { id: 'rack', name: 'Rack técnico 6U', category: 'Infraestrutura', active: true }
   ]);
 
   const match = result.matches.find((item) => item.requirementKind === 'access-point');
   assert.equal(match.requirement.quantity, 2);
   assert.deepEqual(match.products.map((product) => product.productId), ['ap']);
+  assert.equal(result.matches.find((item) => item.requirementKind === 'patch-panel').products[0].productId, 'patch');
+  assert.equal(result.matches.find((item) => item.requirementKind === 'rack').products[0].productId, 'rack');
 });
 
 test('rejeita switch com orçamento PoE abaixo do requisito', () => {

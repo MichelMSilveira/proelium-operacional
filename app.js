@@ -2468,9 +2468,9 @@ function survey(){
 }
 views.survey=survey;
 function technicalDimensioningPanel(result,compatibility,survey){
-  const requirement=result?.requirements?.find(item=>item.kind==='switch'),accessPointRequirement=result?.requirements?.find(item=>item.kind==='access-point'),solution=result?.solutions?.find(item=>item.ports);
+  const requirement=result?.requirements?.find(item=>item.kind==='switch'),accessPointRequirement=result?.requirements?.find(item=>item.kind==='access-point'),patchPanelRequirement=result?.requirements?.find(item=>item.kind==='patch-panel'),rackRequirement=result?.requirements?.find(item=>item.kind==='rack'),solution=result?.solutions?.find(item=>item.ports);
   if(!result)return '';
-  const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}${accessPointRequirement?` · access points necessarios: ${accessPointRequirement.quantity}`:''}`:accessPointRequirement?`Access points necessarios: ${accessPointRequirement.quantity}`:'Nenhum ponto de Rede identificado neste levantamento.';
+  const details=requirement?`${requirement.portsUsed} porta(s) usadas + ${requirement.reservePercent}% de reserva = ${requirement.portsRequired} necessarias${solution?.ports?` · requisito minimo de switch: ${solution.ports} portas`:''}${accessPointRequirement?` · access points necessarios: ${accessPointRequirement.quantity}`:''}${patchPanelRequirement?` · patch panel: ${patchPanelRequirement.ports} portas`:''}${rackRequirement?` · rack: ${rackRequirement.quantity} unidade(s), ${rackRequirement.mountingUnitsMinimum}U minimo`:''}`:accessPointRequirement?`Access points necessarios: ${accessPointRequirement.quantity}`:'Nenhum ponto de Rede identificado neste levantamento.';
   const poe=requirement?.poeRequired?`<div>PoE: ${requirement.poeWattsWithReserve?`${requirement.poeWattsWithReserve} W com reserva tecnica`:'consumo ainda nao informado'}.</div>`:'';
   const warnings=(result.warnings||[]).map(item=>`<li>${item.message}</li>`).join('');
   const matches=(compatibility?.matches||[]).flatMap(item=>item.products||[]);

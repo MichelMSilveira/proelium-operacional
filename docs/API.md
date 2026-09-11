@@ -90,7 +90,7 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST/PATCH | `/survey` | levantamentos técnicos e revisão |
 | GET | `/survey/{id}/dimensioning` | prévia de dimensionamento genérico e referências de Produtos Compatíveis, atualmente com a regra de Rede |
 | POST | `/survey/{id}/dimensioning/confirm` | confirmar referências compatíveis como solução técnica, sem criar itens ou preços no orçamento |
-| — | Dimensionamento de Rede | requisitos de switch e access point, incluindo validação de orçamento PoE quando cadastrado; a confirmação consolida uma referência por requisito |
+| — | Dimensionamento de Rede | requisitos de switch, access point, patch panel e rack, incluindo validação de orçamento PoE quando cadastrado; a confirmação consolida uma referência por requisito |
 | GET/PUT | `/survey/{id}/rooms` | ambientes do levantamento |
 | POST/PATCH/DELETE | `/survey/points` | pontos técnicos e quantitativos |
 | POST | `/survey/{id}/send-to-quote` | enviar levantamento validado ao orçamento, gerar sugestões do catálogo, criar pré-projeto técnico e recalcular o valor da proposta |

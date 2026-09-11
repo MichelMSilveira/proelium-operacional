@@ -11,7 +11,11 @@ test('dimensiona portas de rede com reserva técnica de 20%', () => {
   assert.equal(requirement.portsUsed, 19);
   assert.equal(requirement.portsRequired, 23);
   assert.equal(requirement.minimumStandardPorts, 24);
-  assert.deepEqual(result.solutions, [{ category: 'network', kind: 'switch', ports: 24, poeRequired: false, poeWattsMinimum: null }]);
+  assert.deepEqual(result.solutions, [
+    { category: 'network', kind: 'switch', ports: 24, poeRequired: false, poeWattsMinimum: null },
+    { category: 'network', kind: 'patch-panel', ports: 24, quantity: 1 },
+    { category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 }
+  ]);
   assert.equal(Object.hasOwn(result, 'products'), false);
   assert.equal(Object.hasOwn(result, 'prices'), false);
 });

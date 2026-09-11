@@ -209,6 +209,10 @@
       if (!addGenerated(switchProduct, switchQuantity, { global: true, kind: 'network-switch' }, (confirmedSwitch ? technicalNetworkPoints : networkPoints).map(point => point.id), switchBasis)) unmapped.push({ type: 'Switch de rede' });
       const cableProduct = pickCatalogProduct(products, [/cabo.*(?:cat\s*6|categoria\s*6)/, /cabo de rede/]);
       if (!addGenerated(cableProduct, itemQuantity(cableProduct, totalNetwork, 'network-cable'), { global: true, kind: 'network-cable' }, networkPoints.map(point => point.id), `${totalNetwork} ponto(s) × 30 m médios; bobina considerada em 305 m quando aplicável`)) unmapped.push({ type: 'Cabo de rede' });
+      const confirmedPatchPanel = selectedProducts.find(product => /patch\s*panel|patchpanel/.test(productSearchText(product)));
+      if (confirmedPatchPanel && !addGenerated(confirmedPatchPanel, 1, { global: true, kind: 'patch-panel' }, technicalNetworkPoints.map(point => point.id), 'Produto confirmado na solucao tecnica')) unmapped.push({ type: 'Patch panel' });
+      const confirmedRack = selectedProducts.find(product => /rack|armario tecnico|gabinete de rede/.test(productSearchText(product)));
+      if (confirmedRack && !addGenerated(confirmedRack, 1, { global: true, kind: 'rack' }, technicalNetworkPoints.map(point => point.id), 'Produto confirmado na solucao tecnica')) unmapped.push({ type: 'Rack tecnico' });
     } else {
       const confirmedSwitch = selectedProducts.find(product => /switch|comutador/.test(productSearchText(product)));
       if (confirmedSwitch && !addGenerated(confirmedSwitch, 1, { global: true, kind: 'network-switch' }, technicalNetworkPoints.map(point => point.id), `Produto confirmado na soluÃ§Ã£o tÃ©cnica ${String(technicalSolution.engineVersion || '')}`.trim())) unmapped.push({ type: 'Switch de rede' });

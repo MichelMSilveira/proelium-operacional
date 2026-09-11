@@ -96,6 +96,8 @@
       quantity: accessPointsRequired,
       sourcePointIds: accessPointPoints.map((point) => text(point.id)).filter(Boolean),
     });
+    if (portsUsed && minimumStandardPorts) requirements.push({ category: 'network', kind: 'patch-panel', ports: minimumStandardPorts, quantity: 1 });
+    if (portsUsed) requirements.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 });
     const solutions = [];
     if (minimumStandardPorts) solutions.push({
       category: 'network',
@@ -105,6 +107,8 @@
       poeWattsMinimum: poeWattsWithReserve,
     });
     if (accessPointsRequired) solutions.push({ category: 'network', kind: 'access-point', quantity: accessPointsRequired });
+    if (portsUsed && minimumStandardPorts) solutions.push({ category: 'network', kind: 'patch-panel', ports: minimumStandardPorts, quantity: 1 });
+    if (portsUsed) solutions.push({ category: 'network', kind: 'rack', quantity: 1, mountingUnitsMinimum: 6 });
     return {
       engineVersion: 'network-v1',
       status: portsUsed && !warnings.length ? 'dimensionado' : 'incompleto',
