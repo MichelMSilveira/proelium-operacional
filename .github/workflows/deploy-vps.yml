@@ -70,6 +70,10 @@ jobs:
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/backend-nest/dist/"
           rsync -az backend-nest/package.json backend-nest/package-lock.json \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/backend-nest/"
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'mkdir -p /opt/proelium-operacional/frontend/.next/standalone'
+          rsync -az --delete frontend/.next/standalone/ \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/proelium-operacional/frontend/.next/standalone/"
           rsync -az deploy/proelium-nest.service.example \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/proelium-nest.service"
           rsync -az deploy/proelium-next-proxy.example.conf \

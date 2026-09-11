@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Corrigida a entrega do artefato standalone do Next.js: o build agora é sincronizado para o diretório usado pelo serviço no VPS antes do restart, evitando que páginas novas fiquem presas em uma versão antiga.
+
 - O proxy do Next.js foi ampliado para todas as rotas de módulos já construídas, eliminando os 404 dos links de Financeiro, Operação, Agenda, Catálogo, Qualidade, Conhecimento, Compras, Levantamento, Relatórios, Rotinas, Instalações, Colaboradores, Configurações, Usuários e Convites; a raiz permanece no shell legado até a validação autenticada do shell principal.
 
 - Documentação do frontend atualizada para refletir a migração operacional concluída: o NestJS/PostgreSQL é o caminho ativo, enquanto o contrato agregado e os adaptadores legados permanecem somente como compatibilidade e fallback explícito.
