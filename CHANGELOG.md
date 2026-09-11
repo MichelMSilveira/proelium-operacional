@@ -2,6 +2,10 @@
 
 ## Em desenvolvimento
 
+- Adicionado teste de cobertura para garantir que APIs usadas pelo Next.js tenham rewrite e encaminhamento no proxy publicados.
+
+- Ampliadas as rewrites do Next.js para os subrecursos de Levantamento, Rotinas e Relatórios usados pelas operações de gravação das telas.
+
 - Corrigido o encaminhamento das APIs de perfil e convites da empresa usadas pelas telas Next.js, evitando que essas operações caiam no contrato legado.
 
 - Documentação do frontend alinhada ao estado publicado: o Next.js atende os módulos, enquanto a raiz pública e os clientes compartilhados ainda dependem do shell legado até a validação autenticada final.
