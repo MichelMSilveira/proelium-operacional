@@ -16,6 +16,8 @@ O cadastro local de empresas (`/api/auth/register-company`) agora grava `compani
 
 O onboarding Google de novas empresas (`/api/auth/register-google-company`) também grava empresa e fundador diretamente no PostgreSQL quando o banco está ativo; o callback OAuth e a identificação temporária continuam compatíveis com a ponte legada.
 
+O aceite de convite para novos usuários Google (`/api/auth/join-google-company`) agora atualiza ou cria `app_users` e marca `company_invites.used_at` na mesma transação quando o PostgreSQL está ativo; a ponte legada permanece disponível sem banco.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.

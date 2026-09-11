@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O aceite de convite para novos usuários Google passou a criar ou atualizar `app_users` diretamente no PostgreSQL, consumir o convite em transação e renovar a sessão pelo NestJS.
+
 - O onboarding Google de novas empresas passou a criar o fundador e a empresa diretamente em `companies` e `app_users` pelo NestJS/PostgreSQL, com validação de documento, transação e fallback legado.
 
 - O cadastro local de empresas passou a criar a empresa e o fundador diretamente em `companies` e `app_users` pelo NestJS/PostgreSQL, com transação, cookie de sessão e fallback legado.

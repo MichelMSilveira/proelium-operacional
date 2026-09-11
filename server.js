@@ -372,6 +372,13 @@ async function handleRequest(req, res) {
       return sendJson(res, 503, { error: 'Não foi possível concluir o cadastro da empresa agora.' });
     }
   }
+  if (pathname === '/api/auth/join-google-company' && req.method === 'POST' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, pathname); }
+    catch (error) {
+      console.error('Falha ao encaminhar aceite Google ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível aceitar o convite agora.' });
+    }
+  }
 
   if (pathname === '/api/auth/google' && req.method === 'GET') {
     const invite=new URL(req.url,`http://${req.headers.host}`).searchParams.get('invite');
