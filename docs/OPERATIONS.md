@@ -70,6 +70,8 @@ Em `Cronograma e acompanhamento`, selecione um projeto para visualizar os dias p
 
 ## Projeto 360°
 
+Os atalhos da Visão geral para projetos em andamento abrem o Projeto 360° selecionado. A tela mantém o orçamento aprovado, cronograma, execução e pós-venda vinculados; o botão de orçamento dentro do projeto abre a proposta detalhada correspondente.
+
 Depois da aprovação, o orçamento permanece como histórico comercial e o projeto passa a concentrar o ciclo operacional. A tela `Projetos 360°` reúne o resumo do orçamento aprovado, cronograma, tarefas, compras, execução, entrega, relatórios e pós-venda, mantendo os vínculos por `projectId` e `quoteId`. Os menus `Processos`, `Acompanhamento` e `Operação` foram reorganizados em áreas mais claras; o acesso global de pós-venda continua disponível para filas entre projetos.
 
 ## Bot de teste operacional

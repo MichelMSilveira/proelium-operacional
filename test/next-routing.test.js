@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const frontendRoots = [path.join(root, 'frontend', 'app'), path.join(root, 'frontend', 'lib')];
 const nextConfig = fs.readFileSync(path.join(root, 'frontend', 'next.config.ts'), 'utf8');
 const proxyConfig = fs.readFileSync(path.join(root, 'deploy', 'proelium-next-proxy.example.conf'), 'utf8');
+const legacyApp = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 
 function sourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -42,4 +43,10 @@ test('APIs usadas pelo Next possuem rewrite e proxy publicados', () => {
   }
   assert.deepEqual(missingRewrite, [], `rewrites ausentes: ${missingRewrite.join(', ')}`);
   assert.deepEqual(missingProxy, [], `famílias ausentes no proxy: ${missingProxy.join(', ')}`);
+});
+test('atalho de projeto em andamento preserva a visao de detalhe', () => {
+  assert.match(legacyApp, /'projectDetail','serviceOrderDetail'/);
+  assert.match(legacyApp, /if\(view==='projectDetail'\)return canViewRole\('projects',role\)/);
+  assert.match(legacyApp, /data-dashboard-project/);
+  assert.match(legacyApp, /state\.view='projectDetail';render\(\)/);
 });
