@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Documentação do frontend atualizada para refletir a migração operacional concluída: o NestJS/PostgreSQL é o caminho ativo, enquanto o contrato agregado e os adaptadores legados permanecem somente como compatibilidade e fallback explícito.
+
 - A consulta da identificação Google pendente também passou a ser atendida pelo NestJS quando o PostgreSQL está ativo; o servidor legado fica restrito ao fallback sem banco.
 
 - Corrigido o proxy público do OAuth Google para preservar múltiplos cookies `Set-Cookie` no callback, evitando perda da sessão ou da identificação pendente.

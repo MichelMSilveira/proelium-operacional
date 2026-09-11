@@ -1,8 +1,8 @@
 # Frontend Next.js
 
-Frontend em React, TypeScript e Next.js, migrado gradualmente a partir do app legado.
+Frontend em React, TypeScript e Next.js, com os módulos operacionais publicados no shell Next.js.
 
-O shell de autenticação, sessão, logout e navegação já está em Next.js. As telas são migradas por módulos, mantendo compatibilidade com o servidor raiz durante a transição.
+O shell de autenticação, sessão, logout e navegação está em Next.js. O servidor raiz mantém apenas a ponte de compatibilidade necessária para o shell legado e para o fallback sem PostgreSQL.
 
 ## Rotas
 
@@ -33,7 +33,7 @@ Agenda usa `appointments_domain_entries` e `appointments_domain_state`, com isol
 
 Tarefas usam `tasks_domain_entries` e `tasks_domain_state`, com isolamento por `companyId`, revisão própria, importação inicial das pendências existentes durante a migração `020_tasks_domain.sql` e referências textuais aos projetos para preservar dados durante a transição.
 
-As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS, validam a sessão pelo endpoint interno e aceitam login por usuário e senha no próprio NestJS; OAuth, cadastro e o contrato agregado legado permanecem compatíveis com o servidor raiz durante a transição.
+As rotas específicas já validam payloads, permissões e revisão de conflito conforme o domínio. Com `DATABASE_URL` configurada, os módulos operacionais listados acima leem e gravam diretamente nas tabelas PostgreSQL do NestJS, validam a sessão pelo endpoint interno e aceitam login por usuário e senha, OAuth e cadastro no próprio NestJS. O servidor raiz apenas encaminha essas rotas quando o NestJS está ativo e preserva o fallback sem PostgreSQL.
 
 O levantamento técnico já permite criar e editar levantamentos, ambientes e pontos e excluir pontos e ambientes vazios diretamente no PostgreSQL, com revisão própria e isolamento por empresa. O envio ao orçamento também atualiza diretamente a oportunidade, o orçamento, os ambientes relacionados e o status do levantamento; a ponte legada fica como fallback sem PostgreSQL.
 
@@ -41,11 +41,11 @@ No detalhe de orçamento, a tela usa os recursos específicos `GET/POST/PATCH/DE
 
 Usuários da empresa usam `GET /api/company/users` e `POST/DELETE /api/company/users`; a criação de novos participantes continua no fluxo de convites.
 
-A biblioteca de conhecimento usa isolamento por `companyId`, revisão própria e importação inicial dos artigos existentes durante a migração `011_knowledge_domain.sql`. O NestJS continua consultando o endpoint de autenticação legado somente para validar a sessão e as permissões do usuário.
+A biblioteca de conhecimento usa isolamento por `companyId`, revisão própria e importação inicial dos artigos existentes durante a migração `011_knowledge_domain.sql`. Com PostgreSQL ativo, a sessão e as permissões são validadas pelo próprio NestJS; o contrato legado só é usado no fallback sem banco.
 
-A biblioteca técnica usa isolamento por `companyId`, revisão própria e importação inicial dos fabricantes existentes durante a migração `013_product_library_domain.sql`. A sessão e as permissões continuam sendo validadas pela API de autenticação legada durante a migração gradual.
+A biblioteca técnica usa isolamento por `companyId`, revisão própria e importação inicial dos fabricantes existentes durante a migração `013_product_library_domain.sql`. Com PostgreSQL ativo, a sessão e as permissões são validadas pelo próprio NestJS.
 
-O catálogo de produtos e serviços usa a tabela `products_domain_entries`, mantém produtos e serviços na mesma coleção compatível com o legado e importa os registros durante a migração `014_products_domain.sql`. A sessão e as permissões continuam sendo validadas pela API de autenticação legada durante a migração gradual.
+O catálogo de produtos e serviços usa a tabela `products_domain_entries`, mantém produtos e serviços na mesma coleção compatível com o legado e importa os registros durante a migração `014_products_domain.sql`. Com PostgreSQL ativo, a sessão e as permissões são validadas pelo próprio NestJS.
 
 Clientes usam `clients_domain_entries`, `clients_domain_activities` e `clients_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante as migrações `015_clients_domain.sql` e `034_client_activities_domain.sql`. O histórico de contatos possui rotas próprias por cliente; a exclusão mantém a mesma semântica do legado e não remove registros relacionados.
 
@@ -57,11 +57,11 @@ Equipamentos usam `equipment_domain_entries`, `equipment_domain_history` e `equi
 
 Colaboradores usam `collaborators_domain_entries` e `collaborators_domain_state`, com isolamento por `companyId`, revisão própria e importação inicial durante a migração `019_collaborators_domain.sql`. Contas, convites e permissões continuam pertencendo aos recursos de identidade da empresa.
 
-## Próximas etapas
+## Compatibilidade e cobertura restante
 
-- mover gradualmente OAuth, cadastro e gestão de identidade para a autenticação própria do NestJS, preservando cookies e permissões existentes;
-- retirar gradualmente `PUT /api/data` e as rotas coletivas antigas depois que nenhum consumidor do app legado depender delas;
-- adicionar testes de integração autenticados por perfil e concluir a substituição visual do legado.
+- manter `PUT /api/data` e as rotas coletivas antigas enquanto o shell legado continuar publicado; os módulos Next.js usam as rotas específicas do NestJS;
+- manter os adaptadores `LEGACY_API_ORIGIN` como fallback explícito quando o PostgreSQL não estiver configurado; eles não são o caminho ativo da produção;
+- ampliar os testes de integração e de interface autenticados por perfil usando contas de teste dedicadas. As suítes isoladas, de proteção anônima e de produção sem credenciais já estão aprovadas.
 
 ## Validação
 
