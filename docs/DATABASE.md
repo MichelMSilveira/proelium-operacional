@@ -10,6 +10,8 @@ O perfil pessoal (`/api/account/profile`) agora consulta e atualiza `app_users` 
 
 A administração de empresas (`/api/admin/companies`) agora lista, atualiza e exclui registros diretamente pelo NestJS quando o PostgreSQL está ativo; exclusões transferem vínculos para o portfólio pessoal e removem o estado operacional da empresa.
 
+O aceite de convite para uma sessão já autenticada (`/api/auth/consume-invite`) agora valida o token hash e atualiza o vínculo em `app_users` diretamente pelo NestJS quando o PostgreSQL está ativo; os fluxos OAuth continuam compatíveis com a ponte legada.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.

@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O aceite de convite de usuários autenticados passou a validar `company_invites` e atualizar `app_users` diretamente pelo NestJS/PostgreSQL, renovando a sessão e mantendo o fallback legado.
+
 - A administração de empresas da plataforma passou a listar, atualizar status/licenças e excluir empresas diretamente pelo NestJS/PostgreSQL, preservando perfis pessoais, presença e fallback sem banco.
 
 - O perfil pessoal passou a consultar e atualizar `app_users` diretamente pelo NestJS/PostgreSQL, preservando portfólio, identidade e fallback legado sem banco.

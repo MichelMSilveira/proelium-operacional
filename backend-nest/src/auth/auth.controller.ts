@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
 import { Pool } from 'pg';
 
 type RecordItem = Record<string, any>;
@@ -274,6 +274,62 @@ export class AuthController {
     return `${encoded}.${signature}`;
   }
 
+  private cookieValue(cookie: string | undefined, name: string): string {
+    const value = String(cookie || '').split(';').map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1) || '';
+    try { return decodeURIComponent(value); } catch { return ''; }
+  }
+
+  private async databaseConsumeInvite(request: { headers: { cookie?: string; [key: string]: string | undefined } }, response: any) {
+    const actor = await this.databaseUser(request.headers.cookie);
+    if (!actor) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+    const token = this.cookieValue(request.headers.cookie, 'proelium_invite');
+    if (!actor.email || !token) return response.status(401).type('application/json').send(JSON.stringify({ error: 'Nenhum convite pendente.' }));
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const inviteResult = await this.pool!.query(
+      `select id, company_id as "companyId", email, role, modules, expires_at as "expiresAt", used_at as "usedAt", created_at as "createdAt"
+       from company_invites where token_hash = $1 and used_at is null and expires_at > now()`,
+      [tokenHash],
+    );
+    const invite = inviteResult.rows[0] as RecordItem | undefined;
+    if (!invite) return response.status(410).type('application/json').send(JSON.stringify({ error: 'Este convite expirou ou já foi utilizado.' }));
+    if (invite.email && String(invite.email).toLowerCase() !== String(actor.email).toLowerCase()) return response.status(403).type('application/json').send(JSON.stringify({ error: 'Este convite foi enviado para outro e-mail Google.' }));
+    const companyResult = await this.pool!.query(
+      `select id, name, document, responsible, phone, company_type as "companyType", profile_info as "profileInfo",
+              founder_username as "founderUsername", status, access_level as "accessLevel", license_status as "licenseStatus",
+              modules, admin_notes as "adminNotes", reviewed_at as "reviewedAt", created_at as "createdAt"
+       from companies where id = $1`,
+      [invite.companyId],
+    );
+    const company = companyResult.rows[0] as RecordItem | undefined;
+    if (!company) return response.status(404).type('application/json').send(JSON.stringify({ error: 'Empresa do convite não encontrada.' }));
+    const userResult = await this.pool!.query(
+      `select username, name, email, role, active, company_id as "companyId", account_type as "accountType", founder,
+              profile_info as "profileInfo", portfolio, modules, company_access_override as "companyAccessOverride"
+       from app_users where username = $1`,
+      [actor.username],
+    );
+    const user = userResult.rows[0] as RecordItem | undefined;
+    if (!user) return response.status(404).type('application/json').send(JSON.stringify({ error: 'Usuário não encontrado.' }));
+    if (user.companyId && user.companyId !== 'legacy' && user.companyId !== invite.companyId) return response.status(409).type('application/json').send(JSON.stringify({ error: 'Este usuário já pertence a outra empresa.' }));
+    const client = await this.pool!.connect();
+    try {
+      await client.query('begin');
+      await client.query('update app_users set company_id = $1, role = $2, active = true, updated_at = now() where username = $3', [invite.companyId, invite.role || 'operacao', actor.username]);
+      await client.query('update company_invites set used_at = now() where id = $1 and used_at is null', [invite.id]);
+      await client.query('commit');
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+    const merged: RecordItem = { ...user, companyId: invite.companyId, role: invite.role || 'operacao', active: true, modules: invite.modules || [] };
+    const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+    const session = this.signedSession({ username: merged.username, role: merged.role, name: merged.name || merged.username, email: merged.email || actor.email, companyId: invite.companyId, companyStatus: company.status, accessLevel: company.accessLevel || 'limited', licenseStatus: company.licenseStatus || 'pending', modules: invite.modules || [], expiresAt: Date.now() + this.sessionTtlSeconds * 1000 });
+    response.setHeader('set-cookie', [`proelium_session=${encodeURIComponent(session)}; Path=/; Max-Age=${this.sessionTtlSeconds}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`, 'proelium_invite=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax']);
+    return response.status(200).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser(merged), company }));
+  }
+
   @Get('google')
   async google(@Req() request: { headers: { cookie?: string }; url?: string }, @Res() response: any) {
     const origin = process.env.LEGACY_API_ORIGIN || 'http://localhost:4173';
@@ -309,7 +365,14 @@ export class AuthController {
   }
 
   @Post('consume-invite')
-  async consumeInvite(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
+  async consumeInvite(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined } }, @Res() response: any) {
+    if (this.pool) {
+      try { return await this.databaseConsumeInvite(request, response); }
+      catch (error) {
+        console.error('Falha ao vincular convite no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(400).type('application/json').send(JSON.stringify({ error: 'Não foi possível vincular o convite.' }));
+      }
+    }
     const upstream = await this.forward('/api/auth/consume-invite', 'POST', request);
     const setCookie = upstream.headers.get('set-cookie');
     if (setCookie) response.setHeader('set-cookie', setCookie);

@@ -351,6 +351,13 @@ async function handleRequest(req, res) {
     const pending=currentUser({headers:{cookie:`proelium_session=${parseCookies(req).proelium_google_pending||''}`}});
     return pending?.email ? sendJson(res,200,{email:pending.email,name:pending.name||'',invite:Boolean(parseCookies(req).proelium_invite)}) : sendJson(res,401,{error:'Identificação Google expirada.'});
   }
+  if (pathname === '/api/auth/consume-invite' && req.method === 'POST' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, pathname); }
+    catch (error) {
+      console.error('Falha ao encaminhar aceite de convite ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível vincular o convite agora.' });
+    }
+  }
 
   if (pathname === '/api/auth/google' && req.method === 'GET') {
     const invite=new URL(req.url,`http://${req.headers.host}`).searchParams.get('invite');
