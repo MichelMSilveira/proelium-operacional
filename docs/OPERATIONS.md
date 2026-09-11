@@ -84,6 +84,8 @@ Para testar outro endereço, acrescente a URL: `npm run test:bot -- https://ende
 
 O deploy da `main` envia o bot ao VPS e o executa depois da reinicialização do serviço. Qualquer verificação reprovada encerra o workflow com erro e impede que uma implantação defeituosa seja declarada concluída.
 
+Registro de contingência em 2026-09-11: a execução do `Atualizar-VPS.ps1` não concluiu e o status do GitHub Actions não ficou observável. A entrega `523219e` foi aplicada manualmente por SSH no `server.js` e a entrega do NestJS foi aplicada no `dist/main.js`; ambos os serviços foram reiniciados e validados com health check 200.
+
 Para executar o cenário funcional completo, use `npm run test:functional`. Ele abre outro servidor em uma porta aleatória, força armazenamento JSON em uma pasta temporária e simula contato, proposta, venda, projeto, operação, pós-venda, financeiro e permissões. Ao terminar, encerra o servidor, apaga a pasta temporária e grava `reports/test-bot-latest.md` com as correções recomendadas.
 
 Para inspecionar manualmente a interface já preenchida pelo bot, use `npm run test:functional -- --keep-open --no-report`. O endereço temporário aparece no terminal; pressione `Ctrl+C` para destruir o ambiente. O servidor recusa `PROELIUM_TEST_DATA_DIR` fora de `NODE_ENV=test`, evitando uso acidental dessa configuração na operação real.
