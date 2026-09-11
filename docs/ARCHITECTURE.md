@@ -57,3 +57,5 @@ O fluxo comercial passa a reservar uma etapa entre levantamento e orçamento: `L
 ## Integração da solução técnica com o orçamento
 
 Quando o levantamento possui uma solução técnica confirmada, o mapeador comercial usa as referências selecionadas para gerar os itens do orçamento. A camada comercial consulta os preços atuais do catálogo somente nessa etapa; levantamentos sem confirmação continuam usando o mapeamento legado como fallback. Assim, regras e requisitos permanecem independentes de marcas e preços.
+
+A confirmação de compatibilidade consolida uma referência por requisito técnico. Alternativas permanecem disponíveis para consulta, mas não são gravadas juntas na solução nem enviadas simultaneamente ao orçamento.

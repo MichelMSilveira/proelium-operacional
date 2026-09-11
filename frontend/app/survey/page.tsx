@@ -190,7 +190,7 @@ export default function SurveyPage() {
 
   async function confirmCompatibleProducts(survey: Survey) {
     const compatibility = compatibilityBySurvey[survey.id];
-    const productIds = compatibility?.matches?.flatMap((match) => (match.products || []).map((product) => product.productId)) || [];
+    const productIds = compatibility?.matches?.map((match) => match.products?.[0]?.productId).filter((productId): productId is string => Boolean(productId)) || [];
     if (!productIds.length) {
       setError('Nenhum produto compativel disponivel para confirmar.');
       return;

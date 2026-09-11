@@ -2504,7 +2504,7 @@ document.addEventListener('click',event=>{const add=event.target.closest('[data-
 function confirmTechnicalDimensioning(id){
   const survey=(state.data.surveys||[]).find(item=>item.id===id),points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===id);
   if(!survey||typeof TechnicalDimensioning==='undefined'||typeof TechnicalCompatibility==='undefined')return;
-  const dimensioning=TechnicalDimensioning.dimensionSurvey(survey,points),compatibility=TechnicalCompatibility.findCompatibleProducts(dimensioning,state.data.products||[]),productIds=(compatibility.matches||[]).flatMap(item=>(item.products||[]).map(product=>product.productId));
+  const dimensioning=TechnicalDimensioning.dimensionSurvey(survey,points),compatibility=TechnicalCompatibility.findCompatibleProducts(dimensioning,state.data.products||[]),productIds=(compatibility.matches||[]).map(item=>item.products?.[0]?.productId).filter(Boolean);
   if(!productIds.length){toast('Nenhum produto compativel disponivel para confirmar.');return}
   survey.technicalSolution={status:'confirmed',engineVersion:dimensioning.engineVersion,compatibilityEngineVersion:compatibility.engineVersion,selectedProductIds:productIds,confirmedAt:new Date().toISOString()};
   persist();render();toast('Solucao tecnica confirmada. Os produtos ainda nao foram incluidos no orcamento.');

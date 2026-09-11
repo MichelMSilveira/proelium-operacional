@@ -10,6 +10,7 @@ const technicalDimensioning = require('../../../technical-dimensioning.js') as {
 };
 const technicalCompatibility = require('../../../technical-compatibility.js') as {
   findCompatibleProducts: (dimensioning: Record<string, unknown>, products: Array<Record<string, unknown>>) => Record<string, unknown>;
+  selectCompatibleProductIds: (compatibility: Record<string, unknown>, requestedProductIds: string[]) => string[];
 };
 
 type RecordItem = Record<string, unknown>;
@@ -109,7 +110,8 @@ export class SurveyService {
       const compatibility = technicalCompatibility.findCompatibleProducts(dimensioning, products);
       const allowed = new Set((compatibility.matches as Array<RecordItem>).flatMap((item) => Array.isArray(item.products) ? item.products.map((product) => this.text(this.record(product)?.productId)) : []));
       if (productIds.some((productId) => !allowed.has(productId))) throw new BadRequestException('A selecao contem produto fora da compatibilidade tecnica calculada.');
-      const technicalSolution = { status: 'confirmed', engineVersion: String(dimensioning.engineVersion), compatibilityEngineVersion: String(compatibility.engineVersion), selectedProductIds: productIds, confirmedAt: new Date().toISOString() };
+      const selectedProductIds = technicalCompatibility.selectCompatibleProductIds(compatibility, productIds);
+      const technicalSolution = { status: 'confirmed', engineVersion: String(dimensioning.engineVersion), compatibilityEngineVersion: String(compatibility.engineVersion), selectedProductIds, confirmedAt: new Date().toISOString() };
       const nextSurveys = surveys.map((item) => item.id === surveyId ? { ...item, technicalSolution } : item);
       const otherSurveys = (Array.isArray(current.data?.surveys) ? current.data.surveys : []).filter((item) => !this.sameId(item, surveyId));
       return this.forward({ ...current.data, surveys: [...otherSurveys, ...nextSurveys.filter((item) => item.id === surveyId)] }, input.baseRevision, cookie);
@@ -147,7 +149,8 @@ export class SurveyService {
       const compatibility = technicalCompatibility.findCompatibleProducts(dimensioning, products);
       const allowed = new Set((compatibility.matches as Array<RecordItem>).flatMap((item) => Array.isArray(item.products) ? item.products.map((product) => this.text(this.record(product)?.productId)) : []));
       if (productIds.some((productId) => !allowed.has(productId))) throw new BadRequestException('A selecao contem produto fora da compatibilidade tecnica calculada.');
-      const technicalSolution = { status: 'confirmed', engineVersion: String(dimensioning.engineVersion), compatibilityEngineVersion: String(compatibility.engineVersion), selectedProductIds: productIds, confirmedAt: new Date().toISOString() };
+      const selectedProductIds = technicalCompatibility.selectCompatibleProductIds(compatibility, productIds);
+      const technicalSolution = { status: 'confirmed', engineVersion: String(dimensioning.engineVersion), compatibilityEngineVersion: String(compatibility.engineVersion), selectedProductIds, confirmedAt: new Date().toISOString() };
       const extraData = { ...(this.record(survey.extraData) || {}), technicalSolution };
       await client.query('update survey_domain_surveys set extra_data = $1::jsonb, updated_at = now() where company_id = $2 and id = $3', [JSON.stringify(extraData), context.companyId, surveyId]);
       const revision = await this.bumpRevision(client, context.companyId);

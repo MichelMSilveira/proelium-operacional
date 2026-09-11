@@ -85,5 +85,15 @@
     return { engineVersion: 'network-compatibility-v1', matches, unmatched };
   }
 
-  return { findCompatibleProducts };
+  function selectCompatibleProductIds(compatibility, requestedProductIds) {
+    const requested = new Set((Array.isArray(requestedProductIds) ? requestedProductIds : []).map(text));
+    return (Array.isArray(compatibility && compatibility.matches) ? compatibility.matches : []).flatMap((match) => {
+      const products = Array.isArray(match && match.products) ? match.products : [];
+      const selected = products.find((product) => requested.has(text(product && product.productId))) || products[0];
+      const productId = text(selected && selected.productId);
+      return productId ? [productId] : [];
+    });
+  }
+
+  return { findCompatibleProducts, selectCompatibleProductIds };
 }));

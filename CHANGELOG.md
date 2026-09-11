@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A confirmação de compatibilidade agora registra uma única referência por requisito técnico, respeitando a escolha enviada e evitando incluir alternativas simultâneas na solução. Cache web atualizado para `v394`.
+
 - A solucao tecnica confirmada agora alimenta a geracao do orcamento: referencias selecionadas sao usadas como itens precificados pelo catalogo, mantendo o fallback legado para levantamentos sem confirmacao. Cache web atualizado para `v393`.
 
 - A solução técnica agora pode confirmar produtos compatíveis selecionados no levantamento; a confirmação é validada pelo motor, persiste somente referências técnicas e não cria itens nem preços no orçamento. Cache web atualizado para `v392`.

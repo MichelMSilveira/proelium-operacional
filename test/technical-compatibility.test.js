@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { dimensionSurvey } = require('../technical-dimensioning');
-const { findCompatibleProducts } = require('../technical-compatibility');
+const { findCompatibleProducts, selectCompatibleProductIds } = require('../technical-compatibility');
 
 test('encontra switch compatível sem expor preço ou custo', () => {
   const dimensioning = dimensionSurvey({ id: 'lev-compat-1' }, [{ id: 'p-1', surveyId: 'lev-compat-1', type: 'Ponto de rede Cat6', quantity: 19 }]);
@@ -23,4 +23,16 @@ test('rejeita switch sem PoE quando a solução exige PoE', () => {
 
   assert.equal(result.matches.length, 0);
   assert.equal(result.unmatched[0].kind, 'switch');
+});
+
+test('confirma uma unica referencia por requisito e respeita a escolha solicitada', () => {
+  const compatibility = {
+    matches: [{
+      requirementKind: 'switch',
+      products: [{ productId: 'small' }, { productId: 'right' }]
+    }]
+  };
+
+  assert.deepEqual(selectCompatibleProductIds(compatibility, ['small', 'right']), ['small']);
+  assert.deepEqual(selectCompatibleProductIds(compatibility, ['right']), ['right']);
 });
