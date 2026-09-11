@@ -8,7 +8,7 @@ WorkingDirectory=/opt/proelium-operacional/frontend/.next/standalone
 Environment=NODE_ENV=production
 Environment=PORT=4300
 Environment=PROELIUM_API_ORIGIN=http://127.0.0.1:4173
-ExecStart=/usr/bin/node /opt/proelium-operacional/frontend/.next/standalone/server.js
+ExecStart=/usr/local/bin/node /opt/proelium-operacional/frontend/.next/standalone/server.js
 Restart=always
 RestartSec=5
 

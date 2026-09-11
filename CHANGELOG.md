@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Ajustado o unit file do Next.js para usar o caminho real do Node instalado no VPS (`/usr/local/bin/node`), evitando loop de restart após a publicação do standalone.
+
 - Corrigido o empacotamento do Next.js: arquivos estáticos agora ficam no diretório servido pelo standalone, e o serviço `proelium-next` passa a ser versionado, instalado e reiniciado pelo deploy.
 
 - O deploy passou a reiniciar e validar o serviço `proelium-next` depois de sincronizar o standalone, garantindo que o VPS não continue servindo um build antigo das páginas migradas.
