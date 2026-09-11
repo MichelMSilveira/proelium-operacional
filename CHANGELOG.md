@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- O envio do levantamento validado agora cria também um pré-projeto técnico vinculado à proposta, com escopo, ambientes, quantitativos, custo e valor; a aprovação reutiliza esse vínculo para concluir o projeto sem duplicação.
 - O envio de um levantamento técnico ao orçamento agora converte seus quantitativos em sugestões de itens do catálogo, distribui os itens pelos ambientes e pela infraestrutura técnica, calcula o valor da proposta e registra pendências sem produto correspondente; o mapeamento é rastreável e idempotente na interface e no NestJS.
 - Ajustado o parser JSON do NestJS para aceitar o agregado compartilhado de `/api/data` até 6 MB, alinhado ao limite do gateway e evitando respostas 413 em empresas com catálogo técnico inicial.
 - Melhorado o bot visual para registrar endpoints e tamanho de payload em respostas HTTP inesperadas e ignorar os 401 esperados durante a descoberta da sessão.

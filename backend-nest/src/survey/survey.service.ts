@@ -3,6 +3,7 @@ import { Pool, PoolClient } from 'pg';
 
 const surveyQuoteMapper = require('../../../commercial-workflow.js') as {
   populateQuoteFromSurvey: (data: Record<string, unknown>, surveyId: string, quoteId: string, makeId?: (prefix: string) => string) => { added: number; updated: number; unmapped: Array<Record<string, unknown>>; value: number };
+  ensurePreProjectFromQuote: (data: Record<string, unknown>, surveyId: string, quoteId: string, makeId?: (prefix: string) => string) => { project: Record<string, unknown> | null; created: boolean; updated: boolean; cost: number };
 };
 
 type RecordItem = Record<string, unknown>;
@@ -241,8 +242,17 @@ export class SurveyService {
         [context.companyId],
       );
       const products = productsResult.rows.map((row) => ({ ...(this.record(row.extraData) || {}), id: this.text(row.id), catalogType: this.text(row.catalogType), name: this.text(row.name), sku: this.text(row.sku), category: this.text(row.category), unit: this.text(row.unit, 'un'), price: this.number(row.price), active: row.active !== false }));
-      const mappingData = { products, surveys: [survey], surveyPoints: points, surveyRooms, quoteRooms, quotes: [quote] };
+      const projectsResult = await client.query(
+        `select id, name, client_id as "clientId", technical_stage as "technicalStage", status, manager, progress, budget, extra_data as "extraData"
+         from projects_domain_entries where company_id = $1
+           and (extra_data->>'quoteId' = $2 or extra_data->>'technicalSurveyId' = $3)
+         order by updated_at desc limit 1`,
+        [context.companyId, quote.id, surveyId],
+      );
+      const projects = projectsResult.rows.map((row) => ({ ...(this.record(row.extraData) || {}), ...row, id: this.text(row.id), clientId: this.text(row.clientId), technicalStage: this.text(row.technicalStage, 'Projeto técnico'), status: this.text(row.status, 'Planejamento'), manager: this.text(row.manager, 'A definir'), progress: this.number(row.progress), budget: this.number(row.budget) }));
+      const mappingData = { products, surveys: [survey], surveyPoints: points, surveyRooms, quoteRooms, quotes: [quote], projects };
       const mapping = surveyQuoteMapper.populateQuoteFromSurvey(mappingData, surveyId, this.text(quote.id), prefix => `${prefix}-${crypto.randomUUID()}`);
+      const preparation = surveyQuoteMapper.ensurePreProjectFromQuote(mappingData, surveyId, this.text(quote.id), prefix => `${prefix}-${crypto.randomUUID()}`);
       quote.value = mapping.value;
       quote.extraData = { ...(this.record(quote.extraData) || {}), technicalSurveyId: surveyId, surveyMapping: quote.surveyMapping };
       for (const room of quoteRooms) {
@@ -255,6 +265,38 @@ export class SurveyService {
         'update quotes_domain_entries set value = $1, extra_data = $2::jsonb, updated_at = now() where company_id = $3 and id = $4',
         [mapping.value, JSON.stringify(quote.extraData), context.companyId, quote.id],
       );
+      let nextProjectsRevision: number | undefined;
+      if (preparation.project && (preparation.created || preparation.updated)) {
+        await this.lockDomainRevision(client, 'projects_domain_state', 'proelium:projects', context.companyId);
+        const project = preparation.project;
+        const projectExtraData = {
+          quoteId: this.text(project.quoteId),
+          technicalSurveyId: this.text(project.technicalSurveyId),
+          preProject: project.preProject === true,
+          code: this.text(project.code),
+          cost: this.number(project.cost),
+          due: this.text(project.due, 'A definir'),
+          description: this.text(project.description),
+          scope: this.record(project.scope) || {},
+        };
+        if (preparation.created) {
+          await client.query(
+            `insert into projects_domain_entries
+              (company_id, id, name, client_id, technical_stage, status, manager, progress, budget, extra_data, updated_at)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, now())`,
+            [context.companyId, this.text(project.id), this.text(project.name, 'Projeto técnico'), this.text(project.clientId), this.text(project.technicalStage, 'Projeto técnico'), this.text(project.status, 'Pré-projeto'), this.text(project.manager, 'A definir'), this.number(project.progress), this.number(project.budget), JSON.stringify(projectExtraData)],
+          );
+        } else {
+          await client.query(
+            `update projects_domain_entries
+             set name = $1, client_id = $2, technical_stage = $3, status = $4, manager = $5,
+                 progress = $6, budget = $7, extra_data = $8::jsonb, updated_at = now()
+             where company_id = $9 and id = $10`,
+            [this.text(project.name, 'Projeto técnico'), this.text(project.clientId), this.text(project.technicalStage, 'Projeto técnico'), this.text(project.status, 'Pré-projeto'), this.text(project.manager, 'A definir'), this.number(project.progress), this.number(project.budget), JSON.stringify(projectExtraData), context.companyId, this.text(project.id)],
+          );
+        }
+        nextProjectsRevision = await this.bumpDomainRevision(client, 'projects_domain_state', context.companyId);
+      }
       await client.query(
         `update survey_domain_surveys set status = 'Enviado ao orçamento', updated_at = now()
          where company_id = $1 and id = $2`,
@@ -266,7 +308,7 @@ export class SurveyService {
       await client.query('commit');
       return {
         status: 200,
-        body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value, revision: nextRevision, opportunityRevision: nextOpportunityRevision, quotesRevision: nextQuotesRevision }),
+        body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value, preProjectId: preparation.project?.id, preProjectCreated: preparation.created, revision: nextRevision, opportunityRevision: nextOpportunityRevision, quotesRevision: nextQuotesRevision, projectsRevision: nextProjectsRevision }),
       };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
@@ -577,9 +619,10 @@ export class SurveyService {
     survey.status = 'Enviado ao orçamento';
     const nextData = { ...current.data, surveys, opportunities, quotes, quoteRooms, surveyPoints: points };
     const mapping = surveyQuoteMapper.populateQuoteFromSurvey(nextData, surveyId, this.text(quote.id), prefix => `${prefix}-${crypto.randomUUID()}`);
+    const preparation = surveyQuoteMapper.ensurePreProjectFromQuote(nextData, surveyId, this.text(quote.id), prefix => `${prefix}-${crypto.randomUUID()}`);
     const upstream = await this.forward(nextData, input.baseRevision ?? current.revision, cookie);
     if (upstream.status < 200 || upstream.status >= 300) return upstream;
-    try { const result = JSON.parse(upstream.body) as RecordItem; return { status: upstream.status, body: JSON.stringify({ ...result, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value }) }; } catch { return { status: upstream.status, body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value }) }; }
+    try { const result = JSON.parse(upstream.body) as RecordItem; return { status: upstream.status, body: JSON.stringify({ ...result, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value, preProjectId: preparation.project?.id, preProjectCreated: preparation.created }) }; } catch { return { status: upstream.status, body: JSON.stringify({ ok: true, quoteId: this.text(quote.id), roomsCreated: missing.length, itemsGenerated: mapping.added + mapping.updated, unmappedItems: mapping.unmapped.length, value: mapping.value, preProjectId: preparation.project?.id, preProjectCreated: preparation.created }) }; }
   }
 
   private async legacySaveSurvey(body: unknown, cookie?: string, expectedId?: string): Promise<{ status: number; body: string }> {

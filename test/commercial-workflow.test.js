@@ -113,12 +113,20 @@ test('converte levantamento residencial em itens de catálogo e mantém o total 
   assert.equal(itemCount, 6);
   assert.equal(data.quotes[0].value, 26080);
   assert.ok(data.quoteRooms.find(room => room.name === 'Infraestrutura técnica').items.some(item => item.productId === 'relay'));
+  const preparation = workflow.ensurePreProjectFromQuote(data, 'survey-residential', 'quote-1', prefix => `${prefix}-project`);
+  assert.equal(preparation.created, true);
+  assert.equal(preparation.project.status, 'Pré-projeto');
+  assert.equal(preparation.project.quoteId, 'quote-1');
+  assert.equal(data.projects.length, 1);
 
   const second = workflow.populateQuoteFromSurvey(data, 'survey-residential', 'quote-1', prefix => `${prefix}-new`);
   assert.equal(second.added, 0);
   assert.equal(second.updated, 6);
   assert.equal(data.quoteRooms.reduce((sum, room) => sum + room.items.length, 0), 6);
   assert.equal(data.quotes[0].value, 26080);
+  const secondPreparation = workflow.ensurePreProjectFromQuote(data, 'survey-residential', 'quote-1', prefix => `${prefix}-other`);
+  assert.equal(secondPreparation.created, false);
+  assert.equal(data.projects.length, 1);
 });
 
 test('não duplica levantamento ao reutilizar a oportunidade', () => {

@@ -37,6 +37,7 @@
 
   const normalizeSearchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[‑–—]/g, '-').toLocaleLowerCase('pt-BR');
   const productPrice = product => Number(product?.price ?? product?.extraData?.price ?? product?.extraData?.salePrice ?? product?.extraData?.valor ?? 0);
+  const productCost = product => Number(product?.cost ?? product?.extraData?.cost ?? product?.extraData?.costPrice ?? product?.extraData?.custo ?? 0);
   const productSearchText = product => normalizeSearchText(`${product?.name || ''} ${product?.brand || ''} ${product?.model || ''} ${product?.category || ''} ${product?.technicalType || ''} ${product?.technicalFunction || ''}`);
   const pickCatalogProduct = (products, patterns) => {
     const candidates = Array.isArray(products) ? products.filter(product => product && product.active !== false) : [];
@@ -70,6 +71,63 @@
     const discount = Math.max(0, Math.min(100, Number(item?.discount || 0)));
     return sum + productPrice(product) * Number(item?.qty || 0) * (1 - discount / 100);
   }, 0), 0);
+  const quoteCost = (data, quoteId) => (Array.isArray(data?.quoteRooms) ? data.quoteRooms : []).filter(room => String(room?.quoteId || '') === String(quoteId)).reduce((total, room) => total + (Array.isArray(room?.items) ? room.items : []).reduce((sum, item) => {
+    const product = (Array.isArray(data?.products) ? data.products : []).find(candidate => String(candidate?.id || '') === String(item?.productId || ''));
+    const discount = Math.max(0, Math.min(100, Number(item?.discount || 0)));
+    return sum + productCost(product) * Number(item?.qty || 0) * (1 - discount / 100);
+  }, 0), 0);
+
+  function ensurePreProjectFromQuote(data = {}, surveyId, quoteId, makeId = prefix => `${prefix}-${Date.now().toString(36)}`) {
+    const survey = list(data, 'surveys').find(item => String(item?.id || '') === String(surveyId));
+    const quote = list(data, 'quotes').find(item => String(item?.id || '') === String(quoteId));
+    if (!survey || !quote) return { project: null, created: false, updated: false, cost: 0 };
+    if (!Array.isArray(data.projects)) data.projects = [];
+    const extraData = project => project?.extraData && typeof project.extraData === 'object' ? project.extraData : {};
+    let project = data.projects.find(item => String(item?.quoteId || extraData(item).quoteId || '') === String(quoteId));
+    const cost = Number(quoteCost(data, quoteId).toFixed(2));
+    const opportunity = list(data, 'opportunities').find(item => String(item?.id || '') === String(quote.opportunityId || survey.opportunityId || ''));
+    const name = String(quote.title || `Projeto técnico · ${opportunity?.company || survey.title}`).replace(/^Proposta\s+[—-]\s*/, '').trim();
+    const roomNames = list(data, 'surveyRooms').filter(room => String(room?.surveyId || room?.technicalSurveyId || '') === String(surveyId)).map(room => String(room?.name || '').trim()).filter(Boolean);
+    const pointCount = list(data, 'surveyPoints').filter(point => String(point?.surveyId || '') === String(surveyId) && Number(point?.quantity || 0) > 0).length;
+    let created = false;
+    let updated = false;
+    if (!project) {
+      const preProjectCount = data.projects.filter(item => item?.preProject === true || item?.status === 'Pré-projeto').length;
+      project = {
+        id: makeId('prj'),
+        quoteId,
+        technicalSurveyId: surveyId,
+        preProject: true,
+        code: `PRE-${String(preProjectCount + 1).padStart(3, '0')}`,
+        name,
+        description: `Pré-projeto gerado a partir do levantamento técnico ${survey.title}.`,
+        clientId: String(quote.clientId || ''),
+        manager: String(opportunity?.owner || 'A definir'),
+        technicalStage: 'Projeto técnico',
+        status: 'Pré-projeto',
+        progress: 0,
+        budget: Number(quote.value || quoteValue(data, quoteId) || 0),
+        cost,
+        due: 'A definir',
+        scope: { surveyId, roomNames, pointCount }
+      };
+      data.projects.push(project);
+      created = true;
+    } else if (project.preProject === true || project.status === 'Pré-projeto') {
+      Object.assign(project, {
+        quoteId,
+        technicalSurveyId: surveyId,
+        preProject: true,
+        budget: Number(quote.value || quoteValue(data, quoteId) || 0),
+        cost,
+        scope: { surveyId, roomNames, pointCount }
+      });
+      updated = true;
+    }
+    quote.preProjectId = project.id;
+    quote.extraData = { ...(quote.extraData && typeof quote.extraData === 'object' ? quote.extraData : {}), technicalSurveyId: surveyId, preProjectId: project.id, preProject: project.preProject === true };
+    return { project, created, updated, cost };
+  }
 
   function populateQuoteFromSurvey(data = {}, surveyId, quoteId, makeId = prefix => `${prefix}-${Date.now().toString(36)}`) {
     const survey = list(data, 'surveys').find(item => String(item?.id || '') === String(surveyId));
@@ -309,7 +367,7 @@
     return { ok: true };
   }
 
-  return { stages, terminalStages, legacyStageAliases, qualificationFields, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, applyValidatedSurveyTransition, populateQuoteFromSurvey, quoteValue, validate };
+  return { stages, terminalStages, legacyStageAliases, qualificationFields, canonicalStage, isVisit, visitsFor, reconcileLegacyStages, applyValidatedSurveyTransition, populateQuoteFromSurvey, ensurePreProjectFromQuote, quoteValue, quoteCost, validate };
 }));
 // Compacta os cartões comerciais no mobile sem alterar dados nem regras do fluxo principal.
 (()=>{

@@ -511,9 +511,11 @@ export class QuotesService {
       } else {
         const extraData = { ...(this.record(project.extraData) || {}), cost: projectCost };
         await client.query(
-          `update projects_domain_entries set budget = $1, client_id = $2, extra_data = $3::jsonb, updated_at = now()
+          `update projects_domain_entries
+           set budget = $1, client_id = $2, technical_stage = 'Projeto técnico', status = 'Planejamento',
+               extra_data = $3::jsonb, updated_at = now()
            where company_id = $4 and id = $5`,
-          [projectBudget, clientId, JSON.stringify(extraData), context.companyId, project.id],
+          [projectBudget, clientId, JSON.stringify({ ...extraData, preProject: false }), context.companyId, project.id],
         );
       }
       const nextRevision = await this.bumpRevision(client, context.companyId);

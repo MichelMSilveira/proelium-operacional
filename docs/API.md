@@ -90,7 +90,7 @@ As gravações que alteram o fluxo comercial são validadas no servidor: a oport
 | GET/POST/PATCH | `/survey` | levantamentos técnicos e revisão |
 | GET/PUT | `/survey/{id}/rooms` | ambientes do levantamento |
 | POST/PATCH/DELETE | `/survey/points` | pontos técnicos e quantitativos |
-| POST | `/survey/{id}/send-to-quote` | enviar levantamento validado ao orçamento, gerar sugestões do catálogo e recalcular o valor da proposta |
+| POST | `/survey/{id}/send-to-quote` | enviar levantamento validado ao orçamento, gerar sugestões do catálogo, criar pré-projeto técnico e recalcular o valor da proposta |
 | GET | `/search?q=` | busca transversal |
 | GET | `/operational-summary` | resumo otimizado para painel/N.E.M.O. |
 | GET | `/analytics/projects?groupBy=` | indicadores agrupados para Business Intelligence |

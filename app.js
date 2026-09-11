@@ -2060,6 +2060,9 @@ approveQuote=id=>{
   operationalApproveQuote(id);
   const project=(state.data.projects||[]).find(item=>item.quoteId===id),quote=(state.data.quotes||[]).find(item=>item.id===id);
   if(!project||quote?.status!=='Aprovado')return;
+  project.preProject=false;
+  project.status='Planejamento';
+  project.technicalStage='Projeto técnico';
   logAudit('Aprovou cliente e projeto','Comercial',`${quote.title} · ${clientName(project.clientId)}`);
   const items=ensureProjectOperationalChain(project);
   logAudit('Gerou base operacional','Projeto',`${project.name} · ${items.length} item(ns) de execução vinculados ao orçamento aprovado`);
@@ -2452,8 +2455,10 @@ function startQuoteFromSurvey(id){
   if(!quote){quote={id:uid('orc'),opportunityId:opportunity.id,technicalSurveyId:survey.id,clientId:'',title:`Proposta — ${opportunity.company}`,value:0,status:'Em elaboração'};state.data.quotes.unshift(quote);opportunity.stage='Orçamento';logAudit('Criou orçamento a partir do levantamento','Levantamento técnico',`${survey.title} → ${quote.title}`)}else if(!quote.technicalSurveyId)quote.technicalSurveyId=survey.id;
   const count=sendSurveyRoomsToQuote(survey,quote);
   const mapping=ProeliumCommercialWorkflow.populateQuoteFromSurvey(state.data,survey.id,quote.id,prefix=>uid(prefix));
+  const preparation=ProeliumCommercialWorkflow.ensurePreProjectFromQuote(state.data,survey.id,quote.id,prefix=>uid(prefix));
   if(mapping.added||mapping.updated)logAudit('Gerou itens do levantamento','Orçamento',`${survey.title} · ${mapping.added+mapping.updated} sugestão(ões) do catálogo${mapping.unmapped.length?` · ${mapping.unmapped.length} pendência(s) sem produto correspondente`:''}`);
-  persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`Orçamento aberto com ${count} ambiente(s) e ${mapping.added+mapping.updated} item(ns) sugerido(s) do catálogo.`);
+  if(preparation.created)logAudit('Criou pré-projeto técnico','Projeto',`${preparation.project.name} · ${preparation.project.code} · origem: ${survey.title}`);
+  persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`Orçamento aberto com ${count} ambiente(s), ${mapping.added+mapping.updated} item(ns) do catálogo e pré-projeto ${preparation.project?.code||''}.`);
 }
 function survey(){
   const surveys=state.data.surveys||[],selected=surveys.find(item=>item.id===state.selectedSurvey);
