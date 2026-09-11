@@ -262,6 +262,34 @@ export class AuthController {
     return { salt: salt.toString('base64'), passwordHash: scryptSync(password, salt, 64).toString('base64') };
   }
 
+  private validCnpj(value: string): boolean {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length !== 14 || /^([0-9])\1+$/.test(digits)) return false;
+    const calc = (length: number) => {
+      let sum = 0;
+      let factor = 5 + (length - 12);
+      for (let index = 0; index < length; index += 1) {
+        sum += Number(digits[index]) * factor;
+        factor -= 1;
+        if (factor === 1) factor = 9;
+      }
+      return sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    };
+    return calc(12) === Number(digits[12]) && calc(13) === Number(digits[13]);
+  }
+
+  private validCpf(value: string): boolean {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length !== 11 || /^([0-9])\1+$/.test(digits)) return false;
+    const calc = (length: number) => {
+      let sum = 0;
+      for (let index = 0; index < length; index += 1) sum += Number(digits[index]) * (length + 1 - index);
+      const rest = (sum * 10) % 11;
+      return rest === 10 ? 0 : rest;
+    };
+    return calc(9) === Number(digits[9]) && calc(10) === Number(digits[10]);
+  }
+
   private payloadRecord(payload: unknown): RecordItem {
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) return payload as RecordItem;
     if (typeof payload === 'string') {
@@ -440,7 +468,64 @@ export class AuthController {
   }
 
   @Post('register-google-company')
-  async registerGoogleCompany(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+  async registerGoogleCompany(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined } }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) {
+      try {
+        const pendingToken = this.cookieValue(request.headers.cookie, 'proelium_google_pending');
+        const pending = this.verifySession(`proelium_session=${pendingToken}`);
+        if (!pending?.email) return response.status(401).type('application/json').send(JSON.stringify({ error: 'A identificação Google expirou. Tente novamente.' }));
+        const input = this.payloadRecord(payload);
+        const companyName = String(input.companyName || '').trim().slice(0, 120);
+        const document = String(input.document || '').trim().slice(0, 32);
+        const responsible = String(input.responsible || pending.name || '').trim().slice(0, 80);
+        const phone = String(input.phone || '').trim().slice(0, 30);
+        const companyType = ['residencial', 'contratante', 'contratado'].includes(input.companyType) ? input.companyType : 'contratado';
+        const profileInfo = String(input.profileInfo || '').trim().slice(0, 2000);
+        const documentValid = companyType === 'contratante' ? this.validCnpj(document) : this.validCnpj(document) || this.validCpf(document);
+        if (!companyName || !documentValid || !responsible || phone.replace(/\D/g, '').length < 10) {
+          return response.status(400).type('application/json').send(JSON.stringify({ error: 'Informe um CPF ou CNPJ válido, nome da empresa, responsável e telefone válido.' }));
+        }
+        const documentDigits = document.replace(/\D/g, '');
+        const duplicateCompany = await this.pool.query("select id from companies where regexp_replace(document, '[^0-9]', '', 'g') = $1", [documentDigits]);
+        if (duplicateCompany.rowCount) return response.status(409).type('application/json').send(JSON.stringify({ error: 'Este CNPJ já possui cadastro no Proelium.' }));
+        const base = (String(pending.email).split('@')[0].replace(/[^a-z0-9._-]/g, '') || 'usuario').slice(0, 24);
+        const existingUsername = await this.pool.query('select username from app_users where username = $1', [base]);
+        const username = existingUsername.rowCount ? `${base}-${Date.now().toString().slice(-5)}` : base;
+        const companyId = `emp-${randomUUID()}`;
+        const createdAt = new Date().toISOString();
+        const company = { id: companyId, name: companyName, document, responsible, phone, companyType, profileInfo, status: 'approved', accessLevel: 'limited', licenseStatus: 'pending', founderUsername: username, modules: [], createdAt };
+        const user = { username, name: responsible, email: String(pending.email).toLowerCase(), role: 'admin', active: true, companyId, accountType: 'founder', founder: true, profileInfo: '', portfolio: [], modules: [] };
+        const credentials = this.passwordRecord(randomUUID());
+        const client = await this.pool.connect();
+        try {
+          await client.query('begin');
+          await client.query(
+            `insert into companies (id, name, document, responsible, phone, status, access_level, license_status, company_type, profile_info, founder_username, modules, created_at)
+             values ($1, $2, $3, $4, $5, 'approved', 'limited', 'pending', $6, $7, $8, '[]'::jsonb, $9)`,
+            [companyId, companyName, document, responsible, phone, companyType, profileInfo, username, createdAt],
+          );
+          await client.query(
+            `insert into app_users (username, name, email, role, active, company_id, account_type, founder, profile_info, portfolio, modules, salt, password_hash, created_at, updated_at)
+             values ($1, $2, $3, 'admin', true, $4, 'founder', true, '', '[]'::jsonb, '[]'::jsonb, $5, $6, $7, $7)`,
+            [username, responsible, user.email, companyId, credentials.salt, credentials.passwordHash, createdAt],
+          );
+          await client.query('commit');
+        } catch (error) {
+          await client.query('rollback').catch(() => undefined);
+          throw error;
+        } finally {
+          client.release();
+        }
+        const modules = this.membershipModules(user, company, []);
+        const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+        const token = this.signedSession({ username, role: 'admin', name: responsible, email: user.email, companyId, companyStatus: 'approved', accessLevel: 'limited', licenseStatus: 'pending', modules, accountType: 'founder', founder: true, portfolio: [], expiresAt: Date.now() + this.sessionTtlSeconds * 1000 });
+        response.setHeader('set-cookie', `proelium_session=${encodeURIComponent(token)}; Path=/; Max-Age=${this.sessionTtlSeconds}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+        return response.status(201).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser({ ...user, modules }), company }));
+      } catch (error) {
+        console.error('Falha ao cadastrar empresa Google no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(400).type('application/json').send(JSON.stringify({ error: 'Não foi possível concluir o cadastro da empresa.' }));
+      }
+    }
     const upstream = await this.forward('/api/auth/register-google-company', 'POST', request, payload);
     const setCookie = upstream.headers.get('set-cookie');
     if (setCookie) response.setHeader('set-cookie', setCookie);
