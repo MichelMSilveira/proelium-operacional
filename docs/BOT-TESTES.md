@@ -1,6 +1,6 @@
 # Bot de testes do Proelium Operacional
 
-Para validar as rotas Next.js autenticadas, forneça `PROELIUM_NEXT_TEST=1`, `PROELIUM_TEST_URL`, `PROELIUM_TEST_USER` e `PROELIUM_TEST_PASSWORD` no ambiente e execute `node bot-testes/scripts/ui-use-bot.js --next --chrome --headed`. O usuário deve ser uma conta normal, com permissões mínimas e revogável pela área de usuários; não existe rota secreta nem credencial embutida no código.
+Para validar as rotas Next.js autenticadas pela interface real, forneça `PROELIUM_NEXT_TEST=1`, `PROELIUM_TEST_URL`, `PROELIUM_TEST_USER` e `PROELIUM_TEST_PASSWORD` no ambiente e execute `node bot-testes/scripts/ui-use-bot.js --next --chrome --headed`. O bot abre o login, seleciona **Acesso mestre da plataforma**, preenche os campos visíveis e confirma o formulário; ele não injeta uma sessão pela API. A credencial precisa ser uma conta local com senha válida (normalmente o usuário mestre ou uma conta de teste dedicada), não somente uma conta Google. Use uma conta revogável e não grave a senha em arquivos ou no Git.
 
 ## Objetivo
 

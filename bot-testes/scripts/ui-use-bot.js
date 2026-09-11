@@ -5,6 +5,26 @@ const baseUrl = cliBaseUrl || process.env.PROELIUM_TEST_URL || 'http://127.0.0.1
 const username = process.env.PROELIUM_TEST_USER;
 const password = process.env.PROELIUM_TEST_PASSWORD;
 
+async function loginThroughVisibleForm(page, { next = false } = {}) {
+  await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+  const masterToggle = page.getByRole('button', { name: /Acesso mestre da plataforma/i });
+  if (await masterToggle.count()) {
+    await masterToggle.click();
+  }
+  const usernameField = page.locator('input[name="username"]');
+  const passwordField = page.locator('input[name="password"]');
+  await usernameField.waitFor({ state: 'visible', timeout: 5000 });
+  await usernameField.fill(username);
+  await passwordField.fill(password);
+  await page.locator('form button[type="submit"]').click();
+  if (next) {
+    await page.locator('nav').waitFor({ state: 'visible', timeout: 15000 });
+  } else {
+    await page.locator('#navigation').waitFor({ state: 'visible', timeout: 15000 });
+    await page.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10000 });
+  }
+}
+
 (async () => {
   const browser = process.env.PLAYWRIGHT_CDP_URL
     ? await chromium.connectOverCDP(process.env.PLAYWRIGHT_CDP_URL)
@@ -16,17 +36,12 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
   if (process.env.PROELIUM_NEXT_TEST === '1' || process.argv.includes('--next')) {
     try {
       if (username && password) {
-        await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        const login = await page.evaluate(async ({ username, password }) => {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
-          });
-          return { ok: response.ok, status: response.status };
-        }, { username, password });
-        if (!login.ok) throw new Error(`login Next rejeitado pelo servidor (HTTP ${login.status}).`);
-        console.log('[OK] Next.js — autenticação de teste concluída');
+        try {
+          await loginThroughVisibleForm(page, { next: true });
+        } catch (error) {
+          throw new Error(`login Next pela interface falhou — ${error.message}`);
+        }
+        console.log('[OK] Next.js — login mestre concluído pela interface');
       }
       for (const route of ['/clients', '/projects', '/commercial', '/quotes']) {
         const response = await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle', timeout: 15000 });
@@ -47,16 +62,12 @@ const password = process.env.PROELIUM_TEST_PASSWORD;
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
     if (username && password) {
-      const response = await page.evaluate(async ({ username, password }) => {
-        const result = await fetch('./api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-        return { ok: result.ok, status: result.status };
-      }, { username, password });
-      if (!response.ok) throw new Error(`login rejeitado pelo servidor (HTTP ${response.status}).`);
-      await page.reload({ waitUntil: 'domcontentloaded', timeout: 10000 });
-      await page.waitForFunction(() => !document.body.classList.contains('auth-pending'), null, { timeout: 10000 }).catch(async () => {
+      try {
+        await loginThroughVisibleForm(page);
+      } catch (error) {
         const message = await page.locator('#authError').innerText().catch(() => '');
-        throw new Error(message || 'login não foi concluído; verifique usuário, senha e servidor.');
-      });
+        throw new Error(message || `login pela interface falhou — ${error.message}`);
+      }
       const firstVisibleMenu = await page.locator('#navigation').innerText();
       for (const group of ['Início', 'Projetos 360°', 'Pós-venda']) {
         if (!firstVisibleMenu.toLocaleLowerCase().includes(group.toLocaleLowerCase())) {

@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O bot de interface passou a autenticar pelo formulário visível de acesso mestre, validando o login real do Next.js e do shell legado sem injetar a sessão diretamente pela API; a documentação agora diferencia credenciais locais de contas Google.
+
 - Adicionados nomes acessíveis a datas, horários e seleções das telas Next.js, melhorando navegação por teclado e leitores de tela.
 
 - Corrigida a instalação do service worker: o manifesto e o shell agora usam o ícone oficial existente, eliminando a referência quebrada a `icon.png`.
