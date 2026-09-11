@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Ajustado o parser JSON do NestJS para aceitar o agregado compartilhado de `/api/data` até 6 MB, alinhado ao limite do gateway e evitando respostas 413 em empresas com catálogo técnico inicial.
 - Corrigido o gateway legado para validar a sessão no NestJS quando o PostgreSQL está ativo antes de encaminhar `/api/data`, presença e demais APIs protegidas; contas locais e Google agora mantêm a sessão também no shell compartilhado.
 
 - O bot de interface passou a autenticar pelo formulário visível de acesso mestre, validar o login real do Next.js e do shell legado sem injetar a sessão diretamente pela API e abrir as rotas Next em uma nova aba autenticada para evitar o guard de histórico do shell legado; a documentação agora diferencia credenciais locais de contas Google.

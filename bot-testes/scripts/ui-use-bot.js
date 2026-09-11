@@ -63,6 +63,12 @@ async function loginThroughVisibleForm(page, { next = false } = {}) {
   const errors = [];
   page.on('pageerror', error => errors.push(`${error.message} @ ${error.stack || 'sem stack'}`));
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('401 (Unauthorized)')) errors.push(message.text()); });
+  page.on('response', response => {
+    if (response.status() >= 400 && response.status() !== 401) {
+      const bodySize = response.request().postData()?.length;
+      errors.push(`HTTP ${response.status()} ${response.request().method()} ${response.url()}${bodySize ? ` (${bodySize} bytes)` : ''}`);
+    }
+  });
   try {
     if (username && password) {
       try {

@@ -2,6 +2,8 @@
 
 Com PostgreSQL ativo, o gateway publico valida a sessao no NestJS para as APIs protegidas antes de encaminhar a requisicao ao dominio correspondente. Isso mantem o mesmo cookie de autenticacao entre o shell legado, o Next.js e os recursos compartilhados; sem banco, o fallback legado continua ativo.
 
+O parser JSON do NestJS aceita corpos de ate 6 MB, o mesmo limite configurado no gateway publico, para comportar o agregado compartilhado e o catalogo tecnico inicial sem resposta `413 Payload Too Large`.
+
 O perfil da empresa (`/api/company/profile`) agora consulta e atualiza `companies` diretamente pelo NestJS quando o PostgreSQL está ativo, mantendo a validação do administrador e o fallback legado sem banco.
 
 A ponte legada de rotinas (`/api/company/routines`) agora consulta e grava `routines` diretamente pelo NestJS quando o PostgreSQL está ativo, com bloqueio transacional por empresa e fallback legado sem banco.
