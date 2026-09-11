@@ -2478,6 +2478,17 @@ function technicalRequirementLabel(kind){
 function technicalCategoryLabel(category){
   return ({network:'Rede e infraestrutura',audio:'Audio e video',automation:'Automacao',electrical:'Eletrica e infraestrutura'})[category]||'Solucao tecnica';
 }
+function technicalProductArea(match,requirements){
+  const requirement=requirements.find(item=>item.kind===match.requirementKind),text=(match.products||[]).map(product=>[product.name,product.category,product.technicalType].filter(Boolean).join(' ')).join(' ').toLocaleLowerCase();
+  if(/camera|cftv|seguranca/.test(text))return 'cameras';
+  if(['audio-processing','audio-speakers','audio-subwoofer'].includes(match.requirementKind))return 'audio-video';
+  if(['automation-controller','automation-lighting'].includes(match.requirementKind))return 'automation';
+  if(requirement?.category==='network')return 'network';
+  return 'network';
+}
+function technicalProductAreaLabel(area){
+  return ({network:'Rede',automation:'Automacao','audio-video':'Audio e Video',cameras:'Cameras'})[area]||'Produtos';
+}
 function technicalRequirementSummary(item){
   if(item.kind==='switch')return `${item.portsUsed} usadas + ${item.reservePercent}% reserva = ${item.portsRequired} necessarias`;
   if(item.kind==='access-point')return `${item.quantity} unidade(s)`;
@@ -2522,10 +2533,12 @@ function technicalDimensioningPanel(result,compatibility,survey){
   if(!metrics.length)metrics.push(['Requisitos',`${requirements.length} definido(s)`]);
   const metricHtml=metrics.slice(0,5).map(item=>`<div class="technical-metric"><small>${item[0]}</small><strong>${item[1]}</strong></div>`).join('');
   const requirementHtml=requirements.map(item=>`<article class="technical-requirement"><div><span class="technical-kicker">${technicalCategoryLabel(item.category)}</span><h4>${technicalRequirementLabel(item.kind)}</h4></div><p>${technicalRequirementSummary(item)}</p></article>`).join('');
-  const compatibleHtml=matches.map(match=>{
+  const matchCard=match=>{
     const products=match.products||[],visible=products.slice(0,1),hidden=products.slice(1);
     return `<article class="technical-match"><div class="technical-match-head"><div><span class="technical-kicker">${technicalCategoryLabel((requirements.find(item=>item.kind===match.requirementKind)||{}).category)}</span><h4>${technicalRequirementLabel(match.requirementKind)}</h4><p>${technicalRequirementSummary({...match.requirement,kind:match.requirementKind})}</p></div><span class="technical-option-count">${products.length} opcao(oes)</span></div><div class="technical-product-list">${visible.map(product=>technicalProductCard(product,match.requirementKind)).join('')}</div>${hidden.length?`<details class="technical-product-more"><summary>Ver mais ${hidden.length} opcao(oes) do catalogo</summary><div class="technical-product-list">${hidden.map(product=>technicalProductCard(product,match.requirementKind)).join('')}</div></details>`:''}</article>`;
-  }).join('');
+  };
+  const productAreas=['network','automation','audio-video','cameras'];
+  const compatibleHtml=productAreas.map(area=>{const areaMatches=matches.filter(match=>technicalProductArea(match,requirements)===area);if(!areaMatches.length)return '';return `<section class="technical-area-group"><div class="technical-area-heading"><h5>${technicalProductAreaLabel(area)}</h5><span>${areaMatches.length} requisito(s)</span></div><div class="technical-matches">${areaMatches.map(matchCard).join('')}</div></section>`;}).join('');
   const confirmed=survey?.technicalSolution?.status==='confirmed';
   const confirmation=matches.length?`<div class="technical-dimensioning-confirmation">${confirmed?'<span class="technical-confirmed">Solucao tecnica confirmada</span>':`<button class="button secondary" data-confirm-dimensioning="${survey.id}">Confirmar solucao tecnica</button>`}</div>`:'';
   return `<section class="card technical-dimensioning-preview"><header class="technical-dimensioning-header"><div><span class="technical-kicker">Dimensionamento tecnico</span><h3>Solucao tecnica preliminar</h3><p class="subtext">Requisitos genericos antes da escolha de marca, produto e preco.</p></div><span class="technical-status ${result.status==='dimensionado'?'is-ready':'is-review'}">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'}</span></header><div class="technical-metrics">${metricHtml}</div><section class="technical-section"><div class="technical-section-head"><div><h4>Requisitos calculados</h4><p>O motor transformou o levantamento em necessidades tecnicas.</p></div></div><div class="technical-requirements">${requirementHtml||'<p class="technical-empty">Nenhum requisito tecnico foi identificado.</p>'}</div></section>${compatibleHtml?`<section class="technical-section"><div class="technical-section-head"><div><h4>Produtos compativeis</h4><p>Referencias do catalogo que atendem aos requisitos. Os precos continuam no orcamento.</p></div></div><div class="technical-matches">${compatibleHtml}</div></section>`:''}${warnings.length?`<section class="technical-alert"><strong>Pontos para revisar</strong><ul class="technical-dimensioning-warnings">${warnings.map(item=>`<li>${escapeUserText(item.message)}</li>`).join('')}</ul></section>`:''}${confirmation}</section>`;

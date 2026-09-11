@@ -50,3 +50,7 @@ test('atalho de projeto em andamento preserva a visao de detalhe', () => {
   assert.match(legacyApp, /data-dashboard-project/);
   assert.match(legacyApp, /state\.view='projectDetail';render\(\)/);
 });
+test('produtos compativeis ficam separados por area tecnica', () => {
+  assert.match(legacyApp, /const productAreas=\['network','automation','audio-video','cameras'\]/);
+  assert.match(legacyApp, /network:'Rede',automation:'Automacao','audio-video':'Audio e Video',cameras:'Cameras'/);
+});
