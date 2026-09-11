@@ -142,7 +142,7 @@ function addSetCookie(res, value) {
 function nestAuthEnabled() {
   return Boolean(process.env.DATABASE_URL) && !isolatedTestDirectory;
 }
-async function forwardNestAuth(req, res, pathname, body, redirect = 'follow') {
+async function forwardNestAuth(req, res, pathname, body, redirect = 'follow', afterResponse) {
   const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
   const upstream = await fetch(`${origin}${pathname}`, {
     method: req.method,
@@ -162,7 +162,9 @@ async function forwardNestAuth(req, res, pathname, body, redirect = 'follow') {
   if (setCookie) res.setHeader('Set-Cookie', setCookie);
   if (location) res.setHeader('Location', location);
   res.writeHead(upstream.status, { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': 'no-store' });
-  res.end(await upstream.text());
+  const responseBody = await upstream.text();
+  res.end(responseBody);
+  if (afterResponse) await afterResponse(upstream.status, responseBody);
   return upstream.status;
 }
 function clearGoogleStateCookie(res, secure = false) {
@@ -762,6 +764,22 @@ async function handleRequest(req, res) {
       return sendJson(res, 200, { ...current, data: visibleDataForUser(current.data, authenticatedUser) });
     } catch {
       return sendJson(res, 500, { error: 'Não foi possível ler os dados compartilhados.' });
+    }
+  }
+
+  if (pathname === '/api/data' && req.method === 'PUT' && nestAuthEnabled()) {
+    try {
+      const body = await readBody(req);
+      return await forwardNestAuth(req, res, pathname, body, 'follow', (status, responseBody) => {
+        if (status !== 200) return;
+        try {
+          const saved = JSON.parse(responseBody);
+          broadcastUpdate({ revision: Number(saved.revision || 0), updatedAt: saved.updatedAt || new Date().toISOString() }, authenticatedCompanyId);
+        } catch { /* resposta já foi entregue ao cliente */ }
+      });
+    } catch (error) {
+      console.error('Falha ao encaminhar gravação dos dados ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível salvar os dados compartilhados agora.' });
     }
   }
 

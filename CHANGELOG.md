@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A gravação do agregado compartilhado (`PUT /api/data`) passou a validar permissões, funil comercial e revisão em transação PostgreSQL pelo NestJS, com lock concorrente e notificação aos clientes; sem banco, o fallback legado permanece.
+
 - A leitura do agregado compartilhado (`GET /api/data`) passou a consultar `app_state` diretamente pelo NestJS/PostgreSQL, mantendo o isolamento por empresa e a filtragem de módulos; a gravação continua temporariamente no fallback legado.
 
 - O proxy público passou a preservar os redirecionamentos `302`, `Location` e cookies do OAuth Google encaminhado ao NestJS.

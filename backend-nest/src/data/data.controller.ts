@@ -1,7 +1,14 @@
 import { Body, Controller, Get, Put, Req, Res } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 
 type RecordItem = Record<string, any>;
+type WorkflowResult = { ok: boolean; message?: string };
+type CommercialWorkflow = {
+  applyValidatedSurveyTransition: (current: RecordItem, next: RecordItem, actor: string, validatedAt: string) => RecordItem;
+  validate: (current: RecordItem, next: RecordItem) => WorkflowResult;
+};
+
+const commercialWorkflow = require('../../../commercial-workflow.js') as CommercialWorkflow;
 
 const rolePermissions: Record<string, string[]> = {
   admin: ['*'], suporte: [],
@@ -22,6 +29,18 @@ const dataAccessScopes: Record<string, string[]> = {
   purchases: ['purchaseItems'], execution: ['executionEntries', 'executionItems'],
 };
 dataAccessScopes.commercial.push('appointments');
+
+const writableRoles: Record<string, Set<string> | null> = {
+  admin: null,
+  comercial: new Set(['clients', 'commercial', 'quotes', 'products', 'survey']),
+  operacao: new Set(['projects', 'processes', 'tasks', 'agenda', 'installations', 'operations', 'reports', 'execution', 'diagram', 'quality', 'collaborators', 'equipment', 'knowledge']),
+  financeiro: new Set(['finance']),
+  leitura: new Set(),
+};
+
+const dataDomains: Record<string, string> = {
+  clients: 'clients', projects: 'projects', processes: 'processes', tasks: 'tasks', agenda: 'appointments', commercial: 'opportunities', quotes: 'quotes', products: 'products', survey: 'surveys', installations: 'installations', operations: 'serviceOrders', reports: 'serviceReports', execution: 'executionEntries', diagram: 'technicalConnections', quality: 'evaluations', collaborators: 'collaborators', equipment: 'equipment', knowledge: 'articles', finance: 'financialEntries', purchases: 'purchaseItems',
+};
 
 @Controller('data')
 export class DataController {
@@ -77,6 +96,43 @@ export class DataController {
     }));
   }
 
+  private record(value: unknown): RecordItem {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as RecordItem : {};
+  }
+
+  private sameValue(left: unknown, right: unknown): boolean {
+    return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+  }
+
+  private isCompanyAdmin(user: RecordItem): boolean {
+    return user.role === 'admin' && Boolean(user.companyId && user.companyId !== 'legacy');
+  }
+
+  private isFounder(user: RecordItem): boolean {
+    return user.accountType === 'founder' || user.founder === true;
+  }
+
+  private mergeWritableData(current: RecordItem, incoming: RecordItem, user: RecordItem, resource: string): RecordItem {
+    const allowed = this.dataViewsForUser(user);
+    const full = allowed.has('*');
+    const merged: RecordItem = { ...current, ...Object.fromEntries(Object.entries(incoming).filter(([, value]) => !Array.isArray(value))) };
+    for (const [scope, keys] of Object.entries(dataAccessScopes)) {
+      if (!full && !allowed.has(scope)) continue;
+      for (const key of keys) {
+        if (key === 'schedulePhases' && !(this.isCompanyAdmin(user) || this.isFounder(user))) continue;
+        if (Object.prototype.hasOwnProperty.call(incoming, key)) merged[key] = incoming[key];
+      }
+    }
+    if (!full && resource === 'execution' && allowed.has('execution') && Object.prototype.hasOwnProperty.call(incoming, 'financialEntries')) merged.financialEntries = incoming.financialEntries;
+    return merged;
+  }
+
+  private async state(clientOrPool: Pool | PoolClient, companyId: string, lock = false): Promise<{ data: RecordItem; updatedAt: string | null; revision: number }> {
+    const result = await clientOrPool.query(`select data, updated_at as "updatedAt", revision from app_state where state_key = $1${lock ? ' for update' : ''}`, [this.stateKey(companyId)]);
+    const row = result.rows[0] as RecordItem | undefined;
+    return { data: row?.data && typeof row.data === 'object' ? row.data : {}, updatedAt: row?.updatedAt || null, revision: Number(row?.revision || 0) };
+  }
+
   @Get()
   async read(@Req() request: { headers: { cookie?: string } }, @Res() response: any) {
     if (!this.pool) {
@@ -86,10 +142,8 @@ export class DataController {
     try {
       const user = await this.authenticatedUser(request.headers.cookie);
       if (!user) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
-      const result = await this.pool.query('select data, updated_at as "updatedAt", revision from app_state where state_key = $1', [this.stateKey(user.companyId || 'legacy')]);
-      const current = result.rows[0] as RecordItem | undefined;
-      const data = current?.data && typeof current.data === 'object' ? current.data : null;
-      return response.status(200).type('application/json').send(JSON.stringify({ data: this.visibleDataForUser(data, user), updatedAt: current?.updatedAt || null, revision: Number(current?.revision || 0) }));
+      const current = await this.state(this.pool, user.companyId || 'legacy');
+      return response.status(200).type('application/json').send(JSON.stringify({ data: this.visibleDataForUser(current.data, user), updatedAt: current.updatedAt, revision: current.revision }));
     } catch (error) {
       console.error('Falha ao ler dados compartilhados no PostgreSQL:', error instanceof Error ? error.message : error);
       return response.status(500).type('application/json').send(JSON.stringify({ error: 'Não foi possível ler os dados compartilhados.' }));
@@ -98,7 +152,79 @@ export class DataController {
 
   @Put()
   async write(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
-    const upstream = await this.legacy('/api/data', request, 'PUT', payload);
-    response.status(upstream.status).type('application/json').send(await upstream.text());
+    if (!this.pool) {
+      const upstream = await this.legacy('/api/data', request, 'PUT', payload);
+      return response.status(upstream.status).type('application/json').send(await upstream.text());
+    }
+    try {
+      const user = await this.authenticatedUser(request.headers.cookie);
+      if (!user) return response.status(401).type('application/json').send(JSON.stringify({ error: 'É necessário entrar no sistema.' }));
+      const input = this.record(payload);
+      const incoming = input.data;
+      if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return response.status(400).type('application/json').send(JSON.stringify({ error: 'Dados inválidos.' }));
+      const current = await this.state(this.pool, user.companyId || 'legacy');
+      const resource = String(input.resource || '');
+      const dataViews = this.dataViewsForUser(user);
+      const fullDataAccess = dataViews.has('*');
+      const changedScopes = Object.entries(dataAccessScopes)
+        .filter(([, keys]) => keys.some((key) => Object.prototype.hasOwnProperty.call(incoming, key) && !this.sameValue(current.data[key], incoming[key])))
+        .map(([view]) => view);
+      const deniedScopes = changedScopes.filter((view) => !fullDataAccess && !dataViews.has(view)
+        && !(resource === 'execution' && view === 'finance' && dataViews.has('execution'))
+        && !(resource === 'diagram' && view === 'diagram' && dataViews.has('projects')));
+      if (deniedScopes.length) return response.status(403).type('application/json').send(JSON.stringify({ error: `Seu perfil não pode acessar: ${deniedScopes.join(', ')}.` }));
+      const role = user.role === 'operador' ? 'operacao' : user.role;
+      const roleAllowed = writableRoles[role];
+      const allowed = roleAllowed && Array.isArray(user.modules) && user.modules.length
+        ? new Set([...roleAllowed].filter((view) => user.modules.includes(view)))
+        : roleAllowed;
+      if (allowed) {
+        const changedDomains = Object.keys(dataDomains).filter((view) => {
+          const key = dataDomains[view];
+          return Object.prototype.hasOwnProperty.call(incoming, key) && !this.sameValue(current.data[key], incoming[key]);
+        });
+        const denied = changedDomains.filter((view) => !allowed.has(view)
+          && !(resource === 'execution' && view === 'finance' && allowed.has('execution'))
+          && !(resource === 'diagram' && view === 'diagram' && allowed.has('projects')));
+        if (denied.length) return response.status(403).type('application/json').send(JSON.stringify({ error: `Seu perfil não pode alterar: ${denied.join(', ')}.` }));
+      }
+      const baseRevision = Number(input.baseRevision || 0);
+      let nextData = this.mergeWritableData(current.data, incoming, user, resource);
+      nextData = commercialWorkflow.applyValidatedSurveyTransition(current.data, nextData, user.name || user.username, new Date().toISOString());
+      const workflow = commercialWorkflow.validate(current.data, nextData);
+      if (!workflow.ok) return response.status(422).type('application/json').send(JSON.stringify({ error: workflow.message }));
+      const stateKey = this.stateKey(user.companyId || 'legacy');
+      const client = await this.pool.connect();
+      let saved: { updatedAt: string; revision: number };
+      try {
+        await client.query('begin');
+        await client.query('select pg_advisory_xact_lock(hashtext($1))', [`proelium:app_state:${stateKey}`]);
+        const locked = await this.state(client, user.companyId || 'legacy', true);
+        if (locked.revision !== baseRevision) {
+          await client.query('rollback');
+          return response.status(409).type('application/json').send(JSON.stringify({ error: 'Os dados foram atualizados por outro aparelho.', revision: locked.revision, updatedAt: locked.updatedAt }));
+        }
+        saved = { updatedAt: new Date().toISOString(), revision: locked.revision + 1 };
+        await client.query(
+          `insert into app_state (state_key, data, revision, updated_at) values ($1, $2::jsonb, $3, $4)
+           on conflict (state_key) do update set data = excluded.data, revision = excluded.revision, updated_at = excluded.updated_at`,
+          [stateKey, JSON.stringify(nextData), saved.revision, saved.updatedAt],
+        );
+        await client.query(
+          `insert into app_state_revisions (state_key, revision, data, updated_at, actor) values ($1, $2, $3::jsonb, $4, $5)`,
+          [stateKey, saved.revision, JSON.stringify(nextData), saved.updatedAt, user.username],
+        );
+        await client.query('commit');
+      } catch (error) {
+        await client.query('rollback').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
+      return response.status(200).type('application/json').send(JSON.stringify({ ok: true, updatedAt: saved.updatedAt, revision: saved.revision }));
+    } catch (error) {
+      console.error('Falha ao salvar dados compartilhados no PostgreSQL:', error instanceof Error ? error.message : error);
+      return response.status(400).type('application/json').send(JSON.stringify({ error: 'Não foi possível salvar os dados.' }));
+    }
   }
 }
