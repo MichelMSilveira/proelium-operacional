@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A leitura do agregado compartilhado (`GET /api/data`) passou a consultar `app_state` diretamente pelo NestJS/PostgreSQL, mantendo o isolamento por empresa e a filtragem de módulos; a gravação continua temporariamente no fallback legado.
+
 - O proxy público passou a preservar os redirecionamentos `302`, `Location` e cookies do OAuth Google encaminhado ao NestJS.
 
 - O login Google passou a validar o `state`, trocar o código OAuth e criar sessões diretamente no NestJS/PostgreSQL, mantendo o onboarding e o aceite de convites Google compatíveis.

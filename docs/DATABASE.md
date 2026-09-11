@@ -22,6 +22,8 @@ Com PostgreSQL ativo, o NestJS também inicia e conclui o OAuth Google, validand
 
 O proxy público preserva os redirecionamentos e cookies desse fluxo, permitindo que o navegador conclua o retorno do Google no mesmo domínio oficial.
 
+A leitura compatível do agregado (`GET /api/data`) agora consulta `app_state` diretamente pelo NestJS quando o PostgreSQL está ativo e aplica novamente o isolamento por empresa e permissões; o `PUT /api/data` permanece no legado até a migração transacional da gravação.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.

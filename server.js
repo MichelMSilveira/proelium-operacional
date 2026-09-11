@@ -748,6 +748,14 @@ async function handleRequest(req, res) {
     } catch { return sendJson(res,400,{error:'Pedido de auxílio inválido.'}); }
   }
 
+  if (pathname === '/api/data' && req.method === 'GET' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, pathname); }
+    catch (error) {
+      console.error('Falha ao encaminhar leitura dos dados ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível ler os dados compartilhados agora.' });
+    }
+  }
+
   if (pathname === '/api/data' && req.method === 'GET') {
     try {
       const current = await storage.readSharedData(authenticatedUser.companyId || 'legacy');
