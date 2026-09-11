@@ -106,3 +106,19 @@ test('encontra processamento de audio compativel com cinema 7.1.4', () => {
   assert.equal(result.matches.find((item) => item.requirementKind === 'audio-subwoofer').products[0].productId, 'sub');
   assert.equal(result.unmatched.length, 0);
 });
+
+test('encontra modulo de iluminacao compativel com o modo e os canais', () => {
+  const dimensioning = dimensionSurvey({ id: 'lev-compat-automation' }, [{ id: 'light-1', surveyId: 'lev-compat-automation', type: 'Iluminacao - dimmer', quantity: 6 }]);
+  const result = findCompatibleProducts(dimensioning, [
+    { id: 'relay', name: 'Modulo rele 8 canais', category: 'Automacao', active: true },
+    { id: 'small-dimmer', name: 'Modulo dimmer 4 canais', category: 'Automacao', active: true },
+    { id: 'right-dimmer', name: 'Modulo dimmer 8 canais', category: 'Automacao', active: true },
+    { id: 'controller', name: 'Controladora de automacao', category: 'Automacao', active: true },
+  ]);
+
+  const lighting = result.matches.find((item) => item.requirementKind === 'automation-lighting');
+  assert.deepEqual(lighting.products.map((product) => product.productId), ['right-dimmer']);
+  assert.equal(lighting.products[0].channels, 8);
+  assert.equal(result.matches.find((item) => item.requirementKind === 'automation-controller').products[0].productId, 'controller');
+  assert.equal(result.unmatched.length, 0);
+});

@@ -74,3 +74,20 @@ test('dimensiona cinema 7.1.4 em canais, caixas e subwoofer', () => {
   assert.deepEqual({ quantity: speakers.quantity, mainSpeakers: speakers.mainSpeakers, heightSpeakers: speakers.heightSpeakers }, { quantity: 11, mainSpeakers: 7, heightSpeakers: 4 });
   assert.equal(subwoofer.quantity, 1);
 });
+
+test('dimensiona automacao de iluminacao por modo de controle', () => {
+  const result = dimensionSurvey({ id: 'lev-automation-1' }, [
+    { id: 'relay-1', surveyId: 'lev-automation-1', type: 'Iluminacao - rele', quantity: 5 },
+    { id: 'dimmer-1', surveyId: 'lev-automation-1', type: 'Iluminacao - dimmer', quantity: 3 },
+  ]);
+  const lighting = result.requirements.filter((item) => item.kind === 'automation-lighting');
+
+  assert.equal(result.status, 'dimensionado');
+  assert.deepEqual(result.categories, ['automation']);
+  assert.equal(result.requirements.find((item) => item.kind === 'automation-controller').quantity, 1);
+  assert.deepEqual(lighting.map((item) => ({ mode: item.controlMode, circuits: item.circuitsRequired, dimmable: item.dimmableRequired })), [
+    { mode: 'relay', circuits: 5, dimmable: false },
+    { mode: 'dimmer', circuits: 3, dimmable: true },
+  ]);
+  assert.deepEqual(result.trace.find((item) => item.ruleId === 'automation.lighting.channels.v1').sourcePointIds, ['relay-1', 'dimmer-1']);
+});

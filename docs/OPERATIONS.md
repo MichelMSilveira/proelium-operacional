@@ -108,6 +108,8 @@ Ao aprovar uma oportunidade, ela deixa de aparecer no mapa ativo e o cliente per
 O teste `npm run test:ui-flow` cria 30 oportunidades por interação real com a interface antes de validar o ciclo principal; a base temporária começa vazia e não usa mutações diretas de oportunidades, levantamentos, clientes ou projetos.
 ## Levantamento inicial por necessidades
 
+Na prévia de Automação, pontos de iluminação são consolidados por modo: relé ou dimmer. O sistema mostra o controlador e a quantidade de circuitos/canais, consulta módulos compatíveis no catálogo e só aplica os itens selecionados depois da confirmação da solução técnica.
+
 Pontos de som ambiente podem ser mono ou estéreo. Pontos de cinema aceitam configurações como 5.1, 5.1.2, 7.1 e 7.1.4; a prévia mostra canais, caixas principais, caixas de altura, subwoofer e alerta de amplificação externa quando necessário. Após a confirmação, as referências escolhidas são aplicadas ao orçamento com as quantidades dimensionadas.
 
 Na prévia da rede, o rack mostra unidades ocupadas e reserva técnica. Organizadores horizontais de cabos são calculados por blocos de até 24 portas e entram na infraestrutura do orçamento somente após a confirmação do produto compatível.

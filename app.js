@@ -2490,6 +2490,13 @@ function technicalDimensioningPanel(result,compatibility,survey){
   return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Rede e infraestrutura</h3><p class="subtext">${result.status==='dimensionado'?'Dimensionado':'Revisao necessaria'} · previa generica, sem marca, produto ou preco.</p></div></div><div>${details}.</div>${infrastructure}${electrical}${poe}${compatible}${warnings?`<ul class="technical-dimensioning-warnings">${warnings}</ul>`:''}${unmatched?`<ul class="technical-dimensioning-warnings">${unmatched}</ul>`:''}${confirmation}</section>`;
 }
 const surveyWithDimensioningPreview=views.survey;
+function automationDimensioningPanel(result){
+  if(!result)return '';
+  const controller=(result.requirements||[]).find(item=>item.kind==='automation-controller'),lighting=(result.requirements||[]).filter(item=>item.kind==='automation-lighting');
+  if(!controller&&!lighting.length)return '';
+  const details=(controller?`<div>Controlador de automacao: <strong>${controller.quantity}</strong> unidade(s).</div>`:'')+lighting.map(item=>`<div>Iluminacao ${item.controlMode==='dimmer'?'dimerizavel':'por rele'}: <strong>${item.circuitsRequired}</strong> circuito(s) / canal(is).</div>`).join('');
+  return `<section class="card technical-dimensioning-preview"><div class="card-head"><div><h3>Dimensionamento tecnico · Automacao</h3><p class="subtext">Requisitos genericos, sem marca, produto ou preco.</p></div></div>${details}</section>`;
+}
 views.survey=()=>{
   const html=surveyWithDimensioningPreview();
   const selected=(state.data.surveys||[]).find(item=>item.id===state.selectedSurvey);
@@ -2497,7 +2504,7 @@ views.survey=()=>{
   const points=(state.data.surveyPoints||[]).filter(item=>item.surveyId===selected.id);
   const dimensioning=TechnicalDimensioning.dimensionSurvey(selected,points);
   const compatibility=typeof TechnicalCompatibility==='undefined'?null:TechnicalCompatibility.findCompatibleProducts(dimensioning,state.data.products||[]);
-  return html.replace('<div class="room-grid">',technicalDimensioningPanel(dimensioning,compatibility,selected)+'<div class="room-grid">');
+  return html.replace('<div class="room-grid">',technicalDimensioningPanel(dimensioning,compatibility,selected)+automationDimensioningPanel(dimensioning)+'<div class="room-grid">');
 };
 const surveySaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{

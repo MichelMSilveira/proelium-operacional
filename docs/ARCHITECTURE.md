@@ -38,6 +38,10 @@ O fluxo comercial passa a reservar uma etapa entre levantamento e orçamento: `L
 
 ## Preparação para o N.E.M.O.
 
+### Automação inicial
+
+A primeira regra de Automação foi adicionada ao mesmo núcleo puro: pontos de iluminação geram um controlador genérico e requisitos separados por relé ou dimmer, com rastreabilidade em `trace`. A camada de compatibilidade valida o modo e os canais dos módulos cadastrados; somente a seleção confirmada atravessa a camada comercial.
+
 O motor de Áudio interpreta configurações mono, estéreo e cinema sem conhecer marcas: 7.1.4, por exemplo, gera 11 canais, 7 canais principais, 4 de altura, subwoofer e sinalização de amplificação externa. Processamento, caixas e subwoofer são requisitos separados da compatibilidade e do preço.
 
 O requisito de rack registra unidades ocupadas e reserva técnica. A regra também produz organizadores de cabos por bloco de até 24 portas; o tipo é genérico, não conhece fabricante e só chega ao orçamento quando uma referência compatível é confirmada.

@@ -94,7 +94,7 @@ A prévia de Dimensionamento de Rede também pode retornar nobreak com potência
 | GET/POST | `/quality` | avaliações de qualidade com revisão de conflito |
 | GET/POST/PATCH | `/support-tickets` e `/support-tickets/{id}` | chamados de pós-venda com revisão de conflito |
 | GET/POST/PATCH | `/survey` | levantamentos técnicos e revisão |
-| GET | `/survey/{id}/dimensioning` | prévia de dimensionamento genérico e referências de Produtos Compatíveis, atualmente com a regra de Rede |
+| GET | `/survey/{id}/dimensioning` | prévia de dimensionamento genérico de Rede, Áudio e Automação e referências de Produtos Compatíveis |
 | POST | `/survey/{id}/dimensioning/confirm` | confirmar referências compatíveis como solução técnica, sem criar itens ou preços no orçamento |
 | — | Dimensionamento de Rede | requisitos de switch, access point, patch panel e rack, incluindo validação de orçamento PoE quando cadastrado; a confirmação consolida uma referência por requisito |
 | GET/PUT | `/survey/{id}/rooms` | ambientes do levantamento |
@@ -104,6 +104,10 @@ A prévia de Dimensionamento de Rede também pode retornar nobreak com potência
 | GET | `/operational-summary` | resumo otimizado para painel/N.E.M.O. |
 | GET | `/analytics/projects?groupBy=` | indicadores agrupados para Business Intelligence |
 | GET | `/audit-events` | trilha de alterações |
+
+## Dimensionamento de automacao
+
+A resposta de `/survey/{id}/dimensioning` tambem pode conter requisitos genericos de `automation-controller` e `automation-lighting`. A iluminacao e separada por `controlMode` (`relay` ou `dimmer`) e informa `circuitsRequired`/`channelsRequired`; a compatibilidade consulta modulos de canais sem embutir marca ou preco na regra.
 
 ## Exemplo: resumo operacional
 

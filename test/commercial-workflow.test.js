@@ -156,6 +156,29 @@ test('aplica cinema dimensionado ao orcamento com quantidade de caixas', () => {
   assert.equal(data.quotes[0].value, 35000);
 });
 
+test('aplica canais de iluminacao dimmer confirmados ao orcamento', () => {
+  const data = {
+    products: [
+      { id: 'controller', name: 'Controladora de automacao', technicalType: 'Central de automacao', price: 6000, active: true },
+      { id: 'dimmer', name: 'Modulo dimmer 8 canais', technicalType: 'Modulo de iluminacao', price: 4000, active: true },
+      { id: 'relay', name: 'Modulo rele 8 canais', technicalType: 'Modulo de iluminacao', price: 2500, active: true },
+    ],
+    surveys: [{ id: 'survey-lighting', opportunityId: 'opp-1', status: 'Enviado ao orcamento', technicalSolution: { status: 'confirmed', engineVersion: 'technical-v3', selectedProductIds: ['controller', 'dimmer'] } }],
+    surveyPoints: [{ id: 'dimmer-point', surveyId: 'survey-lighting', room: 'Sala', type: 'Iluminacao - dimmer', quantity: 10 }],
+    surveyRooms: [{ id: 'lighting-room', surveyId: 'survey-lighting', name: 'Sala' }],
+    quotes: [{ id: 'quote-lighting', opportunityId: 'opp-1', value: 0 }],
+    quoteRooms: [{ id: 'quote-lighting-room', quoteId: 'quote-lighting', name: 'Sala', items: [] }]
+  };
+
+  const result = workflow.populateQuoteFromSurvey(data, 'survey-lighting', 'quote-lighting', prefix => `${prefix}-new`);
+  const infrastructure = data.quoteRooms.find(room => room.items.some(item => item.productId === 'controller'));
+
+  assert.equal(result.unmapped.length, 0);
+  assert.equal(infrastructure?.items.find(item => item.productId === 'controller')?.qty, 1);
+  assert.equal(infrastructure?.items.find(item => item.productId === 'dimmer')?.qty, 2);
+  assert.equal(data.quotes[0].value, 14000);
+});
+
 test('converte levantamento residencial em itens de catálogo e mantém o total idempotente', () => {
   const data = {
     products: [

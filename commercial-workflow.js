@@ -61,7 +61,11 @@
   };
   const itemQuantity = (product, quantity, kind) => {
     const value = Math.max(1, Number(quantity || 1));
-    if (kind === 'lighting') return Math.max(1, Math.ceil(value / 8));
+    if (kind === 'lighting') {
+      const definition = product?.technicalDefinition && typeof product.technicalDefinition === 'object' ? product.technicalDefinition : {};
+      const channels = Number(product?.channels ?? product?.channelCount ?? definition.channels ?? definition.channelCount ?? definition.capacityChannels ?? ((productSearchText(product).match(/(\d+)\s*canais/) || [])[1] || 8));
+      return Math.max(1, Math.ceil(value / (Number.isFinite(channels) && channels > 0 ? channels : 8)));
+    }
     if (kind === 'network-cable') return String(product?.unit || '').toLocaleLowerCase('pt-BR') === 'm' ? value * 30 : Math.max(1, Math.ceil(value * 30 / 305));
     if (kind === 'network-switch') return Math.max(1, Math.ceil(value / 24));
     return value;
@@ -195,12 +199,20 @@
     const totalNetwork = networkPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
     const totalLighting = lightingPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
     if (automationPoints.length || totalLighting) {
-      const product = pickCatalogProduct(products, [/controladora.*embrace.*lite/, /central de automacao/]);
+      const confirmedController = selectedProducts.find(product => /controladora|central\s+de\s+automacao|controlador|interface\s+de\s+automacao|scenario|embrace/.test(productSearchText(product)));
+      const product = confirmedController || pickCatalogProduct(products, [/controladora.*embrace.*lite/, /central de automacao/]);
       if (!addGenerated(product, 1, { global: true, kind: 'controller' }, automationPoints.concat(lightingPoints).map(point => point.id), 'Uma central para o conjunto residencial')) unmapped.push({ type: 'Central de automação' });
     }
-    if (totalLighting) {
+    if (totalLighting && !lightingPoints.some(point => /dimmer|pwm|rgb/.test(pointText(point)))) {
       const product = pickCatalogProduct(products, [/modulo rele.*8 canais/, /modulo dimmer.*8 canais/, /modulo de iluminacao/]);
       if (!addGenerated(product, itemQuantity(product, totalLighting, 'lighting'), { global: true, kind: 'lighting' }, lightingPoints.map(point => point.id), `${totalLighting} circuito(s), dimensionado(s) em blocos de 8 canais`)) unmapped.push({ type: 'Módulo de iluminação' });
+    }
+    const dimmerPoints = lightingPoints.filter(point => /dimmer|pwm|rgb/.test(pointText(point)));
+    if (dimmerPoints.length) {
+      const dimmerCircuits = dimmerPoints.reduce((sum, point) => sum + Number(point.quantity || 1), 0);
+      const confirmedDimmer = selectedProducts.find(product => /dimmer|pwm|rgb/.test(productSearchText(product)) && /modulo|dimmer|pwm/.test(productSearchText(product)));
+      const dimmerProduct = confirmedDimmer || pickCatalogProduct(products, [/modulo dimmer.*8 canais/, /dimmer/, /pwm/, /modulo de iluminacao/]);
+      if (!addGenerated(dimmerProduct, itemQuantity(dimmerProduct, dimmerCircuits, 'lighting'), { global: true, kind: 'lighting-dimmer' }, dimmerPoints.map(point => point.id), `${dimmerCircuits} circuito(s) dimerizavel(is), dimensionado(s) pela capacidade de canais do modulo`)) unmapped.push({ type: 'Modulo de iluminacao dimmer' });
     }
     if (totalNetwork) {
       const confirmedSwitch = selectedProducts.find(product => /switch|comutador/.test(productSearchText(product)));

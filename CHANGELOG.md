@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A primeira regra de Automacao agora separa controlador generico e canais de iluminacao por rele ou dimmer, valida capacidade de canais no catalogo e aplica os modulos confirmados ao orcamento. Cache web atualizado para `v401`.
 - O Dimensionamento Técnico agora reconhece Áudio: som ambiente mono/estéreo e configurações de cinema como 5.1 e 7.1.4 geram requisitos de canais, caixas, subwoofer e processamento compatível, com aplicação das referências confirmadas no orçamento. Cache web atualizado para `v400`.
 
 - O Dimensionamento Técnico de Rede agora calcula ocupação e reserva do rack e gera organizadores de cabos por bloco de 24 portas. Referências confirmadas podem ser aplicadas à infraestrutura do orçamento. Cache web atualizado para `v399`.
