@@ -8,6 +8,6 @@
   "background_color": "#E6DFD6",
   "theme_color": "#3B4A3A",
   "icons": [
-    { "src": "icon.png", "sizes": "2048x2048", "type": "image/png", "purpose": "any maskable" }
+    { "src": "assets/proelium-simbolo-oficial.png", "sizes": "1280x1280", "type": "image/png", "purpose": "any maskable" }
   ]
 }

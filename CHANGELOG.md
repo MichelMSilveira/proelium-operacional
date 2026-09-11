@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Corrigida a instalação do service worker: o manifesto e o shell agora usam o ícone oficial existente, eliminando a referência quebrada a `icon.png`.
+
 - Corrigido o overflow horizontal do shell Next.js em viewport móvel, reorganizando o cabeçalho e a navegação das telas de módulos.
 
 - Adicionado teste de cobertura para garantir que APIs usadas pelo Next.js tenham rewrite e encaminhamento no proxy publicados.
