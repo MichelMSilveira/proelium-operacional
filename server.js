@@ -358,6 +358,13 @@ async function handleRequest(req, res) {
       return sendJson(res, 503, { error: 'Não foi possível vincular o convite agora.' });
     }
   }
+  if (pathname === '/api/auth/register-company' && req.method === 'POST' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, pathname, await readBody(req)); }
+    catch (error) {
+      console.error('Falha ao encaminhar cadastro de empresa ao NestJS:', error.message);
+      return sendJson(res, 503, { error: 'Não foi possível concluir o cadastro agora.' });
+    }
+  }
 
   if (pathname === '/api/auth/google' && req.method === 'GET') {
     const invite=new URL(req.url,`http://${req.headers.host}`).searchParams.get('invite');

@@ -12,6 +12,8 @@ A administração de empresas (`/api/admin/companies`) agora lista, atualiza e e
 
 O aceite de convite para uma sessão já autenticada (`/api/auth/consume-invite`) agora valida o token hash e atualiza o vínculo em `app_users` diretamente pelo NestJS quando o PostgreSQL está ativo; os fluxos OAuth continuam compatíveis com a ponte legada.
 
+O cadastro local de empresas (`/api/auth/register-company`) agora grava `companies` e o usuário fundador em `app_users` na mesma transação quando o PostgreSQL está ativo; sem banco, o cadastro continua usando o fallback legado.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.

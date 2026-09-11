@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { createHash, createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { Pool } from 'pg';
 
 type RecordItem = Record<string, any>;
@@ -257,6 +257,11 @@ export class AuthController {
     } catch { return false; }
   }
 
+  private passwordRecord(password: string): { salt: string; passwordHash: string } {
+    const salt = Buffer.from(randomUUID().replace(/-/g, ''), 'hex');
+    return { salt: salt.toString('base64'), passwordHash: scryptSync(password, salt, 64).toString('base64') };
+  }
+
   private payloadRecord(payload: unknown): RecordItem {
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) return payload as RecordItem;
     if (typeof payload === 'string') {
@@ -380,7 +385,54 @@ export class AuthController {
   }
 
   @Post('register-company')
-  async registerCompany(@Req() request: { headers: { cookie?: string } }, @Body() payload: unknown, @Res() response: any) {
+  async registerCompany(@Req() request: { headers: { cookie?: string; [key: string]: string | undefined } }, @Body() payload: unknown, @Res() response: any) {
+    if (this.pool) {
+      try {
+        const input = this.payloadRecord(payload);
+        const companyName = String(input.companyName || '').trim().slice(0, 120);
+        const document = String(input.document || '').trim().slice(0, 32);
+        const username = String(input.username || '').trim().toLowerCase();
+        const name = String(input.name || '').trim().slice(0, 80);
+        const password = String(input.password || '');
+        if (!companyName || !name || !/^[a-z0-9][a-z0-9._-]{1,31}$/.test(username) || password.length < 10) {
+          return response.status(400).type('application/json').send(JSON.stringify({ error: 'Informe empresa, nome, usuário válido e senha com pelo menos 10 caracteres.' }));
+        }
+        const existing = await this.pool.query('select username from app_users where username = $1', [username]);
+        if (existing.rowCount) return response.status(409).type('application/json').send(JSON.stringify({ error: 'Esse usuário já está cadastrado.' }));
+        const companyId = `emp-${randomUUID()}`;
+        const createdAt = new Date().toISOString();
+        const credentials = this.passwordRecord(password);
+        const client = await this.pool.connect();
+        try {
+          await client.query('begin');
+          await client.query(
+            `insert into companies (id, name, document, founder_username, created_at)
+             values ($1, $2, $3, $4, $5)`,
+            [companyId, companyName, document, username, createdAt],
+          );
+          await client.query(
+            `insert into app_users (username, name, role, active, salt, password_hash, company_id, account_type, founder, profile_info, portfolio, modules, created_at, updated_at)
+             values ($1, $2, 'admin', true, $3, $4, $5, 'founder', true, '', '[]'::jsonb, '[]'::jsonb, $6, $6)`,
+            [username, name, credentials.salt, credentials.passwordHash, companyId, createdAt],
+          );
+          await client.query('commit');
+        } catch (error) {
+          await client.query('rollback').catch(() => undefined);
+          throw error;
+        } finally {
+          client.release();
+        }
+        const company = { id: companyId, name: companyName, document, founderUsername: username, createdAt };
+        const user = { username, name, role: 'admin', active: true, companyId, accountType: 'founder', founder: true, profileInfo: '', portfolio: [], modules: [] };
+        const secure = request.headers['x-forwarded-proto'] === 'https' || request.headers.host?.startsWith('app.');
+        const token = this.signedSession({ username, role: 'admin', name, companyId, expiresAt: Date.now() + this.sessionTtlSeconds * 1000 });
+        response.setHeader('set-cookie', `proelium_session=${encodeURIComponent(token)}; Path=/; Max-Age=${this.sessionTtlSeconds}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+        return response.status(201).type('application/json').send(JSON.stringify({ ok: true, user: this.publicUser(user), company }));
+      } catch (error) {
+        console.error('Falha ao cadastrar empresa no PostgreSQL:', error instanceof Error ? error.message : error);
+        return response.status(400).type('application/json').send(JSON.stringify({ error: 'Não foi possível concluir o cadastro.' }));
+      }
+    }
     const upstream = await this.forward('/api/auth/register-company', 'POST', request, payload);
     const setCookie = upstream.headers.get('set-cookie');
     if (setCookie) response.setHeader('set-cookie', setCookie);
