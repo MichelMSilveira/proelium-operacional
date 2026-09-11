@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- O proxy público passou a preservar os redirecionamentos `302`, `Location` e cookies do OAuth Google encaminhado ao NestJS.
+
 - O login Google passou a validar o `state`, trocar o código OAuth e criar sessões diretamente no NestJS/PostgreSQL, mantendo o onboarding e o aceite de convites Google compatíveis.
 
 - O aceite de convite para novos usuários Google passou a criar ou atualizar `app_users` diretamente no PostgreSQL, consumir o convite em transação e renovar a sessão pelo NestJS.

@@ -142,7 +142,7 @@ function addSetCookie(res, value) {
 function nestAuthEnabled() {
   return Boolean(process.env.DATABASE_URL) && !isolatedTestDirectory;
 }
-async function forwardNestAuth(req, res, pathname, body) {
+async function forwardNestAuth(req, res, pathname, body, redirect = 'follow') {
   const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
   const upstream = await fetch(`${origin}${pathname}`, {
     method: req.method,
@@ -154,10 +154,13 @@ async function forwardNestAuth(req, res, pathname, body) {
       ...(req.headers.host ? { host: req.headers.host } : {}),
     },
     ...(body === undefined ? {} : { body }),
+    redirect,
   });
   const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
   const setCookie = upstream.headers.get('set-cookie');
+  const location = upstream.headers.get('location');
   if (setCookie) res.setHeader('Set-Cookie', setCookie);
+  if (location) res.setHeader('Location', location);
   res.writeHead(upstream.status, { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': 'no-store' });
   res.end(await upstream.text());
   return upstream.status;
@@ -380,14 +383,14 @@ async function handleRequest(req, res) {
     }
   }
   if (pathname === '/api/auth/google' && req.method === 'GET' && nestAuthEnabled()) {
-    try { return await forwardNestAuth(req, res, `${pathname}${new URL(req.url, `http://${req.headers.host}`).search}`); }
+    try { return await forwardNestAuth(req, res, `${pathname}${new URL(req.url, `http://${req.headers.host}`).search}`, undefined, 'manual'); }
     catch (error) {
       console.error('Falha ao encaminhar início do OAuth Google ao NestJS:', error.message);
       return sendJson(res, 503, { error: 'Login Google indisponível agora.' });
     }
   }
   if (pathname === '/api/auth/google/callback' && req.method === 'GET' && nestAuthEnabled()) {
-    try { return await forwardNestAuth(req, res, `${pathname}${new URL(req.url, `http://${req.headers.host}`).search}`); }
+    try { return await forwardNestAuth(req, res, `${pathname}${new URL(req.url, `http://${req.headers.host}`).search}`, undefined, 'manual'); }
     catch (error) {
       console.error('Falha ao encaminhar callback Google ao NestJS:', error.message);
       return sendJson(res, 503, { error: 'Não foi possível concluir o login Google agora.' });

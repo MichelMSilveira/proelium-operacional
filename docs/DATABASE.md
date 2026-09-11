@@ -20,6 +20,8 @@ O aceite de convite para novos usuários Google (`/api/auth/join-google-company`
 
 Com PostgreSQL ativo, o NestJS também inicia e conclui o OAuth Google, validando o `state`, consultando `app_users` e emitindo a sessão; contas novas continuam seguindo para onboarding ou aceite de convite.
 
+O proxy público preserva os redirecionamentos e cookies desse fluxo, permitindo que o navegador conclua o retorno do Google no mesmo domínio oficial.
+
 Com PostgreSQL ativo, o servidor pÃºblico encaminha `auth/me`, `auth/login` e `auth/logout` ao NestJS; sem banco, o fallback continua no servidor legado.
 
 O gerenciamento de usuários globais (`/api/auth/users`) também grava diretamente em `app_users` quando o banco está ativo; perfis vinculados a empresas continuam sendo administrados pela rota própria da empresa.
