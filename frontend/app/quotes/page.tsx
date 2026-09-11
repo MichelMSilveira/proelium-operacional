@@ -82,8 +82,8 @@ export default function QuotesPage() {
     {error && <p className="error">{error}</p>}
     <form className="create-form" onSubmit={createQuote}>
       <input name="title" placeholder="Nome da proposta / orcamento" required />
-      <select name="clientId" defaultValue=""><option value="">Cliente (opcional)</option>{clients.map((client, index) => <option key={String(client.id || index)} value={String(client.id || '')}>{String(client.name || client.nome || 'Cliente')}</option>)}</select>
-      <input name="validUntil" type="date" />
+      <select name="clientId" aria-label="Cliente" defaultValue=""><option value="">Cliente (opcional)</option>{clients.map((client, index) => <option key={String(client.id || index)} value={String(client.id || '')}>{String(client.name || client.nome || 'Cliente')}</option>)}</select>
+      <input name="validUntil" aria-label="Validade da proposta" type="date" />
       <button disabled={saving}>{saving ? 'Salvando...' : 'Criar rascunho'}</button>
     </form>
     <div className="record-list">{quotes.map((quote, index) => <article key={String(quote.id || index)}>

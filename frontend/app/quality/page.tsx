@@ -59,10 +59,10 @@ export default function QualityPage() {
       <div className="section-head"><h2>Registrar avaliação</h2><span>Revisão {revision ?? '—'}</span></div>
       <form className="form-grid" onSubmit={saveEvaluation}>
         <input value={draft.projectId} onChange={(event) => setDraft({ ...draft, projectId: event.target.value })} placeholder="ID do projeto" required />
-        <select value={draft.source} onChange={(event) => setDraft({ ...draft, source: event.target.value })}><option>Interna</option><option>Cliente</option></select>
+        <select aria-label="Origem da avaliação" value={draft.source} onChange={(event) => setDraft({ ...draft, source: event.target.value })}><option>Interna</option><option>Cliente</option></select>
         <input value={draft.collaborator} onChange={(event) => setDraft({ ...draft, collaborator: event.target.value })} placeholder="Pessoa avaliada" required />
         <input value={draft.evaluator} onChange={(event) => setDraft({ ...draft, evaluator: event.target.value })} placeholder="Avaliador" required />
-        <input type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} required />
+        <input aria-label="Data da avaliação" type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} required />
         <label>Instalação<input type="number" min="1" max="5" value={draft.installation} onChange={(event) => setDraft({ ...draft, installation: Number(event.target.value) })} required /></label>
         <label>Atendimento<input type="number" min="1" max="5" value={draft.service} onChange={(event) => setDraft({ ...draft, service: Number(event.target.value) })} required /></label>
         <label>Compromisso<input type="number" min="1" max="5" value={draft.commitment} onChange={(event) => setDraft({ ...draft, commitment: Number(event.target.value) })} required /></label>

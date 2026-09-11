@@ -150,8 +150,8 @@ export default function OperationsPage() {
         <input value={taskDraft.responsible} onChange={(event) => setTaskDraft({ ...taskDraft, responsible: event.target.value })} placeholder="Responsável" />
         <input value={taskDraft.due} onChange={(event) => setTaskDraft({ ...taskDraft, due: event.target.value })} placeholder="Prazo" />
         <input value={taskDraft.time} onChange={(event) => setTaskDraft({ ...taskDraft, time: event.target.value })} placeholder="Horário" />
-        <select value={taskDraft.priority} onChange={(event) => setTaskDraft({ ...taskDraft, priority: event.target.value })}>{priorities.map((priority) => <option key={priority}>{priority}</option>)}</select>
-        <select value={taskDraft.status} onChange={(event) => setTaskDraft({ ...taskDraft, status: event.target.value })}>{taskStatuses.map((status) => <option key={status}>{status}</option>)}</select>
+        <select aria-label="Prioridade da tarefa" value={taskDraft.priority} onChange={(event) => setTaskDraft({ ...taskDraft, priority: event.target.value })}>{priorities.map((priority) => <option key={priority}>{priority}</option>)}</select>
+        <select aria-label="Status da tarefa" value={taskDraft.status} onChange={(event) => setTaskDraft({ ...taskDraft, status: event.target.value })}>{taskStatuses.map((status) => <option key={status}>{status}</option>)}</select>
         <div><button disabled={saving}>{saving ? 'Salvando...' : taskDraft.id ? 'Salvar tarefa' : 'Adicionar tarefa'}</button>{taskDraft.id && <button type="button" className="secondary" onClick={() => setTaskDraft(emptyTask())}>Cancelar</button>}</div>
       </form>
     </section>
@@ -160,9 +160,9 @@ export default function OperationsPage() {
       <form className="form-grid" onSubmit={saveTicket}>
         <input value={ticketDraft.clientId} onChange={(event) => setTicketDraft({ ...ticketDraft, clientId: event.target.value })} placeholder="ID do cliente" required />
         <input value={ticketDraft.equipmentId} onChange={(event) => setTicketDraft({ ...ticketDraft, equipmentId: event.target.value })} placeholder="ID do equipamento (opcional)" />
-        <select value={ticketDraft.type} onChange={(event) => setTicketDraft({ ...ticketDraft, type: event.target.value })}>{ticketTypes.map((type) => <option key={type}>{type}</option>)}</select>
-        <select value={ticketDraft.priority} onChange={(event) => setTicketDraft({ ...ticketDraft, priority: event.target.value })}>{ticketPriorities.map((priority) => <option key={priority}>{priority}</option>)}</select>
-        <select value={ticketDraft.status} onChange={(event) => setTicketDraft({ ...ticketDraft, status: event.target.value })}>{ticketStatuses.map((status) => <option key={status}>{status}</option>)}</select>
+        <select aria-label="Tipo do chamado" value={ticketDraft.type} onChange={(event) => setTicketDraft({ ...ticketDraft, type: event.target.value })}>{ticketTypes.map((type) => <option key={type}>{type}</option>)}</select>
+        <select aria-label="Prioridade do chamado" value={ticketDraft.priority} onChange={(event) => setTicketDraft({ ...ticketDraft, priority: event.target.value })}>{ticketPriorities.map((priority) => <option key={priority}>{priority}</option>)}</select>
+        <select aria-label="Status do chamado" value={ticketDraft.status} onChange={(event) => setTicketDraft({ ...ticketDraft, status: event.target.value })}>{ticketStatuses.map((status) => <option key={status}>{status}</option>)}</select>
         <textarea className="wide" value={ticketDraft.description} onChange={(event) => setTicketDraft({ ...ticketDraft, description: event.target.value })} placeholder="Descrição do chamado" required />
         <div><button disabled={saving}>{saving ? 'Salvando...' : ticketDraft.id ? 'Salvar chamado' : 'Registrar chamado'}</button>{ticketDraft.id && <button type="button" className="secondary" onClick={() => setTicketDraft(emptyTicket())}>Cancelar</button>}</div>
       </form>
@@ -174,11 +174,11 @@ export default function OperationsPage() {
         <input value={orderDraft.clientId} onChange={(event) => setOrderDraft({ ...orderDraft, clientId: event.target.value })} placeholder="ID do cliente" required />
         <input value={orderDraft.projectId} onChange={(event) => setOrderDraft({ ...orderDraft, projectId: event.target.value })} placeholder="ID do projeto (opcional)" />
         <input value={orderDraft.equipmentId} onChange={(event) => setOrderDraft({ ...orderDraft, equipmentId: event.target.value })} placeholder="ID do equipamento (opcional)" />
-        <select value={orderDraft.type} onChange={(event) => setOrderDraft({ ...orderDraft, type: event.target.value })}>{orderTypes.map((type) => <option key={type}>{type}</option>)}</select>
-        <input type="date" value={orderDraft.date} onChange={(event) => setOrderDraft({ ...orderDraft, date: event.target.value })} required />
-        <input type="time" value={orderDraft.time} onChange={(event) => setOrderDraft({ ...orderDraft, time: event.target.value })} />
+        <select aria-label="Tipo da ordem de serviço" value={orderDraft.type} onChange={(event) => setOrderDraft({ ...orderDraft, type: event.target.value })}>{orderTypes.map((type) => <option key={type}>{type}</option>)}</select>
+        <input aria-label="Data da ordem de serviço" type="date" value={orderDraft.date} onChange={(event) => setOrderDraft({ ...orderDraft, date: event.target.value })} required />
+        <input aria-label="Horário da ordem de serviço" type="time" value={orderDraft.time} onChange={(event) => setOrderDraft({ ...orderDraft, time: event.target.value })} />
         <input value={orderDraft.assignee} onChange={(event) => setOrderDraft({ ...orderDraft, assignee: event.target.value })} placeholder="Responsável" required />
-        <select value={orderDraft.status} onChange={(event) => setOrderDraft({ ...orderDraft, status: event.target.value })}>{orderStatuses.map((status) => <option key={status}>{status}</option>)}</select>
+        <select aria-label="Status da ordem de serviço" value={orderDraft.status} onChange={(event) => setOrderDraft({ ...orderDraft, status: event.target.value })}>{orderStatuses.map((status) => <option key={status}>{status}</option>)}</select>
         <textarea className="wide" value={orderDraft.description} onChange={(event) => setOrderDraft({ ...orderDraft, description: event.target.value })} placeholder="Descrição / escopo" required />
         <div><button disabled={saving}>{saving ? 'Salvando...' : orderDraft.id ? 'Salvar ordem' : 'Agendar ordem'}</button>{orderDraft.id && <button type="button" className="secondary" onClick={() => setOrderDraft(emptyOrder())}>Cancelar</button>}</div>
       </form>

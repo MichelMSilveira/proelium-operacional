@@ -115,16 +115,16 @@ export default function FinancePage() {
     <section className="card">
       <div className="section-head"><h2>{draft.id ? 'Editar lancamento' : 'Novo lancamento'}</h2><span>Revisao {revision ?? '—'}</span></div>
       <form className="form-grid" onSubmit={saveEntry}>
-        <select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value })}><option>Despesa</option><option>Receita</option></select>
-        <select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}><option>Realizado</option><option>Recebido</option><option>Pago</option><option>Pendente</option></select>
+        <select aria-label="Tipo do lançamento" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value })}><option>Despesa</option><option>Receita</option></select>
+        <select aria-label="Status do lançamento" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}><option>Realizado</option><option>Recebido</option><option>Pago</option><option>Pendente</option></select>
         <input type="number" min="0.01" step="0.01" value={draft.amount || ''} onChange={(event) => setDraft({ ...draft, amount: Number(event.target.value) })} placeholder="Valor" required />
-        <input type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
+        <input aria-label="Data do lançamento" type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
         <input value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })} placeholder="Categoria" />
         <input value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Descricao" required />
         <input value={draft.responsible} onChange={(event) => setDraft({ ...draft, responsible: event.target.value })} placeholder="Responsavel" />
         <input value={draft.clientId} onChange={(event) => setDraft({ ...draft, clientId: event.target.value })} placeholder="ID do cliente (opcional)" />
         <input value={draft.projectId} onChange={(event) => setDraft({ ...draft, projectId: event.target.value })} placeholder="ID do projeto (opcional)" />
-        <select value={draft.accountId} onChange={(event) => setDraft({ ...draft, accountId: event.target.value })}><option value="">Sem conta vinculada</option>{accounts.filter((account) => account.status !== 'Inativa').map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select>
+        <select aria-label="Conta financeira" value={draft.accountId} onChange={(event) => setDraft({ ...draft, accountId: event.target.value })}><option value="">Sem conta vinculada</option>{accounts.filter((account) => account.status !== 'Inativa').map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select>
         <div><button disabled={saving}>{saving ? 'Salvando...' : draft.id ? 'Salvar lancamento' : 'Adicionar lancamento'}</button>{draft.id && <button type="button" className="secondary" onClick={() => setDraft(emptyEntry())}>Cancelar</button>}</div>
       </form>
     </section>
@@ -133,9 +133,9 @@ export default function FinancePage() {
       <form className="form-grid" onSubmit={saveAccount}>
         <input value={accountDraft.name} onChange={(event) => setAccountDraft({ ...accountDraft, name: event.target.value })} placeholder="Nome da conta" required />
         <input value={accountDraft.institution} onChange={(event) => setAccountDraft({ ...accountDraft, institution: event.target.value })} placeholder="Instituição" />
-        <select value={accountDraft.type} onChange={(event) => setAccountDraft({ ...accountDraft, type: event.target.value })}><option>Corrente</option><option>Poupança</option><option>Carteira digital</option></select>
+        <select aria-label="Tipo da conta" value={accountDraft.type} onChange={(event) => setAccountDraft({ ...accountDraft, type: event.target.value })}><option>Corrente</option><option>Poupança</option><option>Carteira digital</option></select>
         <input type="number" step="0.01" value={accountDraft.initialBalance} onChange={(event) => setAccountDraft({ ...accountDraft, initialBalance: Number(event.target.value) })} placeholder="Saldo inicial" />
-        <select value={accountDraft.status} onChange={(event) => setAccountDraft({ ...accountDraft, status: event.target.value })}><option>Ativa</option><option>Inativa</option></select>
+        <select aria-label="Status da conta" value={accountDraft.status} onChange={(event) => setAccountDraft({ ...accountDraft, status: event.target.value })}><option>Ativa</option><option>Inativa</option></select>
         <textarea className="wide" value={accountDraft.notes} onChange={(event) => setAccountDraft({ ...accountDraft, notes: event.target.value })} placeholder="Observações" />
         <div><button disabled={saving}>{saving ? 'Salvando...' : accountDraft.id ? 'Salvar conta' : 'Cadastrar conta'}</button>{accountDraft.id && <button type="button" className="secondary" onClick={() => setAccountDraft(emptyAccount())}>Cancelar</button>}</div>
       </form>

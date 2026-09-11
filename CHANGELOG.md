@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Adicionados nomes acessíveis a datas, horários e seleções das telas Next.js, melhorando navegação por teclado e leitores de tela.
+
 - Corrigida a instalação do service worker: o manifesto e o shell agora usam o ícone oficial existente, eliminando a referência quebrada a `icon.png`.
 
 - Corrigido o overflow horizontal do shell Next.js em viewport móvel, reorganizando o cabeçalho e a navegação das telas de módulos.

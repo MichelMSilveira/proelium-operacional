@@ -75,11 +75,11 @@ export default function AgendaPage() {
       <form className="form-grid" onSubmit={save}>
         <input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Compromisso" required />
         <input value={draft.assignee} onChange={(event) => setDraft({ ...draft, assignee: event.target.value })} placeholder="Responsável" required />
-        <input type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} required />
-        <input type="time" value={draft.time} onChange={(event) => setDraft({ ...draft, time: event.target.value })} />
+        <input aria-label="Data do compromisso" type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} required />
+        <input aria-label="Horário do compromisso" type="time" value={draft.time} onChange={(event) => setDraft({ ...draft, time: event.target.value })} />
         <input value={draft.clientId} onChange={(event) => setDraft({ ...draft, clientId: event.target.value })} placeholder="ID do cliente (opcional)" />
         <input value={draft.projectId} onChange={(event) => setDraft({ ...draft, projectId: event.target.value })} placeholder="ID do projeto (opcional)" />
-        <select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select>
+        <select aria-label="Status do compromisso" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select>
         <textarea className="wide" value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} placeholder="Observação" />
         <div><button disabled={saving}>{saving ? 'Salvando...' : draft.id ? 'Salvar compromisso' : 'Adicionar compromisso'}</button>{draft.id && <button type="button" className="secondary" onClick={() => setDraft(emptyAppointment())}>Cancelar</button>}</div>
       </form>

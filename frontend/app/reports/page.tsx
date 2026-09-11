@@ -79,10 +79,10 @@ export default function ReportsPage() {
       <form className="form-grid" onSubmit={save}>
         <input value={draft.projectId} onChange={(event) => setDraft({ ...draft, projectId: event.target.value })} placeholder="ID do projeto" required />
         <input value={draft.serviceOrderId} onChange={(event) => setDraft({ ...draft, serviceOrderId: event.target.value })} placeholder="ID da OS (opcional)" />
-        <input type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} required />
+        <input aria-label="Data do relatório" type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} required />
         <input value={draft.technician} onChange={(event) => setDraft({ ...draft, technician: event.target.value })} placeholder="Responsável técnico" required />
-        <select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select>
-        <input type="date" value={draft.nextActionDate} onChange={(event) => setDraft({ ...draft, nextActionDate: event.target.value })} placeholder="Próxima revisão" />
+        <select aria-label="Status do relatório" value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select>
+        <input aria-label="Próxima revisão" type="date" value={draft.nextActionDate} onChange={(event) => setDraft({ ...draft, nextActionDate: event.target.value })} placeholder="Próxima revisão" />
         <textarea className="wide" value={draft.execution} onChange={(event) => setDraft({ ...draft, execution: event.target.value })} placeholder="Execução realizada" required />
         <textarea value={draft.tests} onChange={(event) => setDraft({ ...draft, tests: event.target.value })} placeholder="Testes e validações" />
         <textarea value={draft.pending} onChange={(event) => setDraft({ ...draft, pending: event.target.value })} placeholder="Pendências / próxima ação" />
@@ -94,9 +94,9 @@ export default function ReportsPage() {
       <div className="section-head"><h2>Registrar entrega de projeto</h2><span>Checklist completo antes do encerramento</span></div>
       <form className="form-grid" onSubmit={saveDelivery}>
         <input value={deliveryDraft.projectId} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, projectId: event.target.value })} placeholder="ID do projeto" required />
-        <input type="date" value={deliveryDraft.date} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, date: event.target.value })} required />
+        <input aria-label="Data da entrega" type="date" value={deliveryDraft.date} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, date: event.target.value })} required />
         <input value={deliveryDraft.responsible} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, responsible: event.target.value })} placeholder="Responsável pela entrega" required />
-        <select value={deliveryDraft.acceptance} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, acceptance: event.target.value })}><option>Aceite confirmado</option><option>Aceite pendente</option></select>
+        <select aria-label="Aceite da entrega" value={deliveryDraft.acceptance} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, acceptance: event.target.value })}><option>Aceite confirmado</option><option>Aceite pendente</option></select>
         <textarea className="wide" value={deliveryDraft.note} onChange={(event) => setDeliveryDraft({ ...deliveryDraft, note: event.target.value })} placeholder="Resumo da entrega e pendências" required />
         <div><button disabled={saving}>{saving ? 'Salvando...' : 'Registrar entrega'}</button></div>
       </form>
