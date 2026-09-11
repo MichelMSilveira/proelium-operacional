@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
       { source: '/api/knowledge', destination: `${nestApiOrigin}/api/knowledge` },
       { source: '/api/knowledge/:id', destination: `${nestApiOrigin}/api/knowledge/:id` },
       { source: '/api/company/users', destination: `${nestApiOrigin}/api/company/users` },
+      { source: '/api/company/profile', destination: `${nestApiOrigin}/api/company/profile` },
+      { source: '/api/company/invites', destination: `${nestApiOrigin}/api/company/invites` },
       { source: '/api/collaborators', destination: `${nestApiOrigin}/api/collaborators` },
       { source: '/api/installations', destination: `${nestApiOrigin}/api/installations` },
       { source: '/api/operations', destination: `${nestApiOrigin}/api/operations` },

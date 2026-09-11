@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Corrigido o encaminhamento das APIs de perfil e convites da empresa usadas pelas telas Next.js, evitando que essas operações caiam no contrato legado.
+
 - Documentação do frontend alinhada ao estado publicado: o Next.js atende os módulos, enquanto a raiz pública e os clientes compartilhados ainda dependem do shell legado até a validação autenticada final.
 
 - Corrigido o bot de interface Next para aceitar a URL de teste mesmo quando as opções `--next`, `--chrome` ou `--headed` aparecem antes dela.
