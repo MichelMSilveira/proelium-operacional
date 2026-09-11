@@ -151,6 +151,7 @@ async function forwardNestAuth(req, res, pathname, body, redirect = 'follow', af
       ...(req.headers['content-type'] ? { 'content-type': req.headers['content-type'] } : {}),
       ...(req.headers['x-forwarded-for'] ? { 'x-forwarded-for': req.headers['x-forwarded-for'] } : {}),
       ...(req.headers['x-forwarded-proto'] ? { 'x-forwarded-proto': req.headers['x-forwarded-proto'] } : {}),
+      ...(req.headers['user-agent'] ? { 'user-agent': req.headers['user-agent'] } : {}),
       ...(req.headers.host ? { host: req.headers.host } : {}),
     },
     ...(body === undefined ? {} : { body }),
@@ -313,6 +314,22 @@ function normalizeDevice(value) { const device = String(value || '').trim().slic
 function deviceFromUserAgent(value) { const ua=String(value||''); return /Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iPhone/iPad':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Navegador'; }
 function presencePayload(companyId = 'legacy') { return [...presence.values()].filter(item => item.companyId === companyId && Date.now() - item.lastSeen < 90_000).sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')).map(({ username, name, role, available, device }) => { const sessions=[...eventClients].filter(client=>client.username===username&&client.companyId===companyId),devices=[...new Set([...sessions.map(client=>normalizeDevice(client.device)),normalizeDevice(device)])]; return { username, name, role, device: devices[0], devices, sessions: Math.max(1,sessions.length), available: available !== false }; }); }
 function announcePresence() { for (const companyId of new Set([...eventClients].map(client => client.companyId))) broadcastEvent('presence-updated', { users: presencePayload(companyId), at: new Date().toISOString() }, companyId); }
+function announceForwardedPresence(responseBody, companyId) {
+  try {
+    const users = JSON.parse(responseBody).users;
+    if (!Array.isArray(users)) return;
+    const byUsername = new Map(users.filter(user => user?.username).map(user => [user.username, user]));
+    for (const client of eventClients) {
+      if (client.companyId !== companyId) continue;
+      const user = byUsername.get(client.username);
+      if (user) {
+        client.available = user.available !== false;
+        if (user.device) client.device = user.device;
+      }
+    }
+    broadcastEvent('presence-updated', { users, at: new Date().toISOString() }, companyId);
+  } catch { /* resposta já foi entregue ao cliente */ }
+}
 function touchPresence(user, req) { const previous=presence.get(user.username); presence.set(user.username, { username: user.username, companyId: user.companyId || 'legacy', name: user.name || user.username, role: user.role || 'operador', device: deviceFromUserAgent(req?.headers?.['user-agent']) || previous?.device || 'Navegador', available: previous?.available !== false, lastSeen: Date.now() }); announcePresence(); }
 
 function readBody(req) {
@@ -724,6 +741,18 @@ async function handleRequest(req, res) {
   }
 
   const authenticatedCompanyId = authenticatedUser?.companyId || 'legacy';
+  if (pathname === '/api/presence' && req.method === 'GET' && nestAuthEnabled()) {
+    try { return await forwardNestAuth(req, res, pathname, undefined, 'follow'); }
+    catch (error) { console.error('Falha ao encaminhar presença ao NestJS:', error.message); return sendJson(res, 503, { error: 'Não foi possível consultar a presença agora.' }); }
+  }
+  if (pathname === '/api/presence/heartbeat' && req.method === 'POST' && nestAuthEnabled()) {
+    try { const body = await readBody(req); return await forwardNestAuth(req, res, pathname, body, 'follow', (status, responseBody) => { if (status === 200) announceForwardedPresence(responseBody, authenticatedCompanyId); }); }
+    catch (error) { console.error('Falha ao encaminhar heartbeat ao NestJS:', error.message); return sendJson(res, 503, { error: 'Não foi possível atualizar a presença agora.' }); }
+  }
+  if (pathname === '/api/presence/availability' && req.method === 'POST' && nestAuthEnabled()) {
+    try { const body = await readBody(req); return await forwardNestAuth(req, res, pathname, body, 'follow', (status, responseBody) => { if (status === 200) announceForwardedPresence(responseBody, authenticatedCompanyId); }); }
+    catch (error) { console.error('Falha ao encaminhar disponibilidade ao NestJS:', error.message); return sendJson(res, 503, { error: 'Não foi possível atualizar a disponibilidade agora.' }); }
+  }
   if (pathname === '/api/presence' && req.method === 'GET') return sendJson(res, 200, { users: presencePayload(authenticatedCompanyId) });
   if (pathname === '/api/presence/heartbeat' && req.method === 'POST') { try { const payload=JSON.parse(await readBody(req)||'{}'), current=presence.get(authenticatedUser.username); if(current&&payload.device) current.device=normalizeDevice(payload.device); announcePresence(); return sendJson(res, 200, { ok: true, users: presencePayload(authenticatedCompanyId) }); } catch { return sendJson(res, 400, { error: 'Heartbeat inválido.' }); } }
   if (pathname === '/api/presence/availability' && req.method === 'POST') {

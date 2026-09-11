@@ -13,6 +13,9 @@ Enquanto a API definitiva por recursos ainda não está implementada, os aplicat
 | POST | `/api/commercial/reconcile-legacy` | pré-visualizar ou aplicar, somente como administração, a reconciliação auditável das etapas comerciais legadas |
 | POST | `/api/collaboration-requests` | enviar pedido de colaboração aos administradores conectados |
 | POST | `/api/assistance-requests` | enviar pedido de auxílio aos participantes disponíveis conectados |
+| GET | `/api/presence` | consultar participantes online da empresa |
+| POST | `/api/presence/heartbeat` | renovar presença e dispositivo da sessão |
+| POST | `/api/presence/availability` | alternar disponibilidade para auxílio |
 | GET | `/api/events` | receber avisos de atualização em tempo real (SSE) |
 
 Uma gravação baseada em revisão antiga recebe HTTP `409` e não sobrescreve a versão central.

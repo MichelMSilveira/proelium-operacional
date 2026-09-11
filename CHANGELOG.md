@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- A presença e os heartbeats passaram a ser controlados pelo NestJS com expiração efêmera de 90 segundos quando o PostgreSQL está ativo; o SSE público continua entregando as atualizações e o fallback legado permanece sem banco.
+
 - Os pedidos de colaboração e auxílio passaram a ser validados e criados pelo NestJS quando o PostgreSQL está ativo; a entrega continua usando o SSE público e o fallback legado permanece sem banco.
 
 - A reconciliação administrativa de etapas comerciais passou a consultar e atualizar `app_state` diretamente pelo NestJS/PostgreSQL, com lock de revisão, auditoria e fallback legado.
