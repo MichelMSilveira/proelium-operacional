@@ -142,6 +142,14 @@ function addSetCookie(res, value) {
 function nestAuthEnabled() {
   return Boolean(process.env.DATABASE_URL) && !isolatedTestDirectory;
 }
+function forwardedSetCookies(headers) {
+  if (typeof headers.getSetCookie === 'function') {
+    const values = headers.getSetCookie();
+    if (Array.isArray(values) && values.length) return values;
+  }
+  const combined = headers.get('set-cookie');
+  return combined ? combined.split(/,\s*(?=[A-Za-z0-9_-]+=)/).map(value => value.trim()).filter(Boolean) : [];
+}
 async function forwardNestAuth(req, res, pathname, body, redirect = 'follow', afterResponse) {
   const origin = process.env.PROELIUM_NEST_API_ORIGIN || 'http://127.0.0.1:4174';
   const upstream = await fetch(`${origin}${pathname}`, {
@@ -158,9 +166,9 @@ async function forwardNestAuth(req, res, pathname, body, redirect = 'follow', af
     redirect,
   });
   const contentType = upstream.headers.get('content-type') || 'application/json; charset=utf-8';
-  const setCookie = upstream.headers.get('set-cookie');
+  const setCookies = forwardedSetCookies(upstream.headers);
   const location = upstream.headers.get('location');
-  if (setCookie) res.setHeader('Set-Cookie', setCookie);
+  if (setCookies.length) res.setHeader('Set-Cookie', setCookies);
   if (location) res.setHeader('Location', location);
   res.writeHead(upstream.status, { ...securityHeaders, 'Content-Type': contentType, 'Cache-Control': 'no-store' });
   const responseBody = await upstream.text();
