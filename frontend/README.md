@@ -1,8 +1,10 @@
 # Frontend Next.js
 
+O shell Next.js está publicado nas rotas de módulos e na porta interna `4300`; a raiz pública ainda permanece no shell legado até a validação autenticada final. Não remover o servidor raiz enquanto PWA, Android, Windows e o fallback sem PostgreSQL dependerem dele.
+
 Frontend em React, TypeScript e Next.js, com os módulos operacionais publicados no shell Next.js.
 
-O shell de autenticação, sessão, logout e navegação está em Next.js. O servidor raiz mantém apenas a ponte de compatibilidade necessária para o shell legado e para o fallback sem PostgreSQL.
+O shell de autenticação, sessão, logout e navegação está implementado em Next.js. O servidor raiz continua atendendo a raiz pública, a ponte de compatibilidade e o fallback sem PostgreSQL.
 
 ## Rotas
 

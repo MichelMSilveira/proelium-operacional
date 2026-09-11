@@ -2,6 +2,8 @@
 
 ## Em desenvolvimento
 
+- Documentação do frontend alinhada ao estado publicado: o Next.js atende os módulos, enquanto a raiz pública e os clientes compartilhados ainda dependem do shell legado até a validação autenticada final.
+
 - Corrigido o bot de interface Next para aceitar a URL de teste mesmo quando as opções `--next`, `--chrome` ou `--headed` aparecem antes dela.
 
 - O proxy reverso passou a encaminhar as APIs específicas dos módulos Next.js para o próprio frontend, preservando no servidor raiz o health check, OAuth, SSE e o contrato legado; as telas migradas passam a manter sessão e dados no mesmo caminho publicado.
