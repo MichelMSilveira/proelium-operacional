@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- Corrigido o envio do levantamento ao orçamento no shell principal: a ação usa a operação transacional do NestJS quando publicada e mantém a transição automática para orçamento ao salvar um levantamento validado com quantitativo. Cache web atualizado para `v406`.
 - A logo oficial da Proelium agora aparece como marca d'agua no fundo do app. Cache web atualizado para `v405`.
 - Corrigido o utilitário de administração de credenciais para atualizar `app_users` no PostgreSQL quando o banco está ativo; o fallback em `data/users.json` permanece disponível sem banco. O arquivo também passou a ser incluído na sincronização do VPS.
 - Reorganizado o painel de dimensionamento tecnico: requisitos agora aparecem em cards, o resumo fica separado dos produtos compativeis, as demais opcoes do catalogo ficam recolhidas e os produtos sao agrupados por area: Rede, Automacao, Audio e Video e Cameras. Cache web atualizado para `v404`.

@@ -2449,7 +2449,7 @@ function sendSurveyRoomsToQuote(survey,quote){
   logAudit('Enviou ambientes ao orçamento','Levantamento técnico',`${survey.title} · ${missing.length} ambiente(s) criados em ${quote.title}`);
   return missing.length;
 }
-function startQuoteFromSurvey(id){
+function startQuoteFromSurveyLocal(id){
   const survey=(state.data.surveys||[]).find(item=>item.id===id);
   const opportunity=(state.data.opportunities||[]).find(item=>item.id===survey?.opportunityId);
   if(!survey||!opportunity){toast('Vincule este levantamento a uma oportunidade comercial antes de criar o orçamento.');return}
@@ -2463,6 +2463,25 @@ function startQuoteFromSurvey(id){
   if(mapping.added||mapping.updated)logAudit('Gerou itens do levantamento','Orçamento',`${survey.title} · ${mapping.added+mapping.updated} sugestão(ões) do catálogo${mapping.unmapped.length?` · ${mapping.unmapped.length} pendência(s) sem produto correspondente`:''}`);
   if(preparation.created)logAudit('Criou pré-projeto técnico','Projeto',`${preparation.project.name} · ${preparation.project.code} · origem: ${survey.title}`);
   persist();state.selectedQuote=quote.id;state.view='quoteDetail';render();toast(`Orçamento aberto com ${count} ambiente(s), ${mapping.added+mapping.updated} item(ns) do catálogo e pré-projeto ${preparation.project?.code||''}.`);
+}
+async function startQuoteFromSurvey(id){
+  const survey=(state.data.surveys||[]).find(item=>String(item.id)===String(id));
+  const opportunity=(state.data.opportunities||[]).find(item=>String(item.id)===String(survey?.opportunityId));
+  const points=(state.data.surveyPoints||[]).filter(item=>String(item.surveyId)===String(id));
+  if(!survey||!opportunity){toast('Vincule este levantamento a uma oportunidade comercial antes de criar o orçamento.');return false}
+  if(!['Validado','Enviado ao orçamento'].includes(survey.status)||!points.some(item=>Number(item.quantity||0)>0)){toast('Valide o levantamento e registre ao menos um ponto ou quantitativo antes de enviá-lo ao orçamento.');return false}
+  const useDedicatedApi=location.protocol!=='file:'&&!['localhost','127.0.0.1'].includes(location.hostname);
+  if(!useDedicatedApi)return startQuoteFromSurveyLocal(id);
+  try{
+    const response=await fetch(`./api/survey/${encodeURIComponent(id)}/send-to-quote`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({baseRevision:state.revision})});
+    const payload=await response.json().catch(()=>({}));
+    if(response.status===404||response.status===405)return startQuoteFromSurveyLocal(id);
+    if(!response.ok){toast(payload.error||'Não foi possível enviar o levantamento ao orçamento.');return false}
+    await refreshSharedData(true);
+    const quoteId=payload.quoteId||(state.data.quotes||[]).find(item=>String(item.opportunityId)===String(opportunity.id)&&item.status!=='Aprovado')?.id;
+    if(!quoteId){toast('O levantamento foi enviado, mas o orçamento não foi localizado.');return false}
+    state.selectedQuote=quoteId;state.view='quoteDetail';render();toast('Levantamento enviado ao orçamento.');return true;
+  }catch(error){console.error('Falha ao enviar levantamento ao orçamento:',error);toast('Não foi possível enviar o levantamento ao orçamento agora.');return false}
 }
 function survey(){
   const surveys=state.data.surveys||[],selected=surveys.find(item=>item.id===state.selectedSurvey);
@@ -2555,8 +2574,16 @@ views.survey=()=>{
 };
 const surveySaveRecord=saveRecord;
 saveRecord=(kind,data,editId='')=>{
-  if(kind==='technicalSurvey'){const record={opportunityId:data.opportunityId,title:data.title,site:data.site,source:data.source,status:data.status,notes:data.notes,updatedAt:new Date().toISOString()};if(editId){const index=state.data.surveys.findIndex(item=>item.id===editId);if(index>=0)state.data.surveys[index]={...state.data.surveys[index],...record}}else{const created={id:uid('lev'),...record};state.data.surveys.unshift(created);state.selectedSurvey=created.id}logAudit(editId?'Atualizou levantamento':'Criou levantamento','Levantamento técnico',record.title);persist();render();toast('Levantamento técnico salvo.');return}
-  if(kind==='surveyPoint'){const record={surveyId:data.surveyId,room:data.room,type:data.type,technology:data.technology||'',quantity:Number(data.quantity||1),status:data.status,notes:data.notes};if(editId){const index=state.data.surveyPoints.findIndex(item=>item.id===editId);if(index>=0)state.data.surveyPoints[index]={...state.data.surveyPoints[index],...record}}else state.data.surveyPoints.push({id:uid('ptl'),...record});logAudit(editId?'Atualizou item levantado':'Adicionou item levantado','Levantamento técnico',`${record.room} · ${record.type}${record.technology?` · ${record.technology}`:''} · ${record.quantity}`);persist();render();toast('Item do levantamento salvo.');return}
+  if(kind==='surveyPoint'){
+    const result=surveySaveRecord(kind,data,editId);
+    if(result===false)return result;
+    const record={surveyId:data.surveyId,room:data.room,type:data.type,technology:data.technology||'',quantity:Number(data.quantity||1),status:data.status,notes:data.notes};
+    const pointId=editId||data.__workflowPointId||uid('ptl'),index=state.data.surveyPoints.findIndex(item=>String(item.id)===String(pointId));
+    if(index>=0)state.data.surveyPoints[index]={...state.data.surveyPoints[index],...record,id:pointId};
+    else state.data.surveyPoints.push({id:pointId,...record});
+    logAudit(editId?'Atualizou item levantado':'Adicionou item levantado','Levantamento técnico',`${record.room} · ${record.type}${record.technology?` · ${record.technology}`:''} · ${record.quantity}`);
+    persist();render();toast('Item do levantamento salvo.');return result;
+  }
   return surveySaveRecord(kind,data,editId);
 };
 document.addEventListener('click',event=>{
@@ -4058,7 +4085,7 @@ saveRecord=(kind,data,editId='')=>{
     const survey=workflowSurvey(data.surveyId),opportunity=workflowOpportunity(survey?.opportunityId);
     if(!survey||!opportunity){toast('O item só pode ser registrado em um levantamento vinculado a uma oportunidade.');return false}
     const hasPoint=(state.data.surveyPoints||[]).some(item=>String(item.surveyId)===String(survey.id)&&String(item.id)!==String(editId)),ready=['Validado','Enviado ao orçamento'].includes(survey.status)&&(hasPoint||Number(data.quantity||0)>0);
-    if(ready){const next=structuredClone(state.data),pendingPoint={id:editId||'pending-survey-point',...data,quantity:Number(data.quantity||0)};if(editId){const index=next.surveyPoints.findIndex(item=>String(item.id)===String(editId));if(index>=0)next.surveyPoints[index]={...next.surveyPoints[index],...pendingPoint}}else next.surveyPoints.push(pendingPoint);const transitioned=workflow.applyValidatedSurveyTransition(state.data,next,auditActor(),new Date().toISOString()),transitionedSurvey=transitioned.surveys.find(item=>String(item.id)===String(survey.id)),transitionedOpportunity=transitioned.opportunities.find(item=>String(item.id)===String(opportunity.id)),transitionedQuote=transitioned.quotes?.find(item=>String(item.technicalSurveyId)===String(survey.id)),wasValidated=Boolean(survey.validatedAt);if(transitionedSurvey)Object.assign(survey,transitionedSurvey);if(transitionedOpportunity)Object.assign(opportunity,transitionedOpportunity);if(transitionedQuote){const existingQuote=state.data.quotes.find(item=>String(item.id)===String(transitionedQuote.id));if(existingQuote)Object.assign(existingQuote,transitionedQuote);else state.data.quotes.unshift(transitionedQuote);const roomName=String(data.room||'').trim();if(roomName&&!state.data.quoteRooms.some(item=>String(item.quoteId)===String(transitionedQuote.id)&&item.name===roomName))state.data.quoteRooms.push({id:uid('amb'),quoteId:transitionedQuote.id,technicalSurveyId:survey.id,name:roomName,items:[]})}if(!wasValidated&&survey.validatedAt)logAudit('Validou levantamento técnico','Levantamento técnico',`${survey.title} · ${survey.validatedBy} · ${new Date(survey.validatedAt).toLocaleString('pt-BR')}`)}
+    if(ready){const pointId=editId||uid('ptl'),next=structuredClone(state.data),pendingPoint={id:pointId,...data,quantity:Number(data.quantity||0)};if(editId){const index=next.surveyPoints.findIndex(item=>String(item.id)===String(editId));if(index>=0)next.surveyPoints[index]={...next.surveyPoints[index],...pendingPoint}}else next.surveyPoints.push(pendingPoint);const transitioned=workflow.applyValidatedSurveyTransition(state.data,next,auditActor(),new Date().toISOString()),transitionedSurvey=transitioned.surveys.find(item=>String(item.id)===String(survey.id)),transitionedOpportunity=transitioned.opportunities.find(item=>String(item.id)===String(opportunity.id)),transitionedQuote=transitioned.quotes?.find(item=>String(item.technicalSurveyId)===String(survey.id)),wasValidated=Boolean(survey.validatedAt);if(editId){const index=state.data.surveyPoints.findIndex(item=>String(item.id)===String(editId));if(index>=0)state.data.surveyPoints[index]={...state.data.surveyPoints[index],...pendingPoint}}else state.data.surveyPoints.push(pendingPoint);data.__workflowPointId=pointId;if(transitionedSurvey)Object.assign(survey,transitionedSurvey);if(transitionedOpportunity)Object.assign(opportunity,transitionedOpportunity);if(transitionedQuote){const existingQuote=state.data.quotes.find(item=>String(item.id)===String(transitionedQuote.id));if(existingQuote)Object.assign(existingQuote,transitionedQuote);else state.data.quotes.unshift(transitionedQuote);const roomName=String(data.room||'').trim();if(roomName&&!state.data.quoteRooms.some(item=>String(item.quoteId)===String(transitionedQuote.id)&&item.name===roomName))state.data.quoteRooms.push({id:uid('amb'),quoteId:transitionedQuote.id,technicalSurveyId:survey.id,name:roomName,items:[]})}if(!wasValidated&&survey.validatedAt)logAudit('Validou levantamento técnico','Levantamento técnico',`${survey.title} · ${survey.validatedBy} · ${new Date(survey.validatedAt).toLocaleString('pt-BR')}`)}
   }
   if(kind==='technicalVisit'){
     toast('Visita técnica não faz parte do fluxo de Oportunidades. Conclua o levantamento técnico e siga diretamente para o orçamento.');return false;
@@ -4092,7 +4119,7 @@ createQuoteFromOpportunity=id=>{
 const workflowStartQuoteFromSurvey=startQuoteFromSurvey;
 startQuoteFromSurvey=id=>{
   const survey=workflowSurvey(id),opportunity=workflowOpportunity(survey?.opportunityId);
-  const ready=survey&&(['Validado','Enviado ao orçamento'].includes(survey.status))&&(state.data.surveyPoints||[]).some(item=>item.surveyId===survey.id);
+  const ready=survey&&(['Validado','Enviado ao orçamento'].includes(survey.status))&&(state.data.surveyPoints||[]).some(item=>String(item.surveyId)===String(survey.id)&&Number(item.quantity||0)>0);
   if(!survey||!opportunity||!ready){toast('Valide o diagrama teórico e registre pontos antes de criar o orçamento.');return false}
   return workflowStartQuoteFromSurvey(id);
 };

@@ -8,6 +8,7 @@ const frontendRoots = [path.join(root, 'frontend', 'app'), path.join(root, 'fron
 const nextConfig = fs.readFileSync(path.join(root, 'frontend', 'next.config.ts'), 'utf8');
 const proxyConfig = fs.readFileSync(path.join(root, 'deploy', 'proelium-next-proxy.example.conf'), 'utf8');
 const legacyApp = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+const surveyPage = fs.readFileSync(path.join(root, 'frontend', 'app', 'survey', 'page.tsx'), 'utf8');
 
 function sourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -53,4 +54,9 @@ test('atalho de projeto em andamento preserva a visao de detalhe', () => {
 test('produtos compativeis ficam separados por area tecnica', () => {
   assert.match(legacyApp, /const productAreas=\['network','automation','audio-video','cameras'\]/);
   assert.match(legacyApp, /network:'Rede',automation:'Automacao','audio-video':'Audio e Video',cameras:'Cameras'/);
+});
+test('o envio do levantamento usa a operacao dedicada nos dois shells', () => {
+  assert.match(legacyApp, /api\/survey\/\$\{encodeURIComponent\(id\)\}\/send-to-quote/);
+  assert.match(legacyApp, /startQuoteFromSurveyLocal/);
+  assert.match(surveyPage, /api\/survey\/\$\{encodeURIComponent\(survey\.id\)\}\/send-to-quote/);
 });
