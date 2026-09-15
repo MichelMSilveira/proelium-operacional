@@ -1,5 +1,9 @@
 # Operação do ambiente de testes
 
+## Identidade visual do app
+
+A logo oficial da Proelium permanece como marca d'água no fundo do ambiente autenticado, abaixo dos cartões e textos para não prejudicar a leitura. Em telas pequenas ela é reduzida automaticamente; o modo de alto contraste continua ocultando a arte decorativa.
+
 ## Cronograma inteligente e configurável
 
 No módulo **Cronograma e acompanhamento**, o fundador ou administrador da empresa pode usar **Configurar fases** para editar os nomes e as cores das fases e adicionar novas fases. A configuração é compartilhada somente com a empresa autenticada; usuários de outras empresas não recebem esses dados.

@@ -94,6 +94,11 @@ main{position:relative;overflow:hidden}main:before{content:"";position:fixed;ins
 /* No celular, a data fica logo abaixo da marca e ganha distância do título da tela. */
 @media(max-width:720px){.header-company .header-context{transform:translateY(-30px)}}
 
+/* A logo da empresa permanece como marca d'água no fundo do ambiente autenticado. */
+main:after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:url('assets/proelium-logo-oficial.png') center 54%/min(560px,48vw) auto no-repeat;opacity:.105;filter:grayscale(.12) saturate(.86);mix-blend-mode:multiply}
+.high-contrast main:after{display:none}
+@media(max-width:720px){main:after{background-size:min(290px,64vw) auto;background-position:center 53%;opacity:.085}}
+
 /* Blocos do menu refletem o fluxo comercial, operacional e administrativo. */
 .nav-section{margin:18px 9px 5px;color:#9eb5a9;font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-section:first-child{margin-top:2px}
 
