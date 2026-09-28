@@ -17,6 +17,6 @@ Este repositório é um produto com dados e publicação em VPS. Leia `PROJECT.m
 3. Atualizar `CHANGELOG.md` e a documentação afetada quando houver mudança funcional ou de operação.
 4. Instalar as dependências dos três projetos e executar `npm run check:all`, os bots pertinentes e `git diff --check`. `Validar-Local.ps1` reúne as verificações locais; registrar o que não pôde ser executado. Build não substitui teste de autenticação, permissão e isolamento.
 5. Revisar o diff e abrir PR somente quando o usuário autorizar commit/push da branch. Não fazer push direto na `main`, nem usar deploy como teste.
-6. Merge na `main` aciona publicação automática no VPS. Exige aprovação do responsável pela publicação, CI verde e verificação de banco/backup/reversão quando aplicável; acompanhar o deploy e o smoke de produção.
+6. Merge na `main` com arquivos de execução aciona publicação automática no VPS; alterações apenas de documentação e workflows não implantam. A publicação exige aprovação do responsável, CI verde e verificação de banco/backup/reversão quando aplicável; acompanhar o deploy e o smoke de produção.
 
 Não versionar `data/`, credenciais, backups, tokens, chaves ou artefatos privados. Alterações em banco, autenticação, permissões, arquitetura central e produção exigem autorização explícita e revisão proporcional ao risco. Se não houver cobertura ou aprovação suficiente, deixar a mudança na branch e relatar o bloqueio.

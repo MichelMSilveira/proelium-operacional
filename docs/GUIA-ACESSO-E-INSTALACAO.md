@@ -75,11 +75,11 @@ O script envia os arquivos da interface, atualiza os assets e reinicia o serviç
 
 ### Deploy automático pelo GitHub
 
-O arquivo `.github/workflows/deploy-vps.yml` publica automaticamente cada push na branch `main`. No repositório GitHub, abra **Settings → Secrets and variables → Actions** e crie:
+O arquivo `.github/workflows/deploy-vps.yml` publica automaticamente pushes na branch `main` que alterem arquivos de execução. Mudanças apenas de documentação e workflows não implantam. No repositório GitHub, abra **Settings → Secrets and variables → Actions** e crie:
 
 - `VPS_HOST`: endereço do VPS;
 - `VPS_USER`: usuário SSH, normalmente `root`;
 - `VPS_SSH_KEY`: conteúdo completo da chave privada usada para acessar o VPS;
 - `VPS_KNOWN_HOSTS` (opcional): saída de `ssh-keyscan -H IP_DO_VPS`.
 
-Depois de cadastrar os secrets, qualquer `git push origin main` inicia o deploy. O workflow exclui `data/`, não substitui usuários ou senhas e valida que o serviço terminou ativo.
+Depois de cadastrar os secrets, pushes de arquivos de execução para `main` iniciam o deploy. O workflow exclui `data/`, não substitui usuários ou senhas e valida que o serviço terminou ativo.

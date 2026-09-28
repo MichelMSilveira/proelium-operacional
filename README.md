@@ -86,7 +86,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 
 ## Publicar atualizações
 
-Após autorização para enviar a branch, execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"` e abra um pull request. O comando valida e envia a branch atual; **não use `main` para experimentar**. A integração em `main` aciona implantação automática no VPS e requer aprovação e verificação prévias. O arquivo `data/shared-data.json` permanece fora do Git. Veja [o fluxo de desenvolvimento](docs/GIT-WORKFLOW.md).
+Após autorização para enviar a branch, execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"` e abra um pull request. O comando valida e envia a branch atual; **não use `main` para experimentar**. A integração de arquivos de execução em `main` aciona implantação automática no VPS e requer aprovação e verificação prévias; mudanças apenas de documentação e workflows não implantam. O arquivo `data/shared-data.json` permanece fora do Git. Veja [o fluxo de desenvolvimento](docs/GIT-WORKFLOW.md).
 
 ## Limites conhecidos
 

@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- O deploy interrompe antes de criar backup ou testar restauração quando o VPS tem menos de 1 GiB livre, evitando pressionar o PostgreSQL em situação de disco cheio; mudanças apenas de documentação ou do próprio workflow não acionam a implantação.
 - A validação de PR agora aplica as migrações em PostgreSQL descartável e testa o módulo Nest de clientes com persistência real, isolamento por empresa, permissões e conflitos de revisão; nenhum dado de produção é usado.
 - O deploy passa a exigir backup e restauração verificada antes da sincronização, deixa de reiniciar o PostgreSQL sem necessidade e valida os testes Nest antes da publicação.
 - A `main` foi protegida com PR obrigatório, checagem `validate` obrigatória e bloqueio de force push/exclusão; a aprovação humana permanece como decisão do responsável pelo release.

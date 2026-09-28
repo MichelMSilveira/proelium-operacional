@@ -3,6 +3,15 @@ name: Deploy VPS
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.continue/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/deploy-vps.yml'
+      - 'AGENTS.md'
+      - 'CHANGELOG.md'
+      - 'PROJECT.md'
+      - 'README.md'
+      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
@@ -53,6 +62,11 @@ jobs:
           else
             ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
           fi
+
+      - name: Require free space before recovery test
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'set -eu; available_kib=$(df --output=avail -k / | tail -n 1 | tr -d "[:space:]"); test -n "$available_kib"; if [ "$available_kib" -lt 1048576 ]; then echo "VPS has less than 1 GiB free; refusing deployment before backup/restore." >&2; exit 1; fi'
 
       - name: Create and verify recovery point before deployment
         run: |
