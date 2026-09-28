@@ -22,8 +22,8 @@ O APK e o aplicativo Windows são clientes da mesma aplicação central. Eles n�
 4. Incrementar o cache de `sw.js` quando houver mudança no shell web.
 5. Instalar as dependências dos três projetos, executar `./Validar-Local.ps1`, revisar o app em `http://localhost:4173` e conferir o diff. O script compila Nest e Next e roda os testes isolados do Nest; a CI executa integração de clientes com PostgreSQL descartável. Testes dos demais domínios migrados continuam obrigatórios conforme o risco.
 6. Enviar a branch de trabalho ao GitHub para manter o histórico, sem acionar produção.
-7. Abrir PR, aguardar CI, revisão e aprovação do responsável pela publicação; verificar backup e reversão quando a mudança afetar dados. Só então integrar na `main`, cujo push publica no VPS.
-8. Antes de sincronizar arquivos, o GitHub Actions cria um dump e valida sua restauração isolada no VPS; se qualquer etapa falhar, não inicia a sincronização. O deploy preserva `data/`, usuários e credenciais e não reinicia o PostgreSQL por rotina.
+7. Abrir PR, aguardar CI, revisão e aprovação do responsável pela publicação; verificar backup e reversão quando a mudança afetar dados. Só então integrar na `main`; alterações de execução publicam no VPS, enquanto mudanças apenas documentais não implantam.
+8. Antes de sincronizar arquivos, o GitHub Actions exige pelo menos 1 GiB livre no volume principal, cria um dump e valida sua restauração isolada no VPS; se qualquer etapa falhar, não inicia a sincronização. O deploy preserva `data/`, usuários e credenciais e não reinicia o PostgreSQL por rotina. Falta de espaço exige ação de capacidade, não novas tentativas automáticas de deploy.
 9. Confirmar serviço ativo e resposta HTTP no VPS antes de considerar a entrega concluída.
 
 ## Desenvolvimento local primeiro
@@ -51,7 +51,7 @@ O comando abaixo executa validação, commit e envio ao GitHub:
 .\Entregar-Atualizacao.ps1 -Message "feat: descrição objetiva"
 ```
 
-O push para `main` aciona `.github/workflows/deploy-vps.yml`. Os secrets necessários estão descritos no guia de acesso e instalação.
+O push para `main` aciona `.github/workflows/deploy-vps.yml` quando há arquivos de execução; alterações apenas de documentação, changelog ou do próprio workflow não acionam deploy. Os secrets necessários estão descritos no guia de acesso e instalação.
 
 Se o GitHub Actions estiver temporariamente indisponível, a implantação pode ser feita pelo PC autorizado:
 

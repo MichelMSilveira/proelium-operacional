@@ -124,7 +124,7 @@ Os bots de interface e os testes de contrato/integracao exigidos pelo risco sao 
 
 ## 10. Git e entrega
 
-Nao fazer commit ou push sem autorizacao explicita do usuario. A autorizacao para enviar uma branch de trabalho nao autoriza merge em `main` nem publicacao: `main` aciona deploy no VPS. Usar PR, validacao e aprovacao humana para integrar.
+Nao fazer commit ou push sem autorizacao explicita do usuario. A autorizacao para enviar uma branch de trabalho nao autoriza merge em `main` nem publicacao: alteracoes de execucao integradas a `main` acionam deploy no VPS. Mudancas apenas de documentacao e workflows nao implantam. Usar PR, validacao e aprovacao humana para integrar.
 
 Antes de um commit:
 

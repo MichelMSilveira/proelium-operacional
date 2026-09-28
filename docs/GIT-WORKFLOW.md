@@ -2,7 +2,7 @@
 
 ## Trabalho local e entrega automatizada
 
-O desenvolvimento acontece primeiro na cópia local. A `main` representa somente o que está aprovado para publicação. O push nela aciona deploy automático no VPS. A proteção da branch exige PR, checagem `validate` verde e conversas resolvidas, inclusive para administradores; bloqueia force push e exclusão. Como o repositório tem um responsável individual, a regra exige zero revisões formais: isso não dispensa o aceite explícito do responsável antes do merge.
+O desenvolvimento acontece primeiro na cópia local. A `main` representa somente o que está aprovado para publicação. O push nela com arquivos de execução aciona deploy automático no VPS; alterações apenas de documentação e workflows não implantam. A proteção da branch exige PR, checagem `validate` verde e conversas resolvidas, inclusive para administradores; bloqueia force push e exclusão. Como o repositório tem um responsável individual, a regra exige zero revisões formais: isso não dispensa o aceite explícito do responsável antes do merge.
 
 Para iniciar uma tarefa:
 
