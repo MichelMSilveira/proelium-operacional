@@ -1,0 +1,34 @@
+name: CI — validação antes do merge
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Instalar dependências do legado
+        run: npm ci --no-audit --no-fund
+      - name: Testar código e contratos existentes
+        run: npm run check
+      - name: Smoke bot isolado
+        run: npm run test:bot
+      - name: Instalar frontend
+        run: npm --prefix frontend ci --no-audit --no-fund
+      - name: Verificar tipos e build do Next
+        run: npm run check:frontend
+      - name: Instalar backend Nest
+        run: npm --prefix backend-nest ci --no-audit --no-fund
+      - name: Compilar Nest
+        run: npm run check:nest
