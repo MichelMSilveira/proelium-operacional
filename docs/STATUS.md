@@ -1,22 +1,21 @@
 # STATUS — Proelium Operacional
 
 ## Estado atual
-Projeto operacional ativo. O bot funcional executa um cenário completo em servidor JSON temporário, sem acessar PostgreSQL ou os arquivos reais, e produz relatório de correções.
 
-## Estrutura de contexto
-- `AGENTS.md`: regras de entrega e plataformas;
-- `.continue/rules/projeto.md`: regras detalhadas do projeto;
-- `PROJECT.md`: identidade, fonte de verdade e limites;
-- este arquivo: ponto principal de retomada.
+Produto operacional em migração incremental. O shell legado, o frontend Next.js e o backend NestJS convivem; a persistência principal dos domínios migrados usa PostgreSQL quando configurado. Consulte [Arquitetura atual](ARCHITECTURE-CURRENT.md) e [Controle de migração](MIGRATION-NEST.md) antes de tratar um recurso como concluído.
 
-## Validação atual
+## Validação conhecida
 
-- `npm run check`: valida sintaxe, armazenamento, bot funcional, isolamento empresa/perfil fundador e codificação;
-- `npm run test:functional`: simula 33 domínios e relações do app;
-- interface: 26 módulos renderizados e fluxo contato → proposta → venda → projeto conferido no navegador isolado;
-- relatório: `docs/TEST-BOT-REPORT.md`;
-- identidade: a primeira conta do cadastro é fundadora; perfis desligados permanecem com portfólio pessoal sem dados privados da empresa;
-- bloqueios: nenhum.
+- `npm run check`: sintaxe e suíte automatizada já existente.
+- `npm run check:frontend`: tipos e build Next.js.
+- `npm run check:nest`: build NestJS, **não** testes de comportamento.
+- `Validar-Local.ps1`: verificações locais e bots pertinentes.
+- O workflow de deploy compila serviços e executa smoke após publicar; isso não substitui revisão prévia.
 
-## Regra
-Nao duplicar aqui historico extenso. O `CHANGELOG.md` permanece como historico; `STATUS.md` deve representar somente o estado atual necessario para retomada rapida.
+## Próximos passos
+
+1. Confirmar proteção da branch de publicação, CI de PR e aprovação humana antes de integrar.
+2. Adicionar testes de contrato e integração dos domínios Nest conforme o risco de cada corte.
+3. Manter o mapa de migração e as instruções de operação atualizados junto com cada mudança.
+
+`PROJECT.md` define produto e limites; `CHANGELOG.md` guarda histórico. Este arquivo é apenas o estado curto para retomada.
