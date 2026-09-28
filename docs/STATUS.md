@@ -12,10 +12,11 @@ Produto operacional em migração incremental. O shell legado, o frontend Next.j
 - CI do PR: migrações em PostgreSQL descartável e integração real do módulo de clientes; os demais domínios Nest ainda não têm cobertura equivalente.
 - `Validar-Local.ps1`: verificações locais e bots pertinentes.
 - O workflow de deploy compila serviços e executa smoke após publicar; isso não substitui revisão prévia.
+- `main` protegida: PR obrigatório, `validate` verde, conversas resolvidas, sem force push/exclusão e sem bypass de administrador. Aceite humano continua obrigatório no processo.
 
 ## Próximos passos
 
-1. Confirmar proteção da branch de publicação, CI de PR e aprovação humana antes de integrar.
+1. Manter a proteção da branch e exigir o aceite explícito do responsável antes de cada integração.
 2. Adicionar testes de contrato e integração dos domínios Nest conforme o risco de cada corte.
 3. Manter o mapa de migração e as instruções de operação atualizados junto com cada mudança.
 

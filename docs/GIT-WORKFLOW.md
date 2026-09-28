@@ -2,7 +2,7 @@
 
 ## Trabalho local e entrega automatizada
 
-O desenvolvimento acontece primeiro na cópia local. A `main` deve representar somente o que está aprovado para publicação. O push nela aciona deploy automático no VPS; o workflow de CI em pull requests acrescenta validação técnica, mas não configura sozinho a proteção nem substitui a aprovação humana. Configurar e verificar uma regra de branch ou controle equivalente; não integrar sem autorização expressa do responsável pela publicação.
+O desenvolvimento acontece primeiro na cópia local. A `main` representa somente o que está aprovado para publicação. O push nela aciona deploy automático no VPS. A proteção da branch exige PR, checagem `validate` verde e conversas resolvidas, inclusive para administradores; bloqueia force push e exclusão. Como o repositório tem um responsável individual, a regra exige zero revisões formais: isso não dispensa o aceite explícito do responsável antes do merge.
 
 Para iniciar uma tarefa:
 
@@ -11,7 +11,7 @@ git switch -c codex/minha-tarefa
 .\Iniciar-App.ps1
 ```
 
-Abra `http://localhost:4173` e rode `.\Validar-Local.ps1` antes de enviar a branch. Esse comando executa a suíte do legado, o smoke bot, o bot de interface, os builds Next/Nest e o `git diff --check`, sem alterar o VPS. Instale antes as dependências da raiz, de `frontend/` e de `backend-nest/`. Testes específicos dos domínios Nest ainda são pendentes.
+Abra `http://localhost:4173` e rode `.\Validar-Local.ps1` antes de enviar a branch. Esse comando executa a suíte do legado, o smoke bot, o bot de interface, o build Next, o build e os testes isolados Nest e o `git diff --check`, sem alterar o VPS. Instale antes as dependências da raiz, de `frontend/` e de `backend-nest/`. A CI executa ainda integração de clientes com PostgreSQL descartável; os outros domínios Nest precisam de cobertura por risco.
 
 Somente com autorização para commit e envio da branch, no PC principal execute:
 

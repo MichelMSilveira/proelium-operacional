@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Cada melhoria concluída deve formar uma entrega rastreável: código, documentação, Git, GitHub e VPS permanecem alinhados. Este é o fluxo desejado; a proteção da `main` e a cobertura dos demais domínios Nest ainda precisam ser concluídas. Nenhum documento deve ser interpretado como aprovação automática para produção.
+Cada melhoria concluída deve formar uma entrega rastreável: código, documentação, Git, GitHub e VPS permanecem alinhados. A `main` está protegida por PR e pela checagem `validate`; a cobertura dos demais domínios Nest ainda precisa ser concluída. Nenhum documento deve ser interpretado como aprovação automática para produção.
 
 ## Como as plataformas recebem atualizações
 
