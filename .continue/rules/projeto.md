@@ -17,9 +17,11 @@ O repositorio e a fonte de verdade para implementacao. Nao transportar regras, p
 
 - Runtime: Node.js
 - Persistencia principal: PostgreSQL
-- Frontend atual: HTML, CSS e JavaScript existentes no repositorio
-- Execucao local: `npm start`
-- Validacao principal: `npm run check`
+- Frontend atual: shell legado em HTML/CSS/JavaScript e frontend Next.js em `frontend/`
+- API atual: servidor legado em `server.js` e backend NestJS em `backend-nest/`
+- Execucao local do legado: `npm start`
+- Validacao dos tres projetos: `npm run check:all`; fluxo local: `Validar-Local.ps1`
+- Mapa de arquitetura atual: `docs/ARCHITECTURE-CURRENT.md`; migracao: `docs/MIGRATION-NEST.md`
 
 Respeitar a arquitetura e os padroes ja existentes antes de introduzir novas dependencias ou frameworks.
 
@@ -112,15 +114,17 @@ Quando a tarefa autorizar edicao:
 
 Somente declarar um arquivo como alterado quando a edicao tiver sido realmente executada.
 
-Para validacao geral do projeto, usar:
+Para validacao geral do projeto, instalar as dependencias da raiz, de `frontend/` e de `backend-nest/` e usar:
 
 ```powershell
-npm run check
+npm run check:all
 ```
+
+Os bots de interface e os testes de contrato/integracao exigidos pelo risco sao verificacoes adicionais; build do Nest nao comprova equivalencia de comportamento.
 
 ## 10. Git e entrega
 
-Nao fazer commit ou push sem autorizacao explicita do usuario.
+Nao fazer commit ou push sem autorizacao explicita do usuario. A autorizacao para enviar uma branch de trabalho nao autoriza merge em `main` nem publicacao: `main` aciona deploy no VPS. Usar PR, validacao e aprovacao humana para integrar.
 
 Antes de um commit:
 
