@@ -2,7 +2,7 @@
 
 ## Trabalho local e entrega automatizada
 
-O desenvolvimento acontece primeiro na cópia local. A `main` representa somente o que está aprovado para publicação.
+O desenvolvimento acontece primeiro na cópia local. A `main` deve representar somente o que está aprovado para publicação. O push nela aciona deploy automático no VPS; o workflow de CI em pull requests acrescenta validação técnica, mas não configura sozinho a proteção nem substitui a aprovação humana. Configurar e verificar uma regra de branch ou controle equivalente; não integrar sem autorização expressa do responsável pela publicação.
 
 Para iniciar uma tarefa:
 
@@ -11,9 +11,9 @@ git switch -c codex/minha-tarefa
 .\Iniciar-App.ps1
 ```
 
-Abra `http://localhost:4173` e rode `.\Validar-Local.ps1` antes de enviar a branch. Esse comando executa a checagem do projeto, o smoke bot, o bot de interface e o `git diff --check`, sem alterar o VPS.
+Abra `http://localhost:4173` e rode `.\Validar-Local.ps1` antes de enviar a branch. Esse comando executa a suíte do legado, o smoke bot, o bot de interface, os builds Next/Nest e o `git diff --check`, sem alterar o VPS. Instale antes as dependências da raiz, de `frontend/` e de `backend-nest/`. Testes específicos dos domínios Nest ainda são pendentes.
 
-No PC principal, execute:
+Somente com autorização para commit e envio da branch, no PC principal execute:
 
 ```powershell
 .\Entregar-Atualizacao.ps1 -Message "feat: descrição objetiva"
@@ -47,7 +47,7 @@ Dados operacionais continuam protegidos pelo `.gitignore`. O antigo `Publicar-Gi
 4. Alterar somente os arquivos necessários.
 5. Testar no PC local com `Validar-Local.ps1` e revisar `git diff`.
 6. Criar um commit com mensagem objetiva e enviar a branch ao GitHub.
-7. Integrar na `main` somente após a validação; então acompanhar a implantação do VPS.
+7. Abrir PR, aguardar CI e revisão; integrar na `main` somente após aprovação explícita da publicação. Acompanhar a implantação do VPS.
 8. Confirmar que PWA, Android e Windows carregam a versão publicada. APK e EXE só são recompilados quando o código nativo correspondente muda.
 
 ## Padrão de commits
