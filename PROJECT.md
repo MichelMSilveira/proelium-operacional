@@ -68,7 +68,7 @@ Um cliente pode possuir vários locais e projetos. Um projeto pertence a um clie
 
 ## 9. Plataformas
 
-É um app web responsivo, instalável como PWA e utilizado também pelos clientes Android e Windows. O servidor atual usa Node.js, a persistência principal usa PostgreSQL e a operação inclui API, autenticação, sincronização, testes e implantação em VPS.
+É um app web responsivo, instalável como PWA e utilizado também pelos clientes Android e Windows. Hoje o shell legado Node.js (porta 4173), o backend NestJS (4174) e o frontend Next.js (4300) convivem; PostgreSQL é a persistência principal com banco configurado. A topologia e seus limites estão em `docs/ARCHITECTURE-CURRENT.md`. A arquitetura alvo fica separada em `docs/ARCHITECTURE.md`.
 
 ## 10. Estado e documentação
 
@@ -80,7 +80,7 @@ O Proelium Operacional não é uma rede social, portal de empregos, cadastro pú
 
 ## 12. Fonte de verdade
 
-Este documento define visão e escopo. `docs/MVP.md` detalha funções; `docs/API.md` detalha o contrato técnico; `docs/ARCHITECTURE.md` detalha arquitetura; `docs/STATUS.md` registra o estado atual; `docs/DECISIONS.md` registra decisões; código, banco, testes e documentação versionados completam a fonte de verdade.
+Este documento define visão e escopo. `docs/MVP.md` detalha funções; `docs/API.md` registra o contrato futuro proposto; `docs/ARCHITECTURE-CURRENT.md` descreve a arquitetura atual e `docs/MIGRATION-NEST.md` acompanha a migração; `docs/ARCHITECTURE.md` guarda a proposta futura; `docs/STATUS.md` registra o estado atual; `docs/DECISIONS.md` registra decisões; código, banco, testes e documentação versionados completam a fonte de verdade.
 
 ## 13. Critérios de sucesso
 
