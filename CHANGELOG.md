@@ -2,6 +2,7 @@
 
 ## Em desenvolvimento
 
+- A validação de PR agora aplica as migrações em PostgreSQL descartável e testa o módulo Nest de clientes com persistência real, isolamento por empresa, permissões e conflitos de revisão; nenhum dado de produção é usado.
 - Corrigido o envio do levantamento ao orçamento no shell principal: a ação usa a operação transacional do NestJS quando publicada e mantém a transição automática para orçamento ao salvar um levantamento validado com quantitativo. Cache web atualizado para `v406`.
 - A logo oficial da Proelium agora aparece como marca d'agua no fundo do app. Cache web atualizado para `v405`.
 - Corrigido o utilitário de administração de credenciais para atualizar `app_users` no PostgreSQL quando o banco está ativo; o fallback em `data/users.json` permanece disponível sem banco. O arquivo também passou a ser incluído na sincronização do VPS.

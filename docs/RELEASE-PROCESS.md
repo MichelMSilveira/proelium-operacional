@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Cada melhoria concluída deve formar uma entrega rastreável: código, documentação, Git, GitHub e VPS permanecem alinhados. Este é o fluxo desejado; a proteção da `main` e a suíte específica do Nest ainda precisam ser concluídas. Nenhum documento deve ser interpretado como aprovação automática para produção.
+Cada melhoria concluída deve formar uma entrega rastreável: código, documentação, Git, GitHub e VPS permanecem alinhados. Este é o fluxo desejado; a proteção da `main` e a cobertura dos demais domínios Nest ainda precisam ser concluídas. Nenhum documento deve ser interpretado como aprovação automática para produção.
 
 ## Como as plataformas recebem atualizações
 
@@ -20,7 +20,7 @@ O APK e o aplicativo Windows são clientes da mesma aplicação central. Eles n�
 2. Concluir uma mudança pequena e coerente.
 3. Atualizar `CHANGELOG.md` e os guias relacionados.
 4. Incrementar o cache de `sw.js` quando houver mudança no shell web.
-5. Instalar as dependências dos três projetos, executar `./Validar-Local.ps1`, revisar o app em `http://localhost:4173` e conferir o diff. O script compila Nest e Next, mas testes de contrato/integração dos domínios migrados continuam obrigatórios conforme o risco.
+5. Instalar as dependências dos três projetos, executar `./Validar-Local.ps1`, revisar o app em `http://localhost:4173` e conferir o diff. O script compila Nest e Next e roda os testes isolados do Nest; a CI executa integração de clientes com PostgreSQL descartável. Testes dos demais domínios migrados continuam obrigatórios conforme o risco.
 6. Enviar a branch de trabalho ao GitHub para manter o histórico, sem acionar produção.
 7. Abrir PR, aguardar CI, revisão e aprovação do responsável pela publicação; verificar backup e reversão quando a mudança afetar dados. Só então integrar na `main`, cujo push publica no VPS.
 8. O GitHub Actions publica somente os arquivos de execução no VPS, preservando `data/`, usuários e credenciais.

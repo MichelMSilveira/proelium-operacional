@@ -8,7 +8,8 @@ Produto operacional em migração incremental. O shell legado, o frontend Next.j
 
 - `npm run check`: sintaxe e suíte automatizada já existente.
 - `npm run check:frontend`: tipos e build Next.js.
-- `npm run check:nest`: build NestJS, **não** testes de comportamento.
+- `npm run check:nest`: build NestJS e testes isolados de contrato, permissões e isolamento do módulo de clientes.
+- CI do PR: migrações em PostgreSQL descartável e integração real do módulo de clientes; os demais domínios Nest ainda não têm cobertura equivalente.
 - `Validar-Local.ps1`: verificações locais e bots pertinentes.
 - O workflow de deploy compila serviços e executa smoke após publicar; isso não substitui revisão prévia.
 

@@ -4,6 +4,7 @@
   "scripts": {
     "build": "nest build",
     "test": "npm run build && node --test",
+    "test:integration": "node --test integration/clients.postgres.js",
     "start:dev": "nest start --watch",
     "start": "node dist/main.js"
   },
