@@ -2,7 +2,7 @@
 
 Plataforma operacional web para conectar CRM, orçamento, projetos, execução em campo, financeiro e indicadores em um único fluxo.
 
-Este repositório é uma demonstração de produto e engenharia: uma aplicação full-stack construída de forma incremental, com frontend sem framework, API Node.js, persistência PostgreSQL e cliente PWA/desktop compartilhando a mesma interface.
+Este repositório é uma demonstração de produto e engenharia construída de forma incremental. Hoje convivem o shell legado em JavaScript/Node.js, o frontend Next.js, a API NestJS e PostgreSQL; PWA, Android e Windows dependem da interface publicada. A [arquitetura atual](docs/ARCHITECTURE-CURRENT.md) distingue o que está em operação da [arquitetura proposta](docs/ARCHITECTURE.md).
 
 ## Por que este projeto existe
 
@@ -10,7 +10,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 
 ## Estado atual
 
-- backend NestJS iniciado em `backend-nest/`, em paralelo ao servidor legado; a migração será feita por módulos sem interromper o app atual;
+- backend NestJS com recursos de domínio em `backend-nest/`, em paralelo ao servidor legado; a migração é gradual e cada corte exige testes e aceite;
 - ponte inicial de autenticação NestJS disponível em `/api/auth/me`, preservando o cookie e o contrato do backend legado;
 - leitura de usuários da empresa disponível pela ponte NestJS em `/api/auth/users`, ainda respeitando a autorização do backend legado;
 - leitura do perfil da empresa disponível pela ponte NestJS em `/api/company/profile`;
@@ -69,7 +69,9 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Guia de acesso e instalação em Windows, Android e iOS](docs/GUIA-ACESSO-E-INSTALACAO.md)
 - [Encerramento operacional e estado atual](docs/ENCERRAMENTO-OPERACIONAL.md)
 - [MVP e regras do produto](docs/MVP.md)
-- [Arquitetura](docs/ARCHITECTURE.md)
+- [Arquitetura atual e roteamento](docs/ARCHITECTURE-CURRENT.md)
+- [Matriz de migração NestJS](docs/MIGRATION-NEST.md)
+- [Arquitetura proposta e histórico](docs/ARCHITECTURE.md)
 - [Operação do servidor](docs/OPERATIONS.md)
 - [Sincronização entre aparelhos](docs/SYNCHRONIZATION.md)
 - [Banco PostgreSQL, migrações e backups](docs/DATABASE.md)
@@ -77,14 +79,14 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Plano de retomada e divisão de trabalho](docs/PLANO-AMANHA.md)
 - [Fluxo de desenvolvimento e Git](docs/GIT-WORKFLOW.md)
 - [Processo contínuo de entrega multiplataforma](docs/RELEASE-PROCESS.md)
-- [Contrato futuro da API](docs/API.md)
+- [Contrato de API proposto; distinguir das rotas atuais](docs/API.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [BI, qualidade e reconhecimento](docs/BI-E-QUALIDADE.md)
 - [Histórico de versões](CHANGELOG.md)
 
 ## Publicar atualizações
 
-Execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"`. O comando valida o JavaScript, exige o registro no histórico, cria o commit e envia a branch atual ao GitHub. Em `main`, o GitHub Actions implanta a versão no VPS; PWA, Android e Windows passam a carregar a mesma interface publicada. O arquivo `data/shared-data.json` permanece fora do Git.
+Após autorização para enviar a branch, execute `Entregar-Atualizacao.ps1 -Message "tipo: descrição"` e abra um pull request. O comando valida e envia a branch atual; **não use `main` para experimentar**. A integração em `main` aciona implantação automática no VPS e requer aprovação e verificação prévias. O arquivo `data/shared-data.json` permanece fora do Git. Veja [o fluxo de desenvolvimento](docs/GIT-WORKFLOW.md).
 
 ## Limites conhecidos
 
