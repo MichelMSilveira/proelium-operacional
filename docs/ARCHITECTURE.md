@@ -1,4 +1,6 @@
-# Arquitetura proposta
+# Arquitetura proposta — histórico e direção futura
+
+> Este documento mistura propostas de evolução e partes já implementadas. Para entender os serviços, portas, roteamento e fontes de dados **atuais**, consulte [Arquitetura atual](ARCHITECTURE-CURRENT.md). Os caminhos `/api/v1`, OIDC e storage S3 abaixo são propostas, não contratos de produção confirmados. A migração por recurso está em [MIGRATION-NEST.md](MIGRATION-NEST.md).
 
 ## Visão
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Cada melhoria concluída deve formar uma entrega rastreável: código, documentação, Git, GitHub e VPS permanecem alinhados.
+Cada melhoria concluída deve formar uma entrega rastreável: código, documentação, Git, GitHub e VPS permanecem alinhados. A `main` está protegida por PR e pela checagem `validate`; a cobertura dos demais domínios Nest ainda precisa ser concluída. Nenhum documento deve ser interpretado como aprovação automática para produção.
 
 ## Como as plataformas recebem atualizações
 
@@ -20,10 +20,10 @@ O APK e o aplicativo Windows são clientes da mesma aplicação central. Eles n�
 2. Concluir uma mudança pequena e coerente.
 3. Atualizar `CHANGELOG.md` e os guias relacionados.
 4. Incrementar o cache de `sw.js` quando houver mudança no shell web.
-5. Executar `./Validar-Local.ps1`, revisar o app em `http://localhost:4173` e conferir o diff.
+5. Instalar as dependências dos três projetos, executar `./Validar-Local.ps1`, revisar o app em `http://localhost:4173` e conferir o diff. O script compila Nest e Next e roda os testes isolados do Nest; a CI executa integração de clientes com PostgreSQL descartável. Testes dos demais domínios migrados continuam obrigatórios conforme o risco.
 6. Enviar a branch de trabalho ao GitHub para manter o histórico, sem acionar produção.
-7. Depois da aprovação, integrar a branch na `main`; somente esse push publica no VPS.
-8. O GitHub Actions publica somente os arquivos de execução no VPS, preservando `data/`, usuários e credenciais.
+7. Abrir PR, aguardar CI, revisão e aprovação do responsável pela publicação; verificar backup e reversão quando a mudança afetar dados. Só então integrar na `main`, cujo push publica no VPS.
+8. Antes de sincronizar arquivos, o GitHub Actions cria um dump e valida sua restauração isolada no VPS; se qualquer etapa falhar, não inicia a sincronização. O deploy preserva `data/`, usuários e credenciais e não reinicia o PostgreSQL por rotina.
 9. Confirmar serviço ativo e resposta HTTP no VPS antes de considerar a entrega concluída.
 
 ## Desenvolvimento local primeiro

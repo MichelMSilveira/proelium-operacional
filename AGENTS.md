@@ -1,22 +1,22 @@
-# Entrega contínua do Proelium
+# Regras de trabalho — Proelium Operacional
 
-Este projeto deve terminar cada alteração funcional com uma entrega completa, salvo quando o usuário pedir explicitamente para manter o trabalho local.
+Este repositório é um produto com dados e publicação em VPS. Leia `PROJECT.md`, `docs/STATUS.md` e a [arquitetura atual](docs/ARCHITECTURE-CURRENT.md) antes de alterar fluxos centrais. As regras detalhadas do Continue em `.continue/rules/projeto.md` usam a mesma política de autorização: **editar não autoriza publicar**.
 
-## Fluxo obrigatório
+## Topologia e impacto
 
-1. Implementar a alteração na menor superfície necessária.
-2. Identificar as plataformas afetadas:
-   - mudanças em `app.js`, CSS, HTML, imagens ou service worker pertencem ao app web compartilhado e chegam ao PWA, Android e Windows após o deploy do VPS;
-   - mudanças em `desktop/` exigem nova versão e novo pacote Windows;
-   - mudanças em `android/` exigem incremento de `versionCode`/`versionName` e novo APK.
-3. Para alterações no shell web, incrementar o identificador `CACHE` de `sw.js`.
-4. Registrar a entrega em `CHANGELOG.md` e atualizar a documentação operacional afetada.
-5. Validar `app.js` e `server.js`, conferir `git diff --check` e revisar os arquivos que entrarão no commit.
-6. Nunca incluir `data/`, senhas, chaves, tokens, backups ou artefatos privados no Git.
-7. Criar um commit objetivo no padrão do projeto e enviar a branch ao GitHub.
-8. Em `main`, acompanhar a implantação automática no VPS e confirmar que o serviço e a página respondem. Se a automação do GitHub não estiver disponível, usar `Atualizar-VPS.ps1` e registrar essa contingência.
-9. Informar ao usuário o commit, as plataformas atualizadas e o resultado da implantação.
+- `server.js`/`app.js`: shell e compatibilidade legados (4173).
+- `backend-nest/`: API NestJS (4174), com módulos de domínio e PostgreSQL.
+- `frontend/`: interface Next.js (4300), com rewrites para Nest e fallback legado.
+- PWA, Android e Windows consomem a interface publicada; mudança web não exige novo APK/EXE. Alterações em `android/` ou `desktop/` exigem revisão e pacote nativo próprios.
+- Confirme o dono da rota e dos dados em `docs/MIGRATION-NEST.md` antes de modificar um recurso migrado. Não usar `docs/ARCHITECTURE.md` ou `docs/API.md` como prova de implantação atual: são propostas.
 
-## Regra de plataforma
+## Fluxo de alteração
 
-O PWA, o APK Android e o cliente Windows usam a interface publicada no VPS. Uma mudança puramente web não exige gerar novamente APK ou EXE. Recompilar instaladores sem alteração nativa cria versões desnecessárias e deve ser evitado.
+1. Definir escopo, risco, plataformas afetadas e critério de aceite; ler somente os módulos relevantes.
+2. Trabalhar em branch separada, com mudança reversível. Para shell web alterado, atualizar o identificador `CACHE` de `sw.js`.
+3. Atualizar `CHANGELOG.md` e a documentação afetada quando houver mudança funcional ou de operação.
+4. Instalar as dependências dos três projetos e executar `npm run check:all`, os bots pertinentes e `git diff --check`. `Validar-Local.ps1` reúne as verificações locais; registrar o que não pôde ser executado. Build não substitui teste de autenticação, permissão e isolamento.
+5. Revisar o diff e abrir PR somente quando o usuário autorizar commit/push da branch. Não fazer push direto na `main`, nem usar deploy como teste.
+6. Merge na `main` aciona publicação automática no VPS. Exige aprovação do responsável pela publicação, CI verde e verificação de banco/backup/reversão quando aplicável; acompanhar o deploy e o smoke de produção.
+
+Não versionar `data/`, credenciais, backups, tokens, chaves ou artefatos privados. Alterações em banco, autenticação, permissões, arquitetura central e produção exigem autorização explícita e revisão proporcional ao risco. Se não houver cobertura ou aprovação suficiente, deixar a mudança na branch e relatar o bloqueio.

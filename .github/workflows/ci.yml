@@ -1,0 +1,56 @@
+name: CI — validação antes do merge
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: proelium_test
+          POSTGRES_PASSWORD: proelium-test-only
+          POSTGRES_DB: proelium_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U proelium_test -d proelium_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Instalar dependências do legado
+        run: npm ci --no-audit --no-fund
+      - name: Testar código e contratos existentes
+        run: npm run check
+      - name: Smoke bot isolado
+        run: npm run test:bot
+      - name: Instalar frontend
+        run: npm --prefix frontend ci --no-audit --no-fund
+      - name: Verificar tipos e build do Next
+        run: npm run check:frontend
+      - name: Instalar backend Nest
+        run: npm --prefix backend-nest ci --no-audit --no-fund
+      - name: Testar e compilar Nest
+        run: npm run check:nest
+      - name: Aplicar migrações no PostgreSQL isolado
+        env:
+          DATABASE_URL: postgresql://proelium_test:proelium-test-only@127.0.0.1:5432/proelium_test
+        run: npm run db:migrate
+      - name: Testar Nest com PostgreSQL real
+        env:
+          TEST_DATABASE_URL: postgresql://proelium_test:proelium-test-only@127.0.0.1:5432/proelium_test
+        run: npm --prefix backend-nest run test:integration
