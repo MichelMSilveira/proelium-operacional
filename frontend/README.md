@@ -1,10 +1,10 @@
 # Frontend Next.js
 
-O shell Next.js está publicado nas rotas de módulos e na porta interna `4300`; a raiz pública ainda permanece no shell legado até a validação autenticada final. Não remover o servidor raiz enquanto PWA, Android, Windows e o fallback sem PostgreSQL dependerem dele.
+O frontend Next.js é a interface principal, publicado nas rotas de módulos e na porta interna `4300`. O servidor Node.js permanece apenas para compatibilidade e fallback sem PostgreSQL.
 
 Frontend em React, TypeScript e Next.js, com os módulos operacionais publicados no shell Next.js.
 
-O shell de autenticação, sessão, logout e navegação está implementado em Next.js. O servidor raiz continua atendendo a raiz pública, a ponte de compatibilidade e o fallback sem PostgreSQL.
+Autenticação, sessão, logout e navegação estão implementados em Next.js. O servidor raiz não é o caminho principal da aplicação.
 
 ## Rotas
 
@@ -14,9 +14,9 @@ As telas que já possuem operações de negócio usam endpoints específicos do 
 
 Indicadores e o resumo inicial são consultas compostas por recursos separados. Processos é um fluxo estático e não depende de gravação.
 
-## Estado da migração
+## Estado da arquitetura
 
-Projetos usam `projects_domain_entries` e `projects_domain_state`, com isolamento por `companyId`, revisão própria, progresso entre 0 e 100, orçamento não negativo e importação inicial durante a migração `027_projects_domain.sql`. Os vínculos dos demais domínios continuam por `projectId` durante a migração gradual.
+Projetos usam `projects_domain_entries` e `projects_domain_state`, com isolamento por `companyId`, revisão própria, progresso entre 0 e 100, orçamento não negativo e importação inicial pela migração `027_projects_domain.sql`. Os vínculos entre domínios permanecem por `projectId` por compatibilidade de dados.
 Financeiro usa `finance_domain_entries`, `finance_domain_accounts` e `finance_domain_state`, com isolamento por `companyId`, revisão própria, validação de lançamentos e importação inicial durante a migração `029_finance_domain.sql`. Lançamentos mantêm referências textuais a clientes, projetos e contas durante a transição; custos criados pela Execução são sincronizados nessa coleção.
 Execução usa `execution_domain_entries` e `execution_domain_state`, com isolamento por `companyId`, revisão própria, validação do projeto e importação inicial durante a migração `030_execution_domain.sql`. Cada custo mantém `financialEntryId` para sincronização com o Financeiro.
 Diagrama técnico usa `diagram_domain_connections`, `diagram_domain_aux_records` e `diagram_domain_state`, com isolamento por `companyId`, revisão própria, validação do projeto e importação inicial durante a migração `031_diagram_domain.sql`.

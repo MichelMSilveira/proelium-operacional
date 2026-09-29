@@ -1,17 +1,18 @@
-# Controle de migração — legado, NestJS e Next.js
+# Mapa de módulos — NestJS e Next.js
 
-Esta página é um **modelo de acompanhamento**, não uma declaração de que todos os recursos foram cortados para NestJS. O estado real depende do código, do roteamento publicado e dos testes. Preencher uma linha por domínio antes de remover qualquer caminho legado.
+O Proelium usa NestJS como API principal e Next.js como frontend principal. O servidor Node.js e o agregado legado permanecem somente como compatibilidade e fallback sem PostgreSQL. Esta página registra os domínios publicados e as exceções ainda mantidas por compatibilidade.
 
 | Recurso | Serviço que atende hoje | Fonte de dados | Consumidores | Fallback | Teste de contrato/integração | Critério de corte | Reversão |
 |---|---|---|---|---|---|---|---|
-| [a mapear] | [verificar no código e ambiente] | [verificar] | [web/PWA/Android/Windows] | [verificar] | [evidência/pendência] | [aceite observável] | [procedimento] |
+| Domínios operacionais | NestJS (`backend-nest/`) | PostgreSQL | Next.js, PWA, Android e Windows | Node.js somente sem PostgreSQL | `check:nest`, smoke e integração | rotas e persistência NestJS verificadas | fallback Node.js |
+| Interface | Next.js (`frontend/`) | — | navegador e PWA | shell Node.js apenas para compatibilidade | `check:frontend` | build e rotas publicados | rollback do frontend |
+| Compatibilidade | Node.js (`server.js`, `app.js`) | agregado JSON quando sem banco | fallback local | — | `check` | somente suporte ao modo legado | manter isolado |
 
-## Critério de saída por recurso
+## Critério de manutenção
 
-1. Confirmar o serviço dono e o caminho público, sem inferir a partir da presença de um controller.
-2. Registrar consumidores, contrato atual, persistência, dependências e fallback.
-3. Testar sucesso, erros, acesso, separação de dados e concorrência conforme o risco do recurso, em ambiente isolado.
-4. Revisar diferenças em relação ao legado, atualizar clientes afetados e preparar retorno seguro.
-5. Aprovar a publicação, observar o ambiente real e registrar versão e resultado antes de retirar o caminho antigo.
+1. Registrar novos domínios no NestJS e suas rotas no frontend Next.js.
+2. Manter o fallback Node.js isolado e documentado quando houver necessidade de compatibilidade.
+3. Testar sucesso, erros, acesso, isolamento de dados e concorrência conforme o risco do recurso.
+4. Conferir health check, proxy publicado e smoke test após a entrega.
 
-A suíte atual compila o Nest; testes dedicados de contrato e integração ainda devem ser adicionados conforme cada domínio for cortado. Consulte [Arquitetura atual](ARCHITECTURE-CURRENT.md) e [Processo de entrega](RELEASE-PROCESS.md).
+A validação usa `npm run check`, `npm run check:frontend`, `npm run check:nest` ou `npm run check:all`. Consulte [Arquitetura atual](ARCHITECTURE-CURRENT.md) e [Processo de entrega](RELEASE-PROCESS.md).

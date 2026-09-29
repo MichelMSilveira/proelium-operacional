@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "proelium-nemo"
+name = "proelium-operacional"
 version = "0.1.0"
-description = "Analise operacional isolada do assistente N.E.M.O."
+description = "Ferramentas de validação do Proelium Operacional"
 requires-python = ">=3.10"
 dependencies = []
 

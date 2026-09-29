@@ -2,7 +2,7 @@
 
 Plataforma operacional web para conectar CRM, orçamento, projetos, execução em campo, financeiro e indicadores em um único fluxo.
 
-Este repositório é uma demonstração de produto e engenharia construída de forma incremental. Hoje convivem o shell legado em JavaScript/Node.js, o frontend Next.js, a API NestJS e PostgreSQL; PWA, Android e Windows dependem da interface publicada. A [arquitetura atual](docs/ARCHITECTURE-CURRENT.md) distingue o que está em operação da [arquitetura proposta](docs/ARCHITECTURE.md).
+Este repositório contém o Proelium Operacional em sua estrutura consolidada com frontend Next.js, API NestJS e PostgreSQL. O shell Node.js permanece somente como camada de compatibilidade e fallback local sem banco; não é a arquitetura principal. PWA, Android e Windows consomem a interface Next.js publicada. A [arquitetura atual](docs/ARCHITECTURE-CURRENT.md) descreve a implantação efetiva; a [arquitetura proposta](docs/ARCHITECTURE.md) registra apenas evoluções futuras.
 
 ## Por que este projeto existe
 
@@ -10,8 +10,8 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 
 ## Estado atual
 
-- backend NestJS com recursos de domínio em `backend-nest/`, em paralelo ao servidor legado; a migração é gradual e cada corte exige testes e aceite;
-- ponte inicial de autenticação NestJS disponível em `/api/auth/me`, preservando o cookie e o contrato do backend legado;
+- backend NestJS em `backend-nest/`, responsável pela API e pelos domínios operacionais;
+- autenticação, sessão, usuários, empresa, OAuth e recursos de domínio disponíveis pelas rotas NestJS;
 - leitura de usuários da empresa disponível pela ponte NestJS em `/api/auth/users`, ainda respeitando a autorização do backend legado;
 - leitura do perfil da empresa disponível pela ponte NestJS em `/api/company/profile`;
 - leitura dos dados operacionais disponível pela ponte NestJS em `/api/data`;
@@ -24,8 +24,7 @@ O Proelium transforma o caminho entre primeiro contato, levantamento técnico, o
 - entrada por convite Google compatível disponível pelas rotas NestJS de estado pendente e consumo de convite;
 - cadastro de empresa tradicional e via Google também disponível pelas rotas NestJS compatíveis;
 - a validação completa do projeto também executa o build do backend NestJS com `npm run check:nest`;
-- primeiro recurso de domínio iniciado no NestJS: `GET /api/opportunities`;
-- segundo recurso de domínio iniciado no NestJS: `GET /api/clients`;
+- recursos de domínio NestJS disponíveis para clientes, oportunidades, projetos, orçamento, financeiro, compras, execução, agenda, tarefas, relatórios, instalações, qualidade, conhecimento, equipamentos e demais módulos publicados;
 - início e callback do OAuth Google também podem passar pela ponte NestJS;
 - aceite de convite Google e vínculo do usuário à empresa também passam pela ponte NestJS;
 - usuários de suporte/plataforma também podem ser criados e excluídos pela ponte NestJS;
@@ -70,7 +69,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Encerramento operacional e estado atual](docs/ENCERRAMENTO-OPERACIONAL.md)
 - [MVP e regras do produto](docs/MVP.md)
 - [Arquitetura atual e roteamento](docs/ARCHITECTURE-CURRENT.md)
-- [Matriz de migração NestJS](docs/MIGRATION-NEST.md)
+- [Mapa de módulos NestJS e Next.js](docs/MIGRATION-NEST.md)
 - [Arquitetura proposta e histórico](docs/ARCHITECTURE.md)
 - [Operação do servidor](docs/OPERATIONS.md)
 - [Sincronização entre aparelhos](docs/SYNCHRONIZATION.md)
@@ -79,7 +78,7 @@ Consulte [RODAR-AGORA.md](RODAR-AGORA.md) para acesso remoto e instalação nos 
 - [Plano de retomada e divisão de trabalho](docs/PLANO-AMANHA.md)
 - [Fluxo de desenvolvimento e Git](docs/GIT-WORKFLOW.md)
 - [Processo contínuo de entrega multiplataforma](docs/RELEASE-PROCESS.md)
-- [Contrato de API proposto; distinguir das rotas atuais](docs/API.md)
+- [Contrato da API e compatibilidade](docs/API.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [BI, qualidade e reconhecimento](docs/BI-E-QUALIDADE.md)
 - [Histórico de versões](CHANGELOG.md)
@@ -90,8 +89,8 @@ Após autorização para enviar a branch, execute `Entregar-Atualizacao.ps1 -Mes
 
 ## Limites conhecidos
 
-- a interface já usa recursos versionados por domínio; com PostgreSQL ativo, a persistência operacional do NestJS não regrava o agregado `/api/data`;
-- a ponte legada restante atende o modo sem banco, OAuth, cadastro, gestão de identidade e o app legado enquanto a autenticação e a interface são substituídas gradualmente; login e validação de sessão dos domínios PostgreSQL já passam pelo NestJS;
+- a interface usa recursos versionados por domínio e o NestJS grava os domínios diretamente no PostgreSQL quando `DATABASE_URL` está configurada;
+- o shell Node.js e o agregado `/api/data` ficam preservados somente para compatibilidade, importação e fallback local sem PostgreSQL; não representam o caminho principal de produção;
 - cada requisição protegida confirma que o usuário ainda existe e está ativo; exclusões e desativações revogam imediatamente sessões antigas;
 - o modo `file:` existe para demonstrações locais e não deve ser usado como ambiente de produção;
 - a implantação exige configurar os secrets do VPS no GitHub Actions.
