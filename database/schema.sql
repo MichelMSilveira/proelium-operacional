@@ -295,7 +295,7 @@ create table audit_events (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references organizations(id),
   actor_id uuid,
-  actor_type text not null check (actor_type in ('user', 'service', 'nemo')),
+  actor_type text not null check (actor_type in ('user', 'service')),
   entity_type text not null,
   entity_id uuid not null,
   action text not null,

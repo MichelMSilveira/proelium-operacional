@@ -47,3 +47,4 @@ secrets/
 *.pem
 *.key
 *.p12
+.continue/

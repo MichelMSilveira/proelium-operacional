@@ -1,10 +1,12 @@
-# Migração técnica do Proelium Operacional
+# Migração técnica do Proelium Operacional — histórico
+
+> Esta migração foi concluída. O frontend principal atual está em `frontend/`, usando React, TypeScript e Next.js. Para o estado vigente, consulte [`frontend/README.md`](../frontend/README.md) e [`ARCHITECTURE-CURRENT.md`](ARCHITECTURE-CURRENT.md).
 
 Este documento trata exclusivamente da evolução técnica do aplicativo descrito em `PROJECT.md`.
 
 ## Objetivo
 
-Preparar e executar uma migração gradual do frontend atual para React, TypeScript e Next.js, preservando o produto, os dados, a API, a segurança e os clientes PWA/Android/Windows.
+Registrar o plano histórico que levou o frontend para React, TypeScript e Next.js, preservando o produto, os dados, a API, a segurança e os clientes PWA/Android/Windows.
 
 ## Preparação necessária
 

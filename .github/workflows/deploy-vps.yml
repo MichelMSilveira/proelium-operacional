@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '.continue/**'
       - '.github/workflows/ci.yml'
       - '.github/workflows/deploy-vps.yml'
       - 'AGENTS.md'

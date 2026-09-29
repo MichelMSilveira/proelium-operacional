@@ -54,7 +54,7 @@ Para a infraestrutura de rede, o motor também produz um requisito de nobreak se
 - IDs UUID, timestamps e campos estruturados.
 - endpoint de resumo operacional, evitando que o agente precise juntar dezenas de chamadas;
 - busca textual na base de conhecimento;
-- trilha de auditoria com `actor_type = user | service | nemo`;
+- trilha de auditoria com `actor_type = user | service`;
 - ações mutáveis idempotentes e com confirmação para operações sensíveis;
 - webhooks/eventos futuros como `task.overdue`, `project.blocked` e `budget.approved`.
 
